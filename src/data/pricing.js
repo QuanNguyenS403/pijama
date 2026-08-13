@@ -1,0 +1,45 @@
+export const pricingTiers = [
+  {
+    id: 'single',
+    label: '1 Bộ Pijama',
+    description: '2 món: Áo + Quần đũi nguyên chất',
+    price: '599.000₫',
+    priceRaw: 599000,
+    savings: null,
+    badge: null,
+    ctaLabel: 'MUA NGAY',
+    highlight: false,
+    gift: null,
+  },
+  {
+    id: 'combo-2',
+    label: 'Combo 2 Bộ (Cặp Đôi)',
+    description: '2 bộ Pijama – màu sắc tùy chọn',
+    price: '1.079.000₫',
+    priceRaw: 1079000,
+    savings: 'Tiết kiệm 10%',
+    badge: 'Phổ biến nhất',
+    ctaLabel: 'CHỌN COMBO NÀY',
+    highlight: true,
+    gift: 'Tặng kèm băng đô linen',
+  },
+  {
+    id: 'combo-3',
+    label: 'Combo 3 Bộ (Gia Đình)',
+    description: '3 bộ đa dạng kích cỡ – người lớn & bé',
+    price: '1.527.000₫',
+    priceRaw: 1527000,
+    savings: 'Tiết kiệm 15%',
+    badge: null,
+    ctaLabel: 'CHỌN GÓI GIA ĐÌNH',
+    highlight: false,
+    gift: 'Tặng kèm khăn mặt đũi',
+  },
+]
+
+export const trustPoints = [
+  { icon: 'Truck',       label: 'Miễn phí giao hàng' },
+  { icon: 'RefreshCw',   label: 'Đổi trả 30 ngày' },
+  { icon: 'Shield',      label: 'Thanh toán an toàn' },
+  { icon: 'Leaf',        label: 'Vải đũi 100% tự nhiên' },
+]
