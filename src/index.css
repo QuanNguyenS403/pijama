@@ -2,7 +2,6 @@
 @import '@fontsource/be-vietnam-pro/500.css';
 @import '@fontsource/be-vietnam-pro/600.css';
 @import '@fontsource/be-vietnam-pro/700.css';
-@import '@fontsource/be-vietnam-pro/800.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -12,20 +11,64 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background-color: #FAF8F5;
+    color: #26201C;
   }
+  
   body {
-    @apply font-sans bg-white text-text-primary;
+    @apply font-sans bg-[#FAF8F5] text-[#26201C] overflow-x-hidden;
   }
-  *, *::before, *::after {
-    box-sizing: border-box;
+
+  /* Custom smooth scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
   }
-  img {
-    @apply block max-w-full h-auto;
+  ::-webkit-scrollbar-track {
+    background: #FAF8F5;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #D9CDBF;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #8C7E74;
   }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .font-serif-italic {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+  }
+
+  /* Luxury subtle grain texture overlay */
+  .bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+  }
+
+  /* Editorial Link hover animation */
+  .link-underline {
+    position: relative;
+    display: inline-block;
+  }
+  .link-underline::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    transform: scaleX(0);
+    height: 1px;
+    bottom: -2px;
+    left: 0;
+    background-color: currentColor;
+    transform-origin: bottom right;
+    transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  .link-underline:hover::after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
   }
 }
