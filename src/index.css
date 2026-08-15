@@ -11,12 +11,13 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #FAF8F5;
-    color: #26201C;
+    background-color: #2C201A;
+    color: #FFFFFF;
   }
   
   body {
-    @apply font-sans bg-[#FAF8F5] text-[#26201C] overflow-x-hidden;
+    @apply font-sans bg-[#2C201A] text-white overflow-x-hidden;
+    font-family: 'Inter', sans-serif;
   }
 
   /* Custom smooth scrollbar */
@@ -24,14 +25,14 @@
     width: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #FAF8F5;
+    background: #1E1510;
   }
   ::-webkit-scrollbar-thumb {
-    background: #D9CDBF;
+    background: #631521;
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #8C7E74;
+    background: #D4AF37;
   }
 }
 
@@ -47,7 +48,15 @@
 
   /* Luxury subtle grain texture overlay */
   .bg-noise {
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.035'/%3E%3C/svg%3E");
+  }
+
+  /* Subtle weave / woodgrain pattern for Section 9 */
+  .bg-weave-pattern {
+    background-color: #631521;
+    background-image: radial-gradient(rgba(212, 175, 55, 0.08) 1px, transparent 0), radial-gradient(rgba(0, 0, 0, 0.25) 1px, #631521 1px);
+    background-size: 24px 24px;
+    background-position: 0 0, 12px 12px;
   }
 
   /* Editorial Link hover animation */

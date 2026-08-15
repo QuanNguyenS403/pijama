@@ -1,88 +1,79 @@
 import { useState } from 'react'
-import Navbar from './components/ui/Navbar'
-import SizeGuideModal from './components/ui/SizeGuideModal'
-import HeroSection from './components/sections/HeroSection'
-import ProductEditSection from './components/sections/ProductEditSection'
-import BrandManifesto from './components/sections/BrandManifesto'
-import FabricStorySection from './components/sections/FabricStorySection'
-import EditorialFeatureStories from './components/sections/EditorialFeatureStories'
-import NightRitualSection from './components/sections/NightRitualSection'
-import EditorialReviews from './components/sections/EditorialReviews'
-import PricingSection from './components/sections/PricingSection'
-import CareFaqSection from './components/sections/CareFaqSection'
-import FinalCtaFooter from './components/sections/FinalCtaFooter'
+import Section1Header from './components/sections/Section1Header'
+import Section2Hero from './components/sections/Section2Hero'
+import Section3FeaturedProducts from './components/sections/Section3FeaturedProducts'
+import Section4FeatureGrid from './components/sections/Section4FeatureGrid'
+import Section5DarkContrast from './components/sections/Section5DarkContrast'
+import Section6ReversedLayout from './components/sections/Section6ReversedLayout'
+import Section7CustomerStory from './components/sections/Section7CustomerStory'
+import Section8DeepFeature from './components/sections/Section8DeepFeature'
+import Section9LargeBlockText from './components/sections/Section9LargeBlockText'
+import Section10ComparisonTable from './components/sections/Section10ComparisonTable'
+import Section11CtaForm from './components/sections/Section11CtaForm'
+import Section12Footer from './components/sections/Section12Footer'
 
 export default function App() {
-  const [sizeGuideOpen, setSizeGuideOpen] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [toastMessage, setToastMessage] = useState(null)
 
-  const handleSelectProduct = (product) => {
-    setSelectedProduct(product)
-    const pricingElem = document.getElementById('pricing-section')
-    if (pricingElem) {
-      pricingElem.scrollIntoView({ behavior: 'smooth' })
-    }
+  const handleAddToCart = (product) => {
+    setToastMessage(`Đã thêm "${product.name}" vào giỏ hàng`)
+    setTimeout(() => setToastMessage(null), 3000)
+  }
+
+  const handleSelectTier = (tier) => {
+    setToastMessage(`Bạn đã chọn gói: "${tier.name}"`)
+    setTimeout(() => setToastMessage(null), 3000)
   }
 
   return (
-    <div className="bg-[#FAF8F5] text-[#1A1614] min-h-screen selection:bg-[#E8DFD5] selection:text-[#0F172A] font-sans antialiased">
-      {/* Skip link for accessibility */}
-      <a
-        href="#pricing-section"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-[#0F172A] focus:text-[#FAF8F5] focus:px-4 focus:py-2 focus:text-xs focus:font-bold uppercase tracking-wider"
-      >
-        Chuyển đến đặt hàng
-      </a>
+    <div className="bg-[#2C201A] text-white min-h-screen font-sans selection:bg-[#D4AF37] selection:text-[#2C201A] overflow-x-hidden">
+      
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-[#D4AF37] text-[#2C201A] px-5 py-3 rounded-[3px] shadow-2xl font-sans text-xs font-bold uppercase tracking-wider flex items-center gap-2 animate-bounce">
+          <span>✓</span>
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
-      {/* Sticky Luxury Navbar with QuanNguyenS Branding */}
-      <Navbar
-        onOpenSizeGuide={() => setSizeGuideOpen(true)}
-      />
+      {/* 1. Phần 1: Header (Đầu trang) */}
+      <Section1Header />
 
-      {/* Main Experience Flow */}
       <main id="main-content">
-        {/* 1. Hero Section (Headline, Model Image + Macro Fabric Inset, CTA) */}
-        <HeroSection onOpenSizeGuide={() => setSizeGuideOpen(true)} />
+        {/* 2. Phần 2: Hero Section (Phần đầu) */}
+        <Section2Hero />
 
-        {/* 2. Product Showcase Section (SẢN PHẨM NỔI BẬT - Tight 3-Column Grid) */}
-        <ProductEditSection
-          onOpenSizeGuide={() => setSizeGuideOpen(true)}
-          onSelectProductForOrder={handleSelectProduct}
-        />
+        {/* 3. Phần 3: Featured Products (Sản phẩm nổi bật) */}
+        <Section3FeaturedProducts onAddToCart={handleAddToCart} />
 
-        {/* 3. Benefit & Brand Manifesto Section (Well-formatted bullet points) */}
-        <BrandManifesto />
+        {/* 4. Phần 4: Feature Grid (Lưới tính năng) */}
+        <Section4FeatureGrid />
 
-        {/* 4. Fabric Story (Deep dive into 100% natural slub linen attributes) */}
-        <FabricStorySection />
+        {/* 5. Phần 5: Dark Contrast Section (Phần nền tối phản chiếu) */}
+        <Section5DarkContrast />
 
-        {/* 5. Editorial Stories & Craftsmanship */}
-        <EditorialFeatureStories />
+        {/* 6. Phần 6: Reversed Layout Section (Bố cục đảo ngược) */}
+        <Section6ReversedLayout />
 
-        {/* 6. Night Ritual Experience */}
-        <NightRitualSection />
+        {/* 7. Phần 7: Customer Story / Testimonial (Câu chuyện khách hàng) */}
+        <Section7CustomerStory />
 
-        {/* 7. Social Proof & Customer Reviews */}
-        <EditorialReviews />
+        {/* 8. Phần 8: Deep Feature / Value Section (Phần tính năng sâu hơn) */}
+        <Section8DeepFeature />
 
-        {/* 8. Pricing Tiers & Direct Checkout */}
-        <PricingSection
-          onOpenSizeGuide={() => setSizeGuideOpen(true)}
-          preselectedProduct={selectedProduct}
-        />
+        {/* 9. Phần 9: Large Block Text (Khối văn bản lớn) */}
+        <Section9LargeBlockText />
 
-        {/* 9. Fabric Care & FAQ */}
-        <CareFaqSection />
+        {/* 10. Phần 10: Comparison Table (Bảng so sánh) */}
+        <Section10ComparisonTable onSelectTier={handleSelectTier} />
+
+        {/* 11. Phần 11: Call to Action Form (Form đăng ký) */}
+        <Section11CtaForm />
       </main>
 
-      {/* 10. Cinematic Final CTA & Minimalist Footer */}
-      <FinalCtaFooter />
+      {/* 12. Phần 12: Footer (Chân trang) */}
+      <Section12Footer />
 
-      {/* Interactive Size Guide Modal */}
-      <SizeGuideModal
-        isOpen={sizeGuideOpen}
-        onClose={() => setSizeGuideOpen(false)}
-      />
     </div>
   )
 }
