@@ -1,129 +1,122 @@
 import { motion } from 'framer-motion'
-import { Moon, Coffee, BookOpen, Sun, Heart, CheckCircle2 } from 'lucide-react'
+import { Sparkles, Moon, Coffee, Heart, ArrowRight } from 'lucide-react'
 import lifestyleNightImg from '../../assets/images/lifestyle-night.jpg'
 
 export default function NightRitualSection() {
-  const timelineSteps = [
+  const steps = [
     {
-      time: '18:30',
-      title: 'Trở Về Nhà & Thả Lỏng',
-      desc: 'Trút bỏ hoàn toàn áp lực công việc, tiếng ồn phố thị bên ngoài cánh cửa.',
-      icon: Sun,
-    },
-    {
-      time: '20:00',
-      title: 'Tắm Nước Ấm & Chăm Sóc Bản Thân',
-      desc: 'Làn nước ấm nóng cuốn trôi sự mệt mỏi, xoa dịu các bó cơ căng thẳng.',
-      icon: Coffee,
-    },
-    {
-      time: '21:00',
-      title: 'Khoác Lên Pijama Đũi 10PM',
-      desc: 'Sợi đũi tự nhiên mát lành chạm nhẹ vào làn da. Cảm giác nhẹ tênh như không mặc.',
-      icon: Heart,
-      highlight: true,
-    },
-    {
-      time: '22:00',
-      title: 'Đọc Sách & Trà Hoa Cúc',
-      desc: 'Tận hưởng từng trang sách yêu thích bên ngọn đèn ngủ dịu ấm áp.',
-      icon: BookOpen,
-    },
-    {
-      time: '22:30',
-      title: 'Tắt Đèn & Khép Lại Đêm',
-      desc: 'Thả lỏng tâm trí, chìm vào giấc ngủ tự nhiên sâu thẳm không mộng mị.',
+      time: '10:00 PM',
+      title: 'Tắt Ánh Sáng Xanh & Thả Lỏng',
+      desc: 'Rời xa màn hình công việc, nhâm nhi tách trà hoa cúc ấm và kích hoạt trạng thái thư giãn sâu của hệ thần kinh.',
       icon: Moon,
     },
     {
-      time: '23:00',
-      title: 'Giấc Ngủ Mát Lành Trọn Vẹn',
-      desc: 'Thức dậy vào sáng hôm sau tràn đầy năng lượng tươi mới.',
-      icon: CheckCircle2,
+      time: '10:15 PM',
+      title: 'Chạm Vào Làn Vải Mát Lành',
+      desc: 'Khoác lên mình bộ pijama QuanNguyenS. Cảm giác nhẹ tênh, mịn màng lập tức giải tỏa mọi căng thẳng trên da thịt.',
+      icon: Sparkles,
+    },
+    {
+      time: '10:30 PM',
+      title: 'Chìm Vào Giấc Ngủ Sâu',
+      desc: 'Nhiệt độ cơ thể tự điều hòa lý tưởng, duy trì nhịp thở thư thái cho một giấc ngủ không mộng mị tới sáng hôm sau.',
+      icon: Heart,
     },
   ]
 
   return (
     <section
       id="night-ritual"
-      aria-label="Hành trình đêm nghi thức giấc ngủ 10PM"
-      className="bg-[#1A1614] text-[#FAF8F5] py-24 md:py-36 relative overflow-hidden"
+      aria-label="Nghi thức giấc ngủ 10PM"
+      className="bg-[#FAF8F5] py-20 sm:py-28 md:py-36 border-b border-[#E8DFD5] relative overflow-hidden"
     >
       <div className="max-w-[1280px] mx-auto px-6 md:px-12">
-        {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-20">
-          <span className="text-[11px] font-bold tracking-[0.25em] text-[#C5A059] uppercase block mb-3">
-            CINEMATIC LIFESTYLE — A NIGHT IN 10PM
-          </span>
-          <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl font-normal text-[#FAF8F5] tracking-tight mb-6">
-            Nghi Thức Giấc Ngủ Đêm <br />
-            <span className="font-serif-italic text-[#E8DFD5]">The 10PM Night Ritual</span>
-          </h2>
-          <p className="text-sm md:text-base text-[#E8DFD5]/80 font-light leading-relaxed">
-            Chúng tôi không chỉ bán một bộ pijama. Chúng tôi mang đến nghi thức trở về với chính mình — thảnh thơi, nhẹ nhàng và ngập tràn tình yêu thương.
-          </p>
-        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
+          
+          {/* Left Column: Image with Elegant Floating Vignette (6 cols) */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="lg:col-span-6 relative"
+          >
+            <div className="relative rounded-[3px] overflow-hidden shadow-luxury border border-[#E8DFD5]">
+              <img
+                src={lifestyleNightImg}
+                alt="Nghi thức giấc ngủ thư thái cùng pijama cao cấp"
+                className="w-full h-[460px] sm:h-[540px] md:h-[580px] object-cover object-center"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#1A1614]/70 via-transparent to-transparent pointer-events-none" />
+              
+              <div className="absolute bottom-6 left-6 right-6 text-[#FAF8F5]">
+                <span className="text-[10px] font-bold tracking-[0.25em] text-[#C5A059] uppercase block mb-1">
+                  10PM BEDTIME RITUAL
+                </span>
+                <p className="font-serif text-xl sm:text-2xl font-normal italic">
+                  “Một đêm ngon giấc bắt đầu từ khoảnh khắc bạn khoác lên sự dịu dàng.”
+                </p>
+              </div>
+            </div>
+          </motion.div>
 
-        {/* Grid Showcase: Left Timeline (6 cols) & Right Atmospheric Photo (6 cols) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center">
-          {/* Left Timeline Cards */}
-          <div className="lg:col-span-6 space-y-4">
-            {timelineSteps.map((step, index) => {
-              const Icon = step.icon
-              return (
-                <motion.div
-                  key={step.time}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, margin: '-40px' }}
-                  transition={{ duration: 0.5, delay: index * 0.08 }}
-                  className={`p-5 rounded-[2px] border transition-all ${
-                    step.highlight
-                      ? 'bg-[#26201C] border-[#C5A059] shadow-luxury'
-                      : 'bg-[#1A1614] border-[#4A3F38]/50 hover:border-[#8C7E74]/60'
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="flex flex-col items-center shrink-0">
-                      <span className="font-serif text-xl font-bold text-[#C5A059] tracking-wider">
-                        {step.time}
-                      </span>
-                      <Icon className="w-4 h-4 text-[#8C7E74] mt-1" />
+          {/* Right Column: Step by step Timeline (6 cols) */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="lg:col-span-6 flex flex-col justify-center"
+          >
+            <span className="text-[11px] font-bold tracking-[0.25em] text-[#C5A059] uppercase block mb-3">
+              NGHI THỨC GIẤC NGỦ — 10PM NIGHT RITUAL
+            </span>
+
+            <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-[#1A1614] mb-6 leading-tight">
+              3 Bước Cho Một Đêm <br />
+              <span className="font-serif-italic text-[#8C7E74]">Trọn Vẹn Bình Yên</span>
+            </h2>
+
+            <p className="text-base text-[#4A423C] font-light leading-relaxed mb-10">
+              Trút bỏ âu lo, khoác lên bộ pijama mát lạnh, đốt ngọn nến thơm và để cơ thể được vỗ về dịu êm.
+            </p>
+
+            {/* Timeline Item list */}
+            <div className="space-y-6">
+              {steps.map((step, idx) => {
+                const Icon = step.icon
+                return (
+                  <div
+                    key={idx}
+                    className="flex items-start gap-4 p-4 rounded-[3px] bg-[#FFFFFF] border border-[#E8DFD5] hover:border-[#8C7E74] transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-[2px] bg-[#F5F0EB] text-[#1A1614] flex items-center justify-center shrink-0 border border-[#E8DFD5] font-serif font-bold text-xs">
+                      {step.time.split(' ')[0]}
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold tracking-wide text-[#FAF8F5] mb-1">
+                      <h4 className="font-serif text-base font-bold text-[#1A1614] mb-1">
                         {step.title}
                       </h4>
-                      <p className="text-xs text-[#E8DFD5]/80 font-light leading-relaxed">
+                      <p className="text-xs sm:text-sm text-[#4A423C] font-light leading-relaxed">
                         {step.desc}
                       </p>
                     </div>
                   </div>
-                </motion.div>
-              )
-            })}
-          </div>
-
-          {/* Right Atmospheric Lifestyle Visual */}
-          <div className="lg:col-span-6 relative">
-            <div className="relative rounded-[3px] overflow-hidden border border-[#4A3F38] shadow-luxury">
-              <img
-                src={lifestyleNightImg}
-                alt="Phụ nữ tận hưởng đêm yên bình cùng pijama đũi 10PM"
-                className="w-full h-[520px] sm:h-[600px] object-cover object-center"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#1A1614]/80 via-transparent to-transparent pointer-events-none" />
-              
-              <div className="absolute bottom-8 left-8 right-8 bg-[#1A1614]/85 backdrop-blur-md p-6 rounded-[2px] border border-[#4A3F38]">
-                <span className="text-[10px] font-bold tracking-[0.25em] text-[#C5A059] uppercase block mb-1">
-                  10PM NIGHT EXPERIENCE
-                </span>
-                <p className="font-serif text-xl text-[#FAF8F5] font-light leading-snug">
-                  “Cảm giác sau một ngày dài mệt mỏi được thay bộ đũi 10PM thơm mùi nắng nhẹ là khoảnh khắc bình yên nhất trong ngày.”
-                </p>
-              </div>
+                )
+              })}
             </div>
-          </div>
+
+            <div className="mt-8">
+              <a
+                href="#pricing-section"
+                className="inline-flex items-center gap-2.5 bg-[#1A1614] hover:bg-[#2C2420] text-[#FAF8F5] text-xs font-bold tracking-[0.2em] uppercase px-7 py-4 rounded-[2px] transition-colors"
+              >
+                <span>BẮT ĐẦU NGHI THỨC GIẤC NGỦ 10PM</span>
+                <ArrowRight className="w-4 h-4 text-[#C5A059]" />
+              </a>
+            </div>
+          </motion.div>
+
         </div>
       </div>
     </section>

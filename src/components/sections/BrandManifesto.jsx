@@ -8,8 +8,8 @@ export default function BrandManifesto() {
 
   const benefits = [
     {
-      title: 'Thiết kế đồ ngủ vải đũi tự nhiên cao cấp',
-      desc: '100% sợi đũi thiên nhiên (linen / slub silk blend), may giấu chỉ French seams không cọ xát da, đính cúc mộc dừa thủ công sang trọng.',
+      title: 'Thiết kế đồ ngủ vải tự nhiên cao cấp',
+      desc: '100% sợi tự nhiên tuyển chọn kỹ lưỡng, may giấu chỉ French seams không cọ xát da, đính cúc mộc dừa thủ công sang trọng.',
       icon: Sparkles,
     },
     {
@@ -51,12 +51,12 @@ export default function BrandManifesto() {
               <span className="font-serif-italic text-[#8C7E74]">yêu thương chính mình.</span>”
             </h2>
             <p className="text-sm sm:text-base text-[#475569] font-light leading-relaxed">
-              Thương hiệu <strong className="font-semibold text-[#1A1614]">QuanNguyenS</strong> kiến tạo dòng sản phẩm 10PM Pijama Đũi từ tình yêu sâu sắc với chất liệu tự nhiên thuần khiết của Việt Nam. Mỗi bộ đồ ngủ là một lời vỗ về dịu dàng cho cơ thể sau ngày dài bận rộn.
+              Thương hiệu <strong className="font-semibold text-[#1A1614]">QuanNguyenS</strong> kiến tạo dòng sản phẩm 10PM Pijama từ tình yêu sâu sắc với chất liệu tự nhiên thuần khiết. Mỗi bộ đồ ngủ là một lời vỗ về dịu dàng cho cơ thể sau ngày dài bận rộn.
             </p>
           </motion.div>
         </div>
 
-        {/* Well-Formatted Benefit Bullet Points (Tight, balanced, 2x2 grid) */}
+        {/* Well-Formatted Benefit Bullet Points */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 max-w-5xl mx-auto">
           {benefits.map((item, index) => {
             const Icon = item.icon
@@ -92,7 +92,7 @@ export default function BrandManifesto() {
           className="mt-10 max-w-4xl mx-auto bg-[#F5F0EB] p-6 sm:p-8 rounded-[3px] border border-[#E8DFD5] text-center"
         >
           <p className="font-serif text-lg sm:text-xl text-[#1A1614] italic mb-3">
-            “Cảm giác chạm làn da vào thớ vải đũi mát lạnh lúc 10 giờ đêm là khoảnh khắc kỳ diệu nhất trong ngày.”
+            “Cảm giác chạm làn da vào thớ vải mát lạnh lúc 10 giờ đêm là khoảnh khắc kỳ diệu nhất trong ngày.”
           </p>
           <span className="text-[11px] font-bold tracking-[0.2em] text-[#64748B] uppercase">
             — ĐỘI NGŨ THIẾT KẾ QUANNGUYENS

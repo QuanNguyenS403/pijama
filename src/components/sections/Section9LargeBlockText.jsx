@@ -4,10 +4,10 @@ export default function Section9LargeBlockText() {
   return (
     <section
       id="section-large-block-text"
-      aria-label="Large Block Text Section"
-      className="py-24 sm:py-28 md:py-32 bg-[#631521] bg-weave-pattern text-white border-b border-white/10 relative overflow-hidden text-center"
+      aria-label="Brand Manifesto Section"
+      className="py-24 sm:py-28 md:py-32 bg-[#631521] text-white border-b border-white/10 relative overflow-hidden text-center"
     >
-      {/* Decorative wood grain / woven subtle overlay bands */}
+      {/* Decorative overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#4A0D17]/80 via-transparent to-[#4A0D17]/80 pointer-events-none" />
       <div className="absolute inset-0 bg-noise opacity-30 pointer-events-none" />
 
@@ -18,35 +18,45 @@ export default function Section9LargeBlockText() {
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          {/* Subtitle tag */}
+          {/* Label */}
           <span className="font-serif text-sm sm:text-base font-semibold tracking-[0.3em] text-[#D4AF37] uppercase block mb-4">
-            Bản Tuyên Ngôn Nghề Nghiệp
+            Brand Manifesto
           </span>
 
-          {/* Tiêu đề: Tiêu đề serif lớn màu trắng: "AUTHENTICITY & CRAFTSMANSHIP" */}
+          {/* Main headline */}
           <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold text-white tracking-tight leading-[1.08] mb-8">
             AUTHENTICITY & CRAFTSMANSHIP
           </h2>
 
           <div className="w-24 h-[2px] bg-[#D4AF37] mx-auto mb-10" />
 
-          {/* Mô tả: Văn bản mô tả dài inter tập trung vào giá trị thủ công, nguồn gốc nguyên liệu và cam kết chất lượng */}
+          {/* Manifesto body */}
           <div className="space-y-6 text-base sm:text-lg md:text-xl font-sans text-white/90 font-light leading-relaxed text-balance">
             <p>
-              Chúng tôi tin rằng sự xa xỉ thực thụ trong thế giới hiện đại bắt nguồn từ tính nguyên bản và sự thuần khiết. Mỗi sợi vải đũi mộc được thu hoạch từ những cánh đồng canh tác hữu cơ bền vững, trải qua quá trình tuyển lựa nghiêm ngặt và ủ men tự nhiên không sử dụng hóa chất tẩy trắng công nghiệp.
+              Có những ngày bạn không muốn mặc gì quá phức tạp — Không muốn chọn lựa giữa thoải mái và trông đẹp — Không muốn thay đồ chỉ để bước ra ngoài mua cà phê
             </p>
             <p>
-              Dưới bàn tay khéo léo của các nghệ nhân dệt thoi truyền thống, từng đường đan cài sợi ngang sợi dọc được tính toán chuẩn xác để tạo nên cấu trúc vi xốp rỗng đặc trưng. Đó là nơi không khí tự do lưu thông, mang lại cảm giác mát dịu tức thì khi chạm vào làn da, đồng thời lưu giữ độ bền vượt trội qua năm tháng.
+              QuanNguyenS được tạo ra cho những ngày đó — Lấy cảm hứng từ phong cách sống châu Âu — nơi người ta mặc pijama lụa để đi chợ sáng, mặc set vải nhẹ để ra quán, và không ai thấy điều đó là lạ — chúng tôi mang triết lý đó về Hà Nội
             </p>
             <p>
-              Cam kết chất lượng của chúng tôi là lời hứa không bao giờ thỏa hiệp với sự vội vã. Mỗi sản phẩm khi đến tay bạn là một tác phẩm dệt may trọn vẹn sự tận tâm, tôn vinh vẻ đẹp chân thật của cuộc sống và nâng niu từng giấc ngủ an lành của mọi gia đình.
+              Chất liệu mềm mại tự nhiên — Đường cắt tinh tế — Màu sắc có chủ ý — Một bộ đồ, vô số câu chuyện
             </p>
           </div>
 
-          <div className="mt-12 flex items-center justify-center gap-4 text-xs font-sans tracking-[0.2em] uppercase text-[#D4AF37]">
-            <span>◆ 100% NGUYÊN BẢN</span>
-            <span>◆ BẢO HÀNH TRỌN ĐỜI ĐƯỜNG MAY</span>
-            <span>◆ THÂN THIỆN MÔI TRƯỜNG</span>
+          {/* Brand slogan */}
+          <div className="mt-10 mb-6">
+            <p className="font-serif text-2xl sm:text-3xl font-bold text-[#D4AF37] italic">
+              "Dressed for Life — Even at Home"
+            </p>
+            <p className="font-sans text-sm text-white/60 mt-2 tracking-wider">
+              Mặc đẹp — kể cả khi ở nhà
+            </p>
+          </div>
+
+          <div className="mt-8 flex items-center justify-center gap-4 text-xs font-sans tracking-[0.2em] uppercase text-[#D4AF37]">
+            <span>◆ KHÔNG PHẢI ĐỒ NGỦ</span>
+            <span>◆ LÀ ĐỒ SỐNG</span>
+            <span>◆ EUROPEAN CASUAL LUXURY</span>
           </div>
         </motion.div>
       </div>

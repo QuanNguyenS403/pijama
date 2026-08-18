@@ -32,7 +32,7 @@ export default function EditorialFeatureStories() {
               <div className="relative rounded-[3px] overflow-hidden shadow-luxury border border-[#E8DFD5]">
                 <img
                   src={fabricMacroImg}
-                  alt="Vải đũi thoáng mát cả đêm dài"
+                  alt="Chất liệu tự nhiên thoáng mát cả đêm dài"
                   className="w-full h-[420px] sm:h-[500px] object-cover object-center"
                 />
                 {/* Giant Serif Number Overlay */}
@@ -59,16 +59,16 @@ export default function EditorialFeatureStories() {
               </h2>
 
               <p className="text-base text-[#4A423C] font-light leading-relaxed mb-8">
-                Vải đũi 100% thiên nhiên có cấu trúc sợi vi xốp đặc biệt, tự động hút ẩm lên đến 20% trọng lượng cơ thể — giải phóng hơi nóng dư thừa cho giấc ngủ luôn mát lành sâu thẳm.
+                Chất liệu sợi tự nhiên có cấu trúc vi xốp đặc biệt, tự động hút ẩm lên đến 20% trọng lượng cơ thể — giải phóng hơi nóng dư thừa cho giấc ngủ luôn mát lành sâu thẳm.
               </p>
 
               <div className="bg-[#F5F0EB] p-5 rounded-[2px] border border-[#E8DFD5] mb-8">
                 <div className="flex items-center gap-3 text-xs font-bold tracking-wider text-[#1A1614] mb-2 uppercase">
                   <Sparkles className="w-4 h-4 text-[#C5A059]" />
-                  <span>SỰ KHÁC BIỆT CỦA SỢI ĐŨI 10PM</span>
+                  <span>SỰ KHÁC BIỆT CỦA CHẤT LIỆU 10PM</span>
                 </div>
                 <p className="text-xs text-[#4A423C] leading-relaxed">
-                  Cảm giác "nhẹ tênh như không mặc" giúp cơ thể hô hấp tự nhiên mà chỉ sợi đũi thuần khiết mới có thể mang lại.
+                  Cảm giác "nhẹ tênh như không mặc" giúp cơ thể hô hấp tự nhiên mà chỉ chất liệu thuần khiết mới có thể mang lại.
                 </p>
               </div>
 
@@ -93,14 +93,14 @@ export default function EditorialFeatureStories() {
             {/* Background Image Banner */}
             <img
               src={heroCampaignImg}
-              alt="Phụ nữ thư giãn cùng pijama đũi mềm mại"
+              alt="Phụ nữ thư giãn cùng pijama mềm mại"
               className="absolute inset-0 w-full h-full object-cover object-center filter brightness-[0.7]"
             />
 
             {/* Dark Vignette Overlay */}
             <div className="absolute inset-0 bg-gradient-to-r from-[#1A1614]/90 via-[#1A1614]/50 to-transparent pointer-events-none" />
 
-            {/* Floating Editorial Text Box (Asymmetric Right Overlay) */}
+            {/* Floating Editorial Text Box */}
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               animate={inView2 ? { opacity: 1, y: 0 } : {}}
@@ -120,7 +120,7 @@ export default function EditorialFeatureStories() {
               </h2>
 
               <p className="text-sm sm:text-base text-[#E8DFD5]/90 font-light leading-relaxed mb-6">
-                Khác với các loại vải thông thường thô ráp theo năm tháng, sợi đũi tự nhiên 10PM đã qua xử lý giặt xả vi sinh lành tính — càng giặt càng trở nên mềm mịn và êm ái xoa dịu làn da.
+                Khác với các loại vải thông thường thô ráp theo năm tháng, chất liệu tự nhiên 10PM đã qua xử lý giặt xả vi sinh lành tính — càng giặt càng trở nên mềm mịn và êm ái xoa dịu làn da.
               </p>
 
               <ul className="space-y-2.5 mb-8 text-xs text-[#E8DFD5]">
@@ -175,7 +175,7 @@ export default function EditorialFeatureStories() {
               </h2>
 
               <p className="text-base text-[#4A423C] font-light leading-relaxed mb-6">
-                Hơn cả một bộ đồ ngủ, Pijama Đũi 10PM đại diện cho một phong cách sống chỉn chu. Đường may giấu tinh tế (French seams), cúc mộc dừa thủ công mộc mạc mà sang trọng — mặc ở nhà hay dạo phố sớm đều tràn đầy tự tin.
+                Hơn cả một bộ đồ ngủ, Pijama 10PM đại diện cho một phong cách sống chỉn chu. Đường may giấu tinh tế (French seams), cúc mộc dừa thủ công mộc mạc mà sang trọng — mặc ở nhà hay dạo phố sớm đều tràn đầy tự tin.
               </p>
 
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#E8DFD5] mb-8 text-xs text-[#26201C]">

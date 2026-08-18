@@ -40,7 +40,7 @@ export default function SizeGuideModal({ isOpen, onClose }) {
             Bảng Chọn Kích Cỡ Chuẩn 10PM
           </h3>
           <p className="text-sm text-[#4A423C] mb-6 leading-relaxed">
-            Form dáng Pijama Đũi 10PM được thiết kế <span className="font-semibold text-[#1A1614]">Relaxed Fit</span> rủ suông tự nhiên, thoải mái tối đa cho giấc ngủ. Quý khách có thể tự tin chọn size theo bảng dưới đây.
+            Form dáng Pijama 10PM được thiết kế <span className="font-semibold text-[#1A1614]">Relaxed Fit</span> rủ suông tự nhiên, thoải mái tối đa cho giấc ngủ. Quý khách có thể tự tin chọn size theo bảng dưới đây.
           </p>
 
           {/* Table */}

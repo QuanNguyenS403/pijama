@@ -1,128 +1,131 @@
 import { motion } from 'framer-motion'
-import productCollectionImg from '../../assets/images/product-collection.jpg'
-
-// Needle & Thread Icon
-function NeedleThreadIcon({ className = 'w-5 h-5' }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M4 20L18.5 5.5a2.121 2.121 0 0 0-3-3L1 17l3 3z" />
-      <path d="M18.5 5.5L20 4a1.5 1.5 0 0 1 2 2l-1.5 1.5" />
-      <circle cx="17.5" cy="6.5" r="0.75" fill="currentColor" />
-      <path d="M17.5 6.5C19 9 22 10 22 14c0 3-2 5-5 5-2 0-3.5-1-4-2.5" />
-    </svg>
-  )
-}
+import { useNavigate } from 'react-router-dom'
 
 export default function Section8DeepFeature() {
-  const benefits = [
+  const tiers = [
     {
-      title: 'Bền Bỉ Theo Thời Gian',
-      englishTitle: 'Made to Last',
-      desc: 'Cấu trúc dệt sợi kép tăng cường độ dai bền, không xù lông và càng giặt nhiều lần sợi đũi càng mềm mại, dẻo dai.',
+      emoji: '🌿',
+      name: 'ENTRY SET',
+      sub: 'Trải nghiệm đầu tiên',
+      desc: 'Set pijama phong cách châu Âu, dáng suông',
+      colors: 'Pink Stripe / Navy Plaid',
+      price: 'Từ 390.000đ',
+      note: 'Phù hợp: Muốn thử phong cách châu Âu thanh lịch',
+      cta: 'THỬ NGAY',
+      highlight: false,
+      slug: 'the-classic-set',
     },
     {
-      title: 'Nguồn Gốc Đạo Đức & Minh Bạch',
-      englishTitle: 'Ethically Sourced',
-      desc: 'Cam kết 100% thu mua nguyên liệu từ nông hộ truyền thống với mức giá công bằng, bảo vệ nguồn nước và đất canh tác tự nhiên.',
+      emoji: '✦',
+      name: 'SIGNATURE SET',
+      sub: 'Bán chạy nhất',
+      desc: 'Set pijama cao cấp, chi tiết viền tương phản',
+      colors: 'Burgundy / Sage / Dusty Blue',
+      price: 'Từ 550.000đ',
+      note: 'Phù hợp: Muốn mặc cả ra ngoài',
+      cta: 'MUA NGAY — BÁN CHẠY',
+      highlight: true,
+      slug: 'the-cafe-look',
     },
     {
-      title: 'Đường May Giấu Chỉ Tinh Xảo',
-      englishTitle: 'French Seams Tailoring',
-      desc: 'Mọi mép vải đều được may cuộn giấu đường biên cẩn thận, loại bỏ hoàn toàn cảm giác cọ xát gây khó chịu cho làn da.',
-    },
-    {
-      title: 'Kháng Khuẩn & Khử Mùi Tự Nhiên',
-      englishTitle: 'Natural Antibacterial',
-      desc: 'Chất liệu đũi tự nhiên chứa hoạt chất kháng ẩm mốc, giữ cho trang phục luôn thơm tho và sạch sẽ suốt ngày dài.',
+      emoji: '◆',
+      name: 'PREMIUM EDIT',
+      sub: 'Phiên bản giới hạn',
+      desc: 'Set pijama phiên bản giới hạn, dáng wide-leg',
+      colors: 'Charcoal / Deep Wine / Ecru',
+      price: 'Từ 750.000đ',
+      note: 'Phù hợp: Muốn đẳng cấp, cá nhân hóa',
+      cta: 'XEM PHIÊN BẢN GIỚI HẠN',
+      highlight: false,
+      slug: 'the-evening-edit',
     },
   ]
+
+  const navigate = useNavigate()
 
   return (
     <section
       id="section-deep-feature"
-      aria-label="Deep Feature Value Section"
-      className="py-20 sm:py-24 md:py-28 bg-[#631521] text-white border-b border-white/10 relative overflow-hidden"
+      aria-label="Size Guide and Pricing"
+      className="py-20 sm:py-24 md:py-28 bg-[#FAF8F5] text-[#2C201A] border-b border-[#E8DFD5] relative overflow-hidden"
     >
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-          
-          {/* Bên trái: Hình ảnh một kết cấu vải dệt cận cảnh */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
-            className="lg:col-span-5"
-          >
-            <div className="relative rounded-[4px] overflow-hidden shadow-2xl border-2 border-[#D4AF37]/30 bg-[#4A0D17]">
-              <img
-                src={productCollectionImg}
-                alt="Cận cảnh kết cấu vải dệt đũi mộc cao cấp"
-                className="w-full h-[450px] sm:h-[520px] object-cover object-center"
-              />
-              <div className="absolute top-4 left-4 bg-[#2C201A]/90 backdrop-blur-sm text-[#D4AF37] border border-[#D4AF37]/40 px-3 py-1 text-xs font-serif font-bold uppercase">
-                Chất Lượng Thượng Hạng
-              </div>
-            </div>
-          </motion.div>
 
-          {/* Bên phải: Tiêu đề serif lớn màu trắng + Designed for Comfort, Crafted for Style + danh sách lợi ích */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            className="lg:col-span-7 flex flex-col justify-center"
-          >
-            <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#D4AF37] uppercase block mb-2">
-              Giá Trị Cốt Lõi
-            </span>
-
-            {/* Tiêu đề serif lớn màu trắng: "CHẤT LƯỢNG VƯỢT TRỘI" và "VẢI DỆT ĐÍCH THỰC" */}
-            <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-[1.12] mb-3">
-              CHẤT LƯỢNG VƯỢT TRỘI
-            </h2>
-            <h3 className="font-serif text-2xl sm:text-3xl font-semibold text-[#D4AF37] italic mb-6">
-              VẢI DỆT ĐÍCH THỰC
-            </h3>
-
-            {/* Văn bản mô tả "Designed for Comfort, Crafted for Style" */}
-            <p className="font-sans text-base sm:text-lg text-white/90 font-medium mb-8">
-              Thiết kế vì sự thoải mái, kiến tạo từ phong cách — <span className="font-light text-white/80">Designed for Comfort, Crafted for Style. Chúng tôi tỉ mỉ trong từng chi tiết để mang đến giá trị đích thực cho người sử dụng.</span>
-            </p>
-
-            {/* Danh sách các lợi ích với biểu tượng kim-chỉ */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-white/10">
-              {benefits.map((b) => (
-                <div key={b.title} className="flex items-start gap-3.5">
-                  <div className="w-9 h-9 rounded-[2px] bg-[#D4AF37] text-[#2C201A] flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                    <NeedleThreadIcon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="font-sans text-sm font-bold text-white block">
-                      {b.title}
-                    </span>
-                    <span className="text-[10px] font-sans text-[#D4AF37] uppercase tracking-wider block -mt-0.5 mb-1">
-                      {b.englishTitle}
-                    </span>
-                    <p className="text-xs text-white/75 font-sans leading-relaxed">
-                      {b.desc}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
+        {/* Header */}
+        <div className="text-center max-w-2xl mx-auto mb-16">
+          <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
+            CHỌN BỘ PHÙ HỢP VỚI BẠN
+          </span>
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#1A1614] tracking-tight">
+            Tìm bộ dành cho bạn
+          </h2>
+          <p className="font-sans text-sm sm:text-base text-[#4A3F38] mt-3 leading-relaxed">
+            QuanNguyenS thiết kế cho mọi dáng người — không phải chỉ cho người mặc đẹp sẵn
+          </p>
+          <div className="w-16 h-[2px] bg-[#D4AF37] mx-auto mt-4" />
         </div>
+
+        {/* Pricing grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+          {tiers.map((tier, idx) => (
+            <motion.div
+              key={tier.name}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: idx * 0.15 }}
+              className={`rounded-[4px] p-8 flex flex-col justify-between border transition-all duration-300 ${
+                tier.highlight
+                  ? 'bg-[#631521] text-white border-[#D4AF37] shadow-2xl lg:-translate-y-2'
+                  : 'bg-white text-[#2C201A] border-[#E8DFD5] shadow-sm hover:shadow-lg'
+              }`}
+            >
+              {tier.highlight && (
+                <div className="text-center mb-4">
+                  <span className="inline-block bg-[#D4AF37] text-[#2C201A] text-[10px] font-sans font-bold tracking-widest px-4 py-1 rounded-[2px] uppercase">
+                    BÁN CHẠY NHẤT
+                  </span>
+                </div>
+              )}
+
+              <div>
+                <div className="text-3xl mb-3">{tier.emoji}</div>
+                <h3 className={`font-serif text-xl font-bold mb-1 ${tier.highlight ? 'text-[#D4AF37]' : 'text-[#631521]'}`}>
+                  {tier.name}
+                </h3>
+                <span className={`text-xs font-sans uppercase tracking-wider block mb-4 ${tier.highlight ? 'text-white/70' : 'text-[#8C7E74]'}`}>
+                  {tier.sub}
+                </span>
+
+                <p className={`font-sans text-sm leading-relaxed mb-2 ${tier.highlight ? 'text-white/90' : 'text-[#4A3F38]'}`}>
+                  {tier.desc}
+                </p>
+                <p className={`font-sans text-xs mb-4 ${tier.highlight ? 'text-white/60' : 'text-[#8C7E74]'}`}>
+                  Màu sắc: {tier.colors}
+                </p>
+
+                <div className={`text-2xl font-serif font-bold mb-2 ${tier.highlight ? 'text-white' : 'text-[#631521]'}`}>
+                  {tier.price}
+                </div>
+                <p className={`text-xs font-sans italic ${tier.highlight ? 'text-white/60' : 'text-[#8C7E74]'}`}>
+                  {tier.note}
+                </p>
+              </div>
+
+              <button
+                onClick={() => navigate(`/san-pham/${tier.slug}`)}
+                className={`mt-6 w-full py-3.5 rounded-[2px] font-sans text-xs font-bold tracking-widest uppercase transition-all duration-200 ${
+                  tier.highlight
+                    ? 'bg-white text-[#D4AF37] border-2 border-[#D4AF37] hover:bg-[#FAF8F5] hover:text-[#B8860B] hover:border-[#B8860B] hover:shadow-gold-glow shadow-lg'
+                    : 'bg-[#631521] text-white hover:bg-[#4A0D17]'
+                }`}
+              >
+                {tier.cta}
+              </button>
+            </motion.div>
+          ))}
+        </div>
+
       </div>
     </section>
   )

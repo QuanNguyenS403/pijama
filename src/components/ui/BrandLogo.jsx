@@ -32,7 +32,7 @@ export default function BrandLogo({ variant = 'horizontal', className = '', colo
             QuanNguyenS
           </span>
           <span className="text-[8px] font-sans font-semibold tracking-[0.25em] text-[#64748B] uppercase mt-0.5">
-            10PM Pijama Đũi
+            10PM Sleepwear
           </span>
         </div>
       </div>
@@ -62,7 +62,7 @@ export default function BrandLogo({ variant = 'horizontal', className = '', colo
           </span>
         </div>
         <span className={`text-[8px] md:text-[9px] font-sans uppercase tracking-[0.25em] ${subColor} mt-1 font-semibold`}>
-          Vải Đũi Tự Nhiên Cao Cấp
+          Chất Liệu Tự Nhiên Cao Cấp
         </span>
       </div>
     </div>

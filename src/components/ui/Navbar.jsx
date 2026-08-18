@@ -25,10 +25,10 @@ export default function Navbar({ onOpenSizeGuide, cartCount = 2, onOpenCart }) {
   ]
 
   const quickSearchSuggestions = [
-    'Pijama Đũi Dài Kẻ Sọc Navy',
+    'Pijama Dài Kẻ Sọc Navy',
     'Bộ Pijama Sọc Hồng Pastel',
-    'Bộ Đũi Trắng Ngà Classic',
-    'Pijama Đũi Cộc Mát Lành',
+    'Bộ Pijama Trắng Ngà Classic',
+    'Pijama Cộc Mát Lành',
     'Bảng Size Pijama Nam Nữ'
   ]
 

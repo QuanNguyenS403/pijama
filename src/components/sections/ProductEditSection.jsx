@@ -28,7 +28,7 @@ export default function ProductEditSection({ onOpenSizeGuide, onSelectProductFor
       className="bg-[#FAF8F5] py-14 sm:py-18 md:py-24 border-b border-[#E8DFD5] relative"
     >
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10">
-        {/* Section Header: Compact, clean, solves excessive whitespace */}
+        {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-12 gap-4 pb-4 border-b border-[#E8DFD5]">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
@@ -38,7 +38,6 @@ export default function ProductEditSection({ onOpenSizeGuide, onSelectProductFor
               </span>
             </div>
 
-            {/* Clear, smaller heading as requested: SẢN PHẨM NỔI BẬT */}
             <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-[#1A1614] tracking-tight">
               SẢN PHẨM NỔI BẬT
             </h2>
@@ -79,7 +78,7 @@ export default function ProductEditSection({ onOpenSizeGuide, onSelectProductFor
           </div>
         </div>
 
-        {/* Tight, Well-Balanced 3-Column Grid */}
+        {/* 3-Column Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7 lg:gap-8">
           {filteredProducts.map((product, index) => (
             <motion.div
@@ -93,21 +92,28 @@ export default function ProductEditSection({ onOpenSizeGuide, onSelectProductFor
               {/* Product Visual Container */}
               <div className="relative aspect-[4/3.8] bg-[#F5F0EB] overflow-hidden">
                 <img
-                  src={product.image}
+                  src={
+                    product.image ||
+                    (Array.isArray(product.images)
+                      ? product.images[0]
+                      : (product.images?.[product.colors?.[0]?.name]?.[0] || Object.values(product.images || {})[0]?.[0]))
+                  }
                   alt={product.name}
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                 />
 
                 {/* Badge Overlay */}
-                <div className="absolute top-3 left-3 flex flex-col gap-1 z-10">
-                  <span className="bg-[#0F172A] text-[#FAF8F5] text-[9px] font-bold tracking-[0.16em] uppercase px-2.5 py-1 rounded-[2px]">
-                    {product.badge}
-                  </span>
-                </div>
+                {product.badge && (
+                  <div className="absolute top-3 left-3 flex flex-col gap-1 z-10">
+                    <span className="bg-[#0F172A] text-[#FAF8F5] text-[9px] font-bold tracking-[0.16em] uppercase px-2.5 py-1 rounded-[2px]">
+                      {product.badge}
+                    </span>
+                  </div>
+                )}
 
                 {/* Fabric Material Tag */}
                 <div className="absolute bottom-3 left-3 bg-[#FAF8F5]/90 backdrop-blur-sm text-[#1A1614] text-[9px] font-semibold tracking-wider px-2.5 py-1 rounded-[2px] border border-[#E8DFD5]">
-                  100% Vải Đũi Tự Nhiên
+                  100% Sợi Tự Nhiên
                 </div>
 
                 {/* Quick View Button on Hover */}
@@ -131,7 +137,7 @@ export default function ProductEditSection({ onOpenSizeGuide, onSelectProductFor
                     </span>
                     <div className="flex items-center gap-1 text-[#C5A059] text-[11px] font-bold">
                       <Star className="w-3 h-3 fill-current" />
-                      <span>5.0</span>
+                      <span>{product.rating || '5.0'}</span>
                     </div>
                   </div>
 
@@ -145,34 +151,18 @@ export default function ProductEditSection({ onOpenSizeGuide, onSelectProductFor
                 </div>
 
                 <div>
-                  {/* Color preview swatch & Size indicators */}
-                  <div className="flex items-center justify-between pt-3 pb-4 border-t border-[#F5F0EB]">
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className="w-4 h-4 rounded-full border border-black/20 shadow-xs inline-block"
-                        style={{ backgroundColor: product.colorHex }}
-                        title={product.colorName}
-                      />
-                      <span className="text-[11px] text-[#64748B] font-medium">
-                        {product.colorName.split('/')[0]}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1 text-[10px] text-[#64748B] font-semibold uppercase">
-                      <span>Size: S - 2XL</span>
-                    </div>
-                  </div>
-
                   {/* Price & Action Row */}
                   <div className="flex items-center justify-between pt-2">
                     <div>
                       <div className="flex items-baseline gap-2">
                         <span className="font-serif text-2xl font-bold text-[#0F172A]">
-                          {product.price}
+                          {typeof product.price === 'number' ? new Intl.NumberFormat('vi-VN').format(product.price) + '₫' : product.price}
                         </span>
-                        <span className="text-xs text-[#8C7E74] line-through">
-                          {product.originalPrice}
-                        </span>
+                        {product.originalPrice && (
+                          <span className="text-xs text-[#8C7E74] line-through">
+                            {typeof product.originalPrice === 'number' ? new Intl.NumberFormat('vi-VN').format(product.originalPrice) + '₫' : product.originalPrice}
+                          </span>
+                        )}
                       </div>
                       <span className="text-[9.5px] font-bold text-[#C5A059] bg-[#FAF8F5] px-1.5 py-0.5 rounded-[1px] border border-[#E8DFD5]">
                         -20% Ưu Đãi Mùa Hè
@@ -224,7 +214,7 @@ export default function ProductEditSection({ onOpenSizeGuide, onSelectProductFor
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
                 <img
-                  src={quickViewProduct.image}
+                  src={quickViewProduct.image || quickViewProduct.images?.[0]}
                   alt={quickViewProduct.name}
                   className="w-full h-72 object-cover rounded-[3px] border border-[#E8DFD5]"
                 />
@@ -232,18 +222,20 @@ export default function ProductEditSection({ onOpenSizeGuide, onSelectProductFor
                 <div className="flex flex-col justify-between">
                   <div>
                     <span className="text-[10px] font-bold tracking-widest text-[#C5A059] uppercase block mb-1">
-                      {quickViewProduct.badge} • 100% VẢI ĐŨI
+                      {quickViewProduct.badge || 'PREMIUM'} • CHẤT LIỆU TỰ NHIÊN
                     </span>
                     <h3 className="font-serif text-2xl font-normal text-[#1A1614] mb-2">
                       {quickViewProduct.name}
                     </h3>
                     <div className="flex items-baseline gap-2 mb-3">
                       <span className="font-serif text-2xl font-bold text-[#0F172A]">
-                        {quickViewProduct.price}
+                        {typeof quickViewProduct.price === 'number' ? new Intl.NumberFormat('vi-VN').format(quickViewProduct.price) + '₫' : quickViewProduct.price}
                       </span>
-                      <span className="text-xs text-[#8C7E74] line-through">
-                        {quickViewProduct.originalPrice}
-                      </span>
+                      {quickViewProduct.originalPrice && (
+                        <span className="text-xs text-[#8C7E74] line-through">
+                          {typeof quickViewProduct.originalPrice === 'number' ? new Intl.NumberFormat('vi-VN').format(quickViewProduct.originalPrice) + '₫' : quickViewProduct.originalPrice}
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-[#475569] font-light leading-relaxed mb-4">
                       {quickViewProduct.description}

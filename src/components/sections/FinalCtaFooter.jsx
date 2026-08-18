@@ -11,7 +11,7 @@ export default function FinalCtaFooter() {
         {/* Background Visual Overlay */}
         <img
           src={heroCampaignImg}
-          alt="QuanNguyenS Pijama Đũi Mát Lành"
+          alt="QuanNguyenS Pijama Mát Lành"
           className="absolute inset-0 w-full h-full object-cover object-center filter brightness-[0.25]"
         />
 
@@ -26,7 +26,7 @@ export default function FinalCtaFooter() {
             className="inline-flex items-center gap-2 bg-[#1E293B]/80 text-[#C5A059] px-3.5 py-1.5 rounded-[2px] mb-4 border border-[#C5A059]/30"
           >
             <span className="text-[10px] font-bold tracking-[0.25em] uppercase">
-              QUANNGUYENS • PIJAMA ĐŨI TỰ NHIÊN
+              QUANNGUYENS • PIJAMA CAO CẤP
             </span>
           </motion.div>
 
@@ -48,7 +48,7 @@ export default function FinalCtaFooter() {
             transition={{ delay: 0.2 }}
             className="text-sm sm:text-base text-[#E8DFD5]/90 font-light max-w-xl mx-auto mb-8 leading-relaxed"
           >
-            Trao cho bản thân và người thân yêu món quà của sự êm ái và giấc ngủ trọn vẹn nhất mỗi đêm cùng bộ pijama vải đũi cao cấp.
+            Trao cho bản thân và người thân yêu món quà của sự êm ái và giấc ngủ trọn vẹn nhất mỗi đêm cùng bộ pijama cao cấp.
           </motion.p>
 
           <motion.a
@@ -75,7 +75,7 @@ export default function FinalCtaFooter() {
                 <BrandLogo variant="horizontal" color="white" />
               </a>
               <p className="text-xs text-[#94A3B8] font-light max-w-sm leading-relaxed mb-6">
-                Thương hiệu thời trang đồ ngủ vải đũi tự nhiên cao cấp <strong className="text-[#FAF8F5] font-normal">QuanNguyenS</strong>. Tôn vinh nghệ thuật sống thảnh thơi, tự nhiên và chăm sóc trọn vẹn sức khỏe giấc ngủ người Việt.
+                Thương hiệu thời trang đồ ngủ cao cấp <strong className="text-[#FAF8F5] font-normal">QuanNguyenS</strong>. Tôn vinh nghệ thuật sống thảnh thơi, tự nhiên và chăm sóc trọn vẹn sức khỏe giấc ngủ người Việt.
               </p>
             </div>
 
@@ -103,7 +103,7 @@ export default function FinalCtaFooter() {
                 <li><a href="#hero" className="hover:text-[#FAF8F5] transition-colors">TRANG CHỦ</a></li>
                 <li><a href="#san-pham-noi-bat" className="hover:text-[#FAF8F5] transition-colors">BỘ SƯU TẬP</a></li>
                 <li><a href="#ve-chung-toi" className="hover:text-[#FAF8F5] transition-colors">VỀ CHÚNG TÔI</a></li>
-                <li><a href="#fabric-story" className="hover:text-[#FAF8F5] transition-colors">Chất Liệu Vải Đũi</a></li>
+                <li><a href="#fabric-story" className="hover:text-[#FAF8F5] transition-colors">Chất Liệu Tuyển Chọn</a></li>
                 <li><a href="#reviews-section" className="hover:text-[#FAF8F5] transition-colors">Đánh Giá Khách Hàng</a></li>
               </ul>
             </div>
@@ -116,7 +116,7 @@ export default function FinalCtaFooter() {
               <ul className="space-y-2.5 text-[#94A3B8]">
                 <li><a href="#pricing-section" className="hover:text-[#FAF8F5] transition-colors">Hướng Dẫn Chọn Size</a></li>
                 <li><a href="#pricing-section" className="hover:text-[#FAF8F5] transition-colors">Chính Sách Đổi Trả 30 Ngày</a></li>
-                <li><a href="#faq-section" className="hover:text-[#FAF8F5] transition-colors">Cách Giặt & Bảo Quản Đũi</a></li>
+                <li><a href="#faq-section" className="hover:text-[#FAF8F5] transition-colors">Cách Giặt & Bảo Quản</a></li>
                 <li><a href="#pricing-section" className="hover:text-[#FAF8F5] transition-colors">Tra Cứu Đơn Hàng</a></li>
               </ul>
             </div>
@@ -151,7 +151,7 @@ export default function FinalCtaFooter() {
         {/* Bottom Payment Icons & Copyright */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-[#64748B]">
           <div>
-            <p>© 2026 QuanNguyenS. All Rights Reserved. 10PM Pijama Đũi Tự Nhiên.</p>
+            <p>© 2026 QuanNguyenS. All Rights Reserved. 10PM Pijama.</p>
           </div>
 
           {/* Payment Method Badges */}

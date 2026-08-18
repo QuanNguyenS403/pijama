@@ -1,58 +1,35 @@
 import { motion } from 'framer-motion'
-import { Heart, Scale, Leaf } from 'lucide-react'
-
-// Custom Needle and Thread icon
-function NeedleThreadIcon({ className = 'w-6 h-6' }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      {/* Needle */}
-      <path d="M4 20L18.5 5.5a2.121 2.121 0 0 0-3-3L1 17l3 3z" />
-      <path d="M18.5 5.5L20 4a1.5 1.5 0 0 1 2 2l-1.5 1.5" />
-      {/* Eye hole */}
-      <circle cx="17.5" cy="6.5" r="0.75" fill="currentColor" />
-      {/* Thread loop */}
-      <path d="M17.5 6.5C19 9 22 10 22 14c0 3-2 5-5 5-2 0-3.5-1-4-2.5" />
-    </svg>
-  )
-}
+import { Wind, Droplets, Sparkles, Heart } from 'lucide-react'
 
 export default function Section4FeatureGrid() {
   const features = [
     {
+      icon: Wind,
+      title: 'Thoáng khí tự nhiên',
+      englishSubtitle: 'Naturally Breathable',
+      description:
+        'Chất vải được dệt thưa tự nhiên — thoáng theo từng nhịp thở mà không mỏng manh. Bạn sẽ mát về mùa hè, ấm vừa đủ về mùa thu. Cơ thể tự điều chỉnh, bạn không cần lo',
+    },
+    {
+      icon: Droplets,
+      title: 'Mềm hơn theo thời gian',
+      englishSubtitle: 'Gets Better with Wear',
+      description:
+        'Khác với chất liệu thông thường, vải tự nhiên càng giặt càng mềm. Một bộ QuanNguyenS sẽ trở thành người bạn thân nhất của bạn sau 3 tháng mặc',
+    },
+    {
+      icon: Sparkles,
+      title: 'Nhăn một cách có chủ ý',
+      englishSubtitle: 'Effortless Texture',
+      description:
+        'Bề mặt vải mịn màng, kết cấu gợn nhẹ tự nhiên — không phải lỗi, đó là đặc điểm. Tạo cảm giác effortless chic mà bạn không cần cố',
+    },
+    {
       icon: Heart,
-      isCustom: false,
-      title: '100% Dệt Thủ Công',
-      englishSubtitle: '100% Hand-woven',
-      description: 'Mỗi mét vải đũi được dệt tỉ mỉ trên khung cửi truyền thống, tạo nên kết cấu vi xốp độc bản không máy móc công nghiệp nào có thể sao chép.',
-    },
-    {
-      icon: Scale,
-      isCustom: false,
-      title: 'Nguồn Gốc Bền Vững',
-      englishSubtitle: 'Sustainably Sourced',
-      description: 'Quy trình khai thác sợi tự nhiên có trách nhiệm với môi trường, cân bằng hệ sinh thái và bảo tồn làng nghề dệt truyền thống lâu đời.',
-    },
-    {
-      icon: Leaf,
-      isCustom: false,
-      title: 'Nguyên Liệu Thân Thiện Môi Trường',
-      englishSubtitle: 'Eco-friendly Materials',
-      description: '100% sợi thực vật hữu cơ phân hủy sinh học, hoàn toàn không chứa hóa chất độc hại, bảo vệ làn da nhạy cảm và an lành cho gia đình.',
-    },
-    {
-      icon: NeedleThreadIcon,
-      isCustom: true,
-      title: 'Nghệ Nhân Bậc Thầy Chứng Nhận',
-      englishSubtitle: 'Master Craftsman Approved',
-      description: 'Từng đường kim mũi chỉ, mép gấp giấu viền và cúc mộc đều được kiểm định khắt khe bởi các nghệ nhân may dệt giàu kinh nghiệm.',
+      title: 'Thân thiện với da nhạy cảm',
+      englishSubtitle: 'Sensitive Skin Safe',
+      description:
+        'Không hóa chất tổng hợp. Không tĩnh điện. Không gây ngứa. Phù hợp với da nhạy cảm và làn da trẻ năng động',
     },
   ]
 
@@ -63,18 +40,21 @@ export default function Section4FeatureGrid() {
       className="py-20 sm:py-24 md:py-28 bg-[#FAF8F5] text-[#2C201A] border-b border-[#E8DFD5]"
     >
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10">
-        {/* Tiêu đề: Tiêu đề serif lớn: "CÁCH CHÚNG TÔI TẠO RA CHẤT VẢI CỦA MÌNH" */}
+        {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
-            Quy Trình & Tôn Chỉ Chế Tác
+            CHẤT VẢI CỦA CHÚNG TÔI
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#1A1614] tracking-tight">
-            CÁCH CHÚNG TÔI TẠO RA CHẤT VẢI CỦA MÌNH
+            Không phải may mặc thông thường
+            <span className="block text-[#631521] italic font-light mt-1 text-2xl sm:text-3xl md:text-4xl">
+              Đây là lý do chất liệu của chúng tôi thay đổi mọi thứ
+            </span>
           </h2>
           <div className="w-16 h-[2px] bg-[#D4AF37] mx-auto mt-4" />
         </div>
 
-        {/* Lưới tính năng: Một lưới 2x2 (4 ô) với các biểu tượng tinh tế và văn bản mô tả */}
+        {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
           {features.map((item, index) => {
             const IconComp = item.icon
@@ -88,12 +68,10 @@ export default function Section4FeatureGrid() {
                 className="bg-white p-8 sm:p-10 rounded-[4px] border border-[#E8DFD5] shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between group"
               >
                 <div>
-                  {/* Biểu tượng tinh tế */}
                   <div className="w-14 h-14 rounded-[2px] bg-[#631521] text-[#D4AF37] flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-md">
                     <IconComp className="w-6 h-6" />
                   </div>
 
-                  {/* Tiêu đề ô */}
                   <div className="mb-3">
                     <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#1A1614] group-hover:text-[#631521] transition-colors">
                       {item.title}
@@ -103,7 +81,6 @@ export default function Section4FeatureGrid() {
                     </span>
                   </div>
 
-                  {/* Mô tả ngắn */}
                   <p className="font-sans text-sm sm:text-base text-[#4A3F38] font-normal leading-relaxed">
                     {item.description}
                   </p>

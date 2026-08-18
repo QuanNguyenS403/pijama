@@ -15,10 +15,10 @@ export default function Section1Header({ onOpenCta }) {
   }, [])
 
   const navLinks = [
-    { label: 'Trang chủ', href: '#section-hero' },
-    { label: 'Sản phẩm', href: '#section-products' },
-    { label: 'Tính năng', href: '#section-features' },
-    { label: 'Liên hệ', href: '#section-contact' },
+    { label: 'Bộ sưu tập', href: '#section-products' },
+    { label: 'Chất liệu', href: '#section-features' },
+    { label: 'Về chúng tôi', href: '#section-dark-contrast' },
+    { label: 'Liên hệ', href: '#section-footer' },
   ]
 
   const handleNavClick = (e, href) => {
@@ -39,26 +39,26 @@ export default function Section1Header({ onOpenCta }) {
       }`}
     >
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 flex items-center justify-between">
-        {/* Logo thương hiệu tinh tế nằm ở bên trái */}
+        {/* Logo */}
         <a
           href="#section-hero"
           onClick={(e) => handleNavClick(e, '#section-hero')}
           className="flex items-center gap-3 group focus:outline-none"
         >
           <div className="w-8 h-8 rounded-full border border-[#D4AF37] flex items-center justify-center bg-[#4A0D17] text-[#D4AF37] font-serif font-bold text-sm tracking-tighter">
-            QN
+            QNS
           </div>
           <div className="flex flex-col">
             <span className="font-serif text-lg sm:text-xl font-bold tracking-[0.18em] text-[#FAF8F5] uppercase group-hover:text-[#D4AF37] transition-colors">
               QuanNguyenS
             </span>
             <span className="text-[9px] tracking-[0.25em] text-[#D4AF37] uppercase font-light -mt-1">
-              Haute Textiles & Lounge
+              European Casual Luxury
             </span>
           </div>
         </a>
 
-        {/* Menu điều hướng: Một menu văn bản inter nằm ở bên phải */}
+        {/* Nav */}
         <div className="flex items-center space-x-6 lg:space-x-10">
           <nav className="hidden md:flex items-center space-x-8" aria-label="Menu điều hướng chính">
             {navLinks.map((link) => (
@@ -73,21 +73,21 @@ export default function Section1Header({ onOpenCta }) {
             ))}
           </nav>
 
-          {/* CTA: Nút hình chữ nhật màu trắng với văn bản đỏ burgundy: "MUA NGAY" */}
+          {/* CTA: White background frame with gold text */}
           <a
-            href="#section-products"
+            href="#section-deep-feature"
             onClick={(e) => {
               e.preventDefault()
               if (onOpenCta) onOpenCta()
-              const elem = document.querySelector('#section-products')
+              const elem = document.querySelector('#section-deep-feature')
               if (elem) elem.scrollIntoView({ behavior: 'smooth' })
             }}
-            className="inline-flex items-center justify-center bg-white text-[#631521] hover:bg-[#FAF8F5] hover:shadow-lg font-sans text-xs sm:text-sm font-bold tracking-wider px-5 sm:px-6 py-2.5 rounded-[2px] transition-all duration-200 uppercase"
+            className="inline-flex items-center justify-center bg-white text-[#D4AF37] border border-[#D4AF37] hover:bg-[#FAF8F5] hover:text-[#B8860B] hover:shadow-gold-glow font-sans text-xs sm:text-sm font-bold tracking-wider px-5 sm:px-6 py-2.5 rounded-[2px] transition-all duration-200 uppercase shadow-md"
           >
             MUA NGAY
           </a>
 
-          {/* Nút bật tắt menu di động */}
+          {/* Mobile toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-1.5 text-white hover:text-[#D4AF37] focus:outline-none"
@@ -98,7 +98,7 @@ export default function Section1Header({ onOpenCta }) {
         </div>
       </div>
 
-      {/* Menu xổ xuống trên thiết bị di động */}
+      {/* Mobile menu */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div

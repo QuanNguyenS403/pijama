@@ -7,20 +7,20 @@ export default function CareFaqSection() {
 
   const faqs = [
     {
-      q: 'Vải đũi 10PM có bị nhăn nhiều hay rút nước khi giặt không?',
-      a: 'Vải đũi 100% tự nhiên sở hữu độ nhăn gợn tự nhiên rất sang trọng đặc trưng của dòng sợi cao cấp. Đũi 10PM đã qua công nghệ giặt xả vi sinh co giặt trước, giúp tỷ lệ rút vải gần như bằng 0. Khi giặt xong, bạn chỉ cần giũ nhẹ phơi gió bóng râm là vải sẽ tự phẳng êm ái mà không cần ủi phức tạp.'
+      q: 'Chất vải 10PM có bị nhăn nhiều hay rút nước khi giặt không?',
+      a: 'Chất vải sợi tự nhiên cao cấp sở hữu độ nhăn gợn tự nhiên rất sang trọng đặc trưng. Sản phẩm 10PM đã qua công nghệ giặt xả vi sinh co giặt trước, giúp tỷ lệ rút vải gần như bằng 0. Khi giặt xong, bạn chỉ cần giũ nhẹ phơi gió bóng râm là vải sẽ tự phẳng êm ái mà không cần ủi phức tạp.'
     },
     {
       q: 'Nếu mặc không vừa size thì 10PM xử lý đổi hàng thế nào?',
       a: '10PM cam kết chính sách "Đổi Size Tận Nhà 30 Ngày". Quý khách chỉ cần nhắn tin cho 10PM, shipper sẽ mang size mới tới tận nơi và lấy lại bộ cũ hoàn toàn miễn phí ship 1 chiều.'
     },
     {
-      q: 'Nên giặt máy hay giặt tay để pijama đũi bền đẹp nhất?',
+      q: 'Nên giặt máy hay giặt tay để pijama bền đẹp nhất?',
       a: 'Quý khách hoàn toàn có thể giặt máy ở chế độ giặt nhẹ (Chế độ Wool/Delicate) và dùng túi giặt. Nên dùng xà phòng dịu nhẹ, tránh dùng chất tẩy mạnh và phơi trong bóng râm thoáng gió.'
     },
     {
-      q: 'Chất liệu đũi 10PM có phù hợp cho người có làn da nhạy cảm?',
-      a: 'Tuyệt đối an toàn! Đũi 10PM là 100% xơ tự nhiên thuần khiết không pha tạp polyester tổng hợp, nhuộm màu thực vật lành tính đã qua kiểm định an toàn cho cả làn da em bé.'
+      q: 'Chất liệu 10PM có phù hợp cho người có làn da nhạy cảm?',
+      a: 'Tuyệt đối an toàn! Chất liệu 10PM là 100% sợi tự nhiên thuần khiết không pha tạp polyester tổng hợp, nhuộm màu thực vật lành tính đã qua kiểm định an toàn cho cả làn da em bé.'
     },
   ]
 
@@ -37,7 +37,7 @@ export default function CareFaqSection() {
           </span>
           <h2 className="font-serif text-4xl sm:text-5xl font-normal text-[#1A1614] tracking-tight mb-4">
             Giải Đáp Thắc Mắc <br />
-            <span className="font-serif-italic text-[#8C7E74]">& Chăm Sóc Vải Đũi</span>
+            <span className="font-serif-italic text-[#8C7E74]">& Hướng Dẫn Bảo Quản</span>
           </h2>
         </div>
 

@@ -7,6 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Core luxury store theme
         'burgundy':        '#631521',
         'burgundy-dark':   '#4A0D17',
         'burgundy-deep':   '#3B0A12',
@@ -19,6 +20,22 @@ export default {
         'gold-light':      '#F4ECE1',
         'brand-ivory':     '#FAF8F5',
         'brand-sand':      '#E8DFD5',
+        'brand-cream':     '#F5F0EB',
+        'text-heading':    '#1A1614',
+        'text-body-dark':  '#4A3F38',
+        'text-muted-dark': '#8C7E74',
+        // Semantic aliases mapped 100% to store theme
+        'primary-burgundy':'#631521',
+        'primary-ivory':   '#FAF8F5',
+        'accent-sand':     '#D4AF37',
+        'accent-blush':    '#F5F0EB',
+        'text-dark':       '#1A1614',
+        'text-light':      '#FAF8F5',
+        'text-muted':      '#8C7E74',
+        'border-soft':     '#E8DFD5',
+        'sand-hover':      '#B8860B',
+        'pdp-bg':          '#F5F0EB',
+        'burgundy-hover':  '#4A0D17',
       },
       fontFamily: {
         serif: [
@@ -29,9 +46,10 @@ export default {
           'serif',
         ],
         sans: [
+          '"DM Sans"',
+          '"Be Vietnam Pro"',
           'Inter',
           '"Plus Jakarta Sans"',
-          '"Be Vietnam Pro"',
           '-apple-system',
           'BlinkMacSystemFont',
           'sans-serif',
@@ -47,9 +65,9 @@ export default {
         'section-mobile': ['28px', { lineHeight: '1.20' }],
       },
       boxShadow: {
-        'luxury': '0 20px 40px -15px rgba(0, 0, 0, 0.25)',
-        'luxury-hover': '0 30px 60px -12px rgba(0, 0, 0, 0.35)',
-        'gold-glow': '0 0 25px rgba(212, 175, 55, 0.3)',
+        'luxury':      '0 20px 40px -15px rgba(0, 0, 0, 0.25)',
+        'luxury-hover':'0 30px 60px -12px rgba(0, 0, 0, 0.35)',
+        'gold-glow':   '0 0 25px rgba(212, 175, 55, 0.3)',
       },
     },
   },

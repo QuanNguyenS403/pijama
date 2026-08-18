@@ -17,7 +17,7 @@ export default function FabricStorySection() {
       subtitle: 'Khả năng hút ẩm 20%',
       icon: Wind,
       heading: 'Cấu Trúc Vi Xốp Thở Tự Nhiên',
-      desc: 'Sợi đũi tơ tằm thiên nhiên sở hữu các khe rãnh siêu nhỏ giúp thoát nhiệt gấp 3 lần vải dệt thông thường. Cơ thể bạn luôn được khô thoáng tuyệt đối ngay cả trong đêm hè oi bức.',
+      desc: 'Chất liệu sợi tự nhiên sở hữu các khe rãnh siêu nhỏ giúp thoát nhiệt gấp 3 lần vải dệt thông thường. Cơ thể bạn luôn được khô thoáng tuyệt đối ngay cả trong đêm hè oi bức.',
       stat: '+300% Thoát Nhiệt',
       image: fabricMacroImg,
     },
@@ -47,7 +47,7 @@ export default function FabricStorySection() {
       id: 'attribute-04',
       number: '04',
       title: 'TỰ NHIÊN',
-      subtitle: '100% Sợi Đũi Thuần Khiết',
+      subtitle: '100% Sợi Tự Nhiên Thuần Khiết',
       icon: Leaf,
       heading: 'Lành Tính Tuyệt Đối Cho Làn Da',
       desc: 'Không pha sợi tổng hợp polyester, không nhuộm hóa chất độc hại. Nguồn gốc xơ thực vật thuần khiết an toàn tuyệt đối cho làn da nhạy cảm.',
@@ -59,7 +59,7 @@ export default function FabricStorySection() {
   return (
     <section
       id="fabric-story"
-      aria-label="Câu chuyện chất liệu vải đũi QuanNguyenS"
+      aria-label="Câu chuyện chất liệu QuanNguyenS"
       className="bg-[#0F172A] text-[#FAF8F5] py-14 sm:py-18 md:py-24 relative overflow-hidden border-b border-[#1E293B]"
     >
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10" ref={ref}>
@@ -67,7 +67,7 @@ export default function FabricStorySection() {
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4 border-b border-[#1E293B] pb-6">
           <div>
             <span className="text-[10.5px] font-bold tracking-[0.25em] text-[#C5A059] uppercase block mb-2">
-              THE FABRIC OF REST — NGHỆ THUẬT SỢI ĐŨI
+              THE FABRIC OF REST — NGHỆ THUẬT CHẤT LIỆU
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-[#FAF8F5] tracking-tight">
               Bốn Yếu Tố Tạo Nên <br />
@@ -76,11 +76,11 @@ export default function FabricStorySection() {
           </div>
 
           <p className="text-xs sm:text-sm text-[#94A3B8] font-light max-w-md leading-relaxed">
-            Đũi tự nhiên không đơn thuần là một chất liệu — đó là hơi thở của thiên nhiên được QuanNguyenS dệt thành sự êm ái cho riêng giấc ngủ của bạn.
+            Chất liệu tự nhiên không đơn thuần là một sản phẩm may mặc — đó là hơi thở của sự tinh tế được QuanNguyenS dệt thành sự êm ái cho riêng giấc ngủ của bạn.
           </p>
         </div>
 
-        {/* Attribute Selection Tabs (01 THOÁNG, 02 MỀM, 03 NHẸ, 04 TỰ NHIÊN) */}
+        {/* Attribute Selection Tabs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
           {fabricAttributes.map((attr, idx) => {
             const Icon = attr.icon
@@ -163,7 +163,7 @@ export default function FabricStorySection() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A]/70 via-transparent to-transparent pointer-events-none" />
               <div className="absolute bottom-3 left-3 text-[9.5px] font-bold tracking-[0.18em] text-[#E2E8F0] uppercase bg-[#0F172A]/85 backdrop-blur-sm px-2.5 py-1 rounded-[2px]">
-                MACRO TEXTURE • 100% VẢI ĐŨI SLUB
+                MACRO TEXTURE • 100% SỢI TỰ NHIÊN
               </div>
             </div>
           </div>
