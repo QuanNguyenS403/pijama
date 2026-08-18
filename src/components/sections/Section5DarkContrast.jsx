@@ -79,6 +79,8 @@ export default function Section5DarkContrast() {
               <img
                 src={craftsmanshipImg}
                 alt="Set pijama cao cấp QuanNguyenS — European Casual Luxury phong cách sống"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-[400px] sm:h-[480px] object-cover object-center group-hover:scale-105 transition-transform duration-700"
               />
               <div className="absolute bottom-4 left-4 right-4 bg-[#1E1510]/85 backdrop-blur-md p-4 rounded-[2px] border border-[#D4AF37]/30">

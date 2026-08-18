@@ -1,4 +1,5 @@
-import Section1Header from '../components/sections/Section1Header'
+import { useState } from 'react'
+import Header from '../components/layout/Header'
 import Section2Hero from '../components/sections/Section2Hero'
 import CraftsmanshipStrip from '../components/sections/CraftsmanshipStrip'
 import Section3FeaturedProducts from '../components/sections/Section3FeaturedProducts'
@@ -9,11 +10,32 @@ import Section7CustomerStory from '../components/sections/Section7CustomerStory'
 import Section8DeepFeature from '../components/sections/Section8DeepFeature'
 import Section9LargeBlockText from '../components/sections/Section9LargeBlockText'
 import Section12Footer from '../components/sections/Section12Footer'
+import CartDrawer from '../components/cart/CartDrawer'
+import { Toast } from '../components/ui/Toast'
+import QuickConsultationWidget from '../components/ui/QuickConsultationWidget'
 
 export default function LandingPage() {
+  const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
+  const [toast, setToast] = useState(null)
+
+  const handleAddToCart = (info) => {
+    setToast({ ...info, id: Date.now() })
+  }
+
   return (
     <div className="bg-[#2C201A] text-white min-h-screen font-sans selection:bg-[#D4AF37] selection:text-[#2C201A] overflow-x-hidden">
-      <Section1Header />
+      {/* Toast Notification */}
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
+
+      {/* Cart Drawer */}
+      <CartDrawer isOpen={cartDrawerOpen} onClose={() => setCartDrawerOpen(false)} />
+
+      {/* Unified Header with Wishlist & Cart Access */}
+      <Header
+        onCartOpen={() => setCartDrawerOpen(true)}
+        onAddToCart={handleAddToCart}
+      />
+
       <main id="main-content">
         <Section2Hero />
         <CraftsmanshipStrip />
@@ -25,6 +47,10 @@ export default function LandingPage() {
         <Section8DeepFeature />
         <Section9LargeBlockText />
       </main>
+
+      {/* Floating 24/7 Consultation Widget */}
+      <QuickConsultationWidget />
+
       <Section12Footer />
     </div>
   )

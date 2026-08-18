@@ -65,6 +65,8 @@ export default function Section7CustomerStory() {
               <img
                 src={lifestyleNightImg}
                 alt="Chi tiết đường may tinh tế của bộ pijama QuanNguyenS — craftsmanship"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-[420px] sm:h-[500px] object-cover object-center"
               />
               <div className="absolute bottom-4 left-4 right-4 bg-[#1E1510]/90 backdrop-blur-sm p-3.5 rounded-[2px] border border-white/10">

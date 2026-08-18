@@ -38,6 +38,8 @@ export default function Section6ReversedLayout() {
               <img
                 src={fabricMacroImg}
                 alt="QuanNguyenS trong cuộc sống — từ ban công buổi sáng đến quán cà phê buổi chiều"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-[380px] sm:h-[500px] object-cover object-center group-hover:scale-105 transition-transform duration-700"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#1E1510]/70 via-transparent to-transparent" />

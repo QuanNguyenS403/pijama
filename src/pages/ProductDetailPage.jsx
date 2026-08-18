@@ -85,17 +85,24 @@ function VisualProofSection() {
   )
 }
 
+import StickyMobileAtc from '../components/product/StickyMobileAtc'
+import QuickConsultationWidget from '../components/ui/QuickConsultationWidget'
+import { useCart } from '../hooks/useCart'
+
 export default function ProductDetailPage() {
   const { productSlug } = useParams()
   const { product, related } = useProduct(productSlug)
   const [selectedColor, setSelectedColor] = useState(null)
+  const [selectedSize, setSelectedSize] = useState(null)
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
   const [toast, setToast] = useState(null)
   const { viewed, addViewed } = useRecentlyViewed()
+  const { addItem } = useCart()
 
   useEffect(() => {
     if (product) {
       setSelectedColor(product.colors?.[0] || null)
+      setSelectedSize(null)
       addViewed(product)
       window.scrollTo({ top: 0, behavior: 'instant' })
     }
@@ -109,8 +116,46 @@ export default function ProductDetailPage() {
     setToast({ ...info, id: Date.now() })
   }
 
+  const handleStickyAddToCart = () => {
+    if (!selectedSize) {
+      // Prompt user to pick a size
+      const sizeBtn = document.querySelector('button[aria-label*="Chọn size"]')
+      if (sizeBtn) sizeBtn.scrollIntoView({ behavior: 'smooth' })
+      return
+    }
+
+    let img = ''
+    if (Array.isArray(product.images)) {
+      img = product.images[0]
+    } else if (typeof product.images === 'object') {
+      img = (selectedColor?.name && product.images[selectedColor.name]?.[0]) || Object.values(product.images)[0]?.[0] || ''
+    }
+
+    const cartItem = {
+      id: `${product.id}-${selectedColor?.name}-${selectedSize}`,
+      productId: product.id,
+      name: product.name,
+      subtitle: product.subtitle,
+      color: selectedColor,
+      size: selectedSize,
+      quantity: 1,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      image: img,
+      slug: product.slug,
+    }
+
+    addItem(cartItem)
+    handleAddToCart({
+      productName: product.name,
+      variant: `${selectedColor?.label || selectedColor?.name} | Size ${selectedSize}`,
+      price: product.price,
+      image: img,
+    })
+  }
+
   return (
-    <div className="min-h-screen bg-[#FAF8F5]">
+    <div className="min-h-screen bg-[#FAF8F5] pb-16 lg:pb-0">
       {/* SEO */}
       <title>{product.name} — QuanNguyenS European Casual Luxury</title>
 
@@ -121,7 +166,7 @@ export default function ProductDetailPage() {
       <CartDrawer isOpen={cartDrawerOpen} onClose={() => setCartDrawerOpen(false)} />
 
       {/* Header */}
-      <Header onCartOpen={() => setCartDrawerOpen(true)} />
+      <Header onCartOpen={() => setCartDrawerOpen(true)} onAddToCart={handleAddToCart} />
 
       {/* Spacer for fixed header */}
       <div className="h-16 md:h-20" />
@@ -233,6 +278,8 @@ export default function ProductDetailPage() {
                 <img
                   src={fabricMacroImg}
                   alt="Cận cảnh kết cấu vải tự nhiên cao cấp QuanNguyenS"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-[380px] sm:h-[460px] object-cover group-hover:scale-105 transition-transform duration-700"
                 />
                 <div className="absolute bottom-4 left-4 right-4 bg-[#1E1510]/90 backdrop-blur-md p-4 rounded-[2px] border border-[#D4AF37]/30">
@@ -262,6 +309,21 @@ export default function ProductDetailPage() {
 
       {/* Recently Viewed */}
       <RecentlyViewedStrip viewed={viewed.filter((v) => v.slug !== product.slug)} />
+
+      {/* Sticky Mobile Add To Cart Bar */}
+      <StickyMobileAtc
+        product={product}
+        selectedColor={selectedColor}
+        selectedSize={selectedSize}
+        onAddToCart={handleStickyAddToCart}
+        onOpenSizeGuide={() => {
+          const el = document.querySelector('button[aria-label*="Chọn size"]')
+          if (el) el.scrollIntoView({ behavior: 'smooth' })
+        }}
+      />
+
+      {/* Quick Consultation Float Widget */}
+      <QuickConsultationWidget />
 
       {/* Footer */}
       <Section12Footer />
