@@ -61,7 +61,7 @@ export default function CartSummary({ subtotal, shippingFee, freeShippingProgres
 
         {/* Payment icons */}
         <div className="flex items-center justify-center gap-2 pt-3 flex-wrap border-t border-[#E8DFD5]">
-          {['VNPAY', 'MoMo', 'Visa', 'Mastercard', 'COD'].map((pm) => (
+          {['COD', 'VietQR (-10%)', 'Vietcombank'].map((pm) => (
             <span
               key={pm}
               className="font-sans text-[0.65rem] font-bold tracking-wider text-[#4A3F38] border border-[#E8DFD5] bg-white px-2 py-1 rounded-[2px]"

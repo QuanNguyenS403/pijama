@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, ShoppingBag, Heart } from 'lucide-react'
+import { Menu, X, ShoppingBag, Heart, Package } from 'lucide-react'
 import { useCart } from '../../hooks/useCart'
 import WishlistDrawer from '../ui/WishlistDrawer'
+import OrdersHistoryDrawer from '../ui/OrdersHistoryDrawer'
 
-export default function Header({ onCartOpen, onAddToCart }) {
+export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) {
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [wishlistOpen, setWishlistOpen] = useState(false)
   const [wishlistCount, setWishlistCount] = useState(0)
+  const [ordersDrawerOpen, setOrdersDrawerOpen] = useState(false)
+  const [ordersCount, setOrdersCount] = useState(0)
 
   const { totalItems } = useCart()
   const navigate = useNavigate()
@@ -26,17 +29,41 @@ export default function Header({ onCartOpen, onAddToCart }) {
     }
   }
 
+  const updateOrdersCount = () => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
+      setOrdersCount(Array.isArray(saved) ? saved.length : 0)
+    } catch {
+      setOrdersCount(0)
+    }
+  }
+
   useEffect(() => {
     updateWishlistCount()
-    const handleStorage = () => updateWishlistCount()
+    updateOrdersCount()
+
+    const handleStorage = () => {
+      updateWishlistCount()
+      updateOrdersCount()
+    }
+    const handleOrdersUpdated = () => updateOrdersCount()
+    const handleOpenOrdersEvent = () => setOrdersDrawerOpen(true)
+
     window.addEventListener('storage', handleStorage)
-    const interval = setInterval(updateWishlistCount, 1000)
+    window.addEventListener('orders_updated', handleOrdersUpdated)
+    window.addEventListener('open_orders_drawer', handleOpenOrdersEvent)
+    const interval = setInterval(() => {
+      updateWishlistCount()
+      updateOrdersCount()
+    }, 1500)
 
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll, { passive: true })
 
     return () => {
       window.removeEventListener('storage', handleStorage)
+      window.removeEventListener('orders_updated', handleOrdersUpdated)
+      window.removeEventListener('open_orders_drawer', handleOpenOrdersEvent)
       window.removeEventListener('scroll', handleScroll)
       clearInterval(interval)
     }
@@ -118,7 +145,28 @@ export default function Header({ onCartOpen, onAddToCart }) {
             </nav>
 
             {/* Icon row */}
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2.5 sm:gap-3.5">
+              {/* Placed Orders Button */}
+              <button
+                onClick={() => setOrdersDrawerOpen(true)}
+                aria-label={`Đơn đã đặt — ${ordersCount} đơn`}
+                className="flex items-center gap-1.5 text-white/85 hover:text-[#D4AF37] px-2.5 py-1 rounded-[2px] border border-white/20 hover:border-[#D4AF37]/50 bg-white/5 text-[11px] font-sans font-medium tracking-wider uppercase transition-colors cursor-pointer"
+                title="Xem đơn hàng đã đặt"
+              >
+                <Package className="w-4 h-4 text-[#D4AF37]" />
+                <span className="hidden sm:inline">Đơn đã đặt</span>
+                {ordersCount > 0 && (
+                  <motion.span
+                    key={ordersCount}
+                    initial={{ scale: 1.3 }}
+                    animate={{ scale: 1 }}
+                    className="bg-[#D4AF37] text-[#2C201A] text-[9.5px] font-sans font-bold px-1.5 py-0.2 rounded-full flex items-center justify-center shadow-xs"
+                  >
+                    {ordersCount > 9 ? '9+' : ordersCount}
+                  </motion.span>
+                )}
+              </button>
+
               {/* Wishlist Button */}
               <button
                 onClick={() => setWishlistOpen(true)}
@@ -193,6 +241,25 @@ export default function Header({ onCartOpen, onAddToCart }) {
                     {link.label}
                   </Link>
                 ))}
+
+                {/* Mobile Orders History Link */}
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false)
+                    setOrdersDrawerOpen(true)
+                  }}
+                  className="flex items-center justify-between text-white/90 hover:text-[#D4AF37] py-2 border-b border-white/10 text-sm font-sans font-medium uppercase tracking-wider text-left"
+                >
+                  <span className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-[#D4AF37]" />
+                    <span>Đơn đã đặt của bạn</span>
+                  </span>
+                  {ordersCount > 0 && (
+                    <span className="bg-[#D4AF37] text-[#2C201A] text-xs font-bold px-2 py-0.5 rounded-full">
+                      {ordersCount}
+                    </span>
+                  )}
+                </button>
               </div>
             </motion.div>
           )}
@@ -204,6 +271,12 @@ export default function Header({ onCartOpen, onAddToCart }) {
         isOpen={wishlistOpen}
         onClose={() => setWishlistOpen(false)}
         onAddToCart={onAddToCart}
+      />
+
+      {/* Placed Orders History Drawer */}
+      <OrdersHistoryDrawer
+        isOpen={ordersDrawerOpen}
+        onClose={() => setOrdersDrawerOpen(false)}
       />
     </>
   )

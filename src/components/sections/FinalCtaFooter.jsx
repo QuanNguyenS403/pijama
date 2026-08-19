@@ -163,17 +163,11 @@ export default function FinalCtaFooter() {
               <span className="bg-[#1E293B] text-[#FAF8F5] px-2 py-1 rounded-[2px] text-[10px] font-bold border border-[#334155]">
                 COD
               </span>
-              <span className="bg-[#1E293B] text-[#FAF8F5] px-2 py-1 rounded-[2px] text-[10px] font-bold border border-[#334155]">
-                VISA
+              <span className="bg-[#1E293B] text-[#D4AF37] px-2 py-1 rounded-[2px] text-[10px] font-bold border border-[#D4AF37]/40">
+                VIETQR (-10%)
               </span>
               <span className="bg-[#1E293B] text-[#FAF8F5] px-2 py-1 rounded-[2px] text-[10px] font-bold border border-[#334155]">
-                MASTERCARD
-              </span>
-              <span className="bg-[#1E293B] text-[#FAF8F5] px-2 py-1 rounded-[2px] text-[10px] font-bold border border-[#334155]">
-                MOMO
-              </span>
-              <span className="bg-[#1E293B] text-[#FAF8F5] px-2 py-1 rounded-[2px] text-[10px] font-bold border border-[#334155]">
-                VNPAY
+                VIETCOMBANK
               </span>
             </div>
           </div>

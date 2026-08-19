@@ -26,7 +26,7 @@ export const policiesData = {
         heading: '3. Giá cả và Phương thức Thanh toán',
         content: [
           'Giá niêm yết trên website là giá bán chính thức bằng Việt Nam Đồng (VNĐ) và đã bao gồm thuế phí theo quy định',
-          'QuanNguyenS hỗ trợ đa dạng phương thức: Thanh toán khi nhận hàng (COD), Chuyển khoản ngân hàng (QR Code 24/7), Ví điện tử MoMo, VNPAY, Thẻ Visa/Mastercard',
+          'QuanNguyenS hỗ trợ 2 phương thức thanh toán an toàn: Thanh toán khi nhận hàng (COD) và Chuyển khoản ngân hàng (VietQR - Ưu đãi giảm ngay 10% trực tiếp)',
           'Mọi giao dịch trực tuyến đều được mã hóa SSL 256-bit bảo mật theo tiêu chuẩn quốc tế'
         ]
       },
