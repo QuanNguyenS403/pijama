@@ -4,14 +4,7 @@ import { motion } from 'framer-motion'
 import {
   CheckCircle2,
   Package,
-  Phone,
-  Mail,
-  Home,
-  ChevronRight,
-  Sparkles,
   Truck,
-  ShieldCheck,
-  QrCode,
   Copy,
   Check,
   Gift,
@@ -60,10 +53,8 @@ export default function OrderSuccessPage() {
   const customerEmail = order?.customer?.email || 'email của bạn'
   const customerName = order?.customer?.fullName || 'Quý khách'
   const customerPhone = order?.customer?.phone || ''
-  const total = order?.total || 390000
+  const total = order?.total || 381000
   const isBankTransfer = order?.payment?.method === 'BANK_TRANSFER'
-  const transferContent = `${customerName} ${customerPhone}`.trim()
-  const qrUrl = `https://img.vietqr.io/image/vietcombank-1050773506-compact2.png?amount=${total}&addInfo=${encodeURIComponent(transferContent)}&accountName=NGUYEN%20DUC%20QUAN`
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#1A1614]">
@@ -127,101 +118,6 @@ export default function OrderSuccessPage() {
                 <strong className="text-[#631521] font-semibold">{customerEmail}</strong>. Vui lòng kiểm tra hộp thư (hoặc mục Spam/Quảng cáo).
               </p>
             </div>
-
-            {/* VIETQR PAYMENT INSTRUCTIONS BOX (If Bank Transfer Chosen) */}
-            {isBankTransfer && (
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-[#FAF5F0] border-2 border-[#D4AF37]/50 rounded-[4px] p-5 sm:p-6 space-y-4 shadow-sm"
-              >
-                <div className="flex items-center justify-between border-b border-[#E8DFD5] pb-3">
-                  <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#631521] flex items-center gap-1.5">
-                    <QrCode className="w-4 h-4 text-[#631521]" />
-                    Hướng dẫn chuyển khoản VietQR (Giảm 10%)
-                  </span>
-                  <span className="text-[11px] font-bold text-[#2E7D32] bg-[#E8F5E9] px-2 py-0.5 rounded border border-[#C8E6C9]">
-                    Ưu đãi đã áp dụng
-                  </span>
-                </div>
-
-                <div className="flex flex-col md:flex-row items-center gap-5">
-                  {/* QR Image */}
-                  <div className="w-40 h-40 bg-white p-2 rounded border border-[#E8DFD5] shadow-xs shrink-0 flex items-center justify-center">
-                    <img
-                      src={qrUrl}
-                      alt="VietQR Vietcombank"
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-
-                  {/* Bank info fields */}
-                  <div className="space-y-2 flex-1 w-full text-xs font-sans">
-                    <p className="font-serif font-bold text-[#631521] text-xs uppercase">
-                      Ngân hàng Ngoại Thương Việt Nam (Vietcombank)
-                    </p>
-
-                    <div className="bg-white p-2.5 rounded-[2px] border border-[#E8DFD5] flex items-center justify-between">
-                      <div>
-                        <p className="text-[10px] text-[#8C7E74]">Số tài khoản:</p>
-                        <p className="font-mono font-bold text-[#631521] text-base leading-tight">
-                          1050773506
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleCopy('1050773506', 'bankStk')}
-                        className="flex items-center gap-1 text-[11px] font-bold text-[#631521] bg-[#FAF8F5] px-2.5 py-1 rounded border border-[#E8DFD5] hover:bg-[#FAF5F0] transition-colors"
-                      >
-                        {copiedField === 'bankStk' ? (
-                          <>
-                            <Check className="w-3 h-3 text-[#2E7D32]" />
-                            <span className="text-[#2E7D32]">Đã chép</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" />
-                            <span>Sao chép</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    <p className="text-[11px] text-[#4A3F38]"><strong>Chủ tài khoản:</strong> NGUYEN DUC QUAN</p>
-
-                    <div className="bg-white p-2.5 rounded-[2px] border border-[#E8DFD5] flex items-center justify-between">
-                      <div>
-                        <p className="text-[10px] text-[#8C7E74]">
-                          Nội dung chuyển khoản: <span className="italic text-[#631521]">(Tên + SĐT của bạn)</span>
-                        </p>
-                        <p className="font-mono font-bold text-[#631521] text-xs mt-0.5">
-                          {transferContent}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleCopy(transferContent, 'bankContent')}
-                        className="flex items-center gap-1 text-[11px] font-bold text-[#631521] bg-[#FAF8F5] px-2.5 py-1 rounded border border-[#E8DFD5] hover:bg-[#FAF5F0] transition-colors"
-                      >
-                        {copiedField === 'bankContent' ? (
-                          <>
-                            <Check className="w-3 h-3 text-[#2E7D32]" />
-                            <span className="text-[#2E7D32]">Đã chép</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" />
-                            <span>Sao chép</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-[0.7rem] text-[#8C7E74] italic text-center pt-1 border-t border-[#E8DFD5]">
-                  * Đơn hàng sẽ được nhân viên xác nhận và đóng gói ngay sau khi hoàn tất chuyển khoản.
-                </p>
-              </motion.div>
-            )}
 
             {/* Order Details Box */}
             <div className="bg-[#FAF5F0] rounded-[3px] border border-[#E8DFD5] p-5 sm:p-6 space-y-4">

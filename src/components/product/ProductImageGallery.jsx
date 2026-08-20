@@ -111,7 +111,7 @@ export default function ProductImageGallery({
                   transition={{ duration: 0.2, delay: i * 0.05 }}
                   onClick={() => setActiveIndex(i)}
                   aria-label={`Chọn ảnh ${i + 1}`}
-                  className={`shrink-0 w-20 h-20 overflow-hidden transition-all duration-150 rounded-[2px] ${
+                  className={`shrink-0 w-20 aspect-[4/5] overflow-hidden transition-all duration-150 rounded-[2px] ${
                     i === activeIndex
                       ? 'border-2 border-[#631521] shadow-md opacity-100 ring-2 ring-[#D4AF37]/30'
                       : 'border border-[#E8DFD5] opacity-70 hover:opacity-100 hover:border-[#631521]'

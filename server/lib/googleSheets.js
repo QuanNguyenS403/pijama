@@ -63,7 +63,41 @@ export const PRODUCT_HEADERS = [
   'Thành Tiền', // I
 ]
 
-// ── Khởi tạo sheet (tự động tạo headers nếu chưa có) ───────────────────
+// ── Đảm bảo các sheet tabs tồn tại, nếu chưa có thì tự tạo ────────────
+export const ensureSheetsExist = async (sheets, spreadsheetId) => {
+  try {
+    const meta = await sheets.spreadsheets.get({ spreadsheetId })
+    const existingTitles = (meta.data.sheets || []).map((s) => s.properties?.title)
+
+    const requests = []
+    if (!existingTitles.includes(SHEET_TABS.ORDERS)) {
+      requests.push({
+        addSheet: {
+          properties: { title: SHEET_TABS.ORDERS },
+        },
+      })
+    }
+    if (!existingTitles.includes(SHEET_TABS.PRODUCTS)) {
+      requests.push({
+        addSheet: {
+          properties: { title: SHEET_TABS.PRODUCTS },
+        },
+      })
+    }
+
+    if (requests.length > 0) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: { requests },
+      })
+      console.log(`✅ Đã tự động tạo các tab Google Sheet: ${requests.map(r => r.addSheet.properties.title).join(', ')}`)
+    }
+  } catch (err) {
+    console.warn('⚠️ Lỗi kiểm tra/tạo tab Sheet:', err.message)
+  }
+}
+
+// ── Khởi tạo sheet (tự động tạo tabs và headers nếu chưa có) ───────────────────
 export const initializeSheet = async () => {
   try {
     const auth = getAuth()
@@ -74,33 +108,43 @@ export const initializeSheet = async () => {
       throw new Error('Thiếu GOOGLE_SHEET_ID trong file .env')
     }
 
-    // Kiểm tra xem header đã có chưa
-    const response = await sheets.spreadsheets.values.get({
+    // Đảm bảo tab tồn tại
+    await ensureSheetsExist(sheets, spreadsheetId)
+
+    // Kiểm tra header sheet ORDERS
+    const ordersRes = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${SHEET_TABS.ORDERS}!A1:Z1`,
+      range: `${SHEET_TABS.ORDERS}!A1:X1`,
     })
 
-    if (!response.data.values || response.data.values.length === 0) {
-      // Chèn header row cho ORDERS
+    if (!ordersRes.data.values || ordersRes.data.values.length === 0) {
       await sheets.spreadsheets.values.append({
         spreadsheetId,
         range: `${SHEET_TABS.ORDERS}!A1`,
         valueInputOption: 'RAW',
         requestBody: { values: [ORDER_HEADERS] },
       })
+      console.log(`✅ Đã tạo Header cho tab "${SHEET_TABS.ORDERS}"`)
+    }
 
-      // Chèn header row cho PRODUCTS
+    // Kiểm tra header sheet PRODUCTS
+    const productsRes = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${SHEET_TABS.PRODUCTS}!A1:I1`,
+    })
+
+    if (!productsRes.data.values || productsRes.data.values.length === 0) {
       await sheets.spreadsheets.values.append({
         spreadsheetId,
         range: `${SHEET_TABS.PRODUCTS}!A1`,
         valueInputOption: 'RAW',
         requestBody: { values: [PRODUCT_HEADERS] },
       })
-
-      console.log('✅ Đã khởi tạo Header cho Google Sheet')
+      console.log(`✅ Đã tạo Header cho tab "${SHEET_TABS.PRODUCTS}"`)
     }
   } catch (error) {
     console.warn('⚠️ Google Sheets initializeSheet note:', error.message)
+    throw error
   }
 }
 
@@ -112,6 +156,13 @@ export const appendOrderToSheet = async (order) => {
 
   if (!spreadsheetId) {
     throw new Error('Thiếu GOOGLE_SHEET_ID trong .env')
+  }
+
+  // Tự động kiểm tra / tạo tabs và header nếu chưa có
+  try {
+    await initializeSheet()
+  } catch (initErr) {
+    console.warn('⚠️ Google Sheets init check warning:', initErr.message)
   }
 
   // Tách ngày và giờ theo múi giờ Việt Nam

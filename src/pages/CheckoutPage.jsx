@@ -10,9 +10,6 @@ import {
   AlertCircle,
   Loader2,
   Check,
-  CreditCard,
-  Copy,
-  QrCode,
   Gift,
 } from 'lucide-react'
 import Header from '../components/layout/Header'
@@ -51,7 +48,6 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
-  const [copiedField, setCopiedField] = useState(null)
 
   // Calculate 10% discount for bank transfer (VietQR)
   const isBankTransfer = formData.paymentMethod === 'BANK_TRANSFER'
@@ -63,23 +59,6 @@ export default function CheckoutPage() {
   const total = useMemo(() => {
     return Math.max(0, subtotal + shippingFee - bankTransferDiscount)
   }, [subtotal, shippingFee, bankTransferDiscount])
-
-  // Content for transfer syntax
-  const transferContent = useMemo(() => {
-    const name = formData.fullName.trim()
-    const phone = formData.phone.trim()
-    if (name && phone) return `${name} ${phone}`
-    if (phone) return `${phone}`
-    if (name) return `${name}`
-    return 'Tên + SĐT của bạn'
-  }, [formData.fullName, formData.phone])
-
-  const handleCopy = (text, fieldName) => {
-    if (!text || text === 'Tên + SĐT của bạn') return
-    navigator.clipboard.writeText(text)
-    setCopiedField(fieldName)
-    setTimeout(() => setCopiedField(null), 2000)
-  }
 
   // Handle Input Changes
   const handleInputChange = (field, value) => {
@@ -187,10 +166,16 @@ export default function CheckoutPage() {
         // 3. Xóa giỏ hàng
         clearCart()
 
-        // 4. Chuyển hướng sang trang xác nhận thành công
-        navigate(`/dat-hang-thanh-cong?orderId=${result.orderId}`, {
-          state: { order: orderPayload },
-        })
+        // 4. Chuyển hướng theo phương thức thanh toán
+        if (formData.paymentMethod === 'BANK_TRANSFER') {
+          navigate(`/thanh-toan-chuyen-khoan?orderId=${result.orderId}`, {
+            state: { order: orderPayload },
+          })
+        } else {
+          navigate(`/dat-hang-thanh-cong?orderId=${result.orderId}`, {
+            state: { order: orderPayload },
+          })
+        }
       } else {
         throw new Error(result.message || 'Không thể ghi nhận đơn hàng')
       }
@@ -526,7 +511,7 @@ export default function CheckoutPage() {
                                   </span>
                                 </div>
                                 {hasDiscount && (
-                                  <span className="inline-flex items-center gap-1 bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] text-[10.5px] font-bold px-2 py-0.5 rounded-[2px] animate-pulse">
+                                  <span className="inline-flex items-center gap-1 bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] text-[10.5px] font-bold px-2 py-0.5 rounded-[2px]">
                                     <Gift className="w-3 h-3" />
                                     ƯU ĐÃI GIẢM 10%
                                   </span>
@@ -536,113 +521,6 @@ export default function CheckoutPage() {
                               <p className="font-sans text-xs text-[#4A3F38] mt-1 font-light leading-relaxed">
                                 {method.description}
                               </p>
-
-                              {/* BANK TRANSFER DETAILS EXPANSION */}
-                              {isSelected && method.bankInfo && (
-                                <motion.div
-                                  initial={{ opacity: 0, height: 0 }}
-                                  animate={{ opacity: 1, height: 'auto' }}
-                                  className="mt-4 pt-4 border-t border-[#E8DFD5] text-xs font-sans space-y-3 bg-white p-4 rounded-[3px] border"
-                                >
-                                  <div className="flex items-center justify-between pb-2 border-b border-[#E8DFD5]">
-                                    <span className="font-bold text-[#631521] uppercase tracking-wider text-[0.7rem] flex items-center gap-1.5">
-                                      <QrCode className="w-4 h-4" />
-                                      Quét mã VietQR chuyển khoản nhanh:
-                                    </span>
-                                    <span className="text-[11px] font-bold text-[#2E7D32]">
-                                      Tiết kiệm ngay {formatVND(bankTransferDiscount)}
-                                    </span>
-                                  </div>
-
-                                  <div className="flex flex-col sm:flex-row items-center gap-4 pt-1">
-                                    {/* QR Image */}
-                                    <div className="w-36 h-36 bg-white p-1 rounded border border-[#E8DFD5] shadow-xs shrink-0 flex items-center justify-center">
-                                      <img
-                                        src={`https://img.vietqr.io/image/vietcombank-1050773506-compact2.png?amount=${total}&addInfo=${encodeURIComponent(transferContent === 'Tên + SĐT của bạn' ? 'QNS Pijama' : transferContent)}&accountName=NGUYEN%20DUC%20QUAN`}
-                                        alt="VietQR Vietcombank"
-                                        className="w-full h-full object-contain"
-                                      />
-                                    </div>
-
-                                    {/* Bank info fields with quick copy */}
-                                    <div className="space-y-2 flex-1 w-full text-xs">
-                                      <div>
-                                        <p className="text-[11px] text-[#8C7E74]">Ngân hàng:</p>
-                                        <p className="font-semibold text-[#1A1614]">{method.bankInfo.bankName}</p>
-                                      </div>
-
-                                      <div className="bg-[#FAF8F5] p-2 rounded-[2px] border border-[#E8DFD5] flex items-center justify-between">
-                                        <div>
-                                          <p className="text-[10px] text-[#8C7E74]">Số tài khoản:</p>
-                                          <p className="font-mono font-bold text-[#631521] text-base leading-none mt-0.5">
-                                            {method.bankInfo.accountNumber}
-                                          </p>
-                                        </div>
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            handleCopy(method.bankInfo.accountNumber, 'stk')
-                                          }}
-                                          className="flex items-center gap-1 text-[11px] font-bold text-[#631521] bg-white px-2 py-1 rounded border border-[#E8DFD5] hover:bg-[#FAF5F0] transition-colors"
-                                        >
-                                          {copiedField === 'stk' ? (
-                                            <>
-                                              <Check className="w-3 h-3 text-[#2E7D32]" />
-                                              <span className="text-[#2E7D32]">Đã chép</span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <Copy className="w-3 h-3" />
-                                              <span>Sao chép</span>
-                                            </>
-                                          )}
-                                        </button>
-                                      </div>
-
-                                      <div>
-                                        <p className="text-[10px] text-[#8C7E74]">Chủ tài khoản:</p>
-                                        <p className="font-bold text-[#1A1614]">{method.bankInfo.accountName}</p>
-                                      </div>
-
-                                      <div className="bg-[#FAF8F5] p-2 rounded-[2px] border border-[#E8DFD5] flex items-center justify-between">
-                                        <div>
-                                          <p className="text-[10px] text-[#8C7E74]">
-                                            Nội dung chuyển khoản: <span className="italic text-[#631521] font-medium">(Tên + SĐT của bạn)</span>
-                                          </p>
-                                          <p className="font-mono font-bold text-[#631521] text-xs leading-none mt-1">
-                                            {transferContent}
-                                          </p>
-                                        </div>
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation()
-                                            handleCopy(transferContent, 'content')
-                                          }}
-                                          className="flex items-center gap-1 text-[11px] font-bold text-[#631521] bg-white px-2 py-1 rounded border border-[#E8DFD5] hover:bg-[#FAF5F0] transition-colors"
-                                        >
-                                          {copiedField === 'content' ? (
-                                            <>
-                                              <Check className="w-3 h-3 text-[#2E7D32]" />
-                                              <span className="text-[#2E7D32]">Đã chép</span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <Copy className="w-3 h-3" />
-                                              <span>Sao chép</span>
-                                            </>
-                                          )}
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <p className="text-[0.7rem] text-[#8C7E74] italic pt-1 border-t border-[#E8DFD5]/60">
-                                    * Vui lòng quét mã QR hoặc ghi đúng nội dung chuyển khoản: <strong>Tên + SĐT của bạn</strong> để đơn hàng được duyệt tự động.
-                                  </p>
-                                </motion.div>
-                              )}
                             </div>
                           </div>
                         </div>
