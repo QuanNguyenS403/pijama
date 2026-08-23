@@ -83,8 +83,27 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
         { label: 'Liên Hệ', href: '/' },
       ]
 
+  const handleLogoClick = (e) => {
+    setMobileMenuOpen(false)
+    if (location.pathname === '/') {
+      e.preventDefault()
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else {
+      navigate('/')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
   const handleNavClick = (e, link) => {
     setMobileMenuOpen(false)
+    if (link.href === '/' || link.href === '#hero' || link.href === '#section-hero') {
+      e.preventDefault()
+      if (location.pathname !== '/') {
+        navigate('/')
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
     if (link.scroll) {
       e.preventDefault()
       if (location.pathname !== '/') {
@@ -113,10 +132,11 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
           {/* Logo */}
           <Link
             to="/"
-            className="flex items-center gap-3 group focus:outline-none"
+            onClick={handleLogoClick}
+            className="flex items-center gap-3 group focus:outline-none cursor-pointer"
             aria-label="QuanNguyenS — Trang chủ"
           >
-            <div className="w-8 h-8 rounded-full border border-[#D4AF37] flex items-center justify-center bg-[#4A0D17] text-[#D4AF37] font-serif font-bold text-sm tracking-tighter shadow-xs">
+            <div className="w-8 h-8 rounded-full border border-[#D4AF37] flex items-center justify-center bg-[#4A0D17] text-[#D4AF37] font-serif font-bold text-sm tracking-tighter shadow-xs group-hover:scale-105 transition-transform">
               QNS
             </div>
             <div className="flex flex-col">

@@ -35,7 +35,7 @@ export const sendCustomerEmail = async (order) => {
 // ──────────────────────────────────────────────────────────
 export const buildBankTransferEmailHTML = (order) => {
   const transferContent = `${order.customer?.fullName || ''} ${order.customer?.phone || ''}`.trim()
-  const qrUrl = `https://img.vietqr.io/image/vietcombank-1050773506-compact2.png?amount=${order.total}&addInfo=${encodeURIComponent(transferContent)}&accountName=NGUYEN%20DUC%20QUAN`
+  const qrUrl = `https://img.vietqr.io/image/vietcombank-1050773506-compact2.png?amount=${order.total}&accountName=NGUYEN%20DUC%20QUAN`
 
   return `
 <!DOCTYPE html>
@@ -754,3 +754,346 @@ export const buildPaidEmailHTML = (order) => `
 </body>
 </html>
 `
+
+// ──────────────────────────────────────────────────────────
+// Template 4: ĐÃ XÁC NHẬN ĐƠN HÀNG (CONFIRMED)
+// ──────────────────────────────────────────────────────────
+export const buildConfirmedEmailHTML = (order, extra = {}) => `
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đơn hàng đã được xác nhận</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Georgia', 'Times New Roman', serif; background: #F5F0E8; color: #3A3535; padding: 20px; }
+    .email-wrapper { max-width: 600px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E8DFD5; }
+    .header { background: #631521; padding: 32px 40px; text-align: center; }
+    .header-logo { font-family: Georgia, serif; font-size: 28px; font-weight: bold; color: #FAF8F5; letter-spacing: 2px; }
+    .header-tagline { font-family: Arial, sans-serif; font-size: 11px; color: rgba(245,240,232,0.7); letter-spacing: 3px; text-transform: uppercase; margin-top: 6px; }
+    .banner { background: #FAF5F0; border-left: 4px solid #631521; padding: 20px 40px; text-align: center; }
+    .banner-icon { font-size: 36px; }
+    .banner-title { font-family: Georgia, serif; font-size: 22px; color: #631521; margin-top: 8px; font-weight: bold; }
+    .banner-subtitle { font-family: Arial, sans-serif; font-size: 13px; color: #4A3F38; margin-top: 6px; }
+    .content { padding: 32px 40px; }
+    .greeting { font-family: Georgia, serif; font-size: 18px; margin-bottom: 16px; color: #1A1614; }
+    .body-text { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.7; margin-bottom: 24px; color: #3A3535; }
+    .section-label { font-family: Arial, sans-serif; font-size: 10px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; color: #631521; border-bottom: 1px solid #E8DFD5; padding-bottom: 8px; margin-bottom: 16px; }
+    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    .items-table th { background: #631521; color: #FAF8F5; font-family: Arial, sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 10px 12px; text-align: left; }
+    .items-table td { padding: 12px; font-family: Arial, sans-serif; font-size: 13px; border-bottom: 1px solid #E8DFD5; }
+    .items-table tr:nth-child(even) td { background: #FAF8F5; }
+    .price-td { font-family: Georgia, serif; font-size: 15px; color: #631521; font-weight: bold; text-align: right; }
+    .total-section { background: #FAF5F0; padding: 20px; margin-bottom: 24px; border: 1px solid #E8DFD5; }
+    .total-row { display: flex; justify-content: space-between; font-family: Arial, sans-serif; font-size: 13px; color: #4A3F38; margin-bottom: 8px; }
+    .total-final { display: flex; justify-content: space-between; border-top: 1px solid #E8DFD5; padding-top: 12px; margin-top: 4px; }
+    .total-final .label { font-family: Arial, sans-serif; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #1A1614; }
+    .total-final .amount { font-family: Georgia, serif; font-size: 22px; color: #631521; font-weight: bold; }
+    .shipping-info { background: #FAF8F5; padding: 20px; margin-bottom: 24px; border: 1px solid #E8DFD5; font-family: Arial, sans-serif; font-size: 13px; line-height: 1.6; }
+    .contact-section { border-top: 1px solid #E8DFD5; padding-top: 24px; text-align: center; }
+    .contact-text { font-family: Arial, sans-serif; font-size: 13px; color: #8C7E74; margin-bottom: 12px; }
+    .contact-links a { font-family: Arial, sans-serif; font-size: 13px; color: #631521; text-decoration: none; margin: 0 8px; font-weight: bold; }
+    .footer { background: #1A1614; padding: 24px 40px; text-align: center; }
+    .footer-logo { font-family: Georgia, serif; font-size: 18px; color: #FAF8F5; letter-spacing: 2px; }
+    .footer-tagline { font-family: Arial, sans-serif; font-size: 10px; color: rgba(245,240,232,0.5); letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+    .footer-info { font-family: Arial, sans-serif; font-size: 11px; color: rgba(245,240,232,0.6); margin-top: 12px; line-height: 1.8; }
+  </style>
+</head>
+<body>
+<div class="email-wrapper">
+  <div class="header">
+    <div class="header-logo">QuanNguyenS</div>
+    <div class="header-tagline">Dressed for Life. Even at Home.</div>
+  </div>
+  <div class="banner">
+    <div class="banner-icon">✨</div>
+    <div class="banner-title">Đơn hàng đã được xác nhận!</div>
+    <div class="banner-subtitle">Đơn hàng #${order.orderId} của bạn đã được kiểm duyệt và chuyển sang khâu đóng gói.</div>
+  </div>
+  <div class="content">
+    <p class="greeting">Xin chào ${order.customer.fullName},</p>
+    <p class="body-text">
+      QuanNguyenS xin trân trọng thông báo đơn hàng <strong>#${order.orderId}</strong> của bạn đã được xác nhận thành công.
+      Chúng tôi đang tiến hành đóng gói chỉn chu chuẩn quà tặng và sẽ giao cho đơn vị vận chuyển trong thời gian sớm nhất.
+    </p>
+    <p class="section-label">Sản phẩm trong đơn hàng</p>
+    <table class="items-table">
+      <thead>
+        <tr><th>Sản phẩm</th><th>Biến thể</th><th>SL</th><th style="text-align:right">Thành tiền</th></tr>
+      </thead>
+      <tbody>
+        ${(order.items || []).map((item) => `
+        <tr>
+          <td><strong>${item.productName}</strong></td>
+          <td style="color:#7A6E6E">${item.variant}</td>
+          <td>x${item.quantity}</td>
+          <td class="price-td">${formatVND(item.totalPrice)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="total-section">
+      <div class="total-row"><span>Tạm tính</span><span>${formatVND(order.subtotal)}</span></div>
+      <div class="total-row"><span>Phí ship</span><span>${order.shippingFee === 0 ? 'Miễn phí' : formatVND(order.shippingFee)}</span></div>
+      ${order.discount > 0 ? `<div class="total-row"><span>Giảm giá</span><span>- ${formatVND(order.discount)}</span></div>` : ''}
+      <div class="total-final">
+        <span class="label">Tổng cộng</span>
+        <span class="amount">${formatVND(order.total)}</span>
+      </div>
+    </div>
+    <p class="section-label">Địa chỉ nhận hàng</p>
+    <div class="shipping-info">
+      <strong>${order.customer.fullName}</strong><br>
+      📞 ${order.customer.phone}<br>
+      📍 ${order.shipping.fullAddress}
+      ${order.note ? `<br><br>📝 <em>Ghi chú: ${order.note}</em>` : ''}
+    </div>
+    <div class="contact-section">
+      <p class="contact-text">Mọi thắc mắc xin vui lòng liên hệ:</p>
+      <div class="contact-links">
+        <a href="tel:0981753082">📞 0981 753 082</a>
+        <a href="mailto:ducquan16102006@gmail.com">✉️ Email hỗ trợ</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <div class="footer-logo">QuanNguyenS</div>
+    <div class="footer-tagline">Dressed for Life. Even at Home.</div>
+    <div class="footer-info">
+      Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội<br>
+      0981 753 082 · ducquan16102006@gmail.com
+    </div>
+  </div>
+</div>
+</body>
+</html>
+`
+
+// ──────────────────────────────────────────────────────────
+// Template 5: ĐÃ GIAO HÀNG CHO SHIPPER (SHIPPED)
+// ──────────────────────────────────────────────────────────
+export const buildShippedEmailHTML = (order, extra = {}) => {
+  const trackingNumber = extra.trackingNumber || order.trackingNumber
+  return `
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đơn hàng đang trên đường giao</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Georgia', 'Times New Roman', serif; background: #F5F0E8; color: #3A3535; padding: 20px; }
+    .email-wrapper { max-width: 600px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E8DFD5; }
+    .header { background: #631521; padding: 32px 40px; text-align: center; }
+    .header-logo { font-family: Georgia, serif; font-size: 28px; font-weight: bold; color: #FAF8F5; letter-spacing: 2px; }
+    .header-tagline { font-family: Arial, sans-serif; font-size: 11px; color: rgba(245,240,232,0.7); letter-spacing: 3px; text-transform: uppercase; margin-top: 6px; }
+    .banner { background: #EBF3FB; border-left: 4px solid #1E88E5; padding: 20px 40px; text-align: center; }
+    .banner-icon { font-size: 36px; }
+    .banner-title { font-family: Georgia, serif; font-size: 22px; color: #1565C0; margin-top: 8px; font-weight: bold; }
+    .banner-subtitle { font-family: Arial, sans-serif; font-size: 13px; color: #4A3F38; margin-top: 6px; }
+    .tracking-card { background: #FAF8F5; border: 1px dashed #631521; padding: 18px; text-align: center; margin-bottom: 24px; border-radius: 4px; }
+    .tracking-label { font-family: Arial, sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #8C7E74; }
+    .tracking-code { font-family: Georgia, serif; font-size: 20px; font-weight: bold; color: #631521; margin-top: 4px; letter-spacing: 1px; }
+    .content { padding: 32px 40px; }
+    .greeting { font-family: Georgia, serif; font-size: 18px; margin-bottom: 16px; color: #1A1614; }
+    .body-text { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.7; margin-bottom: 24px; color: #3A3535; }
+    .section-label { font-family: Arial, sans-serif; font-size: 10px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; color: #631521; border-bottom: 1px solid #E8DFD5; padding-bottom: 8px; margin-bottom: 16px; }
+    .shipping-info { background: #FAF8F5; padding: 20px; margin-bottom: 24px; border: 1px solid #E8DFD5; font-family: Arial, sans-serif; font-size: 13px; line-height: 1.6; }
+    .contact-section { border-top: 1px solid #E8DFD5; padding-top: 24px; text-align: center; }
+    .contact-text { font-family: Arial, sans-serif; font-size: 13px; color: #8C7E74; margin-bottom: 12px; }
+    .contact-links a { font-family: Arial, sans-serif; font-size: 13px; color: #631521; text-decoration: none; margin: 0 8px; font-weight: bold; }
+    .footer { background: #1A1614; padding: 24px 40px; text-align: center; }
+    .footer-logo { font-family: Georgia, serif; font-size: 18px; color: #FAF8F5; letter-spacing: 2px; }
+    .footer-tagline { font-family: Arial, sans-serif; font-size: 10px; color: rgba(245,240,232,0.5); letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+    .footer-info { font-family: Arial, sans-serif; font-size: 11px; color: rgba(245,240,232,0.6); margin-top: 12px; line-height: 1.8; }
+  </style>
+</head>
+<body>
+<div class="email-wrapper">
+  <div class="header">
+    <div class="header-logo">QuanNguyenS</div>
+    <div class="header-tagline">Dressed for Life. Even at Home.</div>
+  </div>
+  <div class="banner">
+    <div class="banner-icon">🚚</div>
+    <div class="banner-title">Đơn hàng đang trên đường giao!</div>
+    <div class="banner-subtitle">Đơn hàng #${order.orderId} đã được bàn giao cho đơn vị vận chuyển.</div>
+  </div>
+  <div class="content">
+    <p class="greeting">Xin chào ${order.customer.fullName},</p>
+    <p class="body-text">
+      Kiện hàng của bạn đã được xuất kho và đang được chuyển phát nhanh đến địa chỉ của bạn.
+      Dự kiến giao hàng trong vòng <strong>1–3 ngày tới</strong>.
+    </p>
+
+    ${trackingNumber ? `
+    <div class="tracking-card">
+      <div class="tracking-label">Mã vận đơn bưu tá</div>
+      <div class="tracking-code">${trackingNumber}</div>
+    </div>
+    ` : ''}
+
+    <p class="section-label">Địa chỉ nhận hàng</p>
+    <div class="shipping-info">
+      <strong>${order.customer.fullName}</strong><br>
+      📞 ${order.customer.phone}<br>
+      📍 ${order.shipping.fullAddress}
+      ${order.note ? `<br><br>📝 <em>Ghi chú: ${order.note}</em>` : ''}
+    </div>
+
+    <div class="contact-section">
+      <p class="contact-text">Bạn cần thay đổi thời gian hoặc địa điểm nhận hàng?</p>
+      <div class="contact-links">
+        <a href="tel:0981753082">📞 Hotline: 0981 753 082</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <div class="footer-logo">QuanNguyenS</div>
+    <div class="footer-tagline">Dressed for Life. Even at Home.</div>
+    <div class="footer-info">
+      Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội<br>
+      0981 753 082 · ducquan16102006@gmail.com
+    </div>
+  </div>
+</div>
+</body>
+</html>
+`
+}
+
+// ──────────────────────────────────────────────────────────
+// Template 6: HỦY ĐƠN HÀNG (CANCELLED)
+// ──────────────────────────────────────────────────────────
+export const buildCancelledEmailHTML = (order, extra = {}) => {
+  const reason = extra.reason || 'Theo yêu cầu khách hàng hoặc lỗi kỹ thuật'
+  return `
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thông báo hủy đơn hàng</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Georgia', 'Times New Roman', serif; background: #F5F0E8; color: #3A3535; padding: 20px; }
+    .email-wrapper { max-width: 600px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E8DFD5; }
+    .header { background: #631521; padding: 32px 40px; text-align: center; }
+    .header-logo { font-family: Georgia, serif; font-size: 28px; font-weight: bold; color: #FAF8F5; letter-spacing: 2px; }
+    .header-tagline { font-family: Arial, sans-serif; font-size: 11px; color: rgba(245,240,232,0.7); letter-spacing: 3px; text-transform: uppercase; margin-top: 6px; }
+    .banner { background: #FDECEA; border-left: 4px solid #D32F2F; padding: 20px 40px; text-align: center; }
+    .banner-icon { font-size: 36px; }
+    .banner-title { font-family: Georgia, serif; font-size: 22px; color: #C62828; margin-top: 8px; font-weight: bold; }
+    .banner-subtitle { font-family: Arial, sans-serif; font-size: 13px; color: #4A3F38; margin-top: 6px; }
+    .reason-card { background: #FAF8F5; border: 1px solid #E8DFD5; padding: 18px; margin-bottom: 24px; border-radius: 4px; }
+    .content { padding: 32px 40px; }
+    .greeting { font-family: Georgia, serif; font-size: 18px; margin-bottom: 16px; color: #1A1614; }
+    .body-text { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.7; margin-bottom: 24px; color: #3A3535; }
+    .contact-section { border-top: 1px solid #E8DFD5; padding-top: 24px; text-align: center; }
+    .contact-text { font-family: Arial, sans-serif; font-size: 13px; color: #8C7E74; margin-bottom: 12px; }
+    .contact-links a { font-family: Arial, sans-serif; font-size: 13px; color: #631521; text-decoration: none; margin: 0 8px; font-weight: bold; }
+    .footer { background: #1A1614; padding: 24px 40px; text-align: center; }
+    .footer-logo { font-family: Georgia, serif; font-size: 18px; color: #FAF8F5; letter-spacing: 2px; }
+    .footer-tagline { font-family: Arial, sans-serif; font-size: 10px; color: rgba(245,240,232,0.5); letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+    .footer-info { font-family: Arial, sans-serif; font-size: 11px; color: rgba(245,240,232,0.6); margin-top: 12px; line-height: 1.8; }
+  </style>
+</head>
+<body>
+<div class="email-wrapper">
+  <div class="header">
+    <div class="header-logo">QuanNguyenS</div>
+    <div class="header-tagline">Dressed for Life. Even at Home.</div>
+  </div>
+  <div class="banner">
+    <div class="banner-icon">❌</div>
+    <div class="banner-title">Đơn hàng đã được hủy</div>
+    <div class="banner-subtitle">Đơn hàng #${order.orderId} đã được hủy trên hệ thống QuanNguyenS.</div>
+  </div>
+  <div class="content">
+    <p class="greeting">Xin chào ${order.customer.fullName},</p>
+    <p class="body-text">
+      QuanNguyenS xin thông báo đơn hàng <strong>#${order.orderId}</strong> của bạn đã được hủy.
+    </p>
+
+    <div class="reason-card">
+      <strong style="color: #631521; font-family: Arial, sans-serif; font-size: 12px; text-transform: uppercase;">Lý do hủy:</strong>
+      <p style="font-family: Arial, sans-serif; font-size: 14px; color: #3A3535; margin-top: 6px;">${reason}</p>
+    </div>
+
+    <p class="body-text">
+      Nếu bạn đã thực hiện thanh toán trực tuyến hoặc chuyển khoản, bộ phận kế toán của chúng tôi sẽ liên hệ để tiến hành hoàn tiền trong vòng 24–48 giờ làm việc.
+    </p>
+
+    <div class="contact-section">
+      <p class="contact-text">Cần hỗ trợ thêm hoặc đặt lại sản phẩm?</p>
+      <div class="contact-links">
+        <a href="tel:0981753082">📞 0981 753 082</a>
+        <a href="mailto:ducquan16102006@gmail.com">✉️ Email hỗ trợ</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer">
+    <div class="footer-logo">QuanNguyenS</div>
+    <div class="footer-tagline">Dressed for Life. Even at Home.</div>
+    <div class="footer-info">
+      Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội<br>
+      0981 753 082 · ducquan16102006@gmail.com
+    </div>
+  </div>
+</div>
+</body>
+</html>
+`
+}
+
+// ──────────────────────────────────────────────────────────
+// Sending functions for status updates
+// ──────────────────────────────────────────────────────────
+export const sendConfirmedEmail = async (order, extra = {}) => {
+  const transporter = getTransporter()
+  const subject = `✨ QuanNguyenS — Đơn hàng #${order.orderId} đã được xác nhận`
+  const html = buildConfirmedEmailHTML(order, extra)
+
+  await transporter.sendMail({
+    from: `"QuanNguyenS Luxury Pajamas" <${process.env.GMAIL_USER}>`,
+    to: order.customer.email,
+    subject,
+    html,
+  })
+
+  console.log(`✅ Confirmed email sent to ${order.customer.email}`)
+  return { success: true, recipient: order.customer.email }
+}
+
+export const sendShippedEmail = async (order, extra = {}) => {
+  const transporter = getTransporter()
+  const subject = `🚚 QuanNguyenS — Đơn hàng #${order.orderId} đang trên đường giao`
+  const html = buildShippedEmailHTML(order, extra)
+
+  await transporter.sendMail({
+    from: `"QuanNguyenS Luxury Pajamas" <${process.env.GMAIL_USER}>`,
+    to: order.customer.email,
+    subject,
+    html,
+  })
+
+  console.log(`✅ Shipped email sent to ${order.customer.email}`)
+  return { success: true, recipient: order.customer.email }
+}
+
+export const sendCancelledEmail = async (order, extra = {}) => {
+  const transporter = getTransporter()
+  const subject = `❌ QuanNguyenS — Thông báo hủy đơn hàng #${order.orderId}`
+  const html = buildCancelledEmailHTML(order, extra)
+
+  await transporter.sendMail({
+    from: `"QuanNguyenS Luxury Pajamas" <${process.env.GMAIL_USER}>`,
+    to: order.customer.email,
+    subject,
+    html,
+  })
+
+  console.log(`✅ Cancelled email sent to ${order.customer.email}`)
+  return { success: true, recipient: order.customer.email }
+}

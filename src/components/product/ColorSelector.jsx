@@ -38,6 +38,13 @@ export default function ColorSelector({ colors = [], selected, onChange }) {
               90deg, rgba(255,255,255,0.3) 0px, rgba(255,255,255,0.3) 2px,
               transparent 2px, transparent 12px
             )`
+          } else if (isPattern && (color.patternType === 'brown-stripe' || color.patternType === 'mocha-stripe')) {
+            swatchBackground = `repeating-linear-gradient(
+              90deg,
+              #5C3A21 0px, #5C3A21 4px,
+              #FFFFFF 4px, #FFFFFF 6px,
+              #5C3A21 6px, #5C3A21 10px
+            )`
           }
 
           if (isPattern) {

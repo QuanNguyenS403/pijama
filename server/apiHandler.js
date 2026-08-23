@@ -2,17 +2,21 @@ import { appendOrderToSheet } from './lib/googleSheets.js'
 import { sendCustomerEmail } from './lib/emailCustomer.js'
 import { sendOwnerEmail } from './lib/emailOwner.js'
 import { orderPaymentStore } from './lib/paymentWebhook.js'
+import { validateOrderPricing } from './lib/pricingValidator.js'
+import { validateOrderStock } from './lib/stockValidator.js'
 
 /**
  * Controller xử lý submit đơn hàng:
- * 1. Validate payload
- * 2. Phân loại luồng theo Phương thức thanh toán:
+ * 1. Validate payload cơ bản
+ * 2. Validate ĐƠN GIÁ & TỔNG TIỀN độc lập từ catalog server (P0-1)
+ * 3. Validate TỒN KHO THỰC TẾ (P0-4)
+ * 4. Phân loại luồng theo Phương thức thanh toán:
  *    - COD: Ghi Sheet + Gửi Email xác nhận đặt hàng ngay lập tức.
- *    - BANK_TRANSFER (VietQR): Ghi Sheet ở trạng thái CHỜ THANH TOÁN, Lưu trữ mã QR 1 lần.
- *      TUYỆT ĐỐI CHƯA gửi email xác nhận cho đến khi tiền thực sự về tài khoản (qua Webhook / Xác thực).
+ *    - BANK_TRANSFER / MOMO: Ghi Sheet ở trạng thái CHỜ THANH TOÁN, Lưu trữ mã QR 1 lần.
+ *      TUYỆT ĐỐI CHƯA gửi email xác nhận thanh toán cho đến khi tiền thực sự về tài khoản (qua Webhook có secret).
  */
 export async function handleOrderSubmit(order) {
-  // Validate tối thiểu
+  // 1. Validate tối thiểu
   if (!order || !order.orderId || !order.customer?.email || !order.items?.length) {
     return {
       status: 400,
@@ -23,26 +27,58 @@ export async function handleOrderSubmit(order) {
     }
   }
 
-  const isBankTransfer = order.payment?.method === 'BANK_TRANSFER'
+  // 2. Kiểm tra tính toàn vẹn giá (P0-1)
+  const pricingCheck = validateOrderPricing(order)
+  if (!pricingCheck.isValid) {
+    console.warn(`⛔ [PRICING REJECTED] Đơn hàng ${order.orderId} bị từ chối: ${pricingCheck.error}`)
+    return {
+      status: 400,
+      data: {
+        success: false,
+        error: pricingCheck.error || 'Giá sản phẩm hoặc tổng tiền không hợp lệ',
+      },
+    }
+  }
+
+  // 3. Kiểm tra tồn kho khả dụng (P0-4)
+  const stockCheck = validateOrderStock(order)
+  if (!stockCheck.isValid) {
+    console.warn(`⛔ [STOCK REJECTED] Đơn hàng ${order.orderId} bị từ chối: ${stockCheck.error}`)
+    return {
+      status: 400,
+      data: {
+        success: false,
+        error: stockCheck.error || 'Sản phẩm đã hết hàng trong kho',
+      },
+    }
+  }
+
+  const isBankTransfer = order.payment?.method === 'BANK_TRANSFER' || order.payment?.method === 'MOMO'
   const now = Date.now()
 
-  console.log(`\n📦 [ORDER AUTOMATION] Đang tiếp nhận đơn hàng: ${order.orderId}`)
-  console.log(`👤 Khách hàng: ${order.customer?.fullName} (${order.customer?.phone} | ${order.customer?.email})`)
-  console.log(`💰 Tổng tiền: ${order.total}đ | Phương thức: ${order.payment?.methodLabel || order.payment?.method}`)
-
-  // Lưu trữ đơn hàng vào Store bộ nhớ (kèm hạn sử dụng QR 15 phút)
+  // Gán lại các giá trị đã được server xác thực chuẩn xác 100%
+  const validatedSummary = pricingCheck.summary
   const orderRecord = {
     ...order,
+    items: validatedSummary.items,
+    subtotal: validatedSummary.subtotal,
+    shippingFee: validatedSummary.shippingFee,
+    discount: validatedSummary.discount,
+    total: validatedSummary.total,
     status: isBankTransfer ? 'AWAITING_PAYMENT' : 'PENDING',
     payment: {
       ...(order.payment || {}),
-      status: isBankTransfer ? 'UNPAID' : 'UNPAID',
+      status: 'UNPAID',
       qrGeneratedAt: now,
       qrExpiresAt: now + 15 * 60 * 1000, // 15 phút hiệu lực
       isQrInvalidated: false,
     },
     createdAt: new Date().toISOString(),
   }
+
+  console.log(`\n📦 [ORDER VALIDATED] Đang tiếp nhận đơn hàng: ${order.orderId}`)
+  console.log(`👤 Khách hàng: ${order.customer?.fullName} (${order.customer?.phone} | ${order.customer?.email})`)
+  console.log(`💰 Tổng tiền xác thực: ${orderRecord.total}đ (Tạm tính: ${orderRecord.subtotal}đ, Giảm: ${orderRecord.discount}đ, Ship: ${orderRecord.shippingFee}đ) | Phương thức: ${order.payment?.methodLabel || order.payment?.method}`)
 
   orderPaymentStore.set(order.orderId, orderRecord)
 

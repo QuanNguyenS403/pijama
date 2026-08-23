@@ -11,6 +11,7 @@ import {
   Loader2,
   Check,
   Gift,
+  Lock,
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import CartDrawer from '../components/cart/CartDrawer'
@@ -49,8 +50,8 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
 
-  // Calculate 10% discount for bank transfer (VietQR)
-  const isBankTransfer = formData.paymentMethod === 'BANK_TRANSFER'
+  // Calculate 10% discount for bank transfer (VietQR) or e-wallet (MoMo)
+  const isBankTransfer = formData.paymentMethod === 'BANK_TRANSFER' || formData.paymentMethod === 'MOMO'
   const bankTransferDiscount = useMemo(() => {
     return isBankTransfer ? Math.round(subtotal * 0.10) : 0
   }, [isBankTransfer, subtotal])
@@ -167,7 +168,7 @@ export default function CheckoutPage() {
         clearCart()
 
         // 4. Chuyển hướng theo phương thức thanh toán
-        if (formData.paymentMethod === 'BANK_TRANSFER') {
+        if (formData.paymentMethod === 'BANK_TRANSFER' || formData.paymentMethod === 'MOMO') {
           navigate(`/thanh-toan-chuyen-khoan?orderId=${result.orderId}`, {
             state: { order: orderPayload },
           })
@@ -208,8 +209,9 @@ export default function CheckoutPage() {
             <ChevronLeft className="w-4 h-4" /> Quay lại giỏ hàng
           </Link>
 
-          <span className="font-serif text-xs tracking-[0.2em] text-[#8C7E74] uppercase hidden sm:block">
-            Giao Dịch Bảo Mật 100%
+          <span className="font-serif text-xs tracking-[0.2em] text-[#631521] uppercase hidden sm:flex items-center gap-1.5 font-semibold">
+            <Lock className="w-3.5 h-3.5 text-[#631521]" />
+            Giao Dịch Bảo Mật SSL 100%
           </span>
         </div>
 
@@ -465,8 +467,8 @@ export default function CheckoutPage() {
 
                 {/* SECTION 3: PHƯƠNG THỨC THANH TOÁN */}
                 <div className="bg-white p-6 sm:p-8 rounded-[4px] border border-[#E8DFD5] shadow-xs">
-                  <div className="flex items-center gap-2.5 pb-4 mb-6 border-b border-[#E8DFD5]">
-                    <span className="w-6 h-6 rounded-full bg-[#631521] text-white flex items-center justify-center text-xs font-bold font-mono">
+                  <div className="flex items-center gap-3 pb-3 border-b border-[#E8DFD5]">
+                    <span className="w-6 h-6 rounded-full bg-[#631521] text-[#FAF8F5] flex items-center justify-center font-serif text-xs font-bold">
                       3
                     </span>
                     <h2 className="font-serif text-lg font-bold text-[#1A1614] tracking-wide">
@@ -474,10 +476,21 @@ export default function CheckoutPage() {
                     </h2>
                   </div>
 
+                  {/* Trust Badge Row */}
+                  <div className="bg-[#FAF5F0] border border-[#D4AF37]/40 rounded-[3px] p-3 flex items-center justify-between flex-wrap gap-2 text-xs text-[#631521] mb-4">
+                    <span className="flex items-center gap-1.5 font-semibold">
+                      <ShieldCheck className="w-4 h-4 text-[#631521]" />
+                      Xác thực VietQR / Napas 24/7 · Vietcombank
+                    </span>
+                    <span className="text-[11px] text-[#8C7E74] font-sans">
+                      Mã hóa SSL chuẩn ngân hàng
+                    </span>
+                  </div>
+
                   <div className="space-y-3">
                     {PAYMENT_METHODS.map((method) => {
                       const isSelected = formData.paymentMethod === method.value
-                      const hasDiscount = method.value === 'BANK_TRANSFER'
+                      const hasDiscount = method.discountPercent > 0
 
                       return (
                         <div
@@ -513,7 +526,7 @@ export default function CheckoutPage() {
                                 {hasDiscount && (
                                   <span className="inline-flex items-center gap-1 bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] text-[10.5px] font-bold px-2 py-0.5 rounded-[2px]">
                                     <Gift className="w-3 h-3" />
-                                    ƯU ĐÃI GIẢM 10%
+                                    GIẢM {method.discountPercent}%
                                   </span>
                                 )}
                               </div>

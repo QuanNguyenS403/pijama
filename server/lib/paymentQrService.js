@@ -23,13 +23,15 @@ export function generateVietQRQuickLink({
   amount,
   description,
   template = 'compact2',
+  includeAddInfo = false,
 }) {
   const sanitizedAmount = Math.round(Number(amount) || 0)
   const encodedDesc = encodeURIComponent(description || '')
   const encodedName = encodeURIComponent(accountName || '')
 
-  // Link ảnh VietQR động chuẩn CDN Napas VietQR.io
-  const qrImageUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-${template}.png?amount=${sanitizedAmount}&addInfo=${encodedDesc}&accountName=${encodedName}`
+  // Link ảnh VietQR động chuẩn CDN Napas VietQR.io (không kèm addInfo theo yêu cầu)
+  const addInfoParam = (includeAddInfo && encodedDesc) ? `&addInfo=${encodedDesc}` : ''
+  const qrImageUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-${template}.png?amount=${sanitizedAmount}${addInfoParam}&accountName=${encodedName}`
 
   // Link Deeplink mở trực tiếp App ngân hàng hỗ trợ VietQR
   const deeplink = `https://api.vietqr.io/${bankCode}/${accountNumber}/${sanitizedAmount}/${encodedDesc}/vietqr.jpg`

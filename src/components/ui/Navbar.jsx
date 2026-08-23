@@ -43,7 +43,15 @@ export default function Navbar({ onOpenSizeGuide, cartCount = 2, onOpenCart }) {
       >
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-10 flex items-center justify-between">
           {/* Top Left: Sophisticated minimalist QuanNguyenS Logo */}
-          <a href="#hero" className="flex items-center gap-2 focus:outline-none" aria-label="QuanNguyenS Trang chủ">
+          <a
+            href="#hero"
+            onClick={(e) => {
+              e.preventDefault()
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
+            className="flex items-center gap-2 focus:outline-none cursor-pointer"
+            aria-label="QuanNguyenS Trang chủ"
+          >
             <BrandLogo variant="horizontal" color="navy" />
           </a>
 

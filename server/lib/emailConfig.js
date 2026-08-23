@@ -26,3 +26,9 @@ export const verifyTransporter = async () => {
     return false
   }
 }
+
+export const transporter = {
+  sendMail: (...args) => getTransporter().sendMail(...args),
+}
+
+export default { getTransporter, verifyTransporter, transporter }

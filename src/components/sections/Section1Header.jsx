@@ -42,10 +42,14 @@ export default function Section1Header({ onOpenCta }) {
         {/* Logo */}
         <a
           href="#section-hero"
-          onClick={(e) => handleNavClick(e, '#section-hero')}
-          className="flex items-center gap-3 group focus:outline-none"
+          onClick={(e) => {
+            e.preventDefault()
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+          }}
+          className="flex items-center gap-3 group focus:outline-none cursor-pointer"
+          aria-label="QuanNguyenS — Trang chủ"
         >
-          <div className="w-8 h-8 rounded-full border border-[#D4AF37] flex items-center justify-center bg-[#4A0D17] text-[#D4AF37] font-serif font-bold text-sm tracking-tighter">
+          <div className="w-8 h-8 rounded-full border border-[#D4AF37] flex items-center justify-center bg-[#4A0D17] text-[#D4AF37] font-serif font-bold text-sm tracking-tighter group-hover:scale-105 transition-transform">
             QNS
           </div>
           <div className="flex flex-col">

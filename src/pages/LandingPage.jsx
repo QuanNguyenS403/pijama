@@ -24,6 +24,15 @@ export default function LandingPage() {
 
   return (
     <div className="bg-[#2C201A] text-white min-h-screen font-sans selection:bg-[#D4AF37] selection:text-[#2C201A] overflow-x-hidden">
+      {/* SEO & OpenGraph Meta Tags */}
+      <title>QuanNguyenS — Pijama Thiết Kế & Homewear Cao Cấp</title>
+      <meta name="description" content="Thương hiệu pijama thiết kế cao cấp QuanNguyenS. Chất liệu tự nhiên, sợi dệt chuẩn xuất khẩu châu Âu, phom dáng suông phóng khoáng từ nhà ra phố." />
+      <meta property="og:title" content="QuanNguyenS — Pijama Thiết Kế & Homewear Cao Cấp" />
+      <meta property="og:description" content="Thương hiệu pijama thiết kế cao cấp QuanNguyenS. Chất liệu tự nhiên, sợi dệt chuẩn xuất khẩu châu Âu, phom dáng suông phóng khoáng từ nhà ra phố." />
+      <meta property="og:url" content="https://quannguyens.vn/" />
+      <meta property="og:type" content="website" />
+      <link rel="canonical" href="https://quannguyens.vn/" />
+
       {/* Toast Notification */}
       <Toast toast={toast} onDismiss={() => setToast(null)} />
 

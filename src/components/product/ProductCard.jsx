@@ -134,6 +134,26 @@ export default function ProductCard({ product, onQuickView, onAddToCart }) {
                   />
                 )
               }
+              if (c.patternPreview && (c.patternType === 'brown-stripe' || c.patternType === 'mocha-stripe')) {
+                return (
+                  <span
+                    key={c.name}
+                    aria-label={c.label || c.name}
+                    title={c.label || c.name}
+                    className="w-4 h-4 border border-[#E8DFD5] shadow-xs"
+                    style={{
+                      borderRadius: '0px',
+                      background: `repeating-linear-gradient(
+                        90deg,
+                        #5C3A21 0px, #5C3A21 2px,
+                        #FFFFFF 2px, #FFFFFF 3px,
+                        #5C3A21 3px, #5C3A21 5px
+                      )`,
+                      backgroundColor: '#5C3A21',
+                    }}
+                  />
+                )
+              }
               return (
                 <span
                   key={c.name}

@@ -8,7 +8,7 @@ export default function Section8DeepFeature() {
       name: 'ENTRY SET',
       sub: 'Trải nghiệm đầu tiên',
       desc: 'Set pijama phong cách châu Âu, dáng suông',
-      colors: 'Pink Stripe / Navy Plaid',
+      colors: 'Pink Stripe / Navy Plaid / Brown Stripe',
       price: 'Từ 390.000đ',
       note: 'Phù hợp: Muốn thử phong cách châu Âu thanh lịch',
       cta: 'THỬ NGAY',

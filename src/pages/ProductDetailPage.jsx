@@ -154,10 +154,32 @@ export default function ProductDetailPage() {
     })
   }
 
+  const metaImage = typeof product.images === 'object' && !Array.isArray(product.images)
+    ? (product.images['Pink Stripe']?.[0] || Object.values(product.images)[0]?.[0] || '')
+    : (Array.isArray(product.images) ? product.images[0] : '')
+  const fullImageUrl = metaImage && typeof metaImage === 'string' && metaImage.startsWith('http')
+    ? metaImage
+    : `https://quannguyens.vn${metaImage || ''}`
+  const pageUrl = `https://quannguyens.vn/san-pham/${product.slug}`
+  const pageTitle = `${product.name} — ${product.subtitle} | QuanNguyenS Pijama`
+  const pageDesc = product.description || `${product.name} — Thiết kế pijama cao cấp, chất liệu tự nhiên thoáng khí chuẩn phong cách châu Âu.`
+
   return (
-    <div className="min-h-screen bg-[#FAF8F5] pb-16 lg:pb-0">
-      {/* SEO */}
-      <title>{product.name} — QuanNguyenS European Casual Luxury</title>
+    <div className="min-h-screen bg-[#FAF8F5] text-[#1A1614]">
+      {/* Dynamic SEO & OpenGraph Meta Tags (P2-2) */}
+      <title>{pageTitle}</title>
+      <meta name="description" content={pageDesc} />
+      <meta property="og:title" content={pageTitle} />
+      <meta property="og:description" content={pageDesc} />
+      <meta property="og:image" content={fullImageUrl} />
+      <meta property="og:url" content={pageUrl} />
+      <meta property="og:type" content="product" />
+      <meta property="og:site_name" content="QuanNguyenS Pijama" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={pageTitle} />
+      <meta name="twitter:description" content={pageDesc} />
+      <meta name="twitter:image" content={fullImageUrl} />
+      <link rel="canonical" href={pageUrl} />
 
       {/* Toast */}
       <Toast toast={toast} onDismiss={() => setToast(null)} />

@@ -187,6 +187,16 @@ export default function ProductInfo({
           )}
         </div>
 
+        {/* Freeship suggestion callout (P3 Item 12) */}
+        {product.price < 500000 && (
+          <div className="bg-[#FAF5F0] border border-[#D4AF37]/50 p-2.5 rounded-[2px] flex items-center gap-2 text-xs font-sans text-[#631521]">
+            <span className="text-sm">🎁</span>
+            <span>
+              Mua thêm <strong>{formatPrice(500000 - product.price)}</strong> để được <strong>MIỄN PHÍ VẬN CHUYỂN</strong> toàn quốc (đơn từ 500.000đ).
+            </span>
+          </div>
+        )}
+
         {/* Divider */}
         <div className="border-t border-[#E8DFD5]" />
 

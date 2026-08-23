@@ -5,39 +5,140 @@ import dotenv from 'dotenv'
 dotenv.config({ path: '.env.local' })
 dotenv.config()
 
-// Vite plugin to handle /api/orders/submit in dev mode without needing a separate process
+// Vite plugin to handle /api/* in dev mode without needing a separate process
 function orderApiPlugin() {
   return {
     name: 'order-api-dev-server',
     configureServer(server) {
-      server.middlewares.use('/api/orders/submit', async (req, res, next) => {
-        if (req.method === 'POST') {
-          let body = ''
-          req.on('data', (chunk) => {
-            body += chunk
+      server.middlewares.use(async (req, res, next) => {
+        const url = new URL(req.url, 'http://localhost:5173')
+        const pathname = url.pathname
+
+        if (!pathname.startsWith('/api/')) {
+          return next()
+        }
+
+        // Helper to parse JSON body
+        const getBody = () =>
+          new Promise((resolve) => {
+            let body = ''
+            req.on('data', (chunk) => {
+              body += chunk
+            })
+            req.on('end', () => {
+              try {
+                resolve(JSON.parse(body || '{}'))
+              } catch (e) {
+                resolve({})
+              }
+            })
           })
-          req.on('end', async () => {
-            try {
-              const orderData = JSON.parse(body || '{}')
-              const { handleOrderSubmit } = await import('./server/apiHandler.js')
-              const result = await handleOrderSubmit(orderData)
-              res.setHeader('Content-Type', 'application/json')
-              res.statusCode = result.status
-              res.end(JSON.stringify(result.data))
-            } catch (err) {
-              console.error('Dev server order handler error:', err)
-              res.setHeader('Content-Type', 'application/json')
-              res.statusCode = 500
-              res.end(
-                JSON.stringify({
-                  success: false,
-                  error: err.message || 'Lỗi xử lý đơn hàng',
-                })
-              )
+
+        const sendJson = (status, data) => {
+          res.setHeader('Content-Type', 'application/json')
+          res.statusCode = status
+          res.end(JSON.stringify(data))
+        }
+
+        try {
+          if (pathname === '/api/orders/submit' && req.method === 'POST') {
+            const orderData = await getBody()
+            const { handleOrderSubmit } = await import('./server/apiHandler.js')
+            const result = await handleOrderSubmit(orderData)
+            return sendJson(result.status, result.data)
+          }
+
+          if (pathname === '/api/orders/status' && req.method === 'GET') {
+            const orderId = url.searchParams.get('orderId')
+            const { getOrderPaymentStatus } = await import('./server/lib/paymentWebhook.js')
+            const result = getOrderPaymentStatus(orderId)
+            return sendJson(200, result)
+          }
+
+          if (pathname === '/api/payment/confirm' && req.method === 'POST') {
+            const body = await getBody()
+            const { confirmOrderPaymentManually } = await import('./server/lib/paymentWebhook.js')
+            const result = await confirmOrderPaymentManually(body)
+            return sendJson(result.status, result.data)
+          }
+
+          if (pathname === '/api/orders/tracking' && req.method === 'GET') {
+            const orderId = url.searchParams.get('orderId')
+            if (!orderId) {
+              return sendJson(400, { success: false, error: 'Thiếu mã đơn hàng' })
             }
-          })
-        } else {
+            const { orderPersistence } = await import('./server/lib/orderPersistence.js')
+            const { searchOrdersFromSheet } = await import('./server/lib/googleSheets.js')
+
+            let order = orderPersistence.get(orderId)
+            if (!order) {
+              const sheetOrders = await searchOrdersFromSheet(orderId)
+              order = sheetOrders.find((o) => o.orderId === orderId) || null
+            }
+            if (!order) {
+              return sendJson(404, { success: false, error: 'Không tìm thấy đơn hàng' })
+            }
+
+            const carrier = order.carrier || 'GHN'
+            const trackingCode = order.trackingCode || null
+            return sendJson(200, {
+              success: true,
+              orderId: order.orderId,
+              status: order.status || 'PENDING',
+              carrier,
+              trackingCode,
+              order,
+            })
+          }
+
+          if (pathname === '/api/orders/lookup' && req.method === 'GET') {
+            const query = url.searchParams.get('query') || url.searchParams.get('phone') || url.searchParams.get('orderId') || ''
+            if (!query || String(query).trim().length < 3) {
+              return sendJson(400, { success: false, error: 'Vui lòng nhập tối thiểu 3 ký tự' })
+            }
+            const { orderPersistence } = await import('./server/lib/orderPersistence.js')
+            const { searchOrdersFromSheet } = await import('./server/lib/googleSheets.js')
+
+            const localMatches = orderPersistence.findByQuery(query)
+            const sheetMatches = await searchOrdersFromSheet(query)
+
+            const combined = new Map()
+            sheetMatches.forEach((o) => combined.set(o.orderId, o))
+            localMatches.forEach((o) => combined.set(o.orderId, { ...combined.get(o.orderId), ...o }))
+
+            return sendJson(200, {
+              success: true,
+              query,
+              count: combined.size,
+              orders: Array.from(combined.values()),
+            })
+          }
+
+          if (pathname === '/api/orders/cancel-request' && req.method === 'POST') {
+            const { orderId, reason = 'Khách hủy đơn' } = await getBody()
+            if (!orderId) {
+              return sendJson(400, { success: false, error: 'Thiếu mã đơn hàng' })
+            }
+            const { orderPersistence } = await import('./server/lib/orderPersistence.js')
+            const order = orderPersistence.get(orderId)
+            if (order) {
+              order.status = 'CANCELLED'
+              order.cancelReason = reason
+              order.cancelledAt = new Date().toISOString()
+              orderPersistence.set(orderId, order)
+            }
+            return sendJson(200, {
+              success: true,
+              orderId,
+              message: 'Yêu cầu hủy đơn đã được tiếp nhận thành công.',
+            })
+          }
+
+          // Next if unmatched
           next()
+        } catch (err) {
+          console.error('Dev server API error:', err)
+          return sendJson(500, { success: false, error: err.message })
         }
       })
     },
@@ -46,7 +147,7 @@ function orderApiPlugin() {
 
 export default defineConfig({
   plugins: [react(), orderApiPlugin()],
-  base: './',
+  base: '/',
   server: {
     port: 3000,
     open: true,

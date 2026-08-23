@@ -18,26 +18,45 @@ export default function OrderSuccessPage() {
   const location = useLocation()
   const orderId = searchParams.get('orderId') || 'QNS-' + Date.now().toString().slice(-6)
 
-  // Lấy dữ liệu order từ location state hoặc sessionStorage
-  const [order, setOrder] = useState(null)
+  // Lấy dữ liệu order từ location state, sessionStorage hoặc localStorage
+  const [order, setOrder] = useState(() => {
+    if (location.state?.order) return location.state.order
+    try {
+      const saved = sessionStorage.getItem(`last_order_${orderId}`) || sessionStorage.getItem('latest_order')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed.orderId === orderId || !searchParams.get('orderId')) return parsed
+      }
+      const storedOrders = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
+      return storedOrders.find((o) => o.orderId === orderId) || null
+    } catch (e) {
+      console.error(e)
+      return null
+    }
+  })
   const [copiedField, setCopiedField] = useState(null)
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
 
-    if (location.state?.order) {
-      setOrder(location.state.order)
-    } else {
+    if (!order) {
       try {
-        const saved = sessionStorage.getItem('latest_order')
+        const saved = sessionStorage.getItem(`last_order_${orderId}`) || sessionStorage.getItem('latest_order')
         if (saved) {
-          setOrder(JSON.parse(saved))
+          const parsed = JSON.parse(saved)
+          if (parsed.orderId === orderId || !searchParams.get('orderId')) {
+            setOrder(parsed)
+            return
+          }
         }
+        const storedOrders = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
+        const found = storedOrders.find((o) => o.orderId === orderId)
+        if (found) setOrder(found)
       } catch (e) {
         console.error(e)
       }
     }
-  }, [location.state])
+  }, [location.state, orderId])
 
   const handleCopy = (text, fieldName) => {
     if (!text) return
@@ -50,11 +69,11 @@ export default function OrderSuccessPage() {
     window.dispatchEvent(new Event('open_orders_drawer'))
   }
 
-  const customerEmail = order?.customer?.email || 'email của bạn'
+  const customerEmail = order?.customer?.email || ''
   const customerName = order?.customer?.fullName || 'Quý khách'
   const customerPhone = order?.customer?.phone || ''
-  const total = order?.total || 381000
-  const isBankTransfer = order?.payment?.method === 'BANK_TRANSFER'
+  const total = order?.total || 0
+  const isBankTransfer = order?.payment?.method === 'BANK_TRANSFER' || order?.payment?.method === 'MOMO'
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#1A1614]">
@@ -108,110 +127,157 @@ export default function OrderSuccessPage() {
 
           {/* Body Content */}
           <div className="p-6 sm:p-10 space-y-8">
-            {/* Greeting & Email confirmation note */}
-            <div className="text-center max-w-lg mx-auto space-y-2">
-              <p className="font-serif text-lg font-bold text-[#1A1614]">
-                Cảm ơn {customerName} đã tin tưởng lựa chọn QuanNguyenS
-              </p>
-              <p className="text-xs sm:text-sm font-light text-[#4A3F38] leading-relaxed">
-                Hệ thống đã tự động gửi email xác nhận kèm hóa đơn chi tiết tới địa chỉ{' '}
-                <strong className="text-[#631521] font-semibold">{customerEmail}</strong>. Vui lòng kiểm tra hộp thư (hoặc mục Spam/Quảng cáo).
-              </p>
-            </div>
-
-            {/* Order Details Box */}
-            <div className="bg-[#FAF5F0] rounded-[3px] border border-[#E8DFD5] p-5 sm:p-6 space-y-4">
-              <div className="flex items-center justify-between border-b border-[#E8DFD5] pb-3">
-                <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#631521]">
-                  Tóm Tắt Đơn Hàng
-                </span>
-                <span className="text-xs font-mono text-[#8C7E74]">
-                  {order?.orderDateVN || 'Vừa xong'}
-                </span>
+            {!order ? (
+              /* State: Không tìm thấy dữ liệu đơn hàng */
+              <div className="text-center py-8 space-y-4">
+                <div className="w-14 h-14 bg-[#FAF5F0] border border-[#E8DFD5] text-[#631521] rounded-full flex items-center justify-center mx-auto">
+                  <Package className="w-7 h-7" />
+                </div>
+                <h2 className="font-serif text-xl font-bold text-[#1A1614]">
+                  Không tìm thấy dữ liệu đơn hàng
+                </h2>
+                <p className="text-xs sm:text-sm font-light text-[#4A3F38] max-w-md mx-auto leading-relaxed">
+                  Không tìm thấy thông tin đơn hàng trên thiết bị này. Vui lòng kiểm tra lại trong mục <strong>Đơn Hàng Đã Đặt</strong> hoặc liên hệ hotline <strong>0981 753 082</strong> để được hỗ trợ kiểm tra trực tiếp.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2 max-w-md mx-auto">
+                  <button
+                    onClick={handleOpenOrdersDrawer}
+                    className="flex-1 bg-[#631521] text-[#FAF8F5] font-sans font-bold text-xs uppercase tracking-[0.15em] py-3.5 px-6 rounded-[2px] hover:bg-[#4A0D17] border border-[#D4AF37]/30 shadow-sm transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Package className="w-4 h-4 text-[#D4AF37]" />
+                    Mục Đơn Hàng Đã Đặt
+                  </button>
+                  <Link
+                    to="/"
+                    className="flex-1 bg-white text-[#631521] font-sans font-bold text-xs uppercase tracking-[0.15em] py-3.5 px-6 rounded-[2px] hover:bg-[#FAF5F0] border border-[#631521] transition-all text-center flex items-center justify-center"
+                  >
+                    Về Trang Chủ
+                  </Link>
+                </div>
               </div>
+            ) : (
+              <>
+                {/* Greeting & Email confirmation note */}
+                <div className="text-center max-w-lg mx-auto space-y-2">
+                  <p className="font-serif text-lg font-bold text-[#1A1614]">
+                    Cảm ơn {customerName} đã tin tưởng lựa chọn QuanNguyenS
+                  </p>
+                  {order.payment?.status === 'CUSTOMER_CLAIMED_PAID' ? (
+                    <div className="bg-[#FAF5F0] border border-[#D4AF37]/50 p-3.5 rounded-[3px] text-xs text-[#631521] space-y-1 text-left">
+                      <p className="font-bold flex items-center gap-1.5">
+                        <span>⏳</span> Đang đối soát giao dịch chuyển khoản với Vietcombank
+                      </p>
+                      <p className="text-[#4A3F38] font-light leading-relaxed">
+                        Hệ thống đang tự động kiểm tra biến động số dư. Sau khi giao dịch được xác thực, email hóa đơn chính thức sẽ được gửi ngay tới <strong>{customerEmail || 'email của bạn'}</strong>.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-xs sm:text-sm font-light text-[#4A3F38] leading-relaxed">
+                      Hệ thống đã tự động gửi email xác nhận kèm hóa đơn chi tiết tới địa chỉ{' '}
+                      <strong className="text-[#631521] font-semibold">{customerEmail || 'email của bạn'}</strong>. Vui lòng kiểm tra hộp thư (hoặc mục Spam/Quảng cáo).
+                    </p>
+                  )}
+                </div>
 
-              {/* Items List */}
-              {order?.items && order.items.length > 0 ? (
-                <div className="space-y-3">
-                  {order.items.map((item, idx) => (
-                    <div key={idx} className="flex justify-between items-start text-xs sm:text-sm">
-                      <div className="pr-4">
-                        <p className="font-bold text-[#1A1614]">{item.productName}</p>
-                        <p className="text-xs text-[#8C7E74]">{item.variant} · SL: x{item.quantity}</p>
-                      </div>
-                      <span className="font-serif font-bold text-[#631521] shrink-0">
-                        {formatVND(item.totalPrice)}
+                {/* Order Details Box */}
+                <div className="bg-[#FAF5F0] rounded-[3px] border border-[#E8DFD5] p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center justify-between border-b border-[#E8DFD5] pb-3">
+                    <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#631521]">
+                      Tóm Tắt Đơn Hàng
+                    </span>
+                    <span className="text-xs font-mono text-[#8C7E74]">
+                      {order.orderDateVN || 'Vừa xong'}
+                    </span>
+                  </div>
+
+                  {/* Items List */}
+                  {order.items && order.items.length > 0 && (
+                    <div className="space-y-3">
+                      {order.items.map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-start text-xs sm:text-sm">
+                          <div className="pr-4">
+                            <p className="font-bold text-[#1A1614]">{item.productName}</p>
+                            <p className="text-xs text-[#8C7E74]">{item.variant} · SL: x{item.quantity}</p>
+                          </div>
+                          <span className="font-serif font-bold text-[#631521] shrink-0">
+                            {formatVND(item.totalPrice || item.unitPrice * item.quantity)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Discount Row (If Any) */}
+                  {order.discount > 0 && (
+                    <div className="border-t border-[#E8DFD5] pt-2 flex justify-between items-center text-xs text-[#2E7D32]">
+                      <span className="font-medium flex items-center gap-1">
+                        <Gift className="w-3.5 h-3.5" />
+                        Ưu đãi Thanh toán ({order.payment?.method === 'MOMO' ? 'MoMo' : 'VietQR'}) 10%
+                      </span>
+                      <span className="font-serif font-bold">
+                        -{formatVND(order.discount)}
                       </span>
                     </div>
-                  ))}
+                  )}
+
+                  {/* Total Row */}
+                  <div className="border-t border-[#E8DFD5] pt-3 flex justify-between items-baseline">
+                    <span className="font-sans text-xs font-bold uppercase text-[#4A3F38]">
+                      Tổng giá trị đơn hàng
+                    </span>
+                    <span className="font-serif text-xl font-bold text-[#631521]">
+                      {formatVND(total)}
+                    </span>
+                  </div>
+
+                  {/* Shipping info */}
+                  {order.shipping && (
+                    <div className="border-t border-[#E8DFD5] pt-3 text-xs text-[#4A3F38] space-y-1">
+                      <p><strong>Người nhận:</strong> {order.customer?.fullName} — {order.customer?.phone}</p>
+                      <p><strong>Địa chỉ nhận hàng:</strong> {order.shipping?.fullAddress}</p>
+                      <p><strong>Phương thức TT:</strong> {order.payment?.methodLabel || (isBankTransfer ? 'VietQR (Giảm 10%)' : 'COD')}</p>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <p className="text-xs text-[#8C7E74] italic">
-                  Đơn hàng pijama cao cấp thiết kế châu Âu
-                </p>
-              )}
 
-              {/* Discount Row (If Any) */}
-              {order?.discount > 0 && (
-                <div className="border-t border-[#E8DFD5] pt-2 flex justify-between items-center text-xs text-[#2E7D32]">
-                  <span className="font-medium flex items-center gap-1">
-                    <Gift className="w-3.5 h-3.5" />
-                    Ưu đãi Chuyển khoản VietQR (10%)
-                  </span>
-                  <span className="font-serif font-bold">
-                    -{formatVND(order.discount)}
-                  </span>
+                {/* Delivery Timeline Notice */}
+                <div className="flex items-start gap-3.5 bg-white p-4 rounded-[3px] border border-[#E8DFD5] text-xs font-sans text-[#4A3F38]">
+                  <Truck className="w-5 h-5 text-[#631521] shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-[#1A1614] mb-0.5">Thời gian giao hàng dự kiến:</p>
+                    <p className="font-light leading-relaxed">
+                      Từ <strong>2–4 ngày làm việc</strong>. Bộ phận vận hành sẽ liên hệ qua điện thoại trước khi giao hàng.
+                    </p>
+                  </div>
                 </div>
-              )}
 
-              {/* Total Row */}
-              <div className="border-t border-[#E8DFD5] pt-3 flex justify-between items-baseline">
-                <span className="font-sans text-xs font-bold uppercase text-[#4A3F38]">
-                  Tổng giá trị đơn hàng
-                </span>
-                <span className="font-serif text-xl font-bold text-[#631521]">
-                  {formatVND(total)}
-                </span>
-              </div>
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button
+                    onClick={handleOpenOrdersDrawer}
+                    className="flex-1 bg-[#631521] text-[#FAF8F5] font-sans font-bold text-xs uppercase tracking-[0.15em] py-3.5 px-6 rounded-[2px] hover:bg-[#4A0D17] border border-[#D4AF37]/30 shadow-sm transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Package className="w-4 h-4 text-[#D4AF37]" />
+                    Xem Danh Sách Đơn Đã Đặt
+                  </button>
 
-              {/* Shipping info */}
-              {order?.shipping && (
-                <div className="border-t border-[#E8DFD5] pt-3 text-xs text-[#4A3F38] space-y-1">
-                  <p><strong>Người nhận:</strong> {order.customer?.fullName} — {order.customer?.phone}</p>
-                  <p><strong>Địa chỉ nhận hàng:</strong> {order.shipping?.fullAddress}</p>
-                  <p><strong>Phương thức TT:</strong> {order.payment?.methodLabel || (isBankTransfer ? 'VietQR (Giảm 10%)' : 'COD')}</p>
+                  <button
+                    onClick={() => window.print()}
+                    className="sm:w-auto bg-white text-[#4A3F38] font-sans font-semibold text-xs py-3.5 px-5 rounded-[2px] border border-[#E8DFD5] hover:bg-[#FAF8F5] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    title="In hoặc lưu hóa đơn dưới dạng PDF"
+                  >
+                    <span>📄 In / Tải Hóa Đơn</span>
+                  </button>
+
+                  <Link
+                    to="/"
+                    className="flex-1 bg-white text-[#631521] font-sans font-bold text-xs uppercase tracking-[0.15em] py-3.5 px-6 rounded-[2px] hover:bg-[#FAF5F0] border border-[#631521] transition-all text-center flex items-center justify-center gap-1.5"
+                  >
+                    Tiếp Tục Mua Sắm
+                  </Link>
                 </div>
-              )}
-            </div>
-
-            {/* Delivery Timeline Notice */}
-            <div className="flex items-start gap-3.5 bg-white p-4 rounded-[3px] border border-[#E8DFD5] text-xs font-sans text-[#4A3F38]">
-              <Truck className="w-5 h-5 text-[#631521] shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold text-[#1A1614] mb-0.5">Thời gian giao hàng dự kiến:</p>
-                <p className="font-light leading-relaxed">
-                  Từ <strong>2–4 ngày làm việc</strong>. Bộ phận vận hành sẽ liên hệ qua điện thoại trước khi giao hàng.
-                </p>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <button
-                onClick={handleOpenOrdersDrawer}
-                className="flex-1 bg-[#631521] text-[#FAF8F5] font-sans font-bold text-xs uppercase tracking-[0.15em] py-3.5 px-6 rounded-[2px] hover:bg-[#4A0D17] border border-[#D4AF37]/30 shadow-sm transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Package className="w-4 h-4 text-[#D4AF37]" />
-                Xem Danh Sách Đơn Đã Đặt
-              </button>
-
-              <Link
-                to="/"
-                className="flex-1 bg-white text-[#631521] font-sans font-bold text-xs uppercase tracking-[0.15em] py-3.5 px-6 rounded-[2px] hover:bg-[#FAF5F0] border border-[#631521] transition-all text-center flex items-center justify-center gap-1.5"
-              >
-                Tiếp Tục Mua Sắm
-              </Link>
-            </div>
+              </>
+            )}
 
             {/* Support footer note */}
             <div className="text-center pt-4 border-t border-[#E8DFD5] text-xs text-[#8C7E74] space-y-1">

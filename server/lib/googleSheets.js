@@ -22,7 +22,7 @@ export const SHEET_TABS = {
   SUMMARY: 'Tổng Quan',
 }
 
-// ── Header row cho sheet ORDERS (24 cột A -> X) ─────────────────────────
+// ── Header row cho sheet ORDERS (26 cột A -> Z) ─────────────────────────
 export const ORDER_HEADERS = [
   'Mã Đơn', // A
   'Ngày Đặt', // B
@@ -48,6 +48,8 @@ export const ORDER_HEADERS = [
   'Ghi Chú', // V
   'Trạng Thái ĐH', // W
   'Nguồn', // X
+  'Mã Vận Đơn', // Y
+  'Đơn Vị Vận Chuyển', // Z
 ]
 
 // ── Header row cho sheet PRODUCTS (9 cột A -> I) ───────────────────────
@@ -114,7 +116,7 @@ export const initializeSheet = async () => {
     // Kiểm tra header sheet ORDERS
     const ordersRes = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${SHEET_TABS.ORDERS}!A1:X1`,
+      range: `${SHEET_TABS.ORDERS}!A1:Z1`,
     })
 
     if (!ordersRes.data.values || ordersRes.data.values.length === 0) {
@@ -181,38 +183,40 @@ export const appendOrderToSheet = async (order) => {
   const itemVariants = (order.items || []).map((i) => i.variant).join(' | ')
   const itemQtys = (order.items || []).map((i) => i.quantity).join(' | ')
 
-  // ── Dòng cho sheet ORDERS (1 đơn = 1 dòng tổng hợp) ──
+  // ── Dòng cho sheet ORDERS (1 đơn = 1 dòng tổng hợp 26 cột A -> Z) ──
   const orderRow = [
     order.orderId, // A: Mã Đơn
     dateStr, // B: Ngày Đặt
     timeStr, // C: Giờ Đặt
-    order.customer.fullName, // D: Tên Khách
-    order.customer.phone, // E: Số ĐT
-    order.customer.email, // F: Email
-    order.shipping.address, // G: Địa Chỉ
-    order.shipping.ward, // H: Phường/Xã
-    order.shipping.district, // I: Quận/Huyện
-    order.shipping.city, // J: Tỉnh/TP
-    order.shipping.fullAddress, // K: Địa Chỉ Đầy Đủ
+    order.customer?.fullName || '', // D: Tên Khách
+    order.customer?.phone || '', // E: Số ĐT
+    order.customer?.email || '', // F: Email
+    order.shipping?.address || '', // G: Địa Chỉ
+    order.shipping?.ward || '', // H: Phường/Xã
+    order.shipping?.district || '', // I: Quận/Huyện
+    order.shipping?.city || '', // J: Tỉnh/TP
+    order.shipping?.fullAddress || '', // K: Địa Chỉ Đầy Đủ
     itemNames, // L: Tên SP
     itemVariants, // M: Biến Thể
     itemQtys, // N: Số Lượng
-    order.subtotal, // O: Tạm Tính (số)
-    order.shippingFee, // P: Phí Ship (số)
+    order.subtotal || 0, // O: Tạm Tính (số)
+    order.shippingFee || 0, // P: Phí Ship (số)
     order.discount || 0, // Q: Giảm Giá (số)
     order.voucherCode || '', // R: Mã Voucher
-    order.total, // S: Tổng Cộng (số)
-    order.payment?.methodLabel || order.payment?.method, // T: Phương Thức TT
+    order.total || 0, // S: Tổng Cộng (số)
+    order.payment?.methodLabel || order.payment?.method || '', // T: Phương Thức TT
     order.payment?.status || 'UNPAID', // U: Trạng Thái TT
     order.note || '', // V: Ghi Chú
     order.status || 'PENDING', // W: Trạng Thái ĐH
     order.source || 'website', // X: Nguồn
+    order.trackingCode || '', // Y: Mã Vận Đơn
+    order.carrier || '', // Z: Đơn Vị Vận Chuyển
   ]
 
   // Ghi vào sheet ORDERS
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: `${SHEET_TABS.ORDERS}!A:X`,
+    range: `${SHEET_TABS.ORDERS}!A:Z`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [orderRow] },
   })
@@ -221,7 +225,7 @@ export const appendOrderToSheet = async (order) => {
   const productRows = (order.items || []).map((item) => [
     order.orderId, // A: Mã Đơn
     dateStr, // B: Ngày Đặt
-    order.customer.fullName, // C: Tên Khách
+    order.customer?.fullName || '', // C: Tên Khách
     item.productName, // D: Tên SP
     item.color || '', // E: Màu Sắc
     item.size || '', // F: Size
@@ -242,4 +246,49 @@ export const appendOrderToSheet = async (order) => {
 
   console.log(`✅ Order ${order.orderId} written to Google Sheets`)
   return { success: true, orderId: order.orderId }
+}
+
+// ── Tra cứu đơn hàng từ Google Sheet theo Mã Đơn hoặc SĐT ──
+export const searchOrdersFromSheet = async (query) => {
+  try {
+    const auth = getAuth()
+    const sheets = google.sheets({ version: 'v4', auth })
+    const spreadsheetId = process.env.GOOGLE_SHEET_ID
+    if (!spreadsheetId) return []
+
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${SHEET_TABS.ORDERS}!A2:Z`,
+    })
+
+    const rows = res.data.values || []
+    const q = String(query).trim().toLowerCase()
+    const cleanPhone = q.replace(/[^0-9]/g, '')
+
+    const matched = rows.filter((row) => {
+      const orderId = (row[0] || '').toLowerCase()
+      const phone = (row[4] || '').replace(/[^0-9]/g, '')
+      const name = (row[3] || '').toLowerCase()
+      return orderId.includes(q) || (cleanPhone && phone.includes(cleanPhone)) || name.includes(q)
+    })
+
+    return matched.map((r) => ({
+      orderId: r[0],
+      orderDateVN: `${r[1]} ${r[2]}`.trim(),
+      customer: { fullName: r[3], phone: r[4], email: r[5] },
+      shipping: { fullAddress: r[10] },
+      subtotal: Number(r[14]) || 0,
+      shippingFee: Number(r[15]) || 0,
+      discount: Number(r[16]) || 0,
+      total: Number(r[18]) || 0,
+      payment: { methodLabel: r[19], status: r[20] },
+      note: r[21],
+      status: r[22] || 'PENDING',
+      trackingCode: r[24] || null,
+      carrier: r[25] || null,
+    }))
+  } catch (err) {
+    console.warn('searchOrdersFromSheet error:', err.message)
+    return []
+  }
 }

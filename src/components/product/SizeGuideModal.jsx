@@ -56,109 +56,72 @@ export default function SizeGuideModal({ isOpen, onClose, sizeGuide = {} }) {
                 </h2>
               </div>
 
-              {/* Schema-aware Table */}
+              {/* Size Table */}
               <div className="mt-5 overflow-x-auto">
-                {useWeightSchema ? (
-                  /* Weight / Trouser Length / Sleeve Length Schema for Product 1 */
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-[#631521] text-[#FAF8F5]">
-                        <th className="py-3.5 px-4 sm:px-5 text-left font-sans font-medium text-[0.75rem] uppercase tracking-[0.1em]">
-                          SIZE
-                        </th>
-                        <th className="py-3.5 px-4 sm:px-5 text-center font-sans font-medium text-[0.75rem] uppercase tracking-[0.1em]">
-                          CÂN NẶNG
-                        </th>
-                        <th className="py-3.5 px-4 sm:px-5 text-center font-sans font-medium text-[0.75rem] uppercase tracking-[0.1em] whitespace-nowrap">
-                          DÀI QUẦN DÀI
-                        </th>
-                        <th className="py-3.5 px-4 sm:px-5 text-center font-sans font-medium text-[0.75rem] uppercase tracking-[0.1em] whitespace-nowrap">
-                          DÀI TAY DÀI
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sizes.map((size, idx) => {
-                        const data = sizeGuide[size]
-                        const isEven = idx % 2 === 0
-                        return (
-                          <tr
-                            key={size}
-                            className="border-b border-[#E8DFD5]"
-                            style={{
-                              backgroundColor: isEven ? '#EDD9D0' : '#FAF8F5',
-                            }}
-                          >
-                            <td className="py-4 px-4 sm:px-5 font-sans font-semibold text-base text-[#631521]">
-                              {size}
-                            </td>
-                            <td className="py-4 px-4 sm:px-5 text-center font-sans font-light text-[0.9rem] text-[#1A1614]">
-                              {data?.weight}
-                            </td>
-                            <td className="py-4 px-4 sm:px-5 text-center font-sans font-light text-[0.9rem] text-[#1A1614]">
-                              {data?.trouserLength}
-                            </td>
-                            <td className="py-4 px-4 sm:px-5 text-center font-sans font-light text-[0.9rem] text-[#1A1614]">
-                              {data?.sleeveLength}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                ) : (
-                  /* Standard Chest / Waist / Hip Schema for Products 2 & 3 */
-                  <table className="w-full text-sm font-sans border-collapse">
-                    <thead>
-                      <tr className="bg-[#631521] text-[#FAF8F5]">
-                        <th className="px-4 py-3.5 text-left font-serif font-bold text-xs uppercase tracking-wider">
-                          SIZE
-                        </th>
-                        <th className="px-4 py-3.5 text-center font-serif font-bold text-xs uppercase tracking-wider">
-                          NGỰC (cm)
-                        </th>
-                        <th className="px-4 py-3.5 text-center font-serif font-bold text-xs uppercase tracking-wider">
-                          EO (cm)
-                        </th>
-                        <th className="px-4 py-3.5 text-center font-serif font-bold text-xs uppercase tracking-wider">
-                          HÔNG (cm)
-                        </th>
-                        <th className="px-4 py-3.5 text-center font-serif font-bold text-xs uppercase tracking-wider">
-                          CHIỀU CAO (cm)
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sizes.map((size, i) => {
-                        const data = sizeGuide[size]
-                        return (
-                          <tr
-                            key={size}
-                            className={`border-b border-[#E8DFD5] ${
-                              i % 2 === 0 ? 'bg-[#EDD9D0]' : 'bg-[#FAF8F5]'
-                            }`}
-                          >
-                            <td className="px-4 py-3.5 font-sans font-semibold text-[#631521]">
-                              {size}
-                            </td>
-                            <td className="px-4 py-3.5 text-center text-[#1A1614] font-light">
-                              {data?.chest}
-                            </td>
-                            <td className="px-4 py-3.5 text-center text-[#1A1614] font-light">
-                              {data?.waist}
-                            </td>
-                            <td className="px-4 py-3.5 text-center text-[#1A1614] font-light">
-                              {data?.hip}
-                            </td>
-                            <td className="px-4 py-3.5 text-center text-[#1A1614] font-light">
-                              {data?.height}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                )}
+                <table className="w-full border-collapse text-xs sm:text-sm">
+                  <thead>
+                    <tr className="bg-[#631521] text-[#FAF8F5]">
+                      <th className="py-3 px-3 sm:px-4 text-left font-sans font-bold text-[0.75rem] uppercase tracking-[0.1em]">
+                        SIZE
+                      </th>
+                      <th className="py-3 px-3 sm:px-4 text-center font-sans font-semibold text-[0.75rem] uppercase tracking-[0.1em] whitespace-nowrap">
+                        CÂN NẶNG
+                      </th>
+                      <th className="py-3 px-3 sm:px-4 text-center font-sans font-semibold text-[0.75rem] uppercase tracking-[0.1em] whitespace-nowrap">
+                        CHIỀU CAO
+                      </th>
+                      <th className="py-3 px-3 sm:px-4 text-center font-sans font-semibold text-[0.75rem] uppercase tracking-[0.1em] whitespace-nowrap">
+                        VÒNG NGỰC
+                      </th>
+                      <th className="py-3 px-3 sm:px-4 text-center font-sans font-semibold text-[0.75rem] uppercase tracking-[0.1em] whitespace-nowrap">
+                        VÒNG EO
+                      </th>
+                      <th className="py-3 px-3 sm:px-4 text-center font-sans font-semibold text-[0.75rem] uppercase tracking-[0.1em] whitespace-nowrap">
+                        DÀI QUẦN
+                      </th>
+                      <th className="py-3 px-3 sm:px-4 text-center font-sans font-semibold text-[0.75rem] uppercase tracking-[0.1em] whitespace-nowrap">
+                        DÀI TAY
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sizes.map((size, idx) => {
+                      const data = sizeGuide[size]
+                      const isEven = idx % 2 === 0
+                      return (
+                        <tr
+                          key={size}
+                          className="border-b border-[#E8DFD5]"
+                          style={{
+                            backgroundColor: isEven ? '#EDD9D0' : '#FAF8F5',
+                          }}
+                        >
+                          <td className="py-3.5 px-3 sm:px-4 font-sans font-bold text-sm text-[#631521]">
+                            {size}
+                          </td>
+                          <td className="py-3.5 px-3 sm:px-4 text-center font-sans font-medium text-xs sm:text-sm text-[#1A1614] whitespace-nowrap">
+                            {data?.weight || '—'}
+                          </td>
+                          <td className="py-3.5 px-3 sm:px-4 text-center font-sans font-light text-xs sm:text-sm text-[#1A1614] whitespace-nowrap">
+                            {data?.height || '—'}
+                          </td>
+                          <td className="py-3.5 px-3 sm:px-4 text-center font-sans font-light text-xs sm:text-sm text-[#1A1614] whitespace-nowrap">
+                            {data?.chest ? `${data.chest} cm` : '—'}
+                          </td>
+                          <td className="py-3.5 px-3 sm:px-4 text-center font-sans font-light text-xs sm:text-sm text-[#1A1614] whitespace-nowrap">
+                            {data?.waist ? `${data.waist} cm` : '—'}
+                          </td>
+                          <td className="py-3.5 px-3 sm:px-4 text-center font-sans font-light text-xs sm:text-sm text-[#1A1614] whitespace-nowrap">
+                            {data?.trouserLength || '—'}
+                          </td>
+                          <td className="py-3.5 px-3 sm:px-4 text-center font-sans font-light text-xs sm:text-sm text-[#1A1614] whitespace-nowrap">
+                            {data?.sleeveLength || '—'}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
               </div>
 
               {/* Footer Note */}

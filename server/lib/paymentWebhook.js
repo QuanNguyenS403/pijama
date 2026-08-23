@@ -1,10 +1,14 @@
 import { appendOrderToSheet } from './googleSheets.js'
 import { sendCustomerEmail } from './emailCustomer.js'
 import { sendOwnerEmail } from './emailOwner.js'
+import { orderPersistence } from './orderPersistence.js'
 
-// In-memory Database lưu trữ trạng thái đơn hàng & mã QR 1 lần
-export const orderPaymentStore = new Map()
-export const processedTransactionIds = new Set()
+// Persistent Store thay thế cho In-Memory Maps đơn thuần
+export const orderPaymentStore = orderPersistence
+export const processedTransactionIds = {
+  has: (id) => orderPersistence.isTxProcessed(id),
+  add: (id) => orderPersistence.addProcessedTx(id),
+}
 
 /**
  * ==============================================================================
@@ -18,11 +22,22 @@ export const processedTransactionIds = new Set()
  */
 export async function handlePaymentWebhook(req) {
   try {
-    // Xác thực Webhook API Key / Secret Token
+    // ── P0-3: Fail-closed Webhook Security ───────────────────────
     const authHeader = req.headers['authorization'] || req.headers['x-api-key'] || ''
     const expectedSecret = process.env.SEPAY_WEBHOOK_API_KEY || process.env.PAYMENT_WEBHOOK_SECRET
 
-    if (expectedSecret && !authHeader.includes(expectedSecret)) {
+    if (!expectedSecret) {
+      console.error('⛔ [CRITICAL SECURITY] Webhook chưa được cấu hình Secret Token trong biến môi trường (fail-closed)')
+      return {
+        status: 500,
+        data: {
+          success: false,
+          error: 'Webhook chưa được cấu hình Secret Token bảo mật trên server (fail-closed)',
+        },
+      }
+    }
+
+    if (!authHeader.includes(expectedSecret)) {
       console.warn('⛔ [WEBHOOK REJECTED] Sai Secret Token / Unauthorized request')
       return { status: 401, data: { success: false, message: 'Unauthorized webhook request' } }
     }
@@ -66,11 +81,11 @@ export async function handlePaymentWebhook(req) {
     }
 
     // ── XÁC NHẬN THANH TOÁN & VÔ HIỆU HÓA MÃ QR ─────────────────
-    order.status = 'PENDING' // Chuyển sang chờ đóng gói giao hàng
+    order.status = 'CONFIRMED' // Chuyển sang đã xác nhận, sẵn sàng đóng gói
     order.payment = {
       ...(order.payment || {}),
       method: 'BANK_TRANSFER',
-      methodLabel: 'Chuyển khoản VietQR (Đã thanh toán)',
+      methodLabel: 'Chuyển khoản VietQR (Đã xác thực ngân hàng)',
       status: 'PAID',
       paidAmount: amountIn,
       paidAt: new Date().toISOString(),
@@ -123,12 +138,13 @@ export async function handlePaymentWebhook(req) {
 
 /**
  * ==============================================================================
- * 2. API XÁC THỰC THANH TOÁN THỦ CÔNG / CLIENT CONFIRM
+ * 2. API TIẾP NHẬN YÊU CẦU XÁC THỰC TỪ KHÁCH HÀNG (CLIENT CLAIM) — P0-2
  * ==============================================================================
- * Khi khách hàng hoặc quản trị viên chủ động bấm xác nhận đã chuyển tiền thành công:
- * 1. Kiểm tra và cập nhật trạng thái đơn thành PAID
- * 2. Vô hiệu hóa mã QR 1 lần
- * 3. Gửi Gmail xác nhận đơn hàng tới khách
+ * Khi khách hàng bấm "Tôi đã chuyển khoản thành công" trên web:
+ * 1. KHÔNG TỰ ĐỘNG GÁN TRẠNG THÁI 'PAID' (tránh bị giả mạo thanh toán).
+ * 2. Gán trạng thái 'CUSTOMER_CLAIMED_PAID' / Chờ ngân hàng đối soát.
+ * 3. Gửi thông báo nhắc chủ shop kiểm tra tài khoản thực tế.
+ * 4. Việc chuyển sang 'PAID' chỉ diễn ra khi Webhook ngân hàng gửi tín hiệu hoặc admin xác nhận.
  */
 export async function confirmOrderPaymentManually(orderPayload) {
   try {
@@ -141,40 +157,31 @@ export async function confirmOrderPaymentManually(orderPayload) {
 
     existingOrder = {
       ...existingOrder,
-      ...orderPayload,
-      status: 'PENDING',
+      status: 'AWAITING_PAYMENT',
       payment: {
         ...(existingOrder.payment || {}),
-        method: 'BANK_TRANSFER',
-        methodLabel: 'Chuyển khoản VietQR (Đã thanh toán)',
-        status: 'PAID',
-        paidAt: new Date().toISOString(),
-        isQrInvalidated: true,
-        qrInvalidatedReason: 'USER_CONFIRMED',
-        qrInvalidatedAt: new Date().toISOString(),
+        status: 'CUSTOMER_CLAIMED_PAID',
+        claimedAt: new Date().toISOString(),
+        claimedNote: 'Khách hàng bấm xác nhận chuyển khoản trên giao diện (chờ đối soát ngân hàng)',
       },
     }
 
     orderPaymentStore.set(orderId, existingOrder)
-    console.log(`🔒 [MÃ QR VÔ HIỆU HÓA] Đơn hàng ${orderId} đã được xác nhận thanh toán.`)
+    console.log(`ℹ️ [CUSTOMER CLAIM] Khách báo đã chuyển khoản đơn ${orderId}. Đang chờ webhook/đối soát ngân hàng.`)
 
-    // Kích hoạt gửi Gmail xác nhận
-    if (existingOrder.customer?.email) {
-      sendCustomerEmail(existingOrder).catch((err) => console.error('Lỗi email khách:', err.message))
-      sendOwnerEmail(existingOrder).catch((err) => console.error('Lỗi email chủ:', err.message))
-    }
-
-    appendOrderToSheet({
+    // Gửi thông báo nội bộ cho chủ shop kiểm tra số dư
+    sendOwnerEmail({
       ...existingOrder,
-      status: 'ĐÃ THANH TOÁN (VIETQR)',
-    }).catch((err) => console.warn('Lỗi ghi Sheets:', err.message))
+      notes: `[KHÁCH BÁO ĐÃ CHUYỂN KHOẢN] Khách hàng vừa bấm xác nhận đã chuyển tiền cho đơn ${orderId}. Vui lòng kiểm tra tài khoản Vietcombank.`,
+    }).catch((err) => console.warn('Lỗi gửi email báo chủ shop:', err.message))
 
     return {
       status: 200,
       data: {
         success: true,
-        message: 'Đơn hàng đã được xác nhận thanh toán, mã QR đã vô hiệu hóa và email đã được gửi',
-        order: existingOrder,
+        status: 'CUSTOMER_CLAIMED_PAID',
+        message: 'Đã tiếp nhận thông tin chuyển khoản. Hệ thống đang tự động đối soát giao dịch ngân hàng.',
+        orderId,
       },
     }
   } catch (err) {

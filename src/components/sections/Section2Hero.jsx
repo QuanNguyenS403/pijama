@@ -48,15 +48,17 @@ export default function Section2Hero() {
             {/* CTA Buttons */}
             <div className="flex flex-wrap items-center gap-4">
               <button
+                type="button"
                 onClick={() => scrollTo('#section-deep-feature')}
-                className="bg-white text-[#631521] hover:bg-[#FAF8F5] hover:shadow-lg font-sans text-sm font-bold tracking-wider px-7 py-3.5 rounded-[2px] transition-all duration-200 uppercase"
+                className="inline-flex items-center justify-center gap-2 bg-[#FAF8F5] hover:bg-[#D4AF37] text-[#1A1614] hover:text-[#1A1614] border border-[#FAF8F5] hover:border-[#D4AF37] font-sans text-sm font-bold tracking-wider px-7 py-3.5 rounded-[2px] shadow-luxury hover:shadow-gold-glow transition-all duration-200 uppercase cursor-pointer active:scale-[0.98] focus:outline-none"
               >
-                → KHÁM PHÁ
+                <span>→ KHÁM PHÁ</span>
               </button>
 
               <button
+                type="button"
                 onClick={() => scrollTo('#section-features')}
-                className="bg-transparent border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37]/10 font-sans text-sm font-semibold tracking-wider px-7 py-3.5 rounded-[2px] transition-all duration-200"
+                className="inline-flex items-center justify-center bg-transparent border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37]/15 font-sans text-sm font-semibold tracking-wider px-7 py-3.5 rounded-[2px] transition-all duration-200 cursor-pointer active:scale-[0.98] focus:outline-none"
               >
                 Khám phá chất liệu
               </button>
