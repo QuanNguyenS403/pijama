@@ -155,7 +155,7 @@ export default function ProductDetailPage() {
   }
 
   const metaImage = typeof product.images === 'object' && !Array.isArray(product.images)
-    ? (product.images['Pink Stripe']?.[0] || Object.values(product.images)[0]?.[0] || '')
+    ? ((selectedColor?.name && product.images[selectedColor.name]?.[0]) || Object.values(product.images)[0]?.[0] || '')
     : (Array.isArray(product.images) ? product.images[0] : '')
   const fullImageUrl = metaImage && typeof metaImage === 'string' && metaImage.startsWith('http')
     ? metaImage

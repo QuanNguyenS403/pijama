@@ -38,7 +38,6 @@ Tạo file `.env` hoặc `.env.local` ở thư mục gốc (tham khảo mẫu t�
 ```env
 # ── Cổng Server Backend ──
 PORT=3001
-NODE_ENV=production
 
 # ── CORS Whitelist (Phân tách bằng dấu phẩy) ──
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,https://quannguyens.vn

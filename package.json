@@ -9,7 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "server": "node server/index.js",
-    "start": "node server/index.js",
+    "start": "cross-env NODE_ENV=production node server/index.js",
     "test": "node --test tests/**/*.test.js",
     "db:seed": "node prisma/seed.js"
   },
@@ -65,6 +65,7 @@
     "@types/multer": "^2.2.0",
     "@vitejs/plugin-react": "^6.0.5",
     "autoprefixer": "^10.5.4",
+    "cross-env": "^10.1.0",
     "postcss": "^8.5.26",
     "tailwindcss": "^3.4.19",
     "vite": "^8.2.1"

@@ -31,11 +31,12 @@ export default function ProductAccordion({ product }) {
               : 'Sử dụng thước dây đo vòng ngực, vòng eo và vòng hông theo hướng dẫn — Nếu số đo nằm giữa 2 size, hãy chọn size lớn hơn để mặc thoải mái hơn với dáng suông.'}
           </p>
           <ul className="list-disc list-inside space-y-1 mt-2 text-xs sm:text-sm">
-            {product.sizeGuide && Object.values(product.sizeGuide)[0]?.hasOwnProperty('weight') ? (
-              <>
-                <li>Size S: Cân nặng 40–49 kg · Dài quần 90 cm · Dài tay 53,5 cm</li>
-                <li>Size M: Cân nặng 50–55 kg · Dài quần 92 cm · Dài tay 54,5 cm</li>
-              </>
+            {product.sizeGuide ? (
+              Object.entries(product.sizeGuide).map(([sz, guide]) => (
+                <li key={sz}>
+                  Size {sz}: Cân nặng {guide.weight} {guide.trouserLength ? `· Dài quần ${guide.trouserLength}` : ''} {guide.sleeveLength ? `· Dài tay ${guide.sleeveLength}` : ''}
+                </li>
+              ))
             ) : (
               <>
                 <li>Vòng ngực: đo ở điểm rộng nhất của ngực</li>

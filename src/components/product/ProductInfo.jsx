@@ -242,6 +242,26 @@ export default function ProductInfo({
           </ul>
         )}
 
+        {/* Feng Shui Inspiration Card */}
+        {product.fengShui && (
+          <div className="bg-[#FAF5F0] border border-[#E8DFD5] p-3.5 rounded-[3px] flex items-start gap-3">
+            <span className="text-sm shrink-0 mt-0.5 text-[#D4AF37]">✦</span>
+            <div className="text-xs font-sans text-[#4A3F38]">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span className="font-serif font-bold text-[#631521] uppercase tracking-wider text-[11px]">
+                  Năng Lượng Ngũ Hành · Hành {product.fengShui.element}
+                </span>
+                <span className="bg-[#631521]/10 text-[#631521] px-1.5 py-0.5 rounded-[2px] text-[10px] font-medium">
+                  Hợp mệnh {product.fengShui.goodFor.join(' & ')}
+                </span>
+              </div>
+              <p className="font-light leading-relaxed text-[#4A3F38]">
+                {product.fengShui.energyNote}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Fabric Sensory Callout */}
         <div className="bg-[#FAF5F0] border-l-[3px] border-[#D4AF37] p-4 sm:p-5">
           <span className="font-sans font-semibold text-[11px] uppercase tracking-[0.15em] text-[#631521] block mb-1">

@@ -1,46 +1,41 @@
-import heroCampaignImg from '../assets/images/hero-campaign.jpg'
-import productCollectionImg from '../assets/images/product-collection.jpg'
-import lifestyleNightImg from '../assets/images/lifestyle-night.jpg'
-import craftsmanshipImg from '../assets/images/craftsmanship-detail.jpg'
-import fabricMacroImg from '../assets/images/fabric-macro.jpg'
-
 export const products = [
   {
     id: "the-classic-set",
     slug: "the-classic-set",
     name: "THE CLASSIC SET",
-    subtitle: "Pijama Phong Cách Châu Âu · Ba Mẫu",
+    subtitle: "Pijama Phong Cách Châu Âu · Sọc Hồng Nắng Sớm",
     collection: "Thu Đông 2026",
     badge: "MỚI RA MẮT",
 
-    description: `Bộ pijama lấy cảm hứng từ phong cách ngủ cổ điển châu Âu —
-    đường viền tương phản tinh tế, cổ áo notch thanh lịch, và phom dáng
-    suông tự do cho cảm giác thoải mái trọn ngày. Có ba mẫu hoa văn
-    để lựa chọn: sọc dọc hồng ngọt ngào, caro navy lịch lãm và sọc nâu mocha ấm áp sang trọng.`,
+    description: `Bộ pijama lấy cảm hứng từ phong cách ngủ cổ điển châu Âu với họa tiết Sọc Hồng ngọt ngào — đường viền tương phản tinh tế, cổ áo notch thanh lịch, và phom dáng suông tự do cho cảm giác thoải mái trọn ngày. Mang năng lượng Hỏa ấm áp và rạng rỡ như nắng sớm, khơi dậy nguồn sinh khí tươi mới cho không gian nghỉ ngơi của bạn.`,
 
-    longDescription: `THE CLASSIC SET được thiết kế để mang lại cảm giác
-    như mặc đồ ngủ của một khách sạn 5 sao — mỗi ngày. Ba mẫu hoa văn
-    phản ánh ba trạng thái: Pink Stripe cho những buổi sáng nhẹ nhàng,
-    dịu dàng; Navy Plaid cho vẻ ngoài có chủ đích hơn, vừa chill vừa có
-    phong cách; Brown Stripe mang nét cổ điển, ấm áp và thanh lịch vượt thời gian.
-    Cả ba đều có thể mặc ra ngoài mà không cần giải thích gì thêm.`,
+    longDescription: `THE CLASSIC SET được thiết kế để mang lại cảm giác như đang thức giấc tại một khách sạn boutique 5 sao giữa lòng châu Âu. Họa tiết Sọc Hồng (Pink Stripe) mang sắc thái ấm áp, dịu dàng của hành Hỏa — như những tia nắng sớm đầu ngày tiếp thêm sinh khí và năng lượng tích cực cho tinh thần. Thiết kế suông nhẹ, viền tương phản sắc nét giúp bạn luôn thanh lịch, tự tin diện từ phòng ngủ ra phố hay tiếp khách tại nhà mà không cần đắn đo. Tương sinh và hòa hợp lý tưởng cho người mệnh Hỏa và Thổ.`,
 
-    detailedDescription: `THE CLASSIC SET lấy cảm hứng từ đồ ngủ của các khách sạn boutique châu Âu — nơi pijama không chỉ là đồ ngủ mà là một phần của phong cách sống.
+    detailedDescription: `THE CLASSIC SET lấy cảm hứng từ đồ ngủ của các khách sạn boutique châu Âu — nơi pijama không chỉ là trang phục nghỉ ngơi mà là một tuyên ngôn phong cách sống tinh tế.
 
-Thiết kế notch collar (cổ áo bẻ cổ) với viền tương phản trắng chạy dọc cổ áo, cổ tay, và viền túi — tạo nên điểm nhấn tinh tế mà có chủ đích. Hàng cúc phía trước, hai túi patch phía dưới và một túi ngực nhỏ hoàn thiện phom dáng cổ điển.
+Thiết kế notch collar (cổ bẻ cổ điển) với viền tương phản trắng sắc nét chạy dọc ve áo, cổ tay và miệng túi — tạo nên dấu ấn thanh lịch đặc trưng. Hàng cúc trước tiệp màu cùng hai túi patch rộng rãi và một túi ngực nhỏ hoàn thiện phom dáng chuẩn mực.
 
-Quần dáng thẳng (straight-leg) với độ rủ tự nhiên — không quá rộng để mặc ở nhà, không quá bó để không thể ra ngoài.
+Quần dáng suông thẳng (straight-leg) với độ rủ tự nhiên từ sợi dệt cao cấp — thoải mái tối đa khi nằm nghỉ, chỉn chu tuyệt đối khi bước ra ngoài.
 
-Có trong ba mẫu hoa văn: Pink Stripe (sọc dọc hồng trắng), Navy Plaid (caro navy xám trắng) và Brown Stripe (sọc dọc nâu mocha). Mỗi mẫu được sản xuất có giới hạn.`,
+Họa tiết Sọc Hồng (Pink Stripe) biểu trưng cho năng lượng Hỏa — biểu tượng của sự ấm áp, yêu đời và nhiệt huyết dịu lành. Rất hòa hợp và tương sinh cho những ai tìm kiếm sự cân bằng, đặc biệt là người mang mệnh Hỏa và Thổ.`,
 
-    tagline: `Chọn theo mood hôm nay — sọc hồng nhẹ nhàng, caro navy lịch lãm hay sọc nâu ấm áp?`,
-    sectionLabel: "BST THU ĐÔNG 2026 · BA MẪU",
+    tagline: `Khởi đầu ngày mới tràn đầy sinh khí với sắc hồng ấm áp và phom dáng châu Âu kinh điển.`,
+    sectionLabel: "BST THU ĐÔNG 2026 · HỎA SẮC SỚM MAI",
 
     price: 390000,
     originalPrice: 490000,
     discount: 20,
     rating: 4.9,
     reviewCount: 78,
+
+    // ─── FENG SHUI INSPIRATION (NGŨ HÀNH) ───────────────────────────────────
+    fengShui: {
+      element: "Hỏa",
+      elementEn: "Fire",
+      color: "Sọc Hồng (Pink Stripe)",
+      goodFor: ["Hỏa", "Thổ"],
+      energyNote: "Ấm áp, nhiệt huyết, dịu dàng nhưng tràn đầy sức sống — như nắng sớm mai tiếp thêm sinh khí.",
+    },
 
     // ─── STYLE VARIANTS (treated as "colors" in the UI selector) ─────────────
     colors: [
@@ -51,22 +46,6 @@ Có trong ba mẫu hoa văn: Pink Stripe (sọc dọc hồng trắng), Navy Plai
         patternPreview: true,    // flag: render pattern thumbnail, not plain swatch
         patternType: "stripe",   // used by ColorSelector to pick preview style
         stock: { S: 10, M: 8 },
-      },
-      {
-        name: "Navy Plaid",
-        label: "Caro Navy",
-        hex: "#1B2A4A",
-        patternPreview: true,
-        patternType: "plaid",
-        stock: { S: 8, M: 10 },
-      },
-      {
-        name: "Brown Stripe",
-        label: "Sọc Nâu",
-        hex: "#5C3A21",
-        patternPreview: true,
-        patternType: "brown-stripe",
-        stock: { S: 10, M: 10 },
       },
     ],
 
@@ -105,15 +84,15 @@ Có trong ba mẫu hoa văn: Pink Stripe (sọc dọc hồng trắng), Navy Plai
       "Ủi nhiệt độ thấp nếu cần",
     ],
 
-    returnPolicy: "Đổi trả miễn phí trong 30 ngày kể từ ngày nhận hàng — Sản phẩm còn nguyên tag và chưa qua sử dụng — Hỗ trợ đổi size/màu tận nhà — Liên hệ hotline 0981 753 082 để được hỗ trợ",
+    returnPolicy: "Đổi trả miễn phí trong 30 ngày kể từ ngày nhận hàng — Sản phẩm còn nguyên tag và chưa qua sử dụng — Hỗ trợ đổi size tận nhà — Liên hệ hotline 0981 753 082 để được hỗ trợ",
 
     highlights: [
-      "Viền tương phản trắng tinh tế — điểm nhấn thương hiệu trên từng đường may",
+      "Họa tiết Sọc Hồng năng lượng Hỏa — ấm áp, dịu dàng, tràn đầy sinh khí như nắng sớm",
+      "Viền tương phản trắng tinh tế — dấu ấn tay nghề may chuẩn phong cách châu Âu",
       "Phom dáng suông tự do — ôm đẹp mọi vóc dáng, thoải mái từ nhà ra phố",
-      "Ba hoa văn độc lập — chọn theo mood, không cần suy nghĩ nhiều",
     ],
 
-    tags: ["Mới Ra Mắt", "Classic", "Casual", "European Style"],
+    tags: ["Mới Ra Mắt", "Classic", "Sọc Hồng", "European Style", "Hành Hỏa"],
     relatedProducts: ["the-cafe-look", "the-evening-edit"],
 
     // ─── IMAGE MAP — keyed by color.name ─────────────────────────────────────
@@ -125,6 +104,47 @@ Có trong ba mẫu hoa văn: Pink Stripe (sọc dọc hồng trắng), Navy Plai
         "/images/classic-set-pink-thumb-3.jpg",
         "/images/classic-set-pink-detail.jpg",
       ],
+    },
+  },
+  {
+    id: 'the-cafe-look',
+    slug: 'the-cafe-look',
+    name: 'THE CAFÉ LOOK',
+    subtitle: 'Pijama Thiết Kế Cổ V · Caro Navy Tĩnh Tại',
+    collection: 'Thu Đông 2026',
+    badge: 'BÁN CHẠY NHẤT',
+
+    description: 'Thiết kế cổ V thanh lịch với đường viền tương phản nổi bật kết hợp họa tiết Caro Navy lịch lãm. Mang chiều sâu tĩnh tại của hành Thủy — tựa mặt nước hồ phẳng lặng, mang đến cảm giác an yên tuyệt đối cho những buổi sáng thưởng cà phê hay góc làm việc tại nhà.',
+
+    longDescription: 'THE CAFÉ LOOK là sự giao thoa hoàn hảo giữa nét phóng khoáng hiện đại và sự tĩnh tại sâu lắng. Mang gam màu Caro Navy biểu trưng cho hành Thủy — năng lượng của sự thông thái, điềm tĩnh và an nhiên. Thiết kế cổ V thanh thoát cùng viền tương phản tạo điểm nhấn tinh giản mà sắc sảo. Được dệt từ chất liệu tự nhiên mềm mại, đây là bộ trang phục lý tưởng để bạn bắt đầu ngày mới với một tách cappuccino hoặc đắm mình trong trang sách yêu thích. Tương hợp và nuôi dưỡng tuyệt vời cho người mệnh Thủy và Mộc.',
+
+    detailedDescription: `THE CAFÉ LOOK được may đo theo chuẩn phong cách homewear hiện đại của các thủ phủ thời trang Bắc Âu.
+
+Phom áo cổ V xẻ vừa phải tôn lên nét thanh mảnh của phần cổ và xương quai xanh, viền phối tương phản sắc sảo dọc cổ và lai áo.
+
+Quần ống suông thoải mái với đai chun co giãn êm ái, thích hợp cho cả ngày làm việc tại nhà hoặc bước xuống quán café góc phố.
+
+Họa tiết Caro Navy (Navy Plaid) mang đậm năng lượng hành Thủy — biểu trưng cho sự tĩnh lặng, sâu sắc và trí tuệ. Rất phù hợp để xoa dịu tâm trí sau những giờ làm việc căng thẳng, tương hợp và nuôi dưỡng tuyệt vời cho người mệnh Thủy và Mộc.`,
+
+    tagline: `Tĩnh tại và an yên — phong cách cổ V thanh lịch cùng sắc xanh Navy trầm lắng.`,
+    sectionLabel: "BST THU ĐÔNG 2026 · THỦY SẮC TĨNH TẠI",
+
+    price: 550000,
+    originalPrice: null,
+    discount: 0,
+    rating: 4.8,
+    reviewCount: 43,
+
+    // ─── FENG SHUI INSPIRATION (NGŨ HÀNH) ───────────────────────────────────
+    fengShui: {
+      element: "Thủy",
+      elementEn: "Water",
+      color: "Caro Navy (Navy Plaid)",
+      goodFor: ["Thủy", "Mộc"],
+      energyNote: "Tĩnh tại, sâu lắng, trí tuệ, an yên như mặt nước lặng — mang lại sự tập trung và thư thái.",
+    },
+
+    images: {
       "Navy Plaid": [
         "/images/classic-set-navy-main.jpg",
         "/images/classic-set-navy-thumb-1.jpg",
@@ -132,39 +152,19 @@ Có trong ba mẫu hoa văn: Pink Stripe (sọc dọc hồng trắng), Navy Plai
         "/images/classic-set-navy-thumb-3.jpg",
         "/images/classic-set-navy-detail.jpg",
       ],
-      "Brown Stripe": [
-        "/images/classic-set-brown-main.jpg",
-        "/images/classic-set-brown-thumb-1.jpg",
-        "/images/classic-set-brown-thumb-2.jpg",
-        "/images/classic-set-brown-thumb-3.jpg",
-        "/images/classic-set-brown-detail.jpg",
-      ],
     },
-  },
-  {
-    id: 'the-cafe-look',
-    slug: 'the-cafe-look',
-    name: 'THE CAFÉ LOOK',
-    subtitle: 'Pijama Thiết Kế Cổ V · Viền Tương Phản',
-    collection: 'Thu Đông 2026',
-    badge: 'MỚI',
-    description: 'Thiết kế cổ V thanh lịch với đường viền tương phản nổi bật — Phong cách tối giản châu Âu cho buổi sáng cà phê hoặc cả ngày ở nhà',
-    longDescription: 'THE CAFÉ LOOK mang đến vẻ đẹp tinh tế với cổ V sâu vừa phải và đường viền tương phản màu đất nung. Được chế tác từ chất vải mềm mại tự nhiên, phù hợp từ buổi sáng uống cà phê đọc sách đến buổi chiều làm việc tại nhà.',
-    price: 550000,
-    originalPrice: null,
-    discount: 0,
-    rating: 4.8,
-    reviewCount: 43,
-    images: [
-      heroCampaignImg,
-      productCollectionImg,
-      lifestyleNightImg,
-      craftsmanshipImg,
-    ],
+
     colors: [
-      { name: 'Ivory Cream', hex: '#FAF8F5', stock: { S: 6, M: 8, L: 5, XL: 3 } },
-      { name: 'Sand',        hex: '#D4AF37', stock: { S: 4, M: 6, L: 4, XL: 2 } },
+      {
+        name: "Navy Plaid",
+        label: "Caro Navy",
+        hex: "#1B2A4A",
+        patternPreview: true,
+        patternType: "plaid",
+        stock: { S: 8, M: 10, L: 6, XL: 4 },
+      },
     ],
+
     sizes: ['S', 'M', 'L', 'XL'],
     sizeGuide: {
       S:  { weight: '40–49 kg', height: '150–160 cm', chest: '82–86 cm', waist: '64–69 cm', trouserLength: '91 cm', sleeveLength: '53 cm' },
@@ -182,39 +182,72 @@ Có trong ba mẫu hoa văn: Pink Stripe (sọc dọc hồng trắng), Navy Plai
       'Không sấy máy — để vải giữ form tự nhiên',
       'Ủi ở nhiệt độ thấp nếu cần — vải sẽ tự rũ đẹp khi mặc',
     ],
-    returnPolicy: 'Đổi trả miễn phí trong 30 ngày kể từ ngày nhận hàng — Sản phẩm còn nguyên tag và chưa qua sử dụng — Hỗ trợ đổi size/màu tận nhà — Liên hệ hotline 0981 753 082 để được hỗ trợ',
+    returnPolicy: 'Đổi trả miễn phí trong 30 ngày kể từ ngày nhận hàng — Sản phẩm còn nguyên tag và chưa qua sử dụng — Hỗ trợ đổi size tận nhà — Liên hệ hotline 0981 753 082 để được hỗ trợ',
     highlights: [
-      'Chất liệu mềm mại tự nhiên — thoáng theo từng nhịp thở',
-      'Cổ V thanh lịch, viền tương phản nổi bật',
-      'Dáng relaxed fit — thoải mái suốt ngày dài',
+      'Họa tiết Caro Navy năng lượng Thủy — tĩnh tại, sâu lắng, mang lại cảm giác an yên như mặt nước lặng',
+      'Cổ V thanh lịch, viền tương phản nổi bật tôn dáng cổ và xương quai xanh',
+      'Dáng relaxed fit thoải mái — dễ dàng chuyển đổi từ phòng ngủ sang góc café sáng',
     ],
-    tags: ['Mới', 'Chất Liệu Cao Cấp', 'Café Style'],
+    tags: ['Bán Chạy', 'Caro Navy', 'Cổ V', 'Chất Liệu Cao Cấp', 'Hành Thủy'],
     relatedProducts: ['the-classic-set', 'the-evening-edit'],
   },
   {
     id: 'the-evening-edit',
     slug: 'the-evening-edit',
     name: 'THE EVENING EDIT',
-    subtitle: 'Pijama Wide-Leg Cao Cấp · Phiên Bản Giới Hạn',
+    subtitle: 'Pijama Wide-Leg Cao Cấp · Sọc Nâu Vững Chãi',
     collection: 'Thu Đông 2026',
-    badge: 'GIỚI HẠN',
-    description: 'Dáng wide-leg sang trọng, tone-on-tone phối màu — Bộ sưu tập giới hạn dành cho những ai yêu phong cách tối thượng',
-    longDescription: 'THE EVENING EDIT là đỉnh cao của dòng sản phẩm QuanNguyenS — wide-leg trousers kết hợp áo blazer nhẹ bằng chất liệu tự nhiên cao cấp. Tone-on-tone tinh tế, phù hợp ăn tối ngoài hoặc buổi tối ở nhà sang trọng.',
+    badge: 'PHIÊN BẢN GIỚI HẠN',
+
+    description: 'Dáng wide-leg sang trọng kết hợp họa tiết Sọc Nâu mocha ấm áp — mang năng lượng Thổ vững chãi, nuôi dưỡng và vỗ về cảm xúc. Phiên bản giới hạn dành cho những khoảnh khắc thư giãn đỉnh cao và bữa tối ấm cúng cuối ngày.',
+
+    longDescription: 'THE EVENING EDIT là định nghĩa cao cấp nhất về đồ mặc nhà sang trọng. Mang gam màu Sọc Nâu (Brown Stripe) thuộc hành Thổ — biểu tượng của sự vững chãi, bình yên và cảm giác "về nhà" nuôi dưỡng năng lượng. Thiết kế quần wide-leg suông rộng quý phái cùng chất liệu dệt tự nhiên rũ nhẹ tạo nên từng bước chuyển động thướt tha, đẳng cấp. Rất tương sinh và mang lại may mắn, bình an cho người mệnh Thổ và Kim.',
+
+    detailedDescription: `THE EVENING EDIT là tuyệt phẩm giới hạn được chế tác từ chất liệu tự nhiên thượng hạng với độ bóng mờ quý phái.
+
+Thiết kế quần dáng wide-leg (ống rộng) buông rủ hoàn hảo kết hợp áo phom thoải mái chuẩn châu Âu, mang đến khí chất sang trọng vượt bậc.
+
+Họa tiết Sọc Nâu mocha (Brown Stripe) đại diện cho năng lượng hành Thổ — như đất mẹ hiền hòa, bao dung và vững chãi. Là lựa chọn tuyệt vời để tái tạo năng lượng sau một ngày bận rộn, mang lại sự che chở và gắn kết, đặc biệt tương sinh hòa hợp cho người mệnh Thổ và Kim.`,
+
+    tagline: `Vững chãi và ấm áp — cảm giác trở về nhà trong phom dáng wide-leg thượng lưu và sắc nâu an lành.`,
+    sectionLabel: "BST THU ĐÔNG 2026 · THỔ SẮC AN NHIÊN",
+
     price: 750000,
     originalPrice: null,
     discount: 0,
     rating: 5.0,
     reviewCount: 18,
-    images: [
-      lifestyleNightImg,
-      craftsmanshipImg,
-      heroCampaignImg,
-      fabricMacroImg,
-    ],
+
+    // ─── FENG SHUI INSPIRATION (NGŨ HÀNH) ───────────────────────────────────
+    fengShui: {
+      element: "Thổ",
+      elementEn: "Earth",
+      color: "Sọc Nâu (Brown Stripe)",
+      goodFor: ["Thổ", "Kim"],
+      energyNote: "Vững chãi, ấm áp, bền bỉ, cảm giác 'về nhà' như đất mẹ nuôi dưỡng tâm hồn.",
+    },
+
+    images: {
+      "Brown Stripe": [
+        "/images/classic-set-brown-main.jpg",
+        "/images/classic-set-brown-thumb-1.jpg",
+        "/images/classic-set-brown-thumb-2.jpg",
+        "/images/classic-set-brown-thumb-3.jpg",
+        "/images/classic-set-brown-detail.jpg",
+      ],
+    },
+
     colors: [
-      { name: 'Deep Wine',  hex: '#4A0D17', stock: { S: 3, M: 4, L: 2, XL: 1 } },
-      { name: 'Charcoal',   hex: '#2C201A', stock: { S: 2, M: 3, L: 3, XL: 2 } },
+      {
+        name: "Brown Stripe",
+        label: "Sọc Nâu",
+        hex: "#5C3A21",
+        patternPreview: true,
+        patternType: "brown-stripe",
+        stock: { S: 6, M: 8, L: 5, XL: 3 },
+      },
     ],
+
     sizes: ['S', 'M', 'L', 'XL'],
     sizeGuide: {
       S:  { weight: '42–50 kg', height: '152–162 cm', chest: '82–86 cm', waist: '64–70 cm', trouserLength: '94 cm', sleeveLength: '54 cm' },
@@ -232,13 +265,13 @@ Có trong ba mẫu hoa văn: Pink Stripe (sọc dọc hồng trắng), Navy Plai
       'Không sấy khô',
       'Ủi nhiệt độ thấp nhất',
     ],
-    returnPolicy: 'Đổi trả miễn phí trong 30 ngày kể từ ngày nhận hàng — Sản phẩm còn nguyên tag và chưa qua sử dụng — Hỗ trợ đổi size/màu tận nhà — Liên hệ hotline 0981 753 082 để được hỗ trợ',
+    returnPolicy: 'Đổi trả miễn phí trong 30 ngày kể từ ngày nhận hàng — Sản phẩm còn nguyên tag và chưa qua sử dụng — Hỗ trợ đổi size tận nhà — Liên hệ hotline 0981 753 082 để được hỗ trợ',
     highlights: [
-      'Chất vải thủ công thượng hạng — độ rũ hoàn hảo',
-      'Dáng wide-leg sang trọng, tone-on-tone phối màu',
-      'Bộ sưu tập giới hạn — chuẩn xuất khẩu châu Âu',
+      'Họa tiết Sọc Nâu năng lượng Thổ — vững chãi, ấm áp, mang lại cảm giác bình yên như trở về nhà',
+      'Chất vải Tencel thượng hạng — độ rủ thướt tha, mềm mướt và thoáng khí vượt trội',
+      'Dáng wide-leg sang trọng — khí chất đẳng cấp, hoàn hảo cho cả những bữa tiệc tối riêng tư',
     ],
-    tags: ['Giới Hạn', 'Premium', 'Wide-Leg', 'Chất Liệu Cao Cấp'],
+    tags: ['Giới Hạn', 'Sọc Nâu', 'Wide-Leg', 'Chất Liệu Cao Cấp', 'Hành Thổ'],
     relatedProducts: ['the-classic-set', 'the-cafe-look'],
   },
 ]
@@ -253,18 +286,18 @@ export const sampleReviews = [
     color: 'Pink Stripe',
     size: 'M',
     verified: true,
-    text: 'Vải mềm quá trời! Mình mua mẫu Sọc Hồng mặc ở nhà mà người nhà cứ khen sang. Viền trắng rất tinh tế, chất lượng xứng đáng với giá tiền.',
+    text: 'Vải mềm quá trời! Mình mua mẫu Sọc Hồng mặc ở nhà mà người nhà cứ khen sang. Tông hồng nhẹ nhàng ấm áp, viền trắng rất tinh tế, chất lượng xứng đáng với giá tiền.',
   },
   {
     id: 'rv-2',
-    productId: 'the-classic-set',
+    productId: 'the-cafe-look',
     name: 'Trần Thị Lan Anh',
     date: '28/06/2026',
     rating: 5,
     color: 'Navy Plaid',
     size: 'S',
     verified: true,
-    text: 'Đóng gói đẹp lắm, mua làm quà tặng sinh nhật bạn thân là chuẩn. Mẫu Caro Navy bên ngoài nhìn cực kỳ thanh lịch và sắc nét. Rất hài lòng.',
+    text: 'Đóng gói đẹp lắm, mua làm quà tặng sinh nhật bạn thân là chuẩn. Mẫu Caro Navy bên ngoài nhìn cực kỳ thanh lịch và sắc nét. Cổ V mặc rất tôn dáng.',
   },
   {
     id: 'rv-3',
@@ -275,18 +308,18 @@ export const sampleReviews = [
     color: 'Pink Stripe',
     size: 'S',
     verified: true,
-    text: 'Mình 48kg cao 1m58 chọn size S vừa vặn tuyệt đối theo bảng size. Phom dáng suông rộng rãi thoải mái cực kỳ, mặc ra ngoài mua đồ vẫn tự tin.',
+    text: 'Mình 48kg cao 1m58 chọn size S vừa vặn tuyệt đối theo bảng size. Họa tiết sọc hồng mặc lên sáng da hẳn, phom dáng suông rộng rãi thoải mái cực kỳ.',
   },
   {
     id: 'rv-4',
-    productId: 'the-classic-set',
+    productId: 'the-cafe-look',
     name: 'Lê Hoàng Mai',
     date: '03/06/2026',
     rating: 5,
     color: 'Navy Plaid',
     size: 'M',
     verified: true,
-    text: 'Chất vải tự nhiên rất tốt, thoáng khí và nhẹ nhàng. Phom áo notch collar viền trắng nhìn như đồ ngủ khách sạn 5 sao. 10/10!',
+    text: 'Chất vải tự nhiên rất tốt, thoáng khí và nhẹ nhàng. Họa tiết Caro Navy trầm tĩnh, mặc uống cafe sáng hay làm việc tại nhà đều rất lịch sự. 10/10!',
   },
   {
     id: 'rv-5',
@@ -297,18 +330,18 @@ export const sampleReviews = [
     color: 'Pink Stripe',
     size: 'M',
     verified: true,
-    text: 'Sọc hồng ngọt ngào, đường may kỹ càng. Mình mặc tiếp khách tại nhà mà ai cũng hỏi mua ở đâu. Sẽ ủng hộ shop thêm!',
+    text: 'Sọc hồng ngọt ngào, đường may kỹ càng. Mình mặc tiếp khách tại nhà mà ai cũng hỏi mua ở đâu vì nhìn vừa ấm cúng vừa sang. Sẽ ủng hộ shop thêm!',
   },
   {
     id: 'rv-6',
-    productId: 'the-classic-set',
+    productId: 'the-evening-edit',
     name: 'Vũ Thanh Hương',
     date: '18/08/2026',
     rating: 5,
     color: 'Brown Stripe',
     size: 'M',
     verified: true,
-    text: 'Mẫu Sọc Nâu đẹp xuất sắc ngoài đời, tone nâu mocha rất tôn da và sang trọng. Đường may tỉ mỉ, chất vải mặc siêu mát và nhẹ.',
+    text: 'Mẫu Sọc Nâu đẹp xuất sắc ngoài đời, tone nâu mocha rất tôn da và sang trọng. Dáng wide-leg bước đi bay bổng, đường may tỉ mỉ, chất vải mặc siêu mát và nhẹ.',
   },
   {
     id: 'rv-7',
@@ -316,10 +349,10 @@ export const sampleReviews = [
     name: 'Hoàng Yến Nhi',
     date: '14/08/2026',
     rating: 5,
-    color: 'Ivory Cream',
+    color: 'Navy Plaid',
     size: 'M',
     verified: true,
-    text: 'Cổ V rất tôn dáng cổ và xương quai xanh, viền tương phản màu đất nung nhìn sang trọng tinh tế. Chất modal mềm mướt như lụa.',
+    text: 'Cổ V rất tôn dáng cổ và xương quai xanh, viền tương phản nổi bật trên nền Caro Navy nhìn sang trọng tinh tế. Chất modal mềm mướt như lụa.',
   },
   {
     id: 'rv-8',
@@ -327,10 +360,10 @@ export const sampleReviews = [
     name: 'Ngô Bảo Trâm',
     date: '02/08/2026',
     rating: 5,
-    color: 'Sand',
+    color: 'Navy Plaid',
     size: 'S',
     verified: true,
-    text: 'Màu Sand bên ngoài ấm áp nhẹ nhàng, mặc đi cafe sáng cuối tuần kết hợp khoác blazer mỏng cực kỳ sành điệu.',
+    text: 'Mẫu Caro Navy mặc đi cafe sáng cuối tuần kết hợp khoác blazer mỏng cực kỳ sành điệu. Màu navy trầm tĩnh mang lại cảm giác rất an yên.',
   },
   {
     id: 'rv-9',
@@ -338,10 +371,10 @@ export const sampleReviews = [
     name: 'Phan Minh Anh',
     date: '10/08/2026',
     rating: 5,
-    color: 'Deep Wine',
+    color: 'Brown Stripe',
     size: 'M',
     verified: true,
-    text: 'Chất vải Tencel rũ đẹp tuyệt vời, dáng wide-leg bước đi rất bay bổng và quyền lực. Đáng từng đồng bỏ ra!',
+    text: 'Chất vải Tencel sọc nâu rũ đẹp tuyệt vời, tông màu đất ấm áp sang trọng. Dáng wide-leg bước đi rất bay bổng và quyền lực. Đáng từng đồng bỏ ra!',
   },
   {
     id: 'rv-10',
@@ -349,9 +382,10 @@ export const sampleReviews = [
     name: 'Trương Cẩm Nhung',
     date: '25/07/2026',
     rating: 5,
-    color: 'Charcoal',
+    color: 'Brown Stripe',
     size: 'L',
     verified: true,
-    text: 'Màu Charcoal tone-on-tone sang chảnh tối thượng. Đường may sắc nét đúng chuẩn xuất khẩu châu Âu. Đóng hộp quà cao cấp.',
+    text: 'Họa tiết Sọc Nâu sang chảnh tối thượng. Đường may sắc nét đúng chuẩn xuất khẩu châu Âu. Đóng hộp quà cao cấp, vải mịn mát tuyệt đối.',
   },
 ]
+
