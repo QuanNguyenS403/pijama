@@ -2,16 +2,16 @@ export const products = [
   {
     id: "the-classic-set",
     slug: "the-classic-set",
-    name: "THE CLASSIC SET",
+    name: "THE DAYBREAK SET",
     subtitle: "Pijama Phong Cách Châu Âu · Sọc Hồng Nắng Sớm",
     collection: "Thu Đông 2026",
     badge: "MỚI RA MẮT",
 
     description: `Bộ pijama lấy cảm hứng từ phong cách ngủ cổ điển châu Âu với họa tiết Sọc Hồng ngọt ngào — đường viền tương phản tinh tế, cổ áo notch thanh lịch, và phom dáng suông tự do cho cảm giác thoải mái trọn ngày. Mang năng lượng Hỏa ấm áp và rạng rỡ như nắng sớm, khơi dậy nguồn sinh khí tươi mới cho không gian nghỉ ngơi của bạn.`,
 
-    longDescription: `THE CLASSIC SET được thiết kế để mang lại cảm giác như đang thức giấc tại một khách sạn boutique 5 sao giữa lòng châu Âu. Họa tiết Sọc Hồng (Pink Stripe) mang sắc thái ấm áp, dịu dàng của hành Hỏa — như những tia nắng sớm đầu ngày tiếp thêm sinh khí và năng lượng tích cực cho tinh thần. Thiết kế suông nhẹ, viền tương phản sắc nét giúp bạn luôn thanh lịch, tự tin diện từ phòng ngủ ra phố hay tiếp khách tại nhà mà không cần đắn đo. Tương sinh và hòa hợp lý tưởng cho người mệnh Hỏa và Thổ.`,
+    longDescription: `THE DAYBREAK SET được thiết kế để mang lại cảm giác như đang thức giấc tại một khách sạn boutique 5 sao giữa lòng châu Âu. Họa tiết Sọc Hồng (Pink Stripe) mang sắc thái ấm áp, dịu dàng của hành Hỏa — như những tia nắng sớm đầu ngày tiếp thêm sinh khí và năng lượng tích cực cho tinh thần. Thiết kế suông nhẹ, viền tương phản sắc nét giúp bạn luôn thanh lịch, tự tin diện từ phòng ngủ ra phố hay tiếp khách tại nhà mà không cần đắn đo. Tương sinh và hòa hợp lý tưởng cho người mệnh Hỏa và Thổ.`,
 
-    detailedDescription: `THE CLASSIC SET lấy cảm hứng từ đồ ngủ của các khách sạn boutique châu Âu — nơi pijama không chỉ là trang phục nghỉ ngơi mà là một tuyên ngôn phong cách sống tinh tế.
+    detailedDescription: `THE DAYBREAK SET lấy cảm hứng từ đồ ngủ của các khách sạn boutique châu Âu — nơi pijama không chỉ là trang phục nghỉ ngơi mà là một tuyên ngôn phong cách sống tinh tế.
 
 Thiết kế notch collar (cổ bẻ cổ điển) với viền tương phản trắng sắc nét chạy dọc ve áo, cổ tay và miệng túi — tạo nên dấu ấn thanh lịch đặc trưng. Hàng cúc trước tiệp màu cùng hai túi patch rộng rãi và một túi ngực nhỏ hoàn thiện phom dáng chuẩn mực.
 
@@ -52,7 +52,7 @@ Họa tiết Sọc Hồng (Pink Stripe) biểu trưng cho năng lượng Hỏa �
     // ─── SIZES — only S and M ────────────────────────────────────────────────
     sizes: ["S", "M"],
 
-    // ─── SIZE GUIDE — Bảng Size chuẩn hóa cho THE CLASSIC SET ─────────────
+    // ─── SIZE GUIDE — Bảng Size chuẩn hóa cho THE DAYBREAK SET ─────────────
     sizeGuide: {
       S: {
         weight: "40–49 kg",
@@ -109,16 +109,16 @@ Họa tiết Sọc Hồng (Pink Stripe) biểu trưng cho năng lượng Hỏa �
   {
     id: 'the-cafe-look',
     slug: 'the-cafe-look',
-    name: 'THE CAFÉ LOOK',
+    name: 'THE STILLWATER SET',
     subtitle: 'Pijama Thiết Kế Cổ V · Caro Navy Tĩnh Tại',
     collection: 'Thu Đông 2026',
     badge: 'BÁN CHẠY NHẤT',
 
     description: 'Thiết kế cổ V thanh lịch với đường viền tương phản nổi bật kết hợp họa tiết Caro Navy lịch lãm. Mang chiều sâu tĩnh tại của hành Thủy — tựa mặt nước hồ phẳng lặng, mang đến cảm giác an yên tuyệt đối cho những buổi sáng thưởng cà phê hay góc làm việc tại nhà.',
 
-    longDescription: 'THE CAFÉ LOOK là sự giao thoa hoàn hảo giữa nét phóng khoáng hiện đại và sự tĩnh tại sâu lắng. Mang gam màu Caro Navy biểu trưng cho hành Thủy — năng lượng của sự thông thái, điềm tĩnh và an nhiên. Thiết kế cổ V thanh thoát cùng viền tương phản tạo điểm nhấn tinh giản mà sắc sảo. Được dệt từ chất liệu tự nhiên mềm mại, đây là bộ trang phục lý tưởng để bạn bắt đầu ngày mới với một tách cappuccino hoặc đắm mình trong trang sách yêu thích. Tương hợp và nuôi dưỡng tuyệt vời cho người mệnh Thủy và Mộc.',
+    longDescription: 'THE STILLWATER SET là sự giao thoa hoàn hảo giữa nét phóng khoáng hiện đại và sự tĩnh tại sâu lắng. Mang gam màu Caro Navy biểu trưng cho hành Thủy — năng lượng của sự thông thái, điềm tĩnh và an nhiên. Thiết kế cổ V thanh thoát cùng viền tương phản tạo điểm nhấn tinh giản mà sắc sảo. Được dệt từ chất liệu tự nhiên mềm mại, đây là bộ trang phục lý tưởng để bạn bắt đầu ngày mới với một tách cappuccino hoặc đắm mình trong trang sách yêu thích. Tương hợp và nuôi dưỡng tuyệt vời cho người mệnh Thủy và Mộc.',
 
-    detailedDescription: `THE CAFÉ LOOK được may đo theo chuẩn phong cách homewear hiện đại của các thủ phủ thời trang Bắc Âu.
+    detailedDescription: `THE STILLWATER SET được may đo theo chuẩn phong cách homewear hiện đại của các thủ phủ thời trang Bắc Âu.
 
 Phom áo cổ V xẻ vừa phải tôn lên nét thanh mảnh của phần cổ và xương quai xanh, viền phối tương phản sắc sảo dọc cổ và lai áo.
 
@@ -194,16 +194,16 @@ Họa tiết Caro Navy (Navy Plaid) mang đậm năng lượng hành Thủy — 
   {
     id: 'the-evening-edit',
     slug: 'the-evening-edit',
-    name: 'THE EVENING EDIT',
+    name: 'THE HEARTH SET',
     subtitle: 'Pijama Wide-Leg Cao Cấp · Sọc Nâu Vững Chãi',
     collection: 'Thu Đông 2026',
     badge: 'PHIÊN BẢN GIỚI HẠN',
 
     description: 'Dáng wide-leg sang trọng kết hợp họa tiết Sọc Nâu mocha ấm áp — mang năng lượng Thổ vững chãi, nuôi dưỡng và vỗ về cảm xúc. Phiên bản giới hạn dành cho những khoảnh khắc thư giãn đỉnh cao và bữa tối ấm cúng cuối ngày.',
 
-    longDescription: 'THE EVENING EDIT là định nghĩa cao cấp nhất về đồ mặc nhà sang trọng. Mang gam màu Sọc Nâu (Brown Stripe) thuộc hành Thổ — biểu tượng của sự vững chãi, bình yên và cảm giác "về nhà" nuôi dưỡng năng lượng. Thiết kế quần wide-leg suông rộng quý phái cùng chất liệu dệt tự nhiên rũ nhẹ tạo nên từng bước chuyển động thướt tha, đẳng cấp. Rất tương sinh và mang lại may mắn, bình an cho người mệnh Thổ và Kim.',
+    longDescription: 'THE HEARTH SET là định nghĩa cao cấp nhất về đồ mặc nhà sang trọng. Mang gam màu Sọc Nâu (Brown Stripe) thuộc hành Thổ — biểu tượng của sự vững chãi, bình yên và cảm giác "về nhà" nuôi dưỡng năng lượng. Thiết kế quần wide-leg suông rộng quý phái cùng chất liệu dệt tự nhiên rũ nhẹ tạo nên từng bước chuyển động thướt tha, đẳng cấp. Rất tương sinh và mang lại may mắn, bình an cho người mệnh Thổ và Kim.',
 
-    detailedDescription: `THE EVENING EDIT là tuyệt phẩm giới hạn được chế tác từ chất liệu tự nhiên thượng hạng với độ bóng mờ quý phái.
+    detailedDescription: `THE HEARTH SET là tuyệt phẩm giới hạn được chế tác từ chất liệu tự nhiên thượng hạng với độ bóng mờ quý phái.
 
 Thiết kế quần dáng wide-leg (ống rộng) buông rủ hoàn hảo kết hợp áo phom thoải mái chuẩn châu Âu, mang đến khí chất sang trọng vượt bậc.
 

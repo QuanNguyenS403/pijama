@@ -6,14 +6,18 @@ import lifestyleNightImg from '../../assets/images/lifestyle-night.jpg'
 export default function Section3FeaturedProducts() {
   const navigate = useNavigate()
 
+  const scrollTo = (id) => {
+    const elem = document.querySelector(id)
+    if (elem) elem.scrollIntoView({ behavior: 'smooth' })
+  }
+
   const products = [
     {
       id: 'classic-set',
       slug: 'the-classic-set',
-      mood: 'THE CLASSIC SET',
-      name: 'THE CLASSIC SET',
+      name: 'THE DAYBREAK SET',
       subtitle: 'Sọc Hồng · Năng Lượng Hỏa',
-      color: 'Sọc Hồng · Năng lượng Hỏa ấm áp · 390.000đ',
+      color: 'Sọc Hồng · Năng lượng Hỏa ấm áp',
       desc: 'Sọc hồng rạng rỡ như nắng sớm mai.\nChất liệu tự nhiên thoáng khí, viền trắng tinh tế.\nKhởi đầu ngày mới tràn đầy sinh khí.',
       image: '/images/classic-set-pink-main.jpg',
       badge: 'MỚI RA MẮT',
@@ -28,10 +32,9 @@ export default function Section3FeaturedProducts() {
     {
       id: 'cafe-look',
       slug: 'the-cafe-look',
-      mood: 'THE CAFÉ LOOK',
-      name: 'THE CAFÉ LOOK',
+      name: 'THE STILLWATER SET',
       subtitle: 'Caro Navy · Năng Lượng Thủy',
-      color: 'Caro Navy · Năng lượng Thủy tĩnh tại · 550.000đ',
+      color: 'Caro Navy · Năng lượng Thủy tĩnh tại',
       desc: 'Họa tiết Caro Navy trầm lắng, an yên như mặt nước lặng.\nCổ V thanh lịch cùng viền phối sắc nét.\nMặc thẳng từ nhà đến quán café sáng.',
       image: '/images/classic-set-navy-main.jpg',
       badge: 'BÁN CHẠY NHẤT',
@@ -47,10 +50,9 @@ export default function Section3FeaturedProducts() {
     {
       id: 'evening-edit',
       slug: 'the-evening-edit',
-      mood: 'THE EVENING EDIT',
-      name: 'THE EVENING EDIT',
+      name: 'THE HEARTH SET',
       subtitle: 'Sọc Nâu · Năng Lượng Thổ',
-      color: 'Sọc Nâu · Năng lượng Thổ vững chãi · 750.000đ',
+      color: 'Sọc Nâu · Năng lượng Thổ vững chãi',
       desc: 'Sọc Nâu mocha ấm áp — cảm giác "về nhà" nuôi dưỡng năng lượng.\nDáng wide-leg buông rủ thượng hạng.\nSang trọng tuyệt đối cho những buổi tối chill.',
       image: '/images/classic-set-brown-main.jpg',
       badge: 'PHIÊN BẢN GIỚI HẠN',
@@ -112,13 +114,10 @@ export default function Section3FeaturedProducts() {
               {/* Info */}
               <div className="p-5 sm:p-6 flex flex-col flex-grow justify-between bg-white">
                 <div>
-                  <span className="font-serif text-xs font-bold tracking-[0.2em] text-[#D4AF37] uppercase block mb-1">
-                    {product.mood}
-                  </span>
                   <h3 className="font-serif text-lg sm:text-xl font-bold text-[#1A1614] leading-snug group-hover:text-[#631521] transition-colors">
                     {product.name}
                   </h3>
-                  <span className="text-[11px] text-[#8C7E74] font-sans block mt-0.5">{product.color}</span>
+                  <span className="text-[11px] font-sans text-[#8C7E74] block mt-1">{product.color}</span>
                   <p className="font-sans text-sm text-[#4A3F38] italic mt-2.5 leading-relaxed whitespace-pre-line">
                     "{product.desc}"
                   </p>
@@ -147,11 +146,11 @@ export default function Section3FeaturedProducts() {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
-                      navigate(`/san-pham/${product.slug}`)
+                      scrollTo('#section-deep-feature')
                     }}
                     className="w-full inline-flex items-center justify-center bg-[#2C201A] hover:bg-[#631521] text-white font-sans text-xs font-bold tracking-wider px-4 py-2.5 rounded-[2px] transition-colors uppercase cursor-pointer"
                   >
-                    XEM CHI TIẾT
+                    KHÁM PHÁ {product.name}
                   </button>
                 </div>
               </div>

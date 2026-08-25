@@ -10,7 +10,7 @@ test('PricingValidator: Tính đúng giá đơn hàng COD dưới 500k (có phí
     items: [
       {
         productId: 'the-classic-set',
-        productName: 'THE CLASSIC SET',
+        productName: 'THE DAYBREAK SET',
         unitPrice: 390000,
         quantity: 1,
         totalPrice: 390000,
@@ -38,7 +38,7 @@ test('PricingValidator: Tính đúng đơn hàng Bank Transfer trên 500k (Frees
     items: [
       {
         productId: 'the-cafe-look',
-        productName: 'THE CAFÉ LOOK',
+        productName: 'THE STILLWATER SET',
         unitPrice: 550000,
         quantity: 1,
         totalPrice: 550000,
@@ -66,7 +66,7 @@ test('PricingValidator: Từ chối đơn hàng khi client cố tình sửa gi�
     items: [
       {
         productId: 'the-evening-edit', // Giá thật là 750.000đ
-        productName: 'THE EVENING EDIT',
+        productName: 'THE HEARTH SET',
         unitPrice: 1000, // Hack giá thành 1.000đ
         quantity: 1,
         totalPrice: 1000,
@@ -91,7 +91,7 @@ test('PricingValidator: Từ chối đơn hàng khi client cố tình sửa tổ
     items: [
       {
         productId: 'the-classic-set',
-        productName: 'THE CLASSIC SET',
+        productName: 'THE DAYBREAK SET',
         unitPrice: 390000,
         quantity: 1,
         totalPrice: 390000,

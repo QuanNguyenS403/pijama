@@ -8,7 +8,7 @@ test('StockValidator: Chấp nhận đơn hàng với số lượng hợp lệ t
     items: [
       {
         productId: 'the-classic-set',
-        productName: 'THE CLASSIC SET',
+        productName: 'THE DAYBREAK SET',
         color: { name: 'Pink Stripe' },
         size: 'S',
         quantity: 2,
@@ -26,7 +26,7 @@ test('StockValidator: Từ chối đơn hàng vượt quá tồn kho khả dụn
     items: [
       {
         productId: 'the-classic-set',
-        productName: 'THE CLASSIC SET',
+        productName: 'THE DAYBREAK SET',
         color: { name: 'Pink Stripe' },
         size: 'S', // Tồn kho S là 10
         quantity: 999, // Yêu cầu 999 chiếc

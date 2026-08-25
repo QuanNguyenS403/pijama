@@ -4,13 +4,13 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-  // Tạo sản phẩm THE CLASSIC SET
+  // Tạo sản phẩm THE DAYBREAK SET
   const product1 = await prisma.product.upsert({
     where: { slug: 'the-classic-set' },
     update: {},
     create: {
       slug:           'the-classic-set',
-      name:           'THE CLASSIC SET',
+      name:           'THE DAYBREAK SET',
       subtitle:       'Pijama Phong Cách Châu Âu · Hai Mẫu',
       badge:          'MỚI RA MẮT',
       collection:     'Thu Đông 2025',
