@@ -70,6 +70,39 @@ app.get('/api/health', (req, res) => {
   })
 })
 
+// ── 0. Chẩn đoán trạng thái kết nối Gmail độc lập ─────────────
+app.get('/api/health/email', async (req, res) => {
+  try {
+    const result = await verifyTransporter()
+    if (result && result.success) {
+      return res.json({
+        emailReady: true,
+        user: (process.env.GMAIL_USER || '').trim() || null,
+        ownerEmail: (process.env.OWNER_EMAIL || '').trim() || null,
+        message: 'Kết nối SMTP Gmail sẵn sàng hoạt động!',
+      })
+    } else {
+      return res.status(500).json({
+        emailReady: false,
+        error: result?.error || 'Không thể kết nối tới Gmail SMTP',
+        user: (process.env.GMAIL_USER || '').trim() || null,
+        ownerEmail: (process.env.OWNER_EMAIL || '').trim() || null,
+        instructions: [
+          '1. Vào Google Account kiểm tra "Xác minh 2 bước" (2FA) đang BẬT',
+          '2. Tạo App Password mới 16 ký tự tại https://myaccount.google.com/apppasswords',
+          '3. Cập nhật GMAIL_APP_PASSWORD trong file .env.local (viết liền không dấu cách)',
+          '4. Chạy lệnh `node test-email.js` trên terminal để kiểm tra trực tiếp',
+        ],
+      })
+    }
+  } catch (err) {
+    return res.status(500).json({
+      emailReady: false,
+      error: err.message,
+    })
+  }
+})
+
 // ── 1. API Tạo Mã QR Thanh Toán Động (VietQR / SePay) ──────────
 app.post('/api/payment/generate-qr', generateQrLimiter, (req, res) => {
   try {

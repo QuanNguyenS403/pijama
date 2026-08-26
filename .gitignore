@@ -9,3 +9,5 @@ dist/
 !package.json
 !package-lock.json
 !tsconfig.json
+_archive/
+
