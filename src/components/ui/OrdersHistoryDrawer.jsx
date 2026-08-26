@@ -18,7 +18,6 @@ import {
   ShieldCheck,
   CreditCard,
   Building,
-  Printer,
   Ban,
   Loader2,
   Globe,
@@ -136,9 +135,6 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
   const [lookupResults, setLookupResults] = useState(null)
   const [lookupError, setLookupError] = useState(null)
 
-  // Cancel Order State
-  const [cancellingOrderId, setCancellingOrderId] = useState(null)
-
   // Load orders from localStorage
   const loadOrders = () => {
     try {
@@ -175,50 +171,6 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
     navigator.clipboard.writeText(text)
     setCopiedKey(key)
     setTimeout(() => setCopiedKey(null), 2000)
-  }
-
-  // Self-service Cancel Request (P3 Item 13)
-  const handleCancelOrder = async (orderId) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn gửi yêu cầu hủy đơn hàng ${orderId}?`)) {
-      return
-    }
-
-    setCancellingOrderId(orderId)
-    try {
-      const res = await fetch('/api/orders/cancel-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, reason: 'Khách tự bấm hủy trên drawer lịch sử' }),
-      })
-
-      let data = {}
-      try {
-        data = await res.json()
-      } catch (e) {
-        data = { success: res.ok }
-      }
-
-      if (data.success || res.ok) {
-        // Update local storage
-        const updated = orders.map((o) => (o.orderId === orderId ? { ...o, status: 'CANCELLED' } : o))
-        setOrders(updated)
-        localStorage.setItem('pijama_orders', JSON.stringify(updated))
-        window.dispatchEvent(new Event('orders_updated'))
-        alert('Yêu cầu hủy đơn đã được ghi nhận thành công!')
-      } else {
-        alert(data.error || 'Không thể hủy đơn hàng này. Vui lòng gọi 0981 753 082.')
-      }
-    } catch (err) {
-      console.error('Cancel error:', err)
-      // Fallback local cancellation if offline
-      const updated = orders.map((o) => (o.orderId === orderId ? { ...o, status: 'CANCELLED' } : o))
-      setOrders(updated)
-      localStorage.setItem('pijama_orders', JSON.stringify(updated))
-      window.dispatchEvent(new Event('orders_updated'))
-      alert('Đã cập nhật yêu cầu hủy đơn hàng trên thiết bị.')
-    } finally {
-      setCancellingOrderId(null)
-    }
   }
 
   // Handle Online Nationwide Lookup (P1 Item 7)
@@ -418,16 +370,6 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                       >
                         Chờ VietQR ({orders.filter((o) => o.status === 'AWAITING_PAYMENT').length})
                       </button>
-                      <button
-                        onClick={() => setStatusFilter('CONFIRMED')}
-                        className={`px-2.5 py-1 rounded-[2px] border transition-colors cursor-pointer ${
-                          statusFilter === 'CONFIRMED' || statusFilter === 'PENDING'
-                            ? 'bg-[#631521] text-white border-[#631521] font-semibold'
-                            : 'bg-[#FAF8F5] text-[#4A3F38] border-[#E8DFD5] hover:bg-white'
-                        }`}
-                      >
-                        Đang Xử Lý ({orders.filter((o) => o.status === 'PENDING' || o.status === 'CONFIRMED' || o.status === 'PACKING').length})
-                      </button>
                     </div>
                   </div>
                 )}
@@ -547,7 +489,6 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
     const transferContent = `${order.customer?.fullName || 'Khach Hang'} ${order.customer?.phone || ''}`.trim()
     const qrUrl = `https://img.vietqr.io/image/vietcombank-1050773506-compact2.png?amount=${order.total}&accountName=NGUYEN%20DUC%20QUAN`
     const carrierUrl = getCarrierTrackingUrl(order.carrier, order.trackingCode)
-    const canCancel = order.status === 'PENDING' || order.status === 'CONFIRMED' || order.status === 'AWAITING_PAYMENT'
 
     return (
       <div
@@ -780,34 +721,9 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
           </div>
         )}
 
-        {/* Action Bar (Print Invoice & Self-Service Cancel) */}
+        {/* Order Footer Support */}
         <div className="px-3.5 py-2.5 bg-white border-t border-[#E8DFD5] flex items-center justify-between text-[11px] text-[#8C7E74] flex-wrap gap-2">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => window.print()}
-              className="inline-flex items-center gap-1 text-[#4A3F38] hover:text-[#631521] font-medium transition-colors cursor-pointer"
-              title="In hoặc lưu hóa đơn PDF"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>In Hóa Đơn PDF</span>
-            </button>
-
-            {canCancel && (
-              <button
-                onClick={() => handleCancelOrder(order.orderId)}
-                disabled={cancellingOrderId === order.orderId}
-                className="inline-flex items-center gap-1 text-[#C62828] hover:underline font-medium transition-colors cursor-pointer disabled:opacity-50"
-              >
-                {cancellingOrderId === order.orderId ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Ban className="w-3.5 h-3.5" />
-                )}
-                <span>Hủy Đơn</span>
-              </button>
-            )}
-          </div>
-
+          <span>Hỗ trợ đơn hàng:</span>
           <a
             href="tel:0981753082"
             className="text-[#631521] hover:underline font-medium flex items-center gap-1"

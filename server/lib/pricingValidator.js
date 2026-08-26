@@ -70,7 +70,7 @@ export function validateOrderPricing(order) {
   const paymentMethod = order.payment?.method || 'COD'
   let calculatedDiscount = 0
 
-  if (paymentMethod === 'BANK_TRANSFER' || paymentMethod === 'MOMO') {
+  if (paymentMethod === 'BANK_TRANSFER') {
     // Giảm 10% trực tiếp trên tạm tính
     calculatedDiscount = Math.round(calculatedSubtotal * 0.10)
   }

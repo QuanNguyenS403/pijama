@@ -302,14 +302,6 @@ export default function OrderSuccessPage() {
                     Xem Danh Sách Đơn Đã Đặt
                   </button>
 
-                  <button
-                    onClick={() => window.print()}
-                    className="sm:w-auto bg-white text-[#4A3F38] font-sans font-semibold text-xs py-3.5 px-5 rounded-[2px] border border-[#E8DFD5] hover:bg-[#FAF8F5] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                    title="In hoặc lưu hóa đơn dưới dạng PDF"
-                  >
-                    <span>📄 In / Tải Hóa Đơn</span>
-                  </button>
-
                   <Link
                     to="/"
                     className="flex-1 bg-white text-[#631521] font-sans font-bold text-xs uppercase tracking-[0.15em] py-3.5 px-6 rounded-[2px] hover:bg-[#FAF5F0] border border-[#631521] transition-all text-center flex items-center justify-center gap-1.5"

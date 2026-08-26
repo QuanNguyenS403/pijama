@@ -6,30 +6,30 @@ import { useState, useEffect, useCallback } from 'react'
 
 // ── Status config ─────────────────────────────────
 const STATUS_CONFIG = {
-  PENDING:    { label: 'Chờ xác nhận', color: '#F59E0B', bg: '#FEF3C7', emoji: '🟡' },
-  CONFIRMED:  { label: 'Đã xác nhận',  color: '#2563EB', bg: '#DBEAFE', emoji: '🔵' },
-  PROCESSING: { label: 'Đang đóng gói',color: '#7C3AED', bg: '#EDE9FE', emoji: '🟣' },
-  SHIPPED:    { label: 'Đang giao',    color: '#EA580C', bg: '#FFEDD5', emoji: '🟠' },
-  DELIVERED:  { label: 'Đã giao',      color: '#16A34A', bg: '#DCFCE7', emoji: '🟢' },
-  CANCELLED:  { label: 'Đã hủy',       color: '#6B7280', bg: '#F3F4F6', emoji: '⚫' },
+  PENDING:          { label: 'Chờ xác nhận', color: '#F59E0B', bg: '#FEF3C7', emoji: '🟡' },
+  AWAITING_PAYMENT: { label: 'Chờ thanh toán', color: '#3B82F6', bg: '#DBEAFE', emoji: '⏳' },
+  CONFIRMED:        { label: 'Đã xác nhận',  color: '#2563EB', bg: '#DBEAFE', emoji: '🔵' },
+  PROCESSING:       { label: 'Đang đóng gói',color: '#7C3AED', bg: '#EDE9FE', emoji: '🟣' },
+  SHIPPED:          { label: 'Đang giao',    color: '#EA580C', bg: '#FFEDD5', emoji: '🟠' },
+  DELIVERED:        { label: 'Đã giao',      color: '#16A34A', bg: '#DCFCE7', emoji: '🟢' },
+  CANCELLED:        { label: 'Đã hủy',       color: '#6B7280', bg: '#F3F4F6', emoji: '⚫' },
 }
 
 const PAYMENT_LABELS = {
-  COD:           'COD',
-  VNPAY:         'VNPAY',
-  MOMO:          'MoMo',
-  BANK_TRANSFER: 'Chuyển khoản',
+  COD:           'COD (Tiền mặt)',
+  BANK_TRANSFER: 'Chuyển khoản VietQR',
 }
 
-const vnd = (n) => Number(n).toLocaleString('vi-VN') + 'đ'
+const vnd = (n) => Number(n || 0).toLocaleString('vi-VN') + 'đ'
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders]         = useState([])
-  const [total, setTotal]           = useState(0)
-  const [loading, setLoading]       = useState(true)
-  const [page, setPage]             = useState(1)
-  const [filters, setFilters]       = useState({
-    status: '', payment: '', search: '', from: '', to: '',
+  const [orders, setOrders]               = useState([])
+  const [total, setTotal]                 = useState(0)
+  const [loading, setLoading]             = useState(true)
+  const [fetchError, setFetchError]       = useState(null)
+  const [page, setPage]                   = useState(1)
+  const [filters, setFilters]             = useState({
+    status: '', payment: '', search: '', date: '',
   })
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [actionModal, setActionModal]     = useState(null) // { type, orderId }
@@ -40,48 +40,58 @@ export default function AdminOrdersPage() {
   // ── Fetch orders ────────────────────────────────
   const fetchOrders = useCallback(async () => {
     setLoading(true)
+    setFetchError(null)
     try {
       const q = new URLSearchParams({
-        page,
+        page: String(page),
         ...(filters.status  && { status:  filters.status  }),
         ...(filters.payment && { payment: filters.payment }),
         ...(filters.search  && { search:  filters.search  }),
-        ...(filters.from    && { from:    filters.from    }),
-        ...(filters.to      && { to:      filters.to      }),
+        ...(filters.date    && { date:    filters.date    }),
       })
-      const res  = await fetch(`/api/admin/orders?${q}`)
+      const res = await fetch(`/api/admin/orders?${q}`)
+      if (!res.ok) {
+        throw new Error(`Lỗi kết nối máy chủ (${res.status})`)
+      }
       const data = await res.json()
       setOrders(data.orders || [])
       setTotal(data.total   || 0)
     } catch (err) {
       console.error('Error fetching orders:', err)
+      setFetchError('Không thể tải danh sách đơn hàng. Kiểm tra kết nối máy chủ hoặc thử lại.')
     } finally {
       setLoading(false)
     }
   }, [page, filters])
 
-  useEffect(() => { fetchOrders() }, [fetchOrders])
+  useEffect(() => {
+    fetchOrders()
+    const timer = setInterval(() => {
+      fetchOrders()
+    }, 4000)
+    return () => clearInterval(timer)
+  }, [fetchOrders])
 
   // ── Gọi action API ──────────────────────────────
   const callAction = async (orderId, action, extra = {}) => {
     setActionLoading(true)
     try {
-      const res  = await fetch(`/api/admin/orders/${orderId}`, {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
         method:  'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ action, ...extra }),
       })
       const data = await res.json()
 
-      if (!res.ok) throw new Error(data.error)
+      if (!res.ok) throw new Error(data.error || 'Thao tác thất bại')
 
       showToast(data.message || 'Thao tác thành công', 'success')
       setActionModal(null)
       setActionInput('')
       fetchOrders()
 
-      // Cập nhật selectedOrder nếu đang xem
-      if (selectedOrder?.id === orderId) {
+      // Cập nhật selectedOrder nếu đang mở xem
+      if (selectedOrder?.orderId === orderId || selectedOrder?.id === orderId) {
         setSelectedOrder(data.order)
       }
     } catch (err) {
@@ -98,16 +108,20 @@ export default function AdminOrdersPage() {
 
   // ── Render status badge ─────────────────────────
   const StatusBadge = ({ status }) => {
-    const cfg = STATUS_CONFIG[status] || {}
+    const cfg = STATUS_CONFIG[status] || { label: status, color: '#6B7280', bg: '#F3F4F6', emoji: '⚪' }
     return (
       <span style={{
         background:  cfg.bg,
         color:       cfg.color,
         fontSize:    '11px',
         fontWeight:  600,
-        padding:     '3px 10px',
+        padding:     '4px 10px',
         letterSpacing: '0.5px',
         whiteSpace:  'nowrap',
+        borderRadius: '2px',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
       }}>
         {cfg.emoji} {cfg.label}
       </span>
@@ -116,20 +130,22 @@ export default function AdminOrdersPage() {
 
   // ── Action buttons cho từng trạng thái ─────────
   const ActionButtons = ({ order }) => {
-    const { id, status } = order
+    const orderId = order.orderId || order.id
+    const status = order.status || 'PENDING'
+
     return (
       <div style={{ display:'flex', gap:'6px', flexWrap:'wrap' }}>
-        {status === 'PENDING' && (
+        {(status === 'PENDING' || status === 'AWAITING_PAYMENT') && (
           <>
             <ActionBtn
               label="✅ Xác nhận"
               color="#2563EB"
-              onClick={() => setActionModal({ type:'CONFIRM', orderId:id })}
+              onClick={() => setActionModal({ type:'CONFIRM', orderId })}
             />
             <ActionBtn
               label="❌ Hủy đơn"
               color="#6B7280"
-              onClick={() => setActionModal({ type:'CANCEL', orderId:id })}
+              onClick={() => setActionModal({ type:'CANCEL', orderId })}
             />
           </>
         )}
@@ -138,17 +154,17 @@ export default function AdminOrdersPage() {
             <ActionBtn
               label="📦 Đóng gói"
               color="#7C3AED"
-              onClick={() => callAction(id, 'PROCESSING')}
+              onClick={() => callAction(orderId, 'PROCESSING')}
             />
             <ActionBtn
               label="🚚 Giao shipper"
               color="#EA580C"
-              onClick={() => setActionModal({ type:'SHIP', orderId:id })}
+              onClick={() => setActionModal({ type:'SHIP', orderId })}
             />
             <ActionBtn
               label="❌ Hủy đơn"
               color="#6B7280"
-              onClick={() => setActionModal({ type:'CANCEL', orderId:id })}
+              onClick={() => setActionModal({ type:'CANCEL', orderId })}
             />
           </>
         )}
@@ -157,20 +173,20 @@ export default function AdminOrdersPage() {
             <ActionBtn
               label="🚚 Giao shipper"
               color="#EA580C"
-              onClick={() => setActionModal({ type:'SHIP', orderId:id })}
+              onClick={() => setActionModal({ type:'SHIP', orderId })}
             />
             <ActionBtn
               label="❌ Hủy đơn"
               color="#6B7280"
-              onClick={() => setActionModal({ type:'CANCEL', orderId:id })}
+              onClick={() => setActionModal({ type:'CANCEL', orderId })}
             />
           </>
         )}
         {status === 'SHIPPED' && (
           <ActionBtn
-            label="✅ Đã giao xong"
+            label="🎉 Giao thành công"
             color="#16A34A"
-            onClick={() => callAction(id, 'DELIVER')}
+            onClick={() => callAction(orderId, 'DELIVER')}
           />
         )}
       </div>
@@ -180,6 +196,7 @@ export default function AdminOrdersPage() {
   const ActionBtn = ({ label, color, onClick }) => (
     <button
       onClick={onClick}
+      disabled={actionLoading}
       style={{
         background:    color,
         color:         '#fff',
@@ -187,9 +204,12 @@ export default function AdminOrdersPage() {
         padding:       '6px 12px',
         fontSize:      '11px',
         fontWeight:    600,
-        cursor:        'pointer',
+        cursor:        actionLoading ? 'not-allowed' : 'pointer',
         letterSpacing: '0.5px',
         fontFamily:    'DM Sans, Arial, sans-serif',
+        borderRadius:  '2px',
+        opacity:       actionLoading ? 0.6 : 1,
+        transition:    'opacity 0.2s',
       }}
     >
       {label}
@@ -200,22 +220,42 @@ export default function AdminOrdersPage() {
     <div style={{ padding:'24px', fontFamily:'DM Sans, Arial, sans-serif', color:'#3A3535', minHeight:'100vh', background:'#FAF8F5' }}>
 
       {/* ── HEADER ──────────────────────────── */}
-      <div style={{ marginBottom:'24px' }}>
-        <div style={{ fontSize:'10px', letterSpacing:'2px', textTransform:'uppercase', color:'#7A6E6E' }}>
-          QUẢN LÝ
+      <div style={{ marginBottom:'24px', display:'flex', justifyContent:'space-between', alignItems:'flex-end' }}>
+        <div>
+          <div style={{ fontSize:'11px', letterSpacing:'2px', textTransform:'uppercase', color:'#7A6E6E', fontWeight:600 }}>
+            HỆ THỐNG QUẢN LÝ
+          </div>
+          <h1 style={{ fontFamily:'Georgia,serif', fontSize:'28px', fontWeight:600, margin:'4px 0 0', color:'#631521' }}>
+            Quản Lý Đơn Hàng
+          </h1>
+          <p style={{ color:'#7A6E6E', fontSize:'13px', marginTop:'4px' }}>
+            Tổng số: <strong>{total}</strong> đơn hàng trong hệ thống
+          </p>
         </div>
-        <h1 style={{ fontFamily:'Georgia,serif', fontSize:'28px', fontWeight:600, margin:'4px 0 0' }}>
-          Đơn Hàng
-        </h1>
-        <p style={{ color:'#7A6E6E', fontSize:'13px', marginTop:'4px' }}>
-          Tổng: <strong>{total}</strong> đơn
-        </p>
+        <button
+          onClick={() => fetchOrders()}
+          style={{ ...btnStyle, background:'#631521', padding:'8px 14px', fontSize:'11px' }}
+        >
+          🔄 Làm mới dữ liệu
+        </button>
       </div>
+
+      {/* ── BANNER LỖI NẾU CÓ ─────────────────── */}
+      {fetchError && (
+        <div style={{
+          background: '#FEE2E2', color: '#991B1B', padding: '12px 16px',
+          marginBottom: '16px', fontSize: '13px', border: '1px solid #FECACA',
+          borderRadius: '2px', display: 'flex', alignItems: 'center', gap: '8px'
+        }}>
+          ⚠️ {fetchError}
+        </div>
+      )}
 
       {/* ── BỘ LỌC ──────────────────────────── */}
       <div style={{
         display:'flex', gap:'10px', flexWrap:'wrap',
         background:'#F5F0E8', padding:'16px', marginBottom:'20px',
+        border:'1px solid #E8DFD5',
       }}>
         <input
           placeholder="🔍 Tìm tên, SĐT, email, mã đơn..."
@@ -238,25 +278,20 @@ export default function AdminOrdersPage() {
           onChange={e => setFilters(f => ({ ...f, payment: e.target.value }))}
           style={inputStyle}
         >
-          <option value="">Tất cả TT</option>
+          <option value="">Tất cả phương thức TT</option>
           {Object.entries(PAYMENT_LABELS).map(([k, v]) => (
             <option key={k} value={k}>{v}</option>
           ))}
         </select>
         <input
-          type="date" placeholder="Từ ngày"
-          value={filters.from}
-          onChange={e => setFilters(f => ({ ...f, from: e.target.value }))}
-          style={{ ...inputStyle, width:'140px' }}
-        />
-        <input
-          type="date" placeholder="Đến ngày"
-          value={filters.to}
-          onChange={e => setFilters(f => ({ ...f, to: e.target.value }))}
-          style={{ ...inputStyle, width:'140px' }}
+          type="date"
+          title="Lọc theo ngày đặt hàng"
+          value={filters.date}
+          onChange={e => setFilters(f => ({ ...f, date: e.target.value }))}
+          style={{ ...inputStyle, width:'150px' }}
         />
         <button
-          onClick={() => { setFilters({ status:'', payment:'', search:'', from:'', to:'' }); setPage(1) }}
+          onClick={() => { setFilters({ status:'', payment:'', search:'', date:'' }); setPage(1) }}
           style={{ ...btnStyle, background:'#7A6E6E' }}
         >
           Xóa lọc
@@ -266,15 +301,15 @@ export default function AdminOrdersPage() {
       {/* ── BẢNG ĐƠN HÀNG ────────────────────── */}
       {loading ? (
         <div style={{ textAlign:'center', padding:'48px', color:'#7A6E6E' }}>
-          Đang tải...
+          Đang đồng bộ dữ liệu đơn hàng...
         </div>
       ) : (
-        <div style={{ overflowX:'auto', background:'#fff', border:'1px solid #D9CFC4' }}>
+        <div style={{ overflowX:'auto', background:'#fff', border:'1px solid #D9CFC4', boxShadow:'0 1px 3px rgba(0,0,0,0.05)' }}>
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'13px' }}>
             <thead>
-              <tr style={{ background:'#7B2D3E', color:'#F5F0E8' }}>
+              <tr style={{ background:'#631521', color:'#FAF8F5' }}>
                 {['Mã đơn','Khách hàng','Sản phẩm','Tổng tiền','Thanh toán','Trạng thái','Ngày đặt','Thao tác'].map(h => (
-                  <th key={h} style={{ padding:'10px 12px', textAlign:'left', fontSize:'10px', letterSpacing:'1px', textTransform:'uppercase', fontWeight:500, whiteSpace:'nowrap' }}>
+                  <th key={h} style={{ padding:'12px 14px', textAlign:'left', fontSize:'11px', letterSpacing:'1px', textTransform:'uppercase', fontWeight:600, whiteSpace:'nowrap' }}>
                     {h}
                   </th>
                 ))}
@@ -284,72 +319,107 @@ export default function AdminOrdersPage() {
               {orders.length === 0 && (
                 <tr>
                   <td colSpan={8} style={{ padding:'48px', textAlign:'center', color:'#7A6E6E' }}>
-                    Không có đơn hàng nào
+                    Không tìm thấy đơn hàng nào phù hợp
                   </td>
                 </tr>
               )}
-              {orders.map((order, i) => (
-                <tr
-                  key={order.id}
-                  style={{ background: i % 2 === 0 ? '#fff' : '#FAF7F3' }}
-                >
-                  {/* Mã đơn */}
-                  <td style={{ padding:'12px', fontWeight:600, color:'#7B2D3E', whiteSpace:'nowrap' }}>
-                    <button
-                      onClick={() => setSelectedOrder(order)}
-                      style={{ background:'none', border:'none', color:'#7B2D3E', fontWeight:600, cursor:'pointer', fontSize:'13px', textDecoration:'underline' }}
-                    >
-                      {order.orderNumber}
-                    </button>
-                  </td>
+              {orders.map((order, i) => {
+                const orderId = order.orderId || order.id
+                return (
+                  <tr
+                    key={orderId || i}
+                    style={{ background: i % 2 === 0 ? '#fff' : '#FAF7F3', borderBottom:'1px solid #EDE8DF' }}
+                  >
+                    {/* Mã đơn */}
+                    <td style={{ padding:'12px 14px', fontWeight:600, color:'#631521', whiteSpace:'nowrap' }}>
+                      <button
+                        onClick={() => setSelectedOrder(order)}
+                        title="Click để xem chi tiết đầy đủ đơn hàng"
+                        style={{ background:'none', border:'none', color:'#631521', fontWeight:700, cursor:'pointer', fontSize:'13px', textDecoration:'underline' }}
+                      >
+                        {orderId}
+                      </button>
+                    </td>
 
-                  {/* Khách hàng */}
-                  <td style={{ padding:'12px' }}>
-                    <div style={{ fontWeight:500 }}>{order.customerName}</div>
-                    <div style={{ color:'#7A6E6E', fontSize:'12px' }}>{order.customerPhone}</div>
-                  </td>
+                    {/* Khách hàng */}
+                    <td style={{ padding:'12px 14px' }}>
+                      <div style={{ fontWeight:600, color:'#1A1614' }}>{order.customerName}</div>
+                      <div style={{ color:'#7A6E6E', fontSize:'12px' }}>{order.customerPhone}</div>
+                    </td>
 
-                  {/* Sản phẩm */}
-                  <td style={{ padding:'12px', maxWidth:'200px' }}>
-                    {order.items?.map(item => (
-                      <div key={item.id} style={{ fontSize:'12px', marginBottom:'2px' }}>
-                        {item.productName || item.product?.name} · {item.colorLabel || item.variant?.colorLabel} / {item.size || item.variant?.size} × {item.quantity}
-                      </div>
-                    ))}
-                  </td>
+                    {/* Sản phẩm */}
+                    <td style={{ padding:'12px 14px', minWidth:'220px', maxWidth:'320px' }}>
+                      {order.items?.map((item, idx) => (
+                        <div key={idx} style={{ fontSize:'12px', marginBottom:'4px', lineHeight:'1.4' }}>
+                          <div style={{ fontWeight: 600, color: '#1A1614' }}>
+                            {item.productName || 'Bộ Pijama'}
+                          </div>
+                          <div style={{ color:'#7A6E6E', fontSize:'11px' }}>
+                            {item.colorLabel ? `${item.colorLabel} · ` : ''}{item.size ? `Size ${item.size}` : ''} × <strong style={{ color: '#631521' }}>{item.quantity}</strong>
+                          </div>
+                        </div>
+                      ))}
+                    </td>
 
-                  {/* Tổng tiền */}
-                  <td style={{ padding:'12px', fontFamily:'Georgia,serif', color:'#7B2D3E', fontWeight:'bold', whiteSpace:'nowrap' }}>
-                    {vnd(order.total)}
-                  </td>
+                    {/* Tổng tiền */}
+                    <td style={{ padding:'12px 14px', fontFamily:'Georgia,serif', color:'#631521', fontWeight:'bold', fontSize:'14px', whiteSpace:'nowrap' }}>
+                      {vnd(order.total)}
+                    </td>
 
-                  {/* Thanh toán */}
-                  <td style={{ padding:'12px', fontSize:'12px', whiteSpace:'nowrap' }}>
-                    <div>{PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod}</div>
-                    <div style={{ color: order.paymentStatus === 'PAID' ? '#16A34A' : '#F59E0B', fontWeight:500 }}>
-                      {order.paymentStatus === 'PAID' ? '✅ Đã TT' : '⏳ Chưa TT'}
-                    </div>
-                  </td>
+                    {/* Thanh toán */}
+                    <td style={{ padding:'12px 14px', fontSize:'12px', whiteSpace:'nowrap' }}>
+                      <div style={{ fontWeight: 500, marginBottom:'3px' }}>{PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod}</div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          callAction(orderId, 'TOGGLE_PAYMENT')
+                        }}
+                        disabled={actionLoading}
+                        title="Click để đổi trạng thái Chưa TT / Đã TT"
+                        style={{
+                          background: order.paymentStatus === 'PAID' ? '#DCFCE7' : '#FEF3C7',
+                          color: order.paymentStatus === 'PAID' ? '#16A34A' : '#D97706',
+                          border: `1px solid ${order.paymentStatus === 'PAID' ? '#86EFAC' : '#FDE68A'}`,
+                          padding: '3px 8px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          borderRadius: '2px',
+                          cursor: actionLoading ? 'not-allowed' : 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {order.paymentStatus === 'PAID' ? '✅ Đã TT' : '⏳ Chưa TT'}
+                      </button>
+                    </td>
 
-                  {/* Trạng thái */}
-                  <td style={{ padding:'12px' }}>
-                    <StatusBadge status={order.status} />
-                  </td>
+                    {/* Trạng thái */}
+                    <td style={{ padding:'12px 14px' }}>
+                      <StatusBadge status={order.status} />
+                    </td>
 
-                  {/* Ngày đặt */}
-                  <td style={{ padding:'12px', color:'#7A6E6E', fontSize:'12px', whiteSpace:'nowrap' }}>
-                    {new Date(order.createdAt).toLocaleString('vi-VN', {
-                      day:'2-digit', month:'2-digit', year:'numeric',
-                      hour:'2-digit', minute:'2-digit',
-                    })}
-                  </td>
+                    {/* Ngày đặt */}
+                    <td style={{ padding:'12px 14px', color:'#7A6E6E', fontSize:'12px', whiteSpace:'nowrap' }}>
+                      {order.createdAt && !isNaN(new Date(order.createdAt).getTime()) ? (
+                        new Date(order.createdAt).toLocaleString('vi-VN', {
+                          day:'2-digit', month:'2-digit', year:'numeric',
+                          hour:'2-digit', minute:'2-digit',
+                        })
+                      ) : (
+                        order.orderDateVN || 'Vừa xong'
+                      )}
+                    </td>
 
-                  {/* Thao tác */}
-                  <td style={{ padding:'12px' }}>
-                    <ActionButtons order={order} />
-                  </td>
-                </tr>
-              ))}
+                    {/* Thao tác */}
+                    <td style={{ padding:'12px 14px' }}>
+                      <ActionButtons order={order} />
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -362,7 +432,7 @@ export default function AdminOrdersPage() {
           onClick={() => setPage(p => p - 1)}
           style={{ ...btnStyle, opacity: page === 1 ? 0.4 : 1 }}
         >← Trước</button>
-        <span style={{ padding:'8px 16px', fontSize:'13px', color:'#7A6E6E' }}>
+        <span style={{ padding:'8px 16px', fontSize:'13px', color:'#7A6E6E', display:'flex', alignItems:'center' }}>
           Trang {page}
         </span>
         <button
@@ -372,7 +442,7 @@ export default function AdminOrdersPage() {
         >Sau →</button>
       </div>
 
-      {/* ── MODAL ACTION ─────────────────────── */}
+      {/* ── MODAL ACTION (CONFIRM / SHIP / CANCEL) ─────────── */}
       {actionModal && (
         <div style={{
           position:'fixed', inset:0,
@@ -381,15 +451,16 @@ export default function AdminOrdersPage() {
           zIndex:1000,
         }}>
           <div style={{
-            background:'#fff', padding:'32px', width:'440px',
+            background:'#fff', padding:'32px', width:'440px', maxWidth:'95vw',
             fontFamily:'DM Sans, Arial, sans-serif',
             boxShadow:'0 20px 40px rgba(0,0,0,0.2)',
+            borderRadius:'4px',
           }}>
             {/* CONFIRM modal */}
             {actionModal.type === 'CONFIRM' && (
               <>
                 <h2 style={modalTitle}>✅ Xác nhận đơn hàng</h2>
-                <p style={modalDesc}>Đơn sẽ chuyển sang trạng thái "Đã xác nhận". Email thông báo sẽ được gửi đến khách hàng ngay lập tức.</p>
+                <p style={modalDesc}>Đơn sẽ chuyển sang trạng thái "Đã xác nhận". Email xác nhận sẽ tự động gửi đến khách hàng.</p>
                 <textarea
                   placeholder="Ghi chú nội bộ (không bắt buộc)"
                   value={actionInput}
@@ -397,11 +468,18 @@ export default function AdminOrdersPage() {
                   rows={3} style={textareaStyle}
                 />
                 <div style={modalActions}>
-                  <button onClick={() => callAction(actionModal.orderId, 'CONFIRM', { note: actionInput })}
-                    disabled={actionLoading} style={{ ...btnStyle, background:'#2563EB' }}>
+                  <button
+                    onClick={() => callAction(actionModal.orderId, 'CONFIRM', { note: actionInput })}
+                    disabled={actionLoading}
+                    style={{ ...btnStyle, background:'#2563EB' }}
+                  >
                     {actionLoading ? 'Đang xử lý...' : '✅ Xác nhận đơn'}
                   </button>
-                  <button onClick={() => setActionModal(null)} style={{ ...btnStyle, background:'#6B7280' }}>
+                  <button
+                    onClick={() => setActionModal(null)}
+                    disabled={actionLoading}
+                    style={{ ...btnStyle, background:'#6B7280' }}
+                  >
                     Hủy
                   </button>
                 </div>
@@ -412,12 +490,12 @@ export default function AdminOrdersPage() {
             {actionModal.type === 'SHIP' && (
               <>
                 <h2 style={modalTitle}>🚚 Giao cho shipper</h2>
-                <p style={modalDesc}>Nhập mã vận đơn nếu có. Email có tracking sẽ được gửi cho khách hàng.</p>
+                <p style={modalDesc}>Nhập mã vận đơn bưu tá. Email thông báo kèm mã vận đơn sẽ được gửi ngay cho khách hàng.</p>
                 <input
                   placeholder="Mã vận đơn (tracking number)"
                   value={actionInput}
                   onChange={e => setActionInput(e.target.value)}
-                  style={{ ...inputStyle, width:'100%', marginBottom:'12px', display:'block' }}
+                  style={{ ...inputStyle, width:'100%', marginBottom:'12px', display:'block', boxSizing:'border-box' }}
                 />
                 <div style={modalActions}>
                   <button
@@ -427,7 +505,11 @@ export default function AdminOrdersPage() {
                   >
                     {actionLoading ? 'Đang xử lý...' : '🚚 Xác nhận giao hàng'}
                   </button>
-                  <button onClick={() => setActionModal(null)} style={{ ...btnStyle, background:'#6B7280' }}>
+                  <button
+                    onClick={() => setActionModal(null)}
+                    disabled={actionLoading}
+                    style={{ ...btnStyle, background:'#6B7280' }}
+                  >
                     Hủy
                   </button>
                 </div>
@@ -439,11 +521,11 @@ export default function AdminOrdersPage() {
               <>
                 <h2 style={modalTitle}>❌ Hủy đơn hàng</h2>
                 <p style={modalDesc}>
-                  Tồn kho sẽ được hoàn trả tự động. Email hủy đơn (kèm lý do) sẽ gửi đến khách hàng.
-                  Nếu khách đã thanh toán, hướng dẫn hoàn tiền sẽ có trong email.
+                  Email thông báo hủy đơn (kèm lý do) sẽ được gửi tới khách hàng.
+                  Nếu khách đã thanh toán, hướng dẫn hoàn tiền sẽ được ghi rõ trong email.
                 </p>
                 <textarea
-                  placeholder="Lý do hủy đơn * (bắt buộc — khách hàng sẽ thấy lý do này)"
+                  placeholder="Lý do hủy đơn * (bắt buộc tối thiểu 5 ký tự — khách hàng sẽ thấy lý do này)"
                   value={actionInput}
                   onChange={e => setActionInput(e.target.value)}
                   rows={4} style={{ ...textareaStyle, borderColor: '#EF4444' }}
@@ -459,7 +541,11 @@ export default function AdminOrdersPage() {
                   >
                     {actionLoading ? 'Đang xử lý...' : '❌ Xác nhận hủy đơn'}
                   </button>
-                  <button onClick={() => setActionModal(null)} style={{ ...btnStyle, background:'#6B7280' }}>
+                  <button
+                    onClick={() => setActionModal(null)}
+                    disabled={actionLoading}
+                    style={{ ...btnStyle, background:'#6B7280' }}
+                  >
                     Không hủy
                   </button>
                 </div>
@@ -474,6 +560,109 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
+      {/* ── MODAL CHI TIẾT ĐƠN HÀNG ───────────── */}
+      {selectedOrder && !actionModal && (
+        <div style={{
+          position:'fixed', inset:0,
+          background:'rgba(0,0,0,0.6)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          zIndex:999,
+        }} onClick={() => setSelectedOrder(null)}>
+          <div style={{
+            background:'#fff', padding:'28px', width:'560px', maxWidth:'95vw',
+            maxHeight:'85vh', overflowY:'auto',
+            fontFamily:'DM Sans, Arial, sans-serif',
+            boxShadow:'0 20px 40px rgba(0,0,0,0.2)',
+            borderRadius:'4px',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'16px' }}>
+              <div>
+                <span style={{ fontSize:'11px', color:'#7A6E6E', textTransform:'uppercase', letterSpacing:'1px' }}>Chi tiết đơn hàng</span>
+                <h2 style={{ fontFamily:'Georgia,serif', fontSize:'22px', color:'#631521', margin:'2px 0 0' }}>
+                  #{selectedOrder.orderId || selectedOrder.id}
+                </h2>
+              </div>
+              <button
+                onClick={() => setSelectedOrder(null)}
+                disabled={actionLoading}
+                style={{ background:'none', border:'none', fontSize:'22px', cursor:'pointer', color:'#7A6E6E' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ marginBottom:'16px' }}>
+              <StatusBadge status={selectedOrder.status} />
+            </div>
+
+            <div style={{ background:'#FAF7F3', padding:'14px', marginBottom:'16px', fontSize:'13px', border:'1px solid #E8DFD5', lineHeight:'1.8' }}>
+              <div><strong>Khách hàng:</strong> {selectedOrder.customerName || selectedOrder.customer?.fullName}</div>
+              <div><strong>Điện thoại:</strong> <a href={`tel:${selectedOrder.customerPhone || selectedOrder.customer?.phone}`} style={{ color:'#631521', fontWeight:600 }}>{selectedOrder.customerPhone || selectedOrder.customer?.phone}</a></div>
+              {(selectedOrder.customerEmail || selectedOrder.customer?.email) && (
+                <div><strong>Email:</strong> {selectedOrder.customerEmail || selectedOrder.customer?.email}</div>
+              )}
+              <div><strong>Địa chỉ nhận:</strong> {selectedOrder.shippingAddress || selectedOrder.shipping?.fullAddress || 'Chưa cung cấp'}</div>
+              <div><strong>Phương thức TT:</strong> {PAYMENT_LABELS[selectedOrder.paymentMethod] || selectedOrder.paymentMethod} ({selectedOrder.paymentStatus === 'PAID' ? '✅ Đã TT' : '⏳ Chưa TT'})</div>
+              {selectedOrder.customerNote && <div><strong>Ghi chú khách:</strong> {selectedOrder.customerNote}</div>}
+              {selectedOrder.adminNote && <div><strong>Ghi chú nội bộ:</strong> {selectedOrder.adminNote}</div>}
+              {selectedOrder.trackingNumber && <div><strong>Mã vận đơn:</strong> {selectedOrder.trackingNumber} ({selectedOrder.carrier || 'GHN'})</div>}
+              {selectedOrder.cancelReason && <div style={{ color: '#EF4444' }}><strong>Lý do hủy:</strong> {selectedOrder.cancelReason}</div>}
+            </div>
+
+            <div style={{ marginBottom:'16px' }}>
+              <div style={{ fontSize:'12px', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'8px', color:'#7A6E6E' }}>
+                Sản phẩm đặt mua ({selectedOrder.items?.length || 0})
+              </div>
+              <div style={{ border:'1px solid #E8DFD5' }}>
+                {selectedOrder.items?.map((item, idx) => (
+                  <div key={idx} style={{ display:'flex', justifyContent:'space-between', padding:'10px 12px', borderBottom: idx < selectedOrder.items.length - 1 ? '1px solid #E8DFD5' : 'none', fontSize:'13px' }}>
+                    <div>
+                      <div style={{ fontWeight:600, color:'#1A1614' }}>{item.productName || 'Bộ Pijama'}</div>
+                      <div style={{ fontSize:'11px', color:'#7A6E6E' }}>{item.colorLabel ? `${item.colorLabel} · ` : ''}{item.size ? `Size ${item.size}` : ''} × {item.quantity}</div>
+                    </div>
+                    <div style={{ fontWeight:600, color:'#631521' }}>
+                      {vnd(item.totalPrice || (item.unitPrice * item.quantity))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ background:'#FAF7F3', padding:'14px', marginBottom:'16px', fontSize:'13px', border:'1px solid #E8DFD5' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'4px' }}>
+                <span>Tạm tính:</span>
+                <span>{vnd(selectedOrder.subtotal)}</span>
+              </div>
+              {selectedOrder.discount > 0 && (
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'4px', color:'#16A34A' }}>
+                  <span>Ưu đãi / Giảm giá:</span>
+                  <span>-{vnd(selectedOrder.discount)}</span>
+                </div>
+              )}
+              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'8px' }}>
+                <span>Phí vận chuyển:</span>
+                <span>{vnd(selectedOrder.shippingFee)}</span>
+              </div>
+              <div style={{ display:'flex', justifyContent:'space-between', borderTop:'1px solid #D9CFC4', paddingTop:'8px', fontWeight:'bold', fontSize:'15px', color:'#631521' }}>
+                <span>Tổng thanh toán:</span>
+                <span>{vnd(selectedOrder.total)}</span>
+              </div>
+            </div>
+
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'20px', flexWrap:'wrap', gap:'10px' }}>
+              <ActionButtons order={selectedOrder} />
+              <button
+                onClick={() => setSelectedOrder(null)}
+                disabled={actionLoading}
+                style={{ ...btnStyle, background:'#6B7280' }}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── TOAST NOTIFICATION ───────────────── */}
       {toast && (
         <div style={{
@@ -483,6 +672,7 @@ export default function AdminOrdersPage() {
           fontSize:'13px', zIndex:9999,
           maxWidth:'360px',
           boxShadow:'0 4px 20px rgba(0,0,0,0.15)',
+          borderRadius:'4px',
         }}>
           {toast.msg}
         </div>
@@ -497,16 +687,18 @@ const inputStyle = {
   border:'1px solid #D9CFC4', outline:'none',
   fontFamily:'DM Sans, Arial, sans-serif',
   minWidth:'160px',
+  borderRadius:'2px',
 }
 const btnStyle = {
-  background:'#7B2D3E', color:'#fff',
+  background:'#631521', color:'#fff',
   border:'none', padding:'8px 16px',
-  fontSize:'12px', fontWeight:500,
+  fontSize:'12px', fontWeight:600,
   letterSpacing:'0.5px', cursor:'pointer',
   fontFamily:'DM Sans, Arial, sans-serif',
   textTransform:'uppercase',
+  borderRadius:'2px',
 }
-const modalTitle    = { fontFamily:'Georgia,serif', fontSize:'20px', marginBottom:'10px' }
+const modalTitle    = { fontFamily:'Georgia,serif', fontSize:'20px', marginBottom:'10px', color:'#631521' }
 const modalDesc     = { fontSize:'13px', color:'#5A5050', lineHeight:1.7, marginBottom:'16px' }
-const textareaStyle = { width:'100%', padding:'10px 12px', fontSize:'13px', border:'1px solid #D9CFC4', resize:'vertical', fontFamily:'DM Sans, Arial, sans-serif', marginBottom:'16px' }
+const textareaStyle = { width:'100%', padding:'10px 12px', fontSize:'13px', border:'1px solid #D9CFC4', resize:'vertical', fontFamily:'DM Sans, Arial, sans-serif', marginBottom:'16px', boxSizing:'border-box', borderRadius:'2px' }
 const modalActions  = { display:'flex', gap:'10px' }

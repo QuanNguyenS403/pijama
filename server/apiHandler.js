@@ -53,11 +53,12 @@ export async function handleOrderSubmit(order) {
     }
   }
 
-  const isBankTransfer = order.payment?.method === 'BANK_TRANSFER' || order.payment?.method === 'MOMO'
+  const isBankTransfer = order.payment?.method === 'BANK_TRANSFER'
   const now = Date.now()
 
   // Gán lại các giá trị đã được server xác thực chuẩn xác 100%
   const validatedSummary = pricingCheck.summary
+  const createdDate = order.createdAt || new Date().toISOString()
   const orderRecord = {
     ...order,
     items: validatedSummary.items,
@@ -68,12 +69,18 @@ export async function handleOrderSubmit(order) {
     status: isBankTransfer ? 'AWAITING_PAYMENT' : 'PENDING',
     payment: {
       ...(order.payment || {}),
-      status: 'UNPAID',
+      status: isBankTransfer ? 'PAID' : 'UNPAID',
       qrGeneratedAt: now,
       qrExpiresAt: now + 15 * 60 * 1000, // 15 phút hiệu lực
       isQrInvalidated: false,
     },
-    createdAt: new Date().toISOString(),
+    createdAt: createdDate,
+    orderDate: order.orderDate || createdDate,
+    orderDateVN: order.orderDateVN || new Date(createdDate).toLocaleString('vi-VN', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+      timeZone: 'Asia/Ho_Chi_Minh',
+    }),
   }
 
   console.log(`\n📦 [ORDER VALIDATED] Đang tiếp nhận đơn hàng: ${order.orderId}`)

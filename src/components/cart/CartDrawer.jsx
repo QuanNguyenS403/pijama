@@ -99,8 +99,18 @@ export default function CartDrawer({ isOpen, onClose }) {
                   </p>
                 </div>
                 <button
-                  onClick={() => { onClose(); navigate('/') }}
-                  className="mt-3 bg-[#631521] text-[#FAF8F5] font-sans font-bold text-xs uppercase tracking-[0.15em] px-8 py-3.5 rounded-[2px] hover:bg-[#4A0D17] border border-[#D4AF37]/30 shadow-luxury transition-all duration-200"
+                  onClick={() => {
+                    onClose()
+                    setTimeout(() => {
+                      if (window.location.pathname === '/') {
+                        const el = document.getElementById('mot-bo-la-mot-mood') || document.getElementById('section-products')
+                        if (el) el.scrollIntoView({ behavior: 'smooth' })
+                      } else {
+                        navigate('/#mot-bo-la-mot-mood')
+                      }
+                    }, 100)
+                  }}
+                  className="mt-3 bg-[#631521] text-[#FAF8F5] font-sans font-bold text-xs uppercase tracking-[0.15em] px-8 py-3.5 rounded-[2px] hover:bg-[#4A0D17] border border-[#D4AF37]/30 shadow-luxury transition-all duration-200 cursor-pointer"
                 >
                   Khám Phá Bộ Sưu Tập
                 </button>

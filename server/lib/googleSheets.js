@@ -292,3 +292,75 @@ export const searchOrdersFromSheet = async (query) => {
     return []
   }
 }
+
+// ── Cập nhật trạng thái đơn hàng trên Google Sheet ───────────────
+export const updateOrderStatusInSheet = async (orderId, newStatus, note = '', trackingCode = '', carrier = '') => {
+  try {
+    const auth = getAuth()
+    const sheets = google.sheets({ version: 'v4', auth })
+    const spreadsheetId = process.env.GOOGLE_SHEET_ID
+    if (!spreadsheetId) return
+
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${SHEET_TABS.ORDERS}!A:A`,
+    })
+    const rows = response.data.values || []
+    const rowIndex = rows.findIndex((r) => r[0] === orderId)
+    if (rowIndex === -1) {
+      console.warn(`Sheet: không tìm thấy đơn ${orderId} để cập nhật trạng thái`)
+      return
+    }
+
+    const rowNumber = rowIndex + 1
+    const now = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
+
+    const updates = [
+      sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: `${SHEET_TABS.ORDERS}!W${rowNumber}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [[newStatus]] },
+      })
+    ]
+
+    if (note) {
+      updates.push(
+        sheets.spreadsheets.values.update({
+          spreadsheetId,
+          range: `${SHEET_TABS.ORDERS}!V${rowNumber}`,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: { values: [[`${now}: ${note}`]] },
+        })
+      )
+    }
+
+    if (trackingCode) {
+      updates.push(
+        sheets.spreadsheets.values.update({
+          spreadsheetId,
+          range: `${SHEET_TABS.ORDERS}!Y${rowNumber}`,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: { values: [[trackingCode]] },
+        })
+      )
+    }
+
+    if (carrier) {
+      updates.push(
+        sheets.spreadsheets.values.update({
+          spreadsheetId,
+          range: `${SHEET_TABS.ORDERS}!Z${rowNumber}`,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: { values: [[carrier]] },
+        })
+      )
+    }
+
+    await Promise.allSettled(updates)
+    console.log(`✅ Sheet: đơn ${orderId} → ${newStatus}`)
+  } catch (err) {
+    console.error('updateOrderStatusInSheet lỗi:', err.message)
+  }
+}
+

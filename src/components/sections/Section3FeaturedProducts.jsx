@@ -69,11 +69,11 @@ export default function Section3FeaturedProducts() {
 
   return (
     <section
-      id="section-products"
+      id="mot-bo-la-mot-mood"
       aria-label="Featured Products"
-      className="py-20 sm:py-24 md:py-28 bg-[#FAF8F5] text-[#2C201A] border-b border-[#E8DFD5]"
+      className="py-20 sm:py-24 md:py-28 bg-[#FAF8F5] text-[#2C201A] border-b border-[#E8DFD5] scroll-mt-16"
     >
-      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10">
+      <div id="section-products" className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-14">
           <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
@@ -98,7 +98,7 @@ export default function Section3FeaturedProducts() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: idx * 0.15 }}
               className="bg-white rounded-[4px] border border-[#E8DFD5] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer"
-              onClick={() => navigate(`/san-pham/${product.slug}`)}
+              onClick={() => scrollTo('#section-deep-feature')}
             >
               {/* Image */}
               <div className="relative aspect-[4/5] overflow-hidden bg-[#F5F0EB]">

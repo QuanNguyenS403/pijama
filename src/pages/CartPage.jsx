@@ -71,7 +71,7 @@ export default function CartPage() {
               Hãy khám phá những bộ pijama tự nhiên cao cấp phong cách châu Âu
             </p>
             <Link
-              to="/"
+              to="/#mot-bo-la-mot-mood"
               className="bg-[#631521] text-[#FAF8F5] font-sans font-bold text-xs uppercase tracking-[0.15em] px-9 py-4 rounded-[2px] hover:bg-[#4A0D17] border border-[#D4AF37]/30 shadow-luxury transition-all duration-200"
             >
               Khám Phá Bộ Sưu Tập

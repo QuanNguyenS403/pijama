@@ -25,20 +25,11 @@ export const PAYMENT_METHODS = [
       contentGuide: "Tên + SĐT của bạn",
     },
   },
-  {
-    value: "MOMO",
-    label: "Ví điện tử MoMo / ZaloPay",
-    icon: "📱",
-    discountPercent: 10,
-    badge: "Giảm 10% trực tiếp",
-    description: "Quét mã QR MoMo / ZaloPay đa năng — Nhận ngay ưu đãi GIẢM 10% trực tiếp",
-  },
 ]
 
 export const PAYMENT_LABELS = {
   COD: "Thanh toán khi nhận hàng (COD)",
   BANK_TRANSFER: "Chuyển khoản VietQR (Giảm 10%)",
-  MOMO: "Ví MoMo / ZaloPay (Giảm 10%)",
 }
 
 export const ORDER_STATUSES = {
