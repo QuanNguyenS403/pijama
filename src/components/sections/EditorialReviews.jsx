@@ -1,12 +1,15 @@
 import { motion } from 'framer-motion'
 import { Star, CheckCircle2, Quote } from 'lucide-react'
+import { products } from '../../data/products'
 import { editorialQuote, reviews } from '../../data/reviews'
 
 export default function EditorialReviews() {
+  const totalReviews = products.reduce((sum, p) => sum + (p.reviewCount || 0), 0)
+
   return (
     <section
       id="reviews-section"
-      aria-label="Đánh giá & Trải nghiệm thực tế từ khách hàng 10PM"
+      aria-label="Đánh giá & Trải nghiệm thực tế từ khách hàng QuanNguyenS"
       className="bg-[#FAF8F5] py-24 md:py-36 border-b border-[#E8DFD5] relative overflow-hidden"
     >
       <div className="max-w-[1280px] mx-auto px-6 md:px-12">
@@ -16,8 +19,8 @@ export default function EditorialReviews() {
             SOCIAL PROOF — ĐÁNH GIÁ TỰ NHIÊN
           </span>
           <h2 className="font-serif text-4xl sm:text-5xl font-normal text-[#1A1614] tracking-tight mb-4">
-            Hơn 1 Triệu Đêm <br />
-            <span className="font-serif-italic text-[#8C7E74]">Ngủ Ngon Nhẹ Tênh</span>
+            Được Tin Tưởng Bởi <br />
+            <span className="font-serif-italic text-[#8C7E74]">Những Khách Hàng Đầu Tiên</span>
           </h2>
           <div className="flex items-center justify-center gap-2 text-xs font-semibold text-[#8C7E74]">
             <div className="flex text-[#C5A059]">
@@ -25,7 +28,7 @@ export default function EditorialReviews() {
                 <Star key={i} className="w-3.5 h-3.5 fill-current" />
               ))}
             </div>
-            <span>3,248+ Đánh Giá 5 Sao Xác Thực</span>
+            <span>{totalReviews}+ Đánh Giá Từ Khách Hàng Đã Mua</span>
           </div>
         </div>
 
@@ -45,9 +48,11 @@ export default function EditorialReviews() {
             <span className="text-xs font-bold tracking-[0.2em] text-[#1A1614] uppercase">
               {editorialQuote.author}
             </span>
-            <span className="text-[11px] text-[#C5A059] font-semibold mt-1">
-              {editorialQuote.metric}
-            </span>
+            {editorialQuote.metric && (
+              <span className="text-[11px] text-[#C5A059] font-semibold mt-1">
+                {editorialQuote.metric}
+              </span>
+            )}
           </div>
         </motion.div>
 

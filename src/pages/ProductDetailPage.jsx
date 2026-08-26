@@ -224,6 +224,7 @@ export default function ProductDetailPage() {
               images={product.images}
               selectedColor={selectedColor}
               badge={product.badge}
+              preOrder={product.preOrder}
               productName={product.name}
             />
           </div>

@@ -6,6 +6,7 @@ export default function ProductImageGallery({
   images = [],
   selectedColor = null,
   badge,
+  preOrder,
   productName,
 }) {
   // Resolve image list based on whether images is an object keyed by color name or an array
@@ -74,7 +75,13 @@ export default function ProductImageGallery({
             </div>
           )}
 
-          <div className="absolute top-4 right-4 z-10 text-[#2C201A] bg-white/80 backdrop-blur-sm p-1.5 rounded-[2px] opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+          {preOrder?.enabled && (
+            <div className="absolute top-4 right-4 z-10 bg-[#D4AF37] text-[#1A1614] text-[0.7rem] font-sans font-bold uppercase tracking-[0.16em] px-3 py-1 rounded-[2px] shadow-md">
+              Pre-order
+            </div>
+          )}
+
+          <div className="absolute bottom-4 right-4 z-10 text-[#2C201A] bg-white/80 backdrop-blur-sm p-1.5 rounded-[2px] opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
             <ZoomIn className="w-4 h-4" />
           </div>
 

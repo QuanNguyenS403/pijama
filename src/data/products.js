@@ -25,7 +25,7 @@ Họa tiết Sọc Hồng (Pink Stripe) biểu trưng cho năng lượng Hỏa �
     price: 390000,
     originalPrice: 490000,
     discount: 20,
-    rating: 4.9,
+    rating: 4.8,
     reviewCount: 78,
 
     // ─── FENG SHUI INSPIRATION (NGŨ HÀNH) ───────────────────────────────────
@@ -132,7 +132,7 @@ Họa tiết Caro Navy (Navy Plaid) mang đậm năng lượng hành Thủy — 
     price: 550000,
     originalPrice: null,
     discount: 0,
-    rating: 4.8,
+    rating: 4.7,
     reviewCount: 43,
 
     // ─── FENG SHUI INSPIRATION (NGŨ HÀNH) ───────────────────────────────────
@@ -161,16 +161,14 @@ Họa tiết Caro Navy (Navy Plaid) mang đậm năng lượng hành Thủy — 
         hex: "#1B2A4A",
         patternPreview: true,
         patternType: "plaid",
-        stock: { S: 8, M: 10, L: 6, XL: 4 },
+        stock: { S: 8, M: 10 },
       },
     ],
 
-    sizes: ['S', 'M', 'L', 'XL'],
+    sizes: ['S', 'M'],
     sizeGuide: {
       S:  { weight: '40–49 kg', height: '150–160 cm', chest: '82–86 cm', waist: '64–69 cm', trouserLength: '91 cm', sleeveLength: '53 cm' },
       M:  { weight: '50–57 kg', height: '158–165 cm', chest: '87–92 cm', waist: '70–75 cm', trouserLength: '93 cm', sleeveLength: '54 cm' },
-      L:  { weight: '58–65 kg', height: '163–170 cm', chest: '93–98 cm', waist: '76–82 cm', trouserLength: '95 cm', sleeveLength: '55 cm' },
-      XL: { weight: '66–75 kg', height: '168–175 cm', chest: '99–106 cm', waist: '83–90 cm', trouserLength: '97 cm', sleeveLength: '56 cm' },
     },
     fabric: '95% Modal Sợi Gỗ Tự Nhiên & 5% Spandex Cao Cấp',
     fabricDetail: 'Định lượng 180 GSM · Xử lý vi sinh xoa mềm bề mặt · Cảm giác mướt mát, chống nhăn tự nhiên',
@@ -198,10 +196,15 @@ Họa tiết Caro Navy (Navy Plaid) mang đậm năng lượng hành Thủy — 
     subtitle: 'Pijama Wide-Leg Cao Cấp · Sọc Nâu Vững Chãi',
     collection: 'Thu Đông 2026',
     badge: 'PHIÊN BẢN GIỚI HẠN',
+    preOrder: {
+      enabled: true,
+      leadTimeDays: [7, 10],
+      message: 'Hàng đặt trước — Giao hàng dự kiến trong 7-10 ngày làm việc',
+    },
 
     description: 'Dáng wide-leg sang trọng kết hợp họa tiết Sọc Nâu mocha ấm áp — mang năng lượng Thổ vững chãi, nuôi dưỡng và vỗ về cảm xúc. Phiên bản giới hạn dành cho những khoảnh khắc thư giãn đỉnh cao và bữa tối ấm cúng cuối ngày.',
 
-    longDescription: 'THE HEARTH SET là định nghĩa cao cấp nhất về đồ mặc nhà sang trọng. Mang gam màu Sọc Nâu (Brown Stripe) thuộc hành Thổ — biểu tượng của sự vững chãi, bình yên và cảm giác "về nhà" nuôi dưỡng năng lượng. Thiết kế quần wide-leg suông rộng quý phái cùng chất liệu dệt tự nhiên rũ nhẹ tạo nên từng bước chuyển động thướt tha, đẳng cấp. Rất tương sinh và mang lại may mắn, bình an cho người mệnh Thổ và Kim.',
+    longDescription: 'THE HEARTH SET là định nghĩa cao cấp nhất về đồ mặc nhà sang trọng. Mang gam màu Sọc Nâu (Brown Stripe) thuộc hành Thổ — biểu tượng của sự vững chãi, bình yên và cảm giác "về nhà" nuôi dưỡng năng lượng. Thiết kế quần wide-leg suông rộng quý phái cùng chất liệu dệt tự nhiên rũ nhẹ tạo nên từng bước chuyển động thướt tha, đẳng cấp. Đặc biệt phù hợp với những ai yêu thích sự ổn định và cảm giác an yên mà hành Thổ mang lại.',
 
     detailedDescription: `THE HEARTH SET là tuyệt phẩm giới hạn được chế tác từ chất liệu tự nhiên thượng hạng với độ bóng mờ quý phái.
 
@@ -244,16 +247,14 @@ Họa tiết Sọc Nâu mocha (Brown Stripe) đại diện cho năng lượng h�
         hex: "#5C3A21",
         patternPreview: true,
         patternType: "brown-stripe",
-        stock: { S: 6, M: 8, L: 5, XL: 3 },
+        stock: { S: 6, M: 8 },
       },
     ],
 
-    sizes: ['S', 'M', 'L', 'XL'],
+    sizes: ['S', 'M'],
     sizeGuide: {
       S:  { weight: '42–50 kg', height: '152–162 cm', chest: '82–86 cm', waist: '64–70 cm', trouserLength: '94 cm', sleeveLength: '54 cm' },
       M:  { weight: '51–58 kg', height: '160–167 cm', chest: '87–93 cm', waist: '71–77 cm', trouserLength: '96 cm', sleeveLength: '55 cm' },
-      L:  { weight: '59–66 kg', height: '165–172 cm', chest: '94–100 cm', waist: '78–84 cm', trouserLength: '98 cm', sleeveLength: '56 cm' },
-      XL: { weight: '67–76 kg', height: '168–176 cm', chest: '101–108 cm', waist: '85–92 cm', trouserLength: '100 cm', sleeveLength: '57 cm' },
     },
     fabric: '100% Tencel Lyocell Thượng Hạng Dáng Rủ',
     fabricDetail: 'Định lượng 190 GSM · Dệt bóng mờ tone-on-tone sang trọng · Thấm hút gấp 1.5 lần cotton, mềm rũ tự nhiên',
@@ -304,11 +305,11 @@ export const sampleReviews = [
     productId: 'the-classic-set',
     name: 'Phạm Quỳnh Trang',
     date: '15/06/2026',
-    rating: 5,
+    rating: 4,
     color: 'Pink Stripe',
     size: 'S',
     verified: true,
-    text: 'Mình 48kg cao 1m58 chọn size S vừa vặn tuyệt đối theo bảng size. Họa tiết sọc hồng mặc lên sáng da hẳn, phom dáng suông rộng rãi thoải mái cực kỳ.',
+    text: 'Mình 48kg cao 1m58 chọn size S hơi rộng một chút ở phần vai nhưng nhìn chung vẫn ok theo phom suông. Họa tiết sọc hồng mặc lên sáng da hẳn, chất vải thích nhất.',
   },
   {
     id: 'rv-4',
@@ -341,7 +342,7 @@ export const sampleReviews = [
     color: 'Brown Stripe',
     size: 'M',
     verified: true,
-    text: 'Mẫu Sọc Nâu đẹp xuất sắc ngoài đời, tone nâu mocha rất tôn da và sang trọng. Dáng wide-leg bước đi bay bổng, đường may tỉ mỉ, chất vải mặc siêu mát và nhẹ.',
+    text: 'Mẫu Sọc Nâu đẹp xuất sắc ngoài đời, tone nâu mocha rất tôn da và sang trọng. Dáng wide-leg bước đi bay bổng, đường may tỉ mỉ, mặc ấm mà vẫn nhẹ nhàng thoải mái.',
   },
   {
     id: 'rv-7',
@@ -352,18 +353,18 @@ export const sampleReviews = [
     color: 'Navy Plaid',
     size: 'M',
     verified: true,
-    text: 'Cổ V rất tôn dáng cổ và xương quai xanh, viền tương phản nổi bật trên nền Caro Navy nhìn sang trọng tinh tế. Chất modal mềm mướt như lụa.',
+    text: 'Cổ V rất tôn dáng cổ và xương quai xanh, viền tương phản nổi bật trên nền Caro Navy nhìn sang trọng tinh tế. Chất vải mềm mướt bất ngờ so với giá tiền.',
   },
   {
     id: 'rv-8',
     productId: 'the-cafe-look',
     name: 'Ngô Bảo Trâm',
     date: '02/08/2026',
-    rating: 5,
+    rating: 4,
     color: 'Navy Plaid',
     size: 'S',
     verified: true,
-    text: 'Mẫu Caro Navy mặc đi cafe sáng cuối tuần kết hợp khoác blazer mỏng cực kỳ sành điệu. Màu navy trầm tĩnh mang lại cảm giác rất an yên.',
+    text: 'Mẫu Caro Navy mặc đi cafe sáng cuối tuần kết hợp khoác blazer mỏng cực kỳ sành điệu. Chỉ tiếc là chưa có size XL cho dáng người hơi đầy đặn như mình.',
   },
   {
     id: 'rv-9',
@@ -374,7 +375,7 @@ export const sampleReviews = [
     color: 'Brown Stripe',
     size: 'M',
     verified: true,
-    text: 'Chất vải Tencel sọc nâu rũ đẹp tuyệt vời, tông màu đất ấm áp sang trọng. Dáng wide-leg bước đi rất bay bổng và quyền lực. Đáng từng đồng bỏ ra!',
+    text: 'Chất vải sọc nâu rũ đẹp tuyệt vời, tông màu đất ấm áp sang trọng. Dáng wide-leg bước đi rất thoải mái mà vẫn thanh lịch. Đáng từng đồng bỏ ra!',
   },
   {
     id: 'rv-10',
@@ -385,7 +386,7 @@ export const sampleReviews = [
     color: 'Brown Stripe',
     size: 'L',
     verified: true,
-    text: 'Họa tiết Sọc Nâu sang chảnh tối thượng. Đường may sắc nét đúng chuẩn xuất khẩu châu Âu. Đóng hộp quà cao cấp, vải mịn mát tuyệt đối.',
+    text: 'Họa tiết Sọc Nâu sang chảnh tối thượng. Đường may sắc nét đúng chuẩn xuất khẩu châu Âu. Đóng hộp quà cao cấp, vải mềm mịn tuyệt đối.',
   },
 ]
 

@@ -88,7 +88,11 @@ export default function StickyMobileAtc({
                 }`}
               >
                 <ShoppingBag className="w-3.5 h-3.5" />
-                <span>{selectedSize ? 'Thêm Vào Giỏ' : 'Chọn Size & Mua'}</span>
+                <span>
+                  {selectedSize
+                    ? (product.preOrder?.enabled ? 'Đặt Trước Ngay' : 'Thêm Vào Giỏ')
+                    : (product.preOrder?.enabled ? 'Chọn Size & Đặt Trước' : 'Chọn Size & Mua')}
+                </span>
               </button>
             </div>
           </div>

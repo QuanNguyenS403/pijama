@@ -56,6 +56,7 @@ export default function Section3FeaturedProducts() {
       desc: 'Sọc Nâu mocha ấm áp — cảm giác "về nhà" nuôi dưỡng năng lượng.\nDáng wide-leg buông rủ thượng hạng.\nSang trọng tuyệt đối cho những buổi tối chill.',
       image: '/images/classic-set-brown-main.jpg',
       badge: 'PHIÊN BẢN GIỚI HẠN',
+      preOrderBadge: 'Pre-order',
       swatches: [
         {
           type: 'stripe',
@@ -106,9 +107,18 @@ export default function Section3FeaturedProducts() {
                   alt={product.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute top-3 left-3 bg-[#631521] text-white text-[10px] font-sans font-bold tracking-wider px-2.5 py-1 rounded-[2px] uppercase shadow-sm">
-                  {product.badge}
-                </div>
+                {/* Badge Left */}
+                {product.badge && (
+                  <div className="absolute top-3 left-3 bg-[#631521] text-white text-[10px] font-sans font-bold tracking-wider px-2.5 py-1 rounded-[2px] uppercase shadow-sm">
+                    {product.badge}
+                  </div>
+                )}
+                {/* Pre-order Badge Right */}
+                {product.preOrderBadge && (
+                  <div className="absolute top-3 right-3 bg-[#D4AF37] text-[#1A1614] text-[10px] font-sans font-bold tracking-wider px-2.5 py-1 rounded-[2px] uppercase shadow-sm">
+                    {product.preOrderBadge}
+                  </div>
+                )}
               </div>
 
               {/* Info */}

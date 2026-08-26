@@ -32,15 +32,20 @@ export default function ProductCard({ product, onQuickView, onAddToCart }) {
           className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700 ease-out"
         />
 
-        {/* Badge */}
+        {/* Badge (Top-Left) */}
         {product.badge && (
           <div className="absolute top-3 left-3 z-10 bg-[#631521]/95 backdrop-blur-sm text-[#D4AF37] border border-[#D4AF37]/40 text-[0.65rem] font-sans font-bold uppercase tracking-[0.18em] px-2.5 py-1 rounded-[2px] shadow-sm">
             {product.badge}
           </div>
         )}
 
-        {/* Wishlist Button (Small variant, top-right) */}
-        <div className="absolute top-3 right-3 z-10">
+        {/* Top-Right: Pre-order badge + Wishlist Button */}
+        <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+          {product.preOrder?.enabled && (
+            <div className="bg-[#D4AF37] text-[#1A1614] text-[0.65rem] font-sans font-bold uppercase tracking-[0.14em] px-2.5 py-1 rounded-[2px] shadow-sm">
+              Pre-order
+            </div>
+          )}
           <WishlistButton
             productId={product.id}
             colorName={product.colors?.[0]?.name || 'default'}
@@ -67,7 +72,7 @@ export default function ProductCard({ product, onQuickView, onAddToCart }) {
             onClick={() => onAddToCart?.(product)}
             className="w-full font-sans text-[0.7rem] uppercase tracking-[0.12em] font-bold bg-[#631521] text-white py-2.5 hover:bg-[#4A0D17] transition-colors flex items-center justify-center gap-2 rounded-[2px] cursor-pointer"
           >
-            <ShoppingBag className="w-3.5 h-3.5" /> Thêm vào giỏ
+            <ShoppingBag className="w-3.5 h-3.5" /> {product.preOrder?.enabled ? 'Đặt trước ngay' : 'Thêm vào giỏ'}
           </button>
         </motion.div>
       </div>

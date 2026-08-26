@@ -7,8 +7,6 @@ export default function SizeGuideModal({ isOpen, onClose }) {
   const sizeTable = [
     { size: 'S', weight: '40 - 50 kg', height: '1m50 - 1m60', chest: '82 - 88 cm', waist: '62 - 70 cm' },
     { size: 'M', weight: '51 - 58 kg', height: '1m58 - 1m65', chest: '89 - 94 cm', waist: '71 - 76 cm' },
-    { size: 'L', weight: '59 - 66 kg', height: '1m64 - 1m70', chest: '95 - 100 cm', waist: '77 - 82 cm' },
-    { size: 'XL', weight: '67 - 75 kg', height: '1m68 - 1m75', chest: '101 - 108 cm', waist: '83 - 90 cm' },
   ]
 
   return (

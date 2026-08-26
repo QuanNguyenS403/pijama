@@ -36,6 +36,16 @@ export const sendCustomerEmail = async (order) => {
 export const buildBankTransferEmailHTML = (order) => {
   const transferContent = `${order.customer?.fullName || ''} ${order.customer?.phone || ''}`.trim()
   const qrUrl = `https://img.vietqr.io/image/vietcombank-1050773506-compact2.png?amount=${order.total}&accountName=NGUYEN%20DUC%20QUAN`
+  const hasPreOrder = !!(
+    order.hasPreOrder ||
+    order.items?.some(
+      (i) =>
+        i.isPreOrder ||
+        i.slug === 'the-evening-edit' ||
+        i.productId === 'the-evening-edit' ||
+        i.productName?.includes('HEARTH')
+    )
+  )
 
   return `
 <!DOCTYPE html>
@@ -105,8 +115,16 @@ export const buildBankTransferEmailHTML = (order) => {
   <div class="content">
     <p class="greeting">Xin chào ${order.customer.fullName},</p>
     <p class="body-text">
-      Đơn hàng <strong>#${order.orderId}</strong> của bạn đã được tiếp nhận. Sau khi nhận được chuyển khoản, chúng tôi sẽ tiến hành đóng gói và giao hàng ngay cho bạn (2–4 ngày làm việc).
+      Đơn hàng <strong>#${order.orderId}</strong> của bạn đã được tiếp nhận. Sau khi nhận được chuyển khoản, chúng tôi sẽ tiến hành xử lý và giao hàng cho bạn (${hasPreOrder ? '<strong>7–10 ngày làm việc</strong> đối với đơn có sản phẩm Đặt Trước' : '<strong>2–4 ngày làm việc</strong>'}).
     </p>
+
+    ${hasPreOrder ? `
+    <div style="background:#FAF5F0;border:1px solid #D4AF37;border-left:4px solid #D4AF37;padding:14px 18px;margin-bottom:20px;border-radius:2px;">
+      <strong style="color:#631521;font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;">⏱ Lưu ý đơn hàng Đặt Trước (Pre-Order)</strong>
+      <p style="font-family:Arial,sans-serif;font-size:13px;color:#4A3F38;margin-top:4px;line-height:1.5;">
+        Đơn hàng có chứa sản phẩm <strong>THE HEARTH SET</strong> (may đo theo yêu cầu). Thời gian sản xuất và giao hàng dự kiến là <strong>7–10 ngày làm việc</strong>.
+      </p>
+    </div>` : ''}
 
     <!-- VIETQR THÔNG TIN CHUYỂN KHOẢN -->
     <p class="section-label">Thông tin thanh toán VietQR</p>
@@ -196,7 +214,18 @@ export const buildBankTransferEmailHTML = (order) => {
 // ──────────────────────────────────────────────────────────
 // Template 1: COD — chưa thanh toán
 // ──────────────────────────────────────────────────────────
-export const buildCODEmailHTML = (order) => `
+export const buildCODEmailHTML = (order) => {
+  const hasPreOrder = !!(
+    order.hasPreOrder ||
+    order.items?.some(
+      (i) =>
+        i.isPreOrder ||
+        i.slug === 'the-evening-edit' ||
+        i.productId === 'the-evening-edit' ||
+        i.productName?.includes('HEARTH')
+    )
+  )
+  return `
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -546,9 +575,16 @@ export const buildCODEmailHTML = (order) => `
         Bạn sẽ thanh toán <strong>${formatVND(order.total)}</strong> bằng tiền mặt
         khi nhận hàng. Vui lòng chuẩn bị đúng số tiền để thuận tiện cho nhân viên giao hàng.
         <br><br>
-        Thời gian giao hàng dự kiến: <strong>2–4 ngày làm việc</strong> kể từ ngày xác nhận.
+        Thời gian giao hàng dự kiến: <strong>${hasPreOrder ? '7–10 ngày làm việc (Đơn có sản phẩm Đặt Trước)' : '2–4 ngày làm việc'}</strong> kể từ ngày xác nhận.
       </div>
     </div>
+    ${hasPreOrder ? `
+    <div style="background:#FAF5F0;border:1px solid #D4AF37;border-left:4px solid #D4AF37;padding:14px 18px;margin-bottom:20px;border-radius:2px;">
+      <strong style="color:#631521;font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;">⏱ Lưu ý sản phẩm Đặt Trước</strong>
+      <p style="font-family:Arial,sans-serif;font-size:13px;color:#4A3F38;margin-top:4px;line-height:1.5;">
+        Sản phẩm <strong>THE HEARTH SET</strong> đang được may đo kỹ lưỡng theo đơn của bạn. Toàn bộ kiện hàng sẽ được vận chuyển đồng bộ ngay khi hoàn tất.
+      </p>
+    </div>` : ''}
 
     <!-- ĐỊA CHỈ GIAO HÀNG -->
     <p class="section-label">Địa chỉ giao hàng</p>
@@ -583,11 +619,23 @@ export const buildCODEmailHTML = (order) => `
 </body>
 </html>
 `
+}
 
 // ──────────────────────────────────────────────────────────
 // Template 2: ĐÃ THANH TOÁN (VNPAY / MoMo / Chuyển khoản xác nhận)
 // ──────────────────────────────────────────────────────────
-export const buildPaidEmailHTML = (order) => `
+export const buildPaidEmailHTML = (order) => {
+  const hasPreOrder = !!(
+    order.hasPreOrder ||
+    order.items?.some(
+      (i) =>
+        i.isPreOrder ||
+        i.slug === 'the-evening-edit' ||
+        i.productId === 'the-evening-edit' ||
+        i.productName?.includes('HEARTH')
+    )
+  )
+  return `
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -668,9 +716,17 @@ export const buildPaidEmailHTML = (order) => `
     <p class="greeting">Xin chào ${order.customer.fullName},</p>
     <p class="body-text">
       Chúng tôi đã nhận được thanh toán của bạn qua <strong>${order.payment?.methodLabel || 'Cổng thanh toán'}</strong>.
-      Đơn hàng đã được xác nhận và đang được đóng gói chuẩn quà tặng. Bạn sẽ nhận được hàng trong
-      <strong>2–4 ngày làm việc</strong>.
+      Đơn hàng đã được xác nhận và đang được chuẩn bị chu đáo. Bạn sẽ nhận được hàng trong
+      <strong>${hasPreOrder ? '7–10 ngày làm việc (Đơn có sản phẩm Đặt Trước)' : '2–4 ngày làm việc'}</strong>.
     </p>
+
+    ${hasPreOrder ? `
+    <div style="background:#FAF5F0;border:1px solid #D4AF37;border-left:4px solid #D4AF37;padding:14px 18px;margin-bottom:20px;border-radius:2px;">
+      <strong style="color:#631521;font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;">⏱ Lưu ý sản phẩm Đặt Trước</strong>
+      <p style="font-family:Arial,sans-serif;font-size:13px;color:#4A3F38;margin-top:4px;line-height:1.5;">
+        Sản phẩm <strong>THE HEARTH SET</strong> đang được may đo theo đơn đặt của bạn. Chúng tôi sẽ thông báo ngay khi kiện hàng bắt đầu được chuyển phát.
+      </p>
+    </div>` : ''}
 
     <p class="section-label">Thông tin đơn hàng</p>
     <div class="order-info-grid">
@@ -754,6 +810,7 @@ export const buildPaidEmailHTML = (order) => `
 </body>
 </html>
 `
+}
 
 // ──────────────────────────────────────────────────────────
 // Template 4: ĐÃ XÁC NHẬN ĐƠN HÀNG (CONFIRMED)

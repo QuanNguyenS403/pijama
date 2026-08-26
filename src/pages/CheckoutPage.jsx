@@ -555,45 +555,73 @@ export default function CheckoutPage() {
                     </span>
                   </div>
 
+                  {/* Pre-Order Notice Banner */}
+                  {items.some((i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-evening-edit' || i.productId === 'the-evening-edit') && (
+                    <div className="mb-5 p-3.5 bg-[#FAF5F0] border-2 border-[#D4AF37] rounded-[3px] flex items-start gap-2.5 text-xs text-[#631521] font-sans">
+                      <span className="text-base shrink-0">⏱</span>
+                      <div>
+                        <p className="font-bold uppercase tracking-wider text-[11px] mb-0.5">
+                          Lưu ý đơn hàng Đặt Trước (Pre-Order)
+                        </p>
+                        <p className="text-[#4A3F38] leading-relaxed">
+                          Đơn hàng có chứa sản phẩm <strong>THE HEARTH SET (Sọc Nâu)</strong>. Toàn bộ đơn hàng sẽ được chuẩn bị và giao trong <strong>7–10 ngày làm việc</strong>.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Items List */}
                   <div className="space-y-4 max-h-[340px] overflow-y-auto pr-1 pdp-scrollbar mb-6">
-                    {items.map((item, idx) => (
-                      <div key={`${item.id}-${item.color?.name || item.color}-${item.size}-${idx}`} className="flex gap-3.5 pb-4 border-b border-[#F0EAE1] last:border-b-0 last:pb-0">
-                        <div className="w-16 h-20 bg-[#FAF8F5] border border-[#E8DFD5] rounded-[2px] overflow-hidden shrink-0">
-                          {item.image ? (
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-xs text-[#8C7E74]">
-                              Pijama
+                    {items.map((item, idx) => {
+                      const isItemPreOrder = !!(
+                        item.preOrder?.enabled ||
+                        item.isPreOrder ||
+                        item.slug === 'the-evening-edit' ||
+                        item.productId === 'the-evening-edit'
+                      )
+                      return (
+                        <div key={`${item.id}-${item.color?.name || item.color}-${item.size}-${idx}`} className="flex gap-3.5 pb-4 border-b border-[#F0EAE1] last:border-b-0 last:pb-0">
+                          <div className="w-16 h-20 bg-[#FAF8F5] border border-[#E8DFD5] rounded-[2px] overflow-hidden shrink-0">
+                            {item.image ? (
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-xs text-[#8C7E74]">
+                                Pijama
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 flex flex-col justify-between">
+                            <div>
+                              <h3 className="font-serif text-sm font-bold text-[#1A1614] leading-snug line-clamp-1">
+                                {item.name}
+                              </h3>
+                              <p className="font-sans text-xs text-[#8C7E74] mt-0.5">
+                                {item.color?.name || item.color || ''} · Size {item.size}
+                              </p>
+                              {isItemPreOrder && (
+                                <span className="inline-block font-sans text-[10px] font-bold text-[#631521] bg-[#FAF5F0] border border-[#D4AF37]/60 px-1.5 py-0.5 rounded-[2px] mt-1">
+                                  ⏱ Đặt trước (giao 7-10 ngày)
+                                </span>
+                              )}
                             </div>
-                          )}
-                        </div>
 
-                        <div className="flex-1 flex flex-col justify-between">
-                          <div>
-                            <h3 className="font-serif text-sm font-bold text-[#1A1614] leading-snug line-clamp-1">
-                              {item.name}
-                            </h3>
-                            <p className="font-sans text-xs text-[#8C7E74] mt-0.5">
-                              {item.color?.name || item.color || ''} · Size {item.size}
-                            </p>
-                          </div>
-
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-[#4A3F38] font-sans">
-                              SL: <strong>x{item.quantity}</strong>
-                            </span>
-                            <span className="font-serif font-bold text-sm text-[#631521]">
-                              {formatVND(item.price * item.quantity)}
-                            </span>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-xs text-[#4A3F38] font-sans">
+                                SL: <strong>x{item.quantity}</strong>
+                              </span>
+                              <span className="font-serif font-bold text-sm text-[#631521]">
+                                {formatVND(item.price * item.quantity)}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
 
                   {/* Price Calculations */}

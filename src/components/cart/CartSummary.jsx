@@ -1,11 +1,16 @@
 import FreeShippingBar from './FreeShippingBar'
 import VoucherInput from './VoucherInput'
+import { useCart } from '../../hooks/useCart'
 
 function formatPrice(n) {
   return new Intl.NumberFormat('vi-VN').format(n) + 'đ'
 }
 
 export default function CartSummary({ subtotal, shippingFee, freeShippingProgress, remainingForFreeShipping, discount = 0, onCheckout, showVoucher = true }) {
+  const { items } = useCart()
+  const hasPreOrder = items?.some(
+    (i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-evening-edit' || i.productId === 'the-evening-edit'
+  )
   const total = subtotal + shippingFee - discount
 
   return (
@@ -72,7 +77,13 @@ export default function CartSummary({ subtotal, shippingFee, freeShippingProgres
         </div>
 
         <div className="space-y-1.5 text-xs font-sans text-[#8C7E74] pt-1">
-          <p className="flex items-center gap-1.5">📦 Giao hàng toàn quốc 2–4 ngày làm việc</p>
+          {hasPreOrder ? (
+            <p className="flex items-center gap-1.5 text-[#631521] font-semibold bg-[#FAF5F0] p-2 rounded-[2px] border border-[#D4AF37]/50">
+              ⏱ Đơn có SP Đặt Trước: Giao trong 7–10 ngày làm việc
+            </p>
+          ) : (
+            <p className="flex items-center gap-1.5">📦 Giao hàng toàn quốc 2–4 ngày làm việc</p>
+          )}
           <p className="flex items-center gap-1.5">🔄 Đổi trả miễn phí trong 30 ngày tận nhà</p>
         </div>
       </div>

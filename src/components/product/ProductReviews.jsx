@@ -34,13 +34,15 @@ export default function ProductReviews({ product }) {
   const reviews = sampleReviews.filter((r) => r.productId === product.id)
   const [visibleCount, setVisibleCount] = useState(3)
 
-  const ratingBars = [
-    { stars: 5, percentage: 89 },
-    { stars: 4, percentage: 9 },
-    { stars: 3, percentage: 2 },
-    { stars: 2, percentage: 0 },
-    { stars: 1, percentage: 0 },
-  ]
+  // Tính % thật từ dữ liệu review của CHÍNH sản phẩm này thay vì hardcode
+  const ratingBars = [5, 4, 3, 2, 1].map((stars) => {
+    const count = reviews.filter((r) => r.rating === stars).length
+    const percentage = reviews.length
+      ? Math.round((count / reviews.length) * 100)
+      : 0
+    return { stars, percentage }
+  })
+
 
   return (
     <section

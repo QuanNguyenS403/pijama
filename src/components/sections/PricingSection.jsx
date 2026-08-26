@@ -20,7 +20,7 @@ export default function PricingSection({ onAddToCart }) {
     { name: 'Đỏ Rượu (Burgundy)', hex: '#631521' },
   ]
 
-  const sizes = ['S', 'M', 'L', 'XL', 'XXL']
+  const sizes = ['S', 'M']
 
   const handleOrder = (tier) => {
     // Map tier to Sunday Set as primary product representation

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ShoppingBag, CreditCard, Share2, Ruler, Truck, RotateCcw, CheckCircle, Lock } from 'lucide-react'
+import { ShoppingBag, CreditCard, Share2, Ruler, Truck, RotateCcw, CheckCircle, Lock, CalendarClock } from 'lucide-react'
 import ColorSelector from './ColorSelector'
 import SizeSelector from './SizeSelector'
 import QuantitySelector from './QuantitySelector'
@@ -93,6 +93,7 @@ export default function ProductInfo({
       originalPrice: product.originalPrice,
       image: getProductMainImg(),
       slug: product.slug,
+      preOrder: product.preOrder || null,
     }
     addItem(cartItem)
 
@@ -186,6 +187,21 @@ export default function ProductInfo({
             </span>
           )}
         </div>
+
+        {/* Pre-Order Highlight Callout */}
+        {product.preOrder?.enabled && (
+          <div className="bg-[#FAF5F0] border-2 border-[#D4AF37] p-3.5 rounded-[3px] flex items-start gap-3 text-xs font-sans text-[#631521] shadow-xs">
+            <CalendarClock className="w-5 h-5 text-[#D4AF37] shrink-0 mt-0.5" />
+            <div>
+              <p className="font-serif font-bold text-xs sm:text-sm text-[#631521] uppercase tracking-wider mb-0.5">
+                Sản Phẩm Đặt Trước (Pre-Order)
+              </p>
+              <p className="font-light text-[#4A3F38] leading-relaxed">
+                {product.preOrder.message || 'Hàng đặt trước — Giao hàng dự kiến trong 7-10 ngày làm việc'}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Freeship suggestion callout (P3 Item 12) */}
         {product.price < 500000 && (
@@ -287,10 +303,12 @@ export default function ProductInfo({
               onClick={handleAddToCart}
               disabled={!canAdd}
               className="w-full text-sm font-bold tracking-wider py-4 shadow-luxury hover:bg-[#4A0D17]"
-              aria-label="Thêm vào giỏ hàng"
+              aria-label={product.preOrder?.enabled ? 'Đặt trước ngay' : 'Thêm vào giỏ hàng'}
             >
               <ShoppingBag className="w-4 h-4" />
-              {addedState ? '✓ Đã Thêm Vào Giỏ' : 'Thêm Vào Giỏ Hàng'}
+              {addedState
+                ? (product.preOrder?.enabled ? '✓ Đã Ghi Nhận Đặt Trước' : '✓ Đã Thêm Vào Giỏ')
+                : (product.preOrder?.enabled ? 'Đặt Trước Ngay' : 'Thêm Vào Giỏ Hàng')}
             </Button>
           </motion.div>
 
@@ -300,11 +318,11 @@ export default function ProductInfo({
               type="button"
               onClick={handleBuyNow}
               disabled={!canAdd}
-              className="w-full inline-flex items-center justify-center gap-2 bg-white text-[#D4AF37] border-2 border-[#D4AF37] hover:bg-[#FAF8F5] hover:text-[#B8860B] hover:border-[#B8860B] hover:shadow-gold-glow text-sm font-bold uppercase tracking-[0.12em] py-3.5 rounded-[2px] transition-all duration-200 shadow-md disabled:opacity-40 disabled:cursor-not-allowed"
-              aria-label="Mua ngay"
+              className="w-full inline-flex items-center justify-center gap-2 bg-white text-[#D4AF37] border-2 border-[#D4AF37] hover:bg-[#FAF8F5] hover:text-[#B8860B] hover:border-[#B8860B] hover:shadow-gold-glow text-sm font-bold uppercase tracking-[0.12em] py-3.5 rounded-[2px] transition-all duration-200 shadow-md disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              aria-label={product.preOrder?.enabled ? 'Đặt trước ngay' : 'Mua ngay'}
             >
               <CreditCard className="w-4 h-4" />
-              MUA NGAY
+              {product.preOrder?.enabled ? 'ĐẶT TRƯỚC & THANH TOÁN' : 'MUA NGAY'}
             </button>
           </motion.div>
 

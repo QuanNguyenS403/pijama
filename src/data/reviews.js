@@ -1,37 +1,34 @@
 export const editorialQuote = {
-  quote: "Mặc vào rồi mới hiểu thế nào là nhẹ tênh — Cảm giác như làn da được thở giữa những đêm hè oi bức nhất",
-  author: "Tạp chí Lifestyle & Sleep Culture",
-  metric: "98.4% Khách hàng quay lại mua bộ thứ hai"
+  quote: "Chúng tôi không muốn làm ra thêm một chiếc pyjama. Chúng tôi muốn làm ra lý do để bạn chậm lại mỗi ngày.",
+  author: "QuanNguyenS",
+  metric: null,
 }
 
 export const reviews = [
   {
     id: 'review-lan',
-    avatarSrc: '/src/assets/images/avatar-lan.jpg',
-    quote: 'Tôi rất hài lòng với bộ pajamas này: vải vừa mát lại mềm, mặc cả đêm cũng không bị nóng — Đây là lần đầu tôi ngủ ngon đến thế trong mùa hè oi ả',
+    quote: 'Bộ Sọc Hồng ấm hơn mình nghĩ, mặc buổi tối trời se lạnh dễ chịu lắm. Đường viền trắng may kỹ, form hơi rộng một chút nhưng đúng kiểu suông nên mình vẫn thích.',
     name: 'Lan H.',
     location: 'Hà Nội',
-    purchased: 'Bộ Nuit Blanche (Trắng Ngà)',
+    purchased: 'THE CLASSIC SET — Sọc Hồng',
     rating: 5,
     verified: true,
   },
   {
     id: 'review-thao',
-    avatarSrc: '/src/assets/images/avatar-thao.jpg',
-    quote: 'Từ khi có đồ ngủ QuanNguyenS, tôi ngủ ngon hơn hẳn! Vải giặt đi giặt lại vẫn bền, càng dùng càng thấy mềm mại thích mê — Rất đáng tiền',
+    quote: 'Mua Caro Navy tặng người yêu làm set đôi, ảnh chụp lên đẹp thật sự. Giao hơi trễ 1 ngày so với dự kiến nhưng shop nhắn tin báo trước nên cũng không phiền lắm.',
     name: 'Thảo V.',
     location: 'TP. Hồ Chí Minh',
-    purchased: 'Combo 02 Bộ Đôi',
-    rating: 5,
+    purchased: 'THE CAFÉ LOOK — Caro Navy',
+    rating: 4,
     verified: true,
   },
   {
     id: 'review-phuong',
-    avatarSrc: '/src/assets/images/avatar-phuong.jpg',
-    quote: 'Pijama này giữ form tốt, phơi gió là tự phẳng không cần là ủi phức tạp — Phù hợp tuyệt đối cho mùa hè! Đóng gói chỉn chu như một món quà luxury',
+    quote: 'Sọc Nâu nhìn sang hơn hình rất nhiều, chất vải có độ rủ đẹp. Đóng gói chỉn chu, có thiệp cảm ơn viết tay nhỏ xinh. Sẽ quay lại mua thêm màu khác.',
     name: 'Phương M.',
     location: 'Đà Nẵng',
-    purchased: 'Bộ Brume d\'Été (Xanh Sage)',
+    purchased: 'THE EVENING EDIT — Sọc Nâu',
     rating: 5,
     verified: true,
   },

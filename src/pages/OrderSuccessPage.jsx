@@ -193,17 +193,32 @@ export default function OrderSuccessPage() {
                   {/* Items List */}
                   {order.items && order.items.length > 0 && (
                     <div className="space-y-3">
-                      {order.items.map((item, idx) => (
-                        <div key={idx} className="flex justify-between items-start text-xs sm:text-sm">
-                          <div className="pr-4">
-                            <p className="font-bold text-[#1A1614]">{item.productName}</p>
-                            <p className="text-xs text-[#8C7E74]">{item.variant} · SL: x{item.quantity}</p>
+                      {order.items.map((item, idx) => {
+                        const isItemPreOrder = !!(
+                          item.isPreOrder ||
+                          item.slug === 'the-evening-edit' ||
+                          item.productId === 'the-evening-edit' ||
+                          item.productName?.includes('HEARTH')
+                        )
+                        return (
+                          <div key={idx} className="flex justify-between items-start text-xs sm:text-sm">
+                            <div className="pr-4">
+                              <p className="font-bold text-[#1A1614] flex items-center gap-1.5 flex-wrap">
+                                <span>{item.productName}</span>
+                                {isItemPreOrder && (
+                                  <span className="bg-[#FAF5F0] text-[#631521] border border-[#D4AF37]/60 text-[10px] font-sans font-bold px-1.5 py-0.5 rounded-[2px]">
+                                    ⏱ Đặt trước (7-10 ngày)
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-xs text-[#8C7E74]">{item.variant} · SL: x{item.quantity}</p>
+                            </div>
+                            <span className="font-serif font-bold text-[#631521] shrink-0">
+                              {formatVND(item.totalPrice || item.unitPrice * item.quantity)}
+                            </span>
                           </div>
-                          <span className="font-serif font-bold text-[#631521] shrink-0">
-                            {formatVND(item.totalPrice || item.unitPrice * item.quantity)}
-                          </span>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
 
@@ -241,15 +256,41 @@ export default function OrderSuccessPage() {
                 </div>
 
                 {/* Delivery Timeline Notice */}
-                <div className="flex items-start gap-3.5 bg-white p-4 rounded-[3px] border border-[#E8DFD5] text-xs font-sans text-[#4A3F38]">
-                  <Truck className="w-5 h-5 text-[#631521] shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-bold text-[#1A1614] mb-0.5">Thời gian giao hàng dự kiến:</p>
-                    <p className="font-light leading-relaxed">
-                      Từ <strong>2–4 ngày làm việc</strong>. Bộ phận vận hành sẽ liên hệ qua điện thoại trước khi giao hàng.
-                    </p>
-                  </div>
-                </div>
+                {(() => {
+                  const hasPreOrder = !!(
+                    order.hasPreOrder ||
+                    order.items?.some(
+                      (i) =>
+                        i.isPreOrder ||
+                        i.slug === 'the-evening-edit' ||
+                        i.productId === 'the-evening-edit' ||
+                        i.productName?.includes('HEARTH')
+                    )
+                  )
+                  return (
+                    <div
+                      className={`flex items-start gap-3.5 p-4 rounded-[3px] border text-xs font-sans ${
+                        hasPreOrder
+                          ? 'bg-[#FAF5F0] border-2 border-[#D4AF37] text-[#631521]'
+                          : 'bg-white border-[#E8DFD5] text-[#4A3F38]'
+                      }`}
+                    >
+                      <Truck className="w-5 h-5 text-[#631521] shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold text-[#1A1614] mb-0.5">Thời gian giao hàng dự kiến:</p>
+                        {hasPreOrder ? (
+                          <p className="leading-relaxed text-[#4A3F38]">
+                            Đơn hàng có chứa sản phẩm <strong>Đặt Trước (THE HEARTH SET)</strong> — Thời gian may & giao hàng dự kiến trong <strong>7–10 ngày làm việc</strong>. Bộ phận vận hành sẽ liên hệ thông báo cụ thể trước khi giao hàng.
+                          </p>
+                        ) : (
+                          <p className="font-light leading-relaxed text-[#4A3F38]">
+                            Từ <strong>2–4 ngày làm việc</strong>. Bộ phận vận hành sẽ liên hệ qua điện thoại trước khi giao hàng.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-2">

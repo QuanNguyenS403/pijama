@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { products } from '../data/products'
 
 export function useLocalStorage(key, initialValue) {
   const [storedValue, setStoredValue] = useState(() => {
@@ -36,5 +37,12 @@ export function useRecentlyViewed(maxItems = 10) {
     })
   }
 
-  return { viewed, addViewed }
+  // Lọc bỏ mọi sản phẩm đã đổi tên/gỡ khỏi danh mục hiện tại —
+  // tự động dọn "ghost product" khỏi localStorage của MỌI khách,
+  // không cần yêu cầu khách tự xóa cache.
+  const validSlugs = new Set(products.map((p) => p.slug))
+  const validViewed = viewed.filter((p) => validSlugs.has(p.slug))
+
+  return { viewed: validViewed, addViewed }
 }
+
