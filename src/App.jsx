@@ -2,6 +2,7 @@ import { useEffect, lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import ScrollToTop from './components/ui/ScrollToTop'
 import LandingPage from './pages/LandingPage'
+import { initOrderSync } from './lib/orderSync'
 
 const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage'))
 const CartPage = lazy(() => import('./pages/CartPage'))
@@ -21,6 +22,9 @@ function PageFallback() {
 
 export default function App() {
   useEffect(() => {
+    // Khởi tạo kênh đồng bộ realtime (SSE + BroadcastChannel)
+    initOrderSync()
+
     // Reset past test orders once
     if (typeof window !== 'undefined' && !localStorage.getItem('qns_orders_reset_2026')) {
       localStorage.removeItem('pijama_orders')

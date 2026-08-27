@@ -35,11 +35,12 @@ export default function OrderSuccessPage() {
     }
   })
   const [copiedField, setCopiedField] = useState(null)
+  const [liveStatusUpdate, setLiveStatusUpdate] = useState(null)
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
 
-    if (!order) {
+    const refreshOrderData = () => {
       try {
         const saved = sessionStorage.getItem(`last_order_${orderId}`) || sessionStorage.getItem('latest_order')
         if (saved) {
@@ -50,11 +51,35 @@ export default function OrderSuccessPage() {
           }
         }
         const storedOrders = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
-        const found = storedOrders.find((o) => o.orderId === orderId)
+        const found = storedOrders.find((o) => (o.orderId || o.id) === orderId)
         if (found) setOrder(found)
       } catch (e) {
         console.error(e)
       }
+    }
+
+    if (!order) {
+      refreshOrderData()
+    }
+
+    // Lắng nghe sự kiện Admin cập nhật đơn hàng realtime
+    const handleOrderUpdated = (e) => {
+      const updated = e?.detail
+      if (updated && (updated.orderId === orderId || updated.id === orderId)) {
+        setOrder(updated)
+        setLiveStatusUpdate(`Trạng thái đơn hàng vừa được cập nhật: ${updated.status}`)
+        setTimeout(() => setLiveStatusUpdate(null), 5000)
+      } else {
+        refreshOrderData()
+      }
+    }
+
+    window.addEventListener('orders_updated', handleOrderUpdated)
+    window.addEventListener('storage', handleOrderUpdated)
+
+    return () => {
+      window.removeEventListener('orders_updated', handleOrderUpdated)
+      window.removeEventListener('storage', handleOrderUpdated)
     }
   }, [location.state, orderId])
 
@@ -162,7 +187,31 @@ export default function OrderSuccessPage() {
                   <p className="font-serif text-lg font-bold text-[#1A1614]">
                     Cảm ơn {customerName} đã tin tưởng lựa chọn QuanNguyenS
                   </p>
-                  {order.payment?.status === 'CUSTOMER_CLAIMED_PAID' ? (
+
+                  {/* Live Status Notification if updated */}
+                  {liveStatusUpdate && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-[#2E7D32] text-white p-3 rounded-[3px] text-xs font-semibold flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>{liveStatusUpdate}</span>
+                    </motion.div>
+                  )}
+
+                  {order.status === 'CANCELLED' ? (
+                    <div className="bg-[#FFEBEE] border border-[#FFCDD2] p-3.5 rounded-[3px] text-xs text-[#C62828] space-y-1 text-left">
+                      <p className="font-bold flex items-center gap-1.5">
+                        <span>❌</span> Đơn hàng đã được hủy bởi cửa hàng
+                      </p>
+                      {order.cancelReason && (
+                        <p className="font-normal">
+                          <strong>Lý do hủy:</strong> {order.cancelReason}
+                        </p>
+                      )}
+                    </div>
+                  ) : order.payment?.status === 'CUSTOMER_CLAIMED_PAID' ? (
                     <div className="bg-[#FAF5F0] border border-[#D4AF37]/50 p-3.5 rounded-[3px] text-xs text-[#631521] space-y-1 text-left">
                       <p className="font-bold flex items-center gap-1.5">
                         <span>⏳</span> Đang đối soát giao dịch chuyển khoản với Vietcombank
@@ -179,15 +228,78 @@ export default function OrderSuccessPage() {
                   )}
                 </div>
 
+                {/* Tracking Code Box if shipped by Admin */}
+                {(order.trackingCode || order.trackingNumber) && (
+                  <div className="bg-[#FAF5F0] border-2 border-[#D4AF37] p-4 rounded-[4px] flex items-center justify-between flex-wrap gap-3">
+                    <div>
+                      <span className="text-[11px] font-sans font-semibold uppercase tracking-wider text-[#631521] flex items-center gap-1.5">
+                        <Truck className="w-4 h-4" />
+                        Đơn hàng đang trên đường giao
+                      </span>
+                      <p className="text-xs text-[#1A1614] mt-1 font-medium">
+                        Đơn vị: <strong>{order.carrier || 'GHN'}</strong> · Mã vận đơn:{' '}
+                        <strong className="font-mono text-[#631521] text-sm">{order.trackingCode || order.trackingNumber}</strong>
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleCopy(order.trackingCode || order.trackingNumber, 'tracking')}
+                      className="inline-flex items-center gap-1.5 bg-[#631521] text-white text-xs font-semibold px-3 py-1.5 rounded-[2px] hover:bg-[#4A0D17] transition-colors cursor-pointer"
+                    >
+                      {copiedField === 'tracking' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-[#A5D6A7]" />
+                          <span>Đã sao chép mã</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Sao chép mã</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+
                 {/* Order Details Box */}
                 <div className="bg-[#FAF5F0] rounded-[3px] border border-[#E8DFD5] p-5 sm:p-6 space-y-4">
-                  <div className="flex items-center justify-between border-b border-[#E8DFD5] pb-3">
-                    <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#631521]">
-                      Tóm Tắt Đơn Hàng
-                    </span>
-                    <span className="text-xs font-mono text-[#8C7E74]">
-                      {order.orderDateVN || 'Vừa xong'}
-                    </span>
+                  <div className="flex items-center justify-between border-b border-[#E8DFD5] pb-3 flex-wrap gap-2">
+                    <div>
+                      <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#631521]">
+                        Tóm Tắt Đơn Hàng
+                      </span>
+                      <span className="text-xs font-mono text-[#8C7E74] ml-3">
+                        {order.orderDateVN || 'Vừa xong'}
+                      </span>
+                    </div>
+
+                    {/* Live Status Badge */}
+                    <div>
+                      {order.status === 'CANCELLED' ? (
+                        <span className="bg-[#FFEBEE] text-[#C62828] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#FFCDD2]">
+                          ⚫ Đã Hủy
+                        </span>
+                      ) : order.status === 'SHIPPED' ? (
+                        <span className="bg-[#FFEDD5] text-[#EA580C] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#FED7AA]">
+                          🟠 Đang giao shipper
+                        </span>
+                      ) : order.status === 'PROCESSING' ? (
+                        <span className="bg-[#EDE9FE] text-[#7C3AED] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#DDD6FE]">
+                          🟣 Đang đóng gói
+                        </span>
+                      ) : order.status === 'CONFIRMED' ? (
+                        <span className="bg-[#DBEAFE] text-[#2563EB] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#BFDBFE]">
+                          🔵 Đã xác nhận
+                        </span>
+                      ) : order.status === 'DELIVERED' ? (
+                        <span className="bg-[#DCFCE7] text-[#16A34A] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#BBF7D0]">
+                          🟢 Đã giao thành công
+                        </span>
+                      ) : (
+                        <span className="bg-[#FEF3C7] text-[#D97706] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#FDE68A]">
+                          🟡 Chờ xác nhận
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Items List */}

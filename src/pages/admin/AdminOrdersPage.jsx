@@ -3,6 +3,7 @@
 // Route: /admin/orders
 
 import { useState, useEffect, useCallback } from 'react'
+import { broadcastOrderUpdateClient } from '../../lib/orderSync'
 
 // ── Status config ─────────────────────────────────
 const STATUS_CONFIG = {
@@ -26,6 +27,8 @@ export default function AdminOrdersPage() {
   const [orders, setOrders]               = useState([])
   const [total, setTotal]                 = useState(0)
   const [loading, setLoading]             = useState(true)
+  const [isRefreshing, setIsRefreshing]   = useState(false)
+  const [lastUpdated, setLastUpdated]     = useState(() => new Date().toLocaleTimeString('vi-VN'))
   const [fetchError, setFetchError]       = useState(null)
   const [page, setPage]                   = useState(1)
   const [filters, setFilters]             = useState({
@@ -38,8 +41,12 @@ export default function AdminOrdersPage() {
   const [toast, setToast]                 = useState(null)
 
   // ── Fetch orders ────────────────────────────────
-  const fetchOrders = useCallback(async () => {
-    setLoading(true)
+  const fetchOrders = useCallback(async (isManual = false) => {
+    if (isManual) {
+      setIsRefreshing(true)
+    } else if (orders.length === 0) {
+      setLoading(true)
+    }
     setFetchError(null)
     try {
       const q = new URLSearchParams({
@@ -56,21 +63,20 @@ export default function AdminOrdersPage() {
       const data = await res.json()
       setOrders(data.orders || [])
       setTotal(data.total   || 0)
+      setLastUpdated(new Date().toLocaleTimeString('vi-VN'))
     } catch (err) {
       console.error('Error fetching orders:', err)
       setFetchError('Không thể tải danh sách đơn hàng. Kiểm tra kết nối máy chủ hoặc thử lại.')
     } finally {
       setLoading(false)
+      setIsRefreshing(false)
     }
-  }, [page, filters])
+  }, [page, filters, orders.length])
 
+  // Chỉ tải khi vào trang hoặc thay đổi bộ lọc / phân trang — KHÔNG chạy polling liên tục
   useEffect(() => {
-    fetchOrders()
-    const timer = setInterval(() => {
-      fetchOrders()
-    }, 4000)
-    return () => clearInterval(timer)
-  }, [fetchOrders])
+    fetchOrders(false)
+  }, [page, filters])
 
   // ── Gọi action API ──────────────────────────────
   const callAction = async (orderId, action, extra = {}) => {
@@ -88,12 +94,24 @@ export default function AdminOrdersPage() {
       showToast(data.message || 'Thao tác thành công', 'success')
       setActionModal(null)
       setActionInput('')
-      fetchOrders()
+
+      // Cập nhật ngay lập tức xuống client storage và phát sự kiện đồng bộ khách hàng
+      if (data.order) {
+        broadcastOrderUpdateClient(data.order)
+
+        // Cập nhật optimistic vào danh sách orders hiện tại
+        setOrders((prev) =>
+          prev.map((o) => ((o.orderId || o.id) === orderId ? data.order : o))
+        )
+      }
 
       // Cập nhật selectedOrder nếu đang mở xem
       if (selectedOrder?.orderId === orderId || selectedOrder?.id === orderId) {
         setSelectedOrder(data.order)
       }
+
+      // Tải lại dữ liệu trang admin để đảm bảo thứ tự
+      fetchOrders(false)
     } catch (err) {
       showToast(err.message, 'error')
     } finally {
@@ -220,7 +238,7 @@ export default function AdminOrdersPage() {
     <div style={{ padding:'24px', fontFamily:'DM Sans, Arial, sans-serif', color:'#3A3535', minHeight:'100vh', background:'#FAF8F5' }}>
 
       {/* ── HEADER ──────────────────────────── */}
-      <div style={{ marginBottom:'24px', display:'flex', justifyContent:'space-between', alignItems:'flex-end' }}>
+      <div style={{ marginBottom:'24px', display:'flex', justifyContent:'space-between', alignItems:'flex-end', flexWrap:'wrap', gap:'12px' }}>
         <div>
           <div style={{ fontSize:'11px', letterSpacing:'2px', textTransform:'uppercase', color:'#7A6E6E', fontWeight:600 }}>
             HỆ THỐNG QUẢN LÝ
@@ -229,14 +247,34 @@ export default function AdminOrdersPage() {
             Quản Lý Đơn Hàng
           </h1>
           <p style={{ color:'#7A6E6E', fontSize:'13px', marginTop:'4px' }}>
-            Tổng số: <strong>{total}</strong> đơn hàng trong hệ thống
+            Tổng số: <strong>{total}</strong> đơn hàng · Lần cập nhật cuối: <span style={{ color:'#631521', fontWeight:600 }}>{lastUpdated}</span>
           </p>
         </div>
         <button
-          onClick={() => fetchOrders()}
-          style={{ ...btnStyle, background:'#631521', padding:'8px 14px', fontSize:'11px' }}
+          onClick={() => fetchOrders(true)}
+          disabled={isRefreshing || loading}
+          title="Click để tải lại danh sách đơn hàng mới nhất từ máy chủ"
+          style={{
+            ...btnStyle,
+            background: '#631521',
+            padding: '10px 18px',
+            fontSize: '12px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            cursor: (isRefreshing || loading) ? 'not-allowed' : 'pointer',
+            opacity: (isRefreshing || loading) ? 0.7 : 1,
+            boxShadow: '0 2px 4px rgba(99,21,33,0.15)',
+          }}
         >
-          🔄 Làm mới dữ liệu
+          <span style={{
+            display: 'inline-block',
+            transition: 'transform 0.5s linear',
+            transform: isRefreshing ? 'rotate(360deg)' : 'none',
+          }}>
+            🔄
+          </span>
+          <span>{isRefreshing ? 'Đang cập nhật...' : 'Làm mới dữ liệu'}</span>
         </button>
       </div>
 

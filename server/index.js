@@ -10,6 +10,7 @@ import { verifyTransporter } from './lib/emailConfig.js'
 import { generateVietQRQuickLink, generateSePayQR } from './lib/paymentQrService.js'
 import { handlePaymentWebhook, getOrderPaymentStatus } from './lib/paymentWebhook.js'
 import { createRateLimiter } from './lib/rateLimiter.js'
+import { addSseClient } from './lib/orderEvents.js'
 
 // Load environment variables from .env or .env.local
 dotenv.config({ path: '.env.local' })
@@ -250,6 +251,48 @@ app.get('/api/orders/lookup', lookupLimiter, async (req, res) => {
     })
   } catch (err) {
     console.error('Order lookup error:', err)
+    return res.status(500).json({ success: false, error: err.message })
+  }
+})
+
+// ── 7.1 Server-Sent Events (SSE) Stream Real-time Biến Động Đơn Hàng ──────
+app.get('/api/orders/events', (req, res) => {
+  addSseClient(res)
+})
+
+// ── 7.2 API Đồng Bộ Hàng Loạt Trạng Thái Đơn Hàng Của Khách ───────────────
+app.post('/api/orders/sync-batch', async (req, res) => {
+  try {
+    const { orderIds = [] } = req.body
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.json({ success: true, orders: [] })
+    }
+
+    const { orderPersistence } = await import('./lib/orderPersistence.js')
+    const { formatAdminOrder } = await import('./lib/adminOrdersHandler.js')
+    const { searchOrdersFromSheet } = await import('./lib/googleSheets.js')
+
+    const resultOrders = []
+    for (const id of orderIds.slice(0, 50)) {
+      if (!id) continue
+      let order = orderPersistence.get(id)
+      if (!order) {
+        try {
+          const sheetMatches = await searchOrdersFromSheet(id)
+          order = sheetMatches.find((o) => (o.orderId || o.id) === id) || null
+        } catch {}
+      }
+      if (order) {
+        resultOrders.push(formatAdminOrder(order))
+      }
+    }
+
+    return res.json({
+      success: true,
+      orders: resultOrders,
+    })
+  } catch (err) {
+    console.error('Sync batch error:', err)
     return res.status(500).json({ success: false, error: err.message })
   }
 })

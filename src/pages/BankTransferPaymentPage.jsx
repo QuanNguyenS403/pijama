@@ -187,9 +187,22 @@ export default function BankTransferPaymentPage() {
     checkStatus()
     const interval = setInterval(checkStatus, 3000)
 
+    const handleOrderEvent = (e) => {
+      const updated = e?.detail
+      if (updated && (updated.orderId === orderId || updated.id === orderId)) {
+        if (updated.paymentStatus === 'PAID' || updated.status === 'CONFIRMED' || updated.status === 'SHIPPED') {
+          setIsQrInvalidated(true)
+          completePaymentAndRedirect(updated)
+        }
+      }
+    }
+
+    window.addEventListener('orders_updated', handleOrderEvent)
+
     return () => {
       isSubscribed = false
       clearInterval(interval)
+      window.removeEventListener('orders_updated', handleOrderEvent)
     }
   }, [orderId])
 

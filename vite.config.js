@@ -114,6 +114,39 @@ function orderApiPlugin() {
             })
           }
 
+          if (pathname === '/api/orders/events' && req.method === 'GET') {
+            const { addSseClient } = await import('./server/lib/orderEvents.js')
+            addSseClient(res)
+            return
+          }
+
+          if (pathname === '/api/orders/sync-batch' && req.method === 'POST') {
+            const { orderIds = [] } = await getBody()
+            const { orderPersistence } = await import('./server/lib/orderPersistence.js')
+            const { formatAdminOrder } = await import('./server/lib/adminOrdersHandler.js')
+            const { searchOrdersFromSheet } = await import('./server/lib/googleSheets.js')
+
+            const resultOrders = []
+            for (const id of (Array.isArray(orderIds) ? orderIds.slice(0, 50) : [])) {
+              if (!id) continue
+              let order = orderPersistence.get(id)
+              if (!order) {
+                try {
+                  const sheetMatches = await searchOrdersFromSheet(id)
+                  order = sheetMatches.find((o) => (o.orderId || o.id) === id) || null
+                } catch {}
+              }
+              if (order) {
+                resultOrders.push(formatAdminOrder(order))
+              }
+            }
+
+            return sendJson(200, {
+              success: true,
+              orders: resultOrders,
+            })
+          }
+
           if (pathname === '/api/orders/cancel-request' && req.method === 'POST') {
             const { orderId, reason = 'Khách hủy đơn' } = await getBody()
             if (!orderId) {

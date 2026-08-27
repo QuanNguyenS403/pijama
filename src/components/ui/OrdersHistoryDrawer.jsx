@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { formatVND, ORDER_STATUSES, CARRIER_TRACKING_URLS } from '../../data/checkoutConfig'
+import { syncBatchOrders } from '../../lib/orderSync'
 
 // Helper resolved tracking URL
 const getCarrierTrackingUrl = (carrier, trackingCode) => {
@@ -37,14 +38,21 @@ const getCarrierTrackingUrl = (carrier, trackingCode) => {
 }
 
 // Order Timeline Stepper Component
-function OrderTrackingTimeline({ status, isVietQR }) {
+function OrderTrackingTimeline({ status, isVietQR, cancelReason }) {
   const normalizedStatus = String(status || 'PENDING').toUpperCase()
 
   if (normalizedStatus === 'CANCELLED') {
     return (
-      <div className="py-2.5 px-3 bg-[#FFEBEE] border border-[#FFCDD2] rounded-[3px] flex items-center gap-2 text-xs text-[#C62828] font-sans">
-        <Ban className="w-4 h-4 text-[#C62828] shrink-0" />
-        <span className="font-semibold">Đơn hàng này đã bị hủy.</span>
+      <div className="py-2.5 px-3 bg-[#FFEBEE] border border-[#FFCDD2] rounded-[3px] space-y-1 text-xs text-[#C62828] font-sans">
+        <div className="flex items-center gap-2">
+          <Ban className="w-4 h-4 text-[#C62828] shrink-0" />
+          <span className="font-semibold">Đơn hàng này đã bị hủy.</span>
+        </div>
+        {cancelReason && (
+          <p className="text-[11px] text-[#B71C1C] pl-6 font-normal">
+            Lý do: {cancelReason}
+          </p>
+        )}
       </div>
     )
   }
@@ -66,13 +74,14 @@ function OrderTrackingTimeline({ status, isVietQR }) {
   // Steps definition
   const steps = [
     { key: 'CONFIRMED', label: 'Đã xác nhận' },
-    { key: 'PACKING', label: 'Đóng gói' },
+    { key: 'PACKING', label: 'Đang đóng gói' },
     { key: 'SHIPPED', label: 'Đang giao' },
     { key: 'DELIVERED', label: 'Đã giao' },
   ]
 
   let activeIndex = 0
-  if (normalizedStatus === 'PACKING') activeIndex = 1
+  if (normalizedStatus === 'CONFIRMED') activeIndex = 0
+  else if (normalizedStatus === 'PACKING' || normalizedStatus === 'PROCESSING') activeIndex = 1
   else if (normalizedStatus === 'SHIPPED') activeIndex = 2
   else if (normalizedStatus === 'DELIVERED') activeIndex = 3
 
@@ -128,6 +137,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
   const [copiedKey, setCopiedKey] = useState(null)
   const [expandedQrOrderId, setExpandedQrOrderId] = useState(null)
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [syncToast, setSyncToast] = useState(null)
 
   // Online Lookup State
   const [lookupQuery, setLookupQuery] = useState('')
@@ -150,11 +160,30 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
     if (isOpen) {
       loadOrders()
       document.body.style.overflow = 'hidden'
+
+      // Tự động kiểm tra trạng thái mới nhất từ server khi mở Drawer
+      try {
+        const stored = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
+        const ids = stored.map((o) => o.orderId || o.id).filter(Boolean)
+        if (ids.length > 0) {
+          syncBatchOrders(ids).then(() => {
+            loadOrders()
+          })
+        }
+      } catch (e) {}
     } else {
       document.body.style.overflow = ''
     }
 
-    const handleUpdate = () => loadOrders()
+    const handleUpdate = (e) => {
+      loadOrders()
+      if (e?.detail) {
+        const orderId = e.detail.orderId || e.detail.id
+        setSyncToast(`Đơn hàng #${orderId} vừa được cập nhật trạng thái mới nhất!`)
+        setTimeout(() => setSyncToast(null), 3500)
+      }
+    }
+
     window.addEventListener('orders_updated', handleUpdate)
     window.addEventListener('storage', handleUpdate)
 
@@ -321,6 +350,21 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                 Tra Cứu Bằng SĐT / Mã Đơn
               </button>
             </div>
+
+            {/* Sync Notification Banner */}
+            <AnimatePresence>
+              {syncToast && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="bg-[#2E7D32] text-white px-4 py-2 text-xs font-sans font-medium flex items-center gap-2 shadow-sm"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-[#A5D6A7] shrink-0" />
+                  <span>{syncToast}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* TAB 1: LOCAL ORDERS */}
             {activeTab === 'LOCAL' && (
@@ -543,7 +587,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
 
         {/* Status Timeline Progression (P1 Item 5) */}
         <div className="p-3.5 sm:p-4 bg-white border-b border-[#E8DFD5]">
-          <OrderTrackingTimeline status={order.status} isVietQR={isVietQR} />
+          <OrderTrackingTimeline status={order.status} isVietQR={isVietQR} cancelReason={order.cancelReason} />
         </div>
 
         {/* Carrier Tracking Box (P1 Item 6) */}

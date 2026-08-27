@@ -2,6 +2,7 @@
 import { orderPersistence } from './orderPersistence.js'
 import { searchOrdersFromSheet, updateOrderStatusInSheet } from './googleSheets.js'
 import { sendConfirmedEmail, sendShippedEmail, sendCancelledEmail } from './emailStatusUpdates.js'
+import { broadcastOrderUpdate } from './orderEvents.js'
 
 export const VALID_TRANSITIONS = {
   PENDING:          ['CONFIRMED', 'CANCELLED'],
@@ -220,12 +221,14 @@ export async function handleAdminOrderAction(orderId, payload = {}) {
     order.adminNote = note || ''
     order.updatedAt = new Date().toISOString()
     orderPersistence.set(orderId, order)
+    const formatted = formatAdminOrder(order)
+    broadcastOrderUpdate(formatted)
     return {
       status: 200,
       data: {
         success: true,
         message: '📝 Ghi chú đã được lưu thành công!',
-        order: formatAdminOrder(order),
+        order: formatted,
       },
     }
   }
@@ -240,12 +243,14 @@ export async function handleAdminOrderAction(orderId, payload = {}) {
     order.paymentStatus = nextStatus
     order.updatedAt = new Date().toISOString()
     orderPersistence.set(orderId, order)
+    const formatted = formatAdminOrder(order)
+    broadcastOrderUpdate(formatted)
     return {
       status: 200,
       data: {
         success: true,
         message: `💳 Đã đổi trạng thái thanh toán thành "${nextStatus === 'PAID' ? 'Đã TT' : 'Chưa TT'}"`,
-        order: formatAdminOrder(order),
+        order: formatted,
       },
     }
   }
@@ -312,6 +317,10 @@ export async function handleAdminOrderAction(orderId, payload = {}) {
   order.updatedAt = new Date().toISOString()
   orderPersistence.set(orderId, order)
 
+  const formattedOrder = formatAdminOrder(order)
+  // Phát sự kiện realtime đến tất cả các tab khách hàng đang mở
+  broadcastOrderUpdate(formattedOrder)
+
   // Asynchronous Notification & Sheet Sync (Non-blocking errors)
   Promise.allSettled([
     action === 'CONFIRM' ? sendConfirmedEmail(order) : Promise.resolve(),
@@ -345,7 +354,7 @@ export async function handleAdminOrderAction(orderId, payload = {}) {
     data: {
       success: true,
       message: messages[action] || `Đã cập nhật đơn hàng #${orderId} thành công!`,
-      order: formatAdminOrder(order),
+      order: formattedOrder,
     },
   }
 }
