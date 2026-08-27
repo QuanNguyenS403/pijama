@@ -14,7 +14,7 @@ const tiers = [
     pattern: 'Sọc Hồng · Pink Stripe',
     accentColor: '#D4AF37',
     slug: 'the-classic-set',
-    swatchBg: 'repeating-linear-gradient(0deg, #F2C4CE 0px, #F2C4CE 2px, #FFFFFF 2px, #FFFFFF 4px)',
+    swatchBg: 'repeating-linear-gradient(0deg, #EFAEA0 0px, #EFAEA0 2px, #FFFFFF 2px, #FFFFFF 4px)',
   },
   {
     roman: 'II',
@@ -27,7 +27,7 @@ const tiers = [
     pattern: 'Caro Navy · Navy Plaid',
     accentColor: '#D4AF37',
     slug: 'the-cafe-look',
-    swatchBg: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.25) 0px, rgba(255,255,255,0.25) 1px, #1B2A4A 1px, #1B2A4A 4px), repeating-linear-gradient(90deg, rgba(255,255,255,0.25) 0px, rgba(255,255,255,0.25) 1px, transparent 1px, transparent 4px)',
+    swatchBg: 'repeating-linear-gradient(0deg, rgba(245, 225, 164, 0.6) 0px, rgba(245, 225, 164, 0.6) 1px, #222636 1px, #222636 4px), repeating-linear-gradient(90deg, rgba(245, 225, 164, 0.6) 0px, rgba(245, 225, 164, 0.6) 1px, transparent 1px, transparent 4px)',
   },
   {
     roman: 'III',

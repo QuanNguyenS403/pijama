@@ -26,16 +26,16 @@ export default function ColorSelector({ colors = [], selected, onChange }) {
           if (isPattern && color.patternType === 'stripe') {
             swatchBackground = `repeating-linear-gradient(
               0deg,
-              #F2C4CE 0px, #F2C4CE 4px,
+              #EFAEA0 0px, #EFAEA0 4px,
               #FFFFFF 4px, #FFFFFF 8px
             )`
           } else if (isPattern && color.patternType === 'plaid') {
             swatchBackground = `repeating-linear-gradient(
-              0deg, rgba(255,255,255,0.3) 0px, rgba(255,255,255,0.3) 2px,
-              #1B2A4A 2px, #1B2A4A 12px
+              0deg, rgba(245, 225, 164, 0.6) 0px, rgba(245, 225, 164, 0.6) 2px,
+              #222636 2px, #222636 12px
             ),
             repeating-linear-gradient(
-              90deg, rgba(255,255,255,0.3) 0px, rgba(255,255,255,0.3) 2px,
+              90deg, rgba(245, 225, 164, 0.6) 0px, rgba(245, 225, 164, 0.6) 2px,
               transparent 2px, transparent 12px
             )`
           } else if (isPattern && (color.patternType === 'brown-stripe' || color.patternType === 'mocha-stripe')) {

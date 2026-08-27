@@ -24,7 +24,7 @@ export default function Section3FeaturedProducts() {
       swatches: [
         {
           type: 'stripe',
-          bg: `repeating-linear-gradient(0deg, #F2C4CE 0px, #F2C4CE 2px, #FFFFFF 2px, #FFFFFF 4px)`,
+          bg: `repeating-linear-gradient(0deg, #EFAEA0 0px, #EFAEA0 2px, #FFFFFF 2px, #FFFFFF 4px)`,
           label: 'Sọc Hồng (Hành Hỏa)',
         },
       ],
@@ -41,8 +41,8 @@ export default function Section3FeaturedProducts() {
       swatches: [
         {
           type: 'plaid',
-          bg: `repeating-linear-gradient(0deg, rgba(255,255,255,0.4) 0px, rgba(255,255,255,0.4) 1px, #1B2A4A 1px, #1B2A4A 4px), repeating-linear-gradient(90deg, rgba(255,255,255,0.4) 0px, rgba(255,255,255,0.4) 1px, transparent 1px, transparent 4px)`,
-          color: '#1B2A4A',
+          bg: `repeating-linear-gradient(0deg, rgba(245, 225, 164, 0.6) 0px, rgba(245, 225, 164, 0.6) 1px, #222636 1px, #222636 4px), repeating-linear-gradient(90deg, rgba(245, 225, 164, 0.6) 0px, rgba(245, 225, 164, 0.6) 1px, transparent 1px, transparent 4px)`,
+          color: '#222636',
           label: 'Caro Navy (Hành Thủy)',
         },
       ],

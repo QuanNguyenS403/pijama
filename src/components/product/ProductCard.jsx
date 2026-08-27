@@ -110,7 +110,7 @@ export default function ProductCard({ product, onQuickView, onAddToCart }) {
                       borderRadius: '0px',
                       background: `repeating-linear-gradient(
                         0deg,
-                        #F2C4CE 0px, #F2C4CE 2px,
+                        #EFAEA0 0px, #EFAEA0 2px,
                         #FFFFFF 2px, #FFFFFF 4px
                       )`,
                     }}
@@ -127,14 +127,14 @@ export default function ProductCard({ product, onQuickView, onAddToCart }) {
                     style={{
                       borderRadius: '0px',
                       background: `repeating-linear-gradient(
-                        0deg, rgba(255,255,255,0.4) 0px, rgba(255,255,255,0.4) 1px,
-                        #1B2A4A 1px, #1B2A4A 4px
+                        0deg, rgba(245, 225, 164, 0.6) 0px, rgba(245, 225, 164, 0.6) 1px,
+                        #222636 1px, #222636 4px
                       ),
                       repeating-linear-gradient(
-                        90deg, rgba(255,255,255,0.4) 0px, rgba(255,255,255,0.4) 1px,
+                        90deg, rgba(245, 225, 164, 0.6) 0px, rgba(245, 225, 164, 0.6) 1px,
                         transparent 1px, transparent 4px
                       )`,
-                      backgroundColor: '#1B2A4A',
+                      backgroundColor: '#222636',
                     }}
                   />
                 )

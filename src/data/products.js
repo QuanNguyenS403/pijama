@@ -42,7 +42,7 @@ Họa tiết Sọc Hồng (Pink Stripe) biểu trưng cho năng lượng Hỏa �
       {
         name: "Pink Stripe",
         label: "Sọc Hồng",
-        hex: "#F2C4CE",          // representative swatch color
+        hex: "#EFAEA0",          // representative swatch color (Hồng Đào)
         patternPreview: true,    // flag: render pattern thumbnail, not plain swatch
         patternType: "stripe",   // used by ColorSelector to pick preview style
         stock: { S: 10, M: 8 },
@@ -158,7 +158,7 @@ Họa tiết Caro Navy (Navy Plaid) mang đậm năng lượng hành Thủy — 
       {
         name: "Navy Plaid",
         label: "Caro Navy",
-        hex: "#1B2A4A",
+        hex: "#222636",
         patternPreview: true,
         patternType: "plaid",
         stock: { S: 8, M: 10 },
