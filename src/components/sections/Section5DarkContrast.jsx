@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import craftsmanshipImg from '../../assets/images/craftsmanship-detail.jpg'
+import storyBrownCraftsmanshipImg from '../../assets/images/story-brown-craftsmanship.jpg'
 
 export default function Section5DarkContrast() {
   return (
@@ -75,13 +75,13 @@ export default function Section5DarkContrast() {
             transition={{ duration: 0.7, delay: 0.2 }}
             className="lg:col-span-6"
           >
-            <div className="relative rounded-[4px] overflow-hidden shadow-2xl border-2 border-[#D4AF37]/40 bg-[#1E1510] group">
+            <div className="relative rounded-[4px] overflow-hidden shadow-2xl border-2 border-[#D4AF37]/40 bg-[#1E1510] aspect-[4/3] w-full group">
               <img
-                src={craftsmanshipImg}
-                alt="Set pijama cao cấp QuanNguyenS — European Casual Luxury phong cách sống"
+                src={storyBrownCraftsmanshipImg}
+                alt="The Hearth Set sọc nâu QuanNguyenS — European Casual Luxury tay nghề may đo tinh xảo"
                 loading="lazy"
                 decoding="async"
-                className="w-full h-[400px] sm:h-[480px] object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                className="w-full h-full object-cover object-center group-hover:scale-103 transition-transform duration-700"
               />
               <div className="absolute bottom-4 left-4 right-4 bg-[#1E1510]/85 backdrop-blur-md p-4 rounded-[2px] border border-[#D4AF37]/30">
                 <span className="font-serif text-sm font-semibold text-[#D4AF37] block">

@@ -556,7 +556,7 @@ export default function CheckoutPage() {
                   </div>
 
                   {/* Pre-Order Notice Banner */}
-                  {items.some((i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-evening-edit' || i.productId === 'the-evening-edit') && (
+                  {items.some((i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-classic-set' || i.productId === 'the-classic-set') && (
                     <div className="mb-5 p-3.5 bg-[#FAF5F0] border-2 border-[#D4AF37] rounded-[3px] flex items-start gap-2.5 text-xs text-[#631521] font-sans">
                       <span className="text-base shrink-0">⏱</span>
                       <div>
@@ -564,7 +564,7 @@ export default function CheckoutPage() {
                           Lưu ý đơn hàng Đặt Trước (Pre-Order)
                         </p>
                         <p className="text-[#4A3F38] leading-relaxed">
-                          Đơn hàng có chứa sản phẩm <strong>THE HEARTH SET (Sọc Nâu)</strong>. Toàn bộ đơn hàng sẽ được chuẩn bị và giao trong <strong>7–10 ngày làm việc</strong>.
+                          Đơn hàng có chứa sản phẩm <strong>THE DAYBREAK SET (Sọc Hồng)</strong>. Toàn bộ đơn hàng sẽ được chuẩn bị và giao trong <strong>7–10 ngày làm việc</strong>.
                         </p>
                       </div>
                     </div>
@@ -576,8 +576,8 @@ export default function CheckoutPage() {
                       const isItemPreOrder = !!(
                         item.preOrder?.enabled ||
                         item.isPreOrder ||
-                        item.slug === 'the-evening-edit' ||
-                        item.productId === 'the-evening-edit'
+                        item.slug === 'the-classic-set' ||
+                        item.productId === 'the-classic-set'
                       )
                       return (
                         <div key={`${item.id}-${item.color?.name || item.color}-${item.size}-${idx}`} className="flex gap-3.5 pb-4 border-b border-[#F0EAE1] last:border-b-0 last:pb-0">

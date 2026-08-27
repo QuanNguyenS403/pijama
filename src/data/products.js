@@ -6,6 +6,11 @@ export const products = [
     subtitle: "Pijama Phong Cách Châu Âu · Sọc Hồng Nắng Sớm",
     collection: "Thu Đông 2026",
     badge: "MỚI RA MẮT",
+    preOrder: {
+      enabled: true,
+      leadTimeDays: [7, 10],
+      message: 'Hàng đặt trước — Giao hàng dự kiến trong 7-10 ngày làm việc',
+    },
 
     description: `Bộ pijama lấy cảm hứng từ phong cách ngủ cổ điển châu Âu với họa tiết Sọc Hồng ngọt ngào — đường viền tương phản tinh tế, cổ áo notch thanh lịch, và phom dáng suông tự do cho cảm giác thoải mái trọn ngày. Mang năng lượng Hỏa ấm áp và rạng rỡ như nắng sớm, khơi dậy nguồn sinh khí tươi mới cho không gian nghỉ ngơi của bạn.`,
 
@@ -32,7 +37,7 @@ Họa tiết Sọc Hồng (Pink Stripe) biểu trưng cho năng lượng Hỏa �
     fengShui: {
       element: "Hỏa",
       elementEn: "Fire",
-      color: "Sọc Hồng (Pink Stripe)",
+      color: "Sọc Hồng",
       goodFor: ["Hỏa", "Thổ"],
       energyNote: "Ấm áp, nhiệt huyết, dịu dàng nhưng tràn đầy sức sống — như nắng sớm mai tiếp thêm sinh khí.",
     },
@@ -124,7 +129,7 @@ Phom áo cổ V xẻ vừa phải tôn lên nét thanh mảnh của phần cổ 
 
 Quần ống suông thoải mái với đai chun co giãn êm ái, thích hợp cho cả ngày làm việc tại nhà hoặc bước xuống quán café góc phố.
 
-Họa tiết Caro Navy (Navy Plaid) mang đậm năng lượng hành Thủy — biểu trưng cho sự tĩnh lặng, sâu sắc và trí tuệ. Rất phù hợp để xoa dịu tâm trí sau những giờ làm việc căng thẳng, tương hợp và nuôi dưỡng tuyệt vời cho người mệnh Thủy và Mộc.`,
+Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng cho sự tĩnh lặng, sâu sắc và trí tuệ. Rất phù hợp để xoa dịu tâm trí sau những giờ làm việc căng thẳng, tương hợp và nuôi dưỡng tuyệt vời cho người mệnh Thủy và Mộc.`,
 
     tagline: `Tĩnh tại và an yên — phong cách cổ V thanh lịch cùng sắc xanh Navy trầm lắng.`,
     sectionLabel: "BST THU ĐÔNG 2026 · THỦY SẮC TĨNH TẠI",
@@ -139,13 +144,20 @@ Họa tiết Caro Navy (Navy Plaid) mang đậm năng lượng hành Thủy — 
     fengShui: {
       element: "Thủy",
       elementEn: "Water",
-      color: "Caro Navy (Navy Plaid)",
+      color: "Caro Navy",
       goodFor: ["Thủy", "Mộc"],
       energyNote: "Tĩnh tại, sâu lắng, trí tuệ, an yên như mặt nước lặng — mang lại sự tập trung và thư thái.",
     },
 
     images: {
       "Navy Plaid": [
+        "/images/classic-set-navy-main.jpg",
+        "/images/classic-set-navy-thumb-1.jpg",
+        "/images/classic-set-navy-thumb-2.jpg",
+        "/images/classic-set-navy-thumb-3.jpg",
+        "/images/classic-set-navy-detail.jpg",
+      ],
+      "Caro Navy": [
         "/images/classic-set-navy-main.jpg",
         "/images/classic-set-navy-thumb-1.jpg",
         "/images/classic-set-navy-thumb-2.jpg",
@@ -196,11 +208,6 @@ Họa tiết Caro Navy (Navy Plaid) mang đậm năng lượng hành Thủy — 
     subtitle: 'Pijama Wide-Leg Cao Cấp · Sọc Nâu Vững Chãi',
     collection: 'Thu Đông 2026',
     badge: 'PHIÊN BẢN GIỚI HẠN',
-    preOrder: {
-      enabled: true,
-      leadTimeDays: [7, 10],
-      message: 'Hàng đặt trước — Giao hàng dự kiến trong 7-10 ngày làm việc',
-    },
 
     description: 'Dáng wide-leg sang trọng kết hợp họa tiết Sọc Nâu mocha ấm áp — mang năng lượng Thổ vững chãi, nuôi dưỡng và vỗ về cảm xúc. Phiên bản giới hạn dành cho những khoảnh khắc thư giãn đỉnh cao và bữa tối ấm cúng cuối ngày.',
 
@@ -225,13 +232,20 @@ Họa tiết Sọc Nâu mocha (Brown Stripe) đại diện cho năng lượng h�
     fengShui: {
       element: "Thổ",
       elementEn: "Earth",
-      color: "Sọc Nâu (Brown Stripe)",
+      color: "Sọc Nâu",
       goodFor: ["Thổ", "Kim"],
       energyNote: "Vững chãi, ấm áp, bền bỉ, cảm giác 'về nhà' như đất mẹ nuôi dưỡng tâm hồn.",
     },
 
     images: {
       "Brown Stripe": [
+        "/images/classic-set-brown-main.jpg",
+        "/images/classic-set-brown-thumb-1.jpg",
+        "/images/classic-set-brown-thumb-2.jpg",
+        "/images/classic-set-brown-thumb-3.jpg",
+        "/images/classic-set-brown-detail.jpg",
+      ],
+      "Sọc Nâu": [
         "/images/classic-set-brown-main.jpg",
         "/images/classic-set-brown-thumb-1.jpg",
         "/images/classic-set-brown-thumb-2.jpg",
@@ -284,7 +298,7 @@ export const sampleReviews = [
     name: 'Nguyễn Thị Minh',
     date: '12/07/2026',
     rating: 5,
-    color: 'Pink Stripe',
+    color: 'Sọc Hồng',
     size: 'M',
     verified: true,
     text: 'Vải mềm quá trời! Mình mua mẫu Sọc Hồng mặc ở nhà mà người nhà cứ khen sang. Tông hồng nhẹ nhàng ấm áp, viền trắng rất tinh tế, chất lượng xứng đáng với giá tiền.',
@@ -295,7 +309,7 @@ export const sampleReviews = [
     name: 'Trần Thị Lan Anh',
     date: '28/06/2026',
     rating: 5,
-    color: 'Navy Plaid',
+    color: 'Caro Navy',
     size: 'S',
     verified: true,
     text: 'Đóng gói đẹp lắm, mua làm quà tặng sinh nhật bạn thân là chuẩn. Mẫu Caro Navy bên ngoài nhìn cực kỳ thanh lịch và sắc nét. Cổ V mặc rất tôn dáng.',
@@ -306,7 +320,7 @@ export const sampleReviews = [
     name: 'Phạm Quỳnh Trang',
     date: '15/06/2026',
     rating: 4,
-    color: 'Pink Stripe',
+    color: 'Sọc Hồng',
     size: 'S',
     verified: true,
     text: 'Mình 48kg cao 1m58 chọn size S hơi rộng một chút ở phần vai nhưng nhìn chung vẫn ok theo phom suông. Họa tiết sọc hồng mặc lên sáng da hẳn, chất vải thích nhất.',
@@ -317,7 +331,7 @@ export const sampleReviews = [
     name: 'Lê Hoàng Mai',
     date: '03/06/2026',
     rating: 5,
-    color: 'Navy Plaid',
+    color: 'Caro Navy',
     size: 'M',
     verified: true,
     text: 'Chất vải tự nhiên rất tốt, thoáng khí và nhẹ nhàng. Họa tiết Caro Navy trầm tĩnh, mặc uống cafe sáng hay làm việc tại nhà đều rất lịch sự. 10/10!',
@@ -328,7 +342,7 @@ export const sampleReviews = [
     name: 'Đỗ Thu Hà',
     date: '20/05/2026',
     rating: 5,
-    color: 'Pink Stripe',
+    color: 'Sọc Hồng',
     size: 'M',
     verified: true,
     text: 'Sọc hồng ngọt ngào, đường may kỹ càng. Mình mặc tiếp khách tại nhà mà ai cũng hỏi mua ở đâu vì nhìn vừa ấm cúng vừa sang. Sẽ ủng hộ shop thêm!',
@@ -339,7 +353,7 @@ export const sampleReviews = [
     name: 'Vũ Thanh Hương',
     date: '18/08/2026',
     rating: 5,
-    color: 'Brown Stripe',
+    color: 'Sọc Nâu',
     size: 'M',
     verified: true,
     text: 'Mẫu Sọc Nâu đẹp xuất sắc ngoài đời, tone nâu mocha rất tôn da và sang trọng. Dáng wide-leg bước đi bay bổng, đường may tỉ mỉ, mặc ấm mà vẫn nhẹ nhàng thoải mái.',
@@ -350,7 +364,7 @@ export const sampleReviews = [
     name: 'Hoàng Yến Nhi',
     date: '14/08/2026',
     rating: 5,
-    color: 'Navy Plaid',
+    color: 'Caro Navy',
     size: 'M',
     verified: true,
     text: 'Cổ V rất tôn dáng cổ và xương quai xanh, viền tương phản nổi bật trên nền Caro Navy nhìn sang trọng tinh tế. Chất vải mềm mướt bất ngờ so với giá tiền.',
@@ -361,7 +375,7 @@ export const sampleReviews = [
     name: 'Ngô Bảo Trâm',
     date: '02/08/2026',
     rating: 4,
-    color: 'Navy Plaid',
+    color: 'Caro Navy',
     size: 'S',
     verified: true,
     text: 'Mẫu Caro Navy mặc đi cafe sáng cuối tuần kết hợp khoác blazer mỏng cực kỳ sành điệu. Chỉ tiếc là chưa có size XL cho dáng người hơi đầy đặn như mình.',
@@ -372,7 +386,7 @@ export const sampleReviews = [
     name: 'Phan Minh Anh',
     date: '10/08/2026',
     rating: 5,
-    color: 'Brown Stripe',
+    color: 'Sọc Nâu',
     size: 'M',
     verified: true,
     text: 'Chất vải sọc nâu rũ đẹp tuyệt vời, tông màu đất ấm áp sang trọng. Dáng wide-leg bước đi rất thoải mái mà vẫn thanh lịch. Đáng từng đồng bỏ ra!',
@@ -383,7 +397,7 @@ export const sampleReviews = [
     name: 'Trương Cẩm Nhung',
     date: '25/07/2026',
     rating: 5,
-    color: 'Brown Stripe',
+    color: 'Sọc Nâu',
     size: 'L',
     verified: true,
     text: 'Họa tiết Sọc Nâu sang chảnh tối thượng. Đường may sắc nét đúng chuẩn xuất khẩu châu Âu. Đóng hộp quà cao cấp, vải mềm mịn tuyệt đối.',

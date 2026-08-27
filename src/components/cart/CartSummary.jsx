@@ -9,7 +9,7 @@ function formatPrice(n) {
 export default function CartSummary({ subtotal, shippingFee, freeShippingProgress, remainingForFreeShipping, discount = 0, onCheckout, showVoucher = true }) {
   const { items } = useCart()
   const hasPreOrder = items?.some(
-    (i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-evening-edit' || i.productId === 'the-evening-edit'
+    (i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-classic-set' || i.productId === 'the-classic-set'
   )
   const total = subtotal + shippingFee - discount
 

@@ -41,9 +41,9 @@ export const buildBankTransferEmailHTML = (order) => {
     order.items?.some(
       (i) =>
         i.isPreOrder ||
-        i.slug === 'the-evening-edit' ||
-        i.productId === 'the-evening-edit' ||
-        i.productName?.includes('HEARTH')
+        i.slug === 'the-classic-set' ||
+        i.productId === 'the-classic-set' ||
+        i.productName?.includes('DAYBREAK')
     )
   )
 
@@ -122,7 +122,7 @@ export const buildBankTransferEmailHTML = (order) => {
     <div style="background:#FAF5F0;border:1px solid #D4AF37;border-left:4px solid #D4AF37;padding:14px 18px;margin-bottom:20px;border-radius:2px;">
       <strong style="color:#631521;font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;">⏱ Lưu ý đơn hàng Đặt Trước (Pre-Order)</strong>
       <p style="font-family:Arial,sans-serif;font-size:13px;color:#4A3F38;margin-top:4px;line-height:1.5;">
-        Đơn hàng có chứa sản phẩm <strong>THE HEARTH SET</strong> (may đo theo yêu cầu). Thời gian sản xuất và giao hàng dự kiến là <strong>7–10 ngày làm việc</strong>.
+        Đơn hàng có chứa sản phẩm <strong>THE DAYBREAK SET</strong> (may đo theo yêu cầu). Thời gian sản xuất và giao hàng dự kiến là <strong>7–10 ngày làm việc</strong>.
       </p>
     </div>` : ''}
 
@@ -220,9 +220,9 @@ export const buildCODEmailHTML = (order) => {
     order.items?.some(
       (i) =>
         i.isPreOrder ||
-        i.slug === 'the-evening-edit' ||
-        i.productId === 'the-evening-edit' ||
-        i.productName?.includes('HEARTH')
+        i.slug === 'the-classic-set' ||
+        i.productId === 'the-classic-set' ||
+        i.productName?.includes('DAYBREAK')
     )
   )
   return `
@@ -582,7 +582,7 @@ export const buildCODEmailHTML = (order) => {
     <div style="background:#FAF5F0;border:1px solid #D4AF37;border-left:4px solid #D4AF37;padding:14px 18px;margin-bottom:20px;border-radius:2px;">
       <strong style="color:#631521;font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;">⏱ Lưu ý sản phẩm Đặt Trước</strong>
       <p style="font-family:Arial,sans-serif;font-size:13px;color:#4A3F38;margin-top:4px;line-height:1.5;">
-        Sản phẩm <strong>THE HEARTH SET</strong> đang được may đo kỹ lưỡng theo đơn của bạn. Toàn bộ kiện hàng sẽ được vận chuyển đồng bộ ngay khi hoàn tất.
+        Sản phẩm <strong>THE DAYBREAK SET</strong> đang được may đo kỹ lưỡng theo đơn của bạn. Toàn bộ kiện hàng sẽ được vận chuyển đồng bộ ngay khi hoàn tất.
       </p>
     </div>` : ''}
 
@@ -630,9 +630,9 @@ export const buildPaidEmailHTML = (order) => {
     order.items?.some(
       (i) =>
         i.isPreOrder ||
-        i.slug === 'the-evening-edit' ||
-        i.productId === 'the-evening-edit' ||
-        i.productName?.includes('HEARTH')
+        i.slug === 'the-classic-set' ||
+        i.productId === 'the-classic-set' ||
+        i.productName?.includes('DAYBREAK')
     )
   )
   return `
@@ -724,7 +724,7 @@ export const buildPaidEmailHTML = (order) => {
     <div style="background:#FAF5F0;border:1px solid #D4AF37;border-left:4px solid #D4AF37;padding:14px 18px;margin-bottom:20px;border-radius:2px;">
       <strong style="color:#631521;font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;">⏱ Lưu ý sản phẩm Đặt Trước</strong>
       <p style="font-family:Arial,sans-serif;font-size:13px;color:#4A3F38;margin-top:4px;line-height:1.5;">
-        Sản phẩm <strong>THE HEARTH SET</strong> đang được may đo theo đơn đặt của bạn. Chúng tôi sẽ thông báo ngay khi kiện hàng bắt đầu được chuyển phát.
+        Sản phẩm <strong>THE DAYBREAK SET</strong> đang được may đo theo đơn đặt của bạn. Chúng tôi sẽ thông báo ngay khi kiện hàng bắt đầu được chuyển phát.
       </p>
     </div>` : ''}
 

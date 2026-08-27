@@ -104,7 +104,7 @@ export default function CartPage() {
                           <p className="font-serif font-bold text-base text-[#1A1614] leading-snug">{item.name}</p>
                         </Link>
                         <p className="font-sans text-xs text-[#8C7E74] mt-0.5">{item.color?.name || (typeof item.color === 'string' ? item.color : '')} | Size <span className="font-bold text-[#1A1614]">{item.size}</span></p>
-                        {(item.preOrder?.enabled || item.isPreOrder || item.slug === 'the-evening-edit' || item.productId === 'the-evening-edit') && (
+                        {(item.preOrder?.enabled || item.isPreOrder || item.slug === 'the-classic-set' || item.productId === 'the-classic-set') && (
                           <p className="font-sans text-[0.7rem] font-bold text-[#631521] bg-[#FAF5F0] border border-[#D4AF37]/60 px-1.5 py-0.5 rounded-[2px] w-fit mt-1 flex items-center gap-1">
                             <span>⏱</span> Đặt trước — giao trong 7-10 ngày
                           </p>
@@ -134,7 +134,7 @@ export default function CartPage() {
                             <p className="font-serif font-bold text-base text-[#1A1614] hover:text-[#631521] transition-colors leading-snug">{item.name}</p>
                           </Link>
                           <p className="font-sans text-xs font-light text-[#8C7E74] mt-0.5">{item.subtitle}</p>
-                          {(item.preOrder?.enabled || item.isPreOrder || item.slug === 'the-evening-edit' || item.productId === 'the-evening-edit') && (
+                          {(item.preOrder?.enabled || item.isPreOrder || item.slug === 'the-classic-set' || item.productId === 'the-classic-set') && (
                             <span className="inline-flex items-center gap-1 font-sans text-[0.7rem] font-bold text-[#631521] bg-[#FAF5F0] border border-[#D4AF37]/60 px-1.5 py-0.5 rounded-[2px] mt-1.5">
                               ⏱ Đặt trước — giao trong 7-10 ngày
                             </span>

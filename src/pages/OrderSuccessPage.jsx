@@ -308,9 +308,9 @@ export default function OrderSuccessPage() {
                       {order.items.map((item, idx) => {
                         const isItemPreOrder = !!(
                           item.isPreOrder ||
-                          item.slug === 'the-evening-edit' ||
-                          item.productId === 'the-evening-edit' ||
-                          item.productName?.includes('HEARTH')
+                          item.slug === 'the-classic-set' ||
+                          item.productId === 'the-classic-set' ||
+                          item.productName?.includes('DAYBREAK')
                         )
                         return (
                           <div key={idx} className="flex justify-between items-start text-xs sm:text-sm">
@@ -374,9 +374,9 @@ export default function OrderSuccessPage() {
                     order.items?.some(
                       (i) =>
                         i.isPreOrder ||
-                        i.slug === 'the-evening-edit' ||
-                        i.productId === 'the-evening-edit' ||
-                        i.productName?.includes('HEARTH')
+                        i.slug === 'the-classic-set' ||
+                        i.productId === 'the-classic-set' ||
+                        i.productName?.includes('DAYBREAK')
                     )
                   )
                   return (
@@ -392,7 +392,7 @@ export default function OrderSuccessPage() {
                         <p className="font-bold text-[#1A1614] mb-0.5">Thời gian giao hàng dự kiến:</p>
                         {hasPreOrder ? (
                           <p className="leading-relaxed text-[#4A3F38]">
-                            Đơn hàng có chứa sản phẩm <strong>Đặt Trước (THE HEARTH SET)</strong> — Thời gian may & giao hàng dự kiến trong <strong>7–10 ngày làm việc</strong>. Bộ phận vận hành sẽ liên hệ thông báo cụ thể trước khi giao hàng.
+                            Đơn hàng có chứa sản phẩm <strong>Đặt Trước (THE DAYBREAK SET)</strong> — Thời gian may & giao hàng dự kiến trong <strong>7–10 ngày làm việc</strong>. Bộ phận vận hành sẽ liên hệ thông báo cụ thể trước khi giao hàng.
                           </p>
                         ) : (
                           <p className="font-light leading-relaxed text-[#4A3F38]">

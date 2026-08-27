@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import lifestyleNightImg from '../../assets/images/lifestyle-night.jpg'
+import storyPinkTeaImg from '../../assets/images/story-pink-tea.jpg'
 
 export default function Section7CustomerStory() {
   return (
@@ -61,13 +61,13 @@ export default function Section7CustomerStory() {
             transition={{ duration: 0.7, delay: 0.2 }}
             className="lg:col-span-6"
           >
-            <div className="relative rounded-[4px] overflow-hidden shadow-2xl border-2 border-[#D4AF37]/30 bg-[#1E1510]">
+            <div className="relative rounded-[4px] overflow-hidden shadow-2xl border-2 border-[#D4AF37]/30 bg-[#1E1510] aspect-[4/3] w-full group">
               <img
-                src={lifestyleNightImg}
-                alt="Chi tiết đường may tinh tế của bộ pijama QuanNguyenS — craftsmanship"
+                src={storyPinkTeaImg}
+                alt="Bộ pijama The Daybreak Set sọc hồng QuanNguyenS — Không mass production, tinh tế từng chi tiết"
                 loading="lazy"
                 decoding="async"
-                className="w-full h-[420px] sm:h-[500px] object-cover object-center"
+                className="w-full h-full object-cover object-center group-hover:scale-103 transition-transform duration-700"
               />
               <div className="absolute bottom-4 left-4 right-4 bg-[#1E1510]/90 backdrop-blur-sm p-3.5 rounded-[2px] border border-white/10">
                 <span className="font-serif text-sm font-bold text-[#D4AF37] block">
