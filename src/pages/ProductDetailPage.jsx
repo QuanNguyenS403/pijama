@@ -14,6 +14,30 @@ import CraftsmanshipStrip from '../components/sections/CraftsmanshipStrip'
 import { useProduct } from '../hooks/useProduct'
 import { useRecentlyViewed } from '../hooks/useLocalStorage'
 import fabricMacroImg from '../assets/images/fabric-macro.jpg'
+import storyDaybreakMaterialImg from '../assets/images/story-daybreak-material.jpg'
+import storyStillwaterMaterialImg from '../assets/images/story-stillwater-material.jpg'
+import storyHearthMaterialImg from '../assets/images/story-hearth-material.jpg'
+
+const materialStoryConfig = {
+  'the-classic-set': {
+    image: storyDaybreakMaterialImg,
+    alt: 'The Daybreak Set — Triết lý chất liệu mềm hơn mỗi ngày trôi qua',
+    tag: 'Chất Liệu Tự Nhiên Cao Cấp',
+    note: 'Quy trình xử lý vi sinh xoa mềm độc quyền mang lại cảm giác thoải mái tuyệt đối',
+  },
+  'the-cafe-look': {
+    image: storyStillwaterMaterialImg,
+    alt: 'The Stillwater Set — Triết lý chất liệu mềm hơn mỗi ngày trôi qua',
+    tag: 'Chất Liệu Tự Nhiên Cao Cấp',
+    note: 'Quy trình xử lý vi sinh xoa mềm độc quyền mang lại cảm giác thoải mái tuyệt đối',
+  },
+  'the-evening-edit': {
+    image: storyHearthMaterialImg,
+    alt: 'The Hearth Set — Triết lý chất liệu mềm hơn mỗi ngày trôi qua',
+    tag: 'Chất Liệu Tự Nhiên Cao Cấp',
+    note: 'Quy trình xử lý vi sinh xoa mềm độc quyền mang lại cảm giác thoải mái tuyệt đối',
+  },
+}
 
 function RecentlyViewedStrip({ viewed }) {
   if (!viewed.length) return null
@@ -164,6 +188,13 @@ export default function ProductDetailPage() {
   const pageTitle = `${product.name} — ${product.subtitle} | QuanNguyenS Pijama`
   const pageDesc = product.description || `${product.name} — Thiết kế pijama cao cấp, chất liệu tự nhiên thoáng khí chuẩn phong cách châu Âu.`
 
+  const currentStory = (product && (materialStoryConfig[product.id] || materialStoryConfig[product.slug])) || {
+    image: fabricMacroImg,
+    alt: 'Cận cảnh kết cấu vải tự nhiên cao cấp QuanNguyenS',
+    tag: 'Chất Liệu Tự Nhiên Cao Cấp',
+    note: 'Quy trình xử lý vi sinh xoa mềm độc quyền mang lại cảm giác thoải mái tuyệt đối',
+  }
+
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#1A1614]">
       {/* Dynamic SEO & OpenGraph Meta Tags (P2-2) */}
@@ -299,18 +330,18 @@ export default function ProductDetailPage() {
             >
               <div className="relative rounded-[4px] overflow-hidden shadow-2xl border-2 border-[#D4AF37]/40 bg-[#1E1510] group">
                 <img
-                  src={fabricMacroImg}
-                  alt="Cận cảnh kết cấu vải tự nhiên cao cấp QuanNguyenS"
+                  src={currentStory.image}
+                  alt={currentStory.alt}
                   loading="lazy"
                   decoding="async"
                   className="w-full h-[380px] sm:h-[460px] object-cover group-hover:scale-105 transition-transform duration-700"
                 />
                 <div className="absolute bottom-4 left-4 right-4 bg-[#1E1510]/90 backdrop-blur-md p-4 rounded-[2px] border border-[#D4AF37]/30">
                   <span className="font-serif text-sm font-semibold text-[#D4AF37] block">
-                    Chất Liệu Tự Nhiên Cao Cấp
+                    {currentStory.tag}
                   </span>
                   <span className="text-xs text-white/80 font-sans mt-0.5 block">
-                    Quy trình xử lý vi sinh xoa mềm độc quyền mang lại cảm giác thoải mái tuyệt đối
+                    {currentStory.note}
                   </span>
                 </div>
               </div>
