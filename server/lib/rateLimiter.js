@@ -46,15 +46,29 @@ export function createRateLimiter({
     if (timestamps.length >= max) {
       const retryAfterSec = Math.ceil((timestamps[0] + windowMs - now) / 1000)
       res.setHeader('Retry-After', retryAfterSec)
-      return res.status(429).json({
-        success: false,
-        error: message,
-        retryAfter: retryAfterSec,
-      })
+      if (typeof res.status === 'function') {
+        return res.status(429).json({
+          success: false,
+          error: message,
+          retryAfter: retryAfterSec,
+        })
+      } else {
+        res.statusCode = 429
+        res.setHeader('Content-Type', 'application/json')
+        return res.end(
+          JSON.stringify({
+            success: false,
+            error: message,
+            retryAfter: retryAfterSec,
+          })
+        )
+      }
     }
 
     timestamps.push(now)
     requestRecords.set(key, timestamps)
-    next()
+    if (typeof next === 'function') {
+      next()
+    }
   }
 }

@@ -1,3 +1,5 @@
+// 🔒 DỮ LIỆU ĐÃ KHOÁ — xem PROTECTED-DATA.md trước khi sửa file này.
+// Chỉ chỉnh sửa khi có yêu cầu rõ ràng, cụ thể nhắm đúng vào nội dung file này.
 import nodemailer from 'nodemailer'
 
 export const getTransporter = () => {

@@ -11,6 +11,7 @@ import { generateVietQRQuickLink, generateSePayQR } from './lib/paymentQrService
 import { handlePaymentWebhook, getOrderPaymentStatus } from './lib/paymentWebhook.js'
 import { createRateLimiter } from './lib/rateLimiter.js'
 import { addSseClient } from './lib/orderEvents.js'
+import { verifyAdminLogin, adminLoginLimiter } from './lib/adminAuth.js'
 
 // Load environment variables from .env or .env.local
 dotenv.config({ path: '.env.local' })
@@ -263,34 +264,9 @@ app.get('/api/orders/events', (req, res) => {
 // ── 7.2 API Đồng Bộ Hàng Loạt Trạng Thái Đơn Hàng Của Khách ───────────────
 app.post('/api/orders/sync-batch', async (req, res) => {
   try {
-    const { orderIds = [] } = req.body
-    if (!Array.isArray(orderIds) || orderIds.length === 0) {
-      return res.json({ success: true, orders: [] })
-    }
-
-    const { orderPersistence } = await import('./lib/orderPersistence.js')
-    const { formatAdminOrder } = await import('./lib/adminOrdersHandler.js')
-    const { searchOrdersFromSheet } = await import('./lib/googleSheets.js')
-
-    const resultOrders = []
-    for (const id of orderIds.slice(0, 50)) {
-      if (!id) continue
-      let order = orderPersistence.get(id)
-      if (!order) {
-        try {
-          const sheetMatches = await searchOrdersFromSheet(id)
-          order = sheetMatches.find((o) => (o.orderId || o.id) === id) || null
-        } catch {}
-      }
-      if (order) {
-        resultOrders.push(formatAdminOrder(order))
-      }
-    }
-
-    return res.json({
-      success: true,
-      orders: resultOrders,
-    })
+    const { handleSyncBatchOrders } = await import('./lib/adminOrdersHandler.js')
+    const result = await handleSyncBatchOrders(req.body?.orderIds)
+    return res.json(result)
   } catch (err) {
     console.error('Sync batch error:', err)
     return res.status(500).json({ success: false, error: err.message })
@@ -345,30 +321,9 @@ app.post('/api/orders/cancel-request', async (req, res) => {
 })
 
 // ── 9. Quản Lý Đơn Hàng Admin & Xác Thực ────────────────────────
-app.post('/api/admin/login', (req, res) => {
-  const inputPass = String(req.body?.password || '').trim()
-  const validPasswords = new Set(['qnsadmin2026', 'admin', 'admin123', 'quannguyens', 'doi-mat-khau-nay-ngay', '123456', 'ducquan16102006'])
-  
-  try {
-    if (fs.existsSync('.env.local')) {
-      const content = fs.readFileSync('.env.local', 'utf-8')
-      const m = content.match(/ADMIN_PASSWORD=["']?([^"'\r\n]+)["']?/)
-      if (m && m[1]) validPasswords.add(m[1].trim())
-    }
-    if (fs.existsSync('.env')) {
-      const content = fs.readFileSync('.env', 'utf-8')
-      const m = content.match(/ADMIN_PASSWORD=["']?([^"'\r\n]+)["']?/)
-      if (m && m[1]) validPasswords.add(m[1].trim())
-    }
-  } catch (e) {}
-  if (process.env.ADMIN_PASSWORD) {
-    validPasswords.add(process.env.ADMIN_PASSWORD.trim())
-  }
-
-  if (inputPass && validPasswords.has(inputPass)) {
-    return res.json({ success: true })
-  }
-  return res.status(401).json({ success: false, error: 'Sai mật khẩu quản trị' })
+app.post('/api/admin/login', adminLoginLimiter, (req, res) => {
+  const result = verifyAdminLogin(req.body?.password)
+  return res.status(result.status).json(result.data)
 })
 
 app.get('/api/admin/orders', async (req, res) => {

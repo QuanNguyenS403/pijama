@@ -1,4 +1,5 @@
 import { google } from 'googleapis'
+import { orderPersistence } from './orderPersistence.js'
 
 // ── Auth với Google Service Account ─────────────────────
 const getAuth = () => {
@@ -244,53 +245,139 @@ export const appendOrderToSheet = async (order) => {
     })
   }
 
+  // Xóa cache để các truy vấn sau nhận được đơn mới ngay
+  invalidateSheetOrdersCache()
+
   console.log(`✅ Order ${order.orderId} written to Google Sheets`)
   return { success: true, orderId: order.orderId }
 }
 
-// ── Tra cứu đơn hàng từ Google Sheet theo Mã Đơn hoặc SĐT ──
-export const searchOrdersFromSheet = async (query) => {
-  try {
-    const auth = getAuth()
-    const sheets = google.sheets({ version: 'v4', auth })
-    const spreadsheetId = process.env.GOOGLE_SHEET_ID
-    if (!spreadsheetId) return []
+// ── In-Memory Cache & Request Deduplication Cho Sheet Orders ─────────
+const SHEET_CACHE_TTL_MS = 60 * 1000 // Cache 60 giây
+let sheetOrdersCache = {
+  data: null,
+  timestamp: 0,
+}
+let inFlightSheetFetchPromise = null
 
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: `${SHEET_TABS.ORDERS}!A2:Z`,
-    })
+export const invalidateSheetOrdersCache = () => {
+  sheetOrdersCache = { data: null, timestamp: 0 }
+}
 
-    const rows = res.data.values || []
-    const q = String(query).trim().toLowerCase()
-    const cleanPhone = q.replace(/[^0-9]/g, '')
-
-    const matched = rows.filter((row) => {
-      const orderId = (row[0] || '').toLowerCase()
-      const phone = (row[4] || '').replace(/[^0-9]/g, '')
-      const name = (row[3] || '').toLowerCase()
-      return orderId.includes(q) || (cleanPhone && phone.includes(cleanPhone)) || name.includes(q)
-    })
-
-    return matched.map((r) => ({
-      orderId: r[0],
-      orderDateVN: `${r[1]} ${r[2]}`.trim(),
-      customer: { fullName: r[3], phone: r[4], email: r[5] },
-      shipping: { fullAddress: r[10] },
-      subtotal: Number(r[14]) || 0,
-      shippingFee: Number(r[15]) || 0,
-      discount: Number(r[16]) || 0,
-      total: Number(r[18]) || 0,
-      payment: { methodLabel: r[19], status: r[20] },
-      note: r[21],
-      status: r[22] || 'PENDING',
-      trackingCode: r[24] || null,
-      carrier: r[25] || null,
-    }))
-  } catch (err) {
-    console.warn('searchOrdersFromSheet error:', err.message)
-    return []
+/**
+ * Đọc toàn bộ danh sách đơn hàng từ Google Sheet với cơ chế Cache & Deduplication:
+ * - Nếu còn trong TTL (60s): Trả về ngay từ RAM (0 gọi Google Sheets API).
+ * - Nếu có nhiều request đồng thời lúc hết hạn cache: Chỉ 1 request duy nhất gọi Google Sheets, các request khác cùng chờ Promise này.
+ * - Tự động đồng bộ các đơn mới tìm thấy vào orderPersistence.
+ */
+export const fetchAllOrdersFromSheetCached = async ({ forceRefresh = false } = {}) => {
+  const now = Date.now()
+  if (!forceRefresh && sheetOrdersCache.data && now - sheetOrdersCache.timestamp < SHEET_CACHE_TTL_MS) {
+    return sheetOrdersCache.data
   }
+
+  if (inFlightSheetFetchPromise) {
+    return inFlightSheetFetchPromise
+  }
+
+  inFlightSheetFetchPromise = (async () => {
+    try {
+      const auth = getAuth()
+      const sheets = google.sheets({ version: 'v4', auth })
+      const spreadsheetId = process.env.GOOGLE_SHEET_ID
+      if (!spreadsheetId) return []
+
+      const res = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `${SHEET_TABS.ORDERS}!A2:Z`,
+      })
+
+      const rows = res.data.values || []
+      const parsedOrders = rows
+        .filter((r) => r && r[0])
+        .map((r) => {
+          const orderId = String(r[0]).trim()
+          return {
+            orderId,
+            id: orderId,
+            orderNumber: orderId,
+            orderDateVN: `${r[1] || ''} ${r[2] || ''}`.trim(),
+            customer: { fullName: r[3] || '', phone: r[4] || '', email: r[5] || '' },
+            customerName: r[3] || '',
+            customerPhone: r[4] || '',
+            customerEmail: r[5] || '',
+            shipping: {
+              address: r[6] || '',
+              ward: r[7] || '',
+              district: r[8] || '',
+              city: r[9] || '',
+              fullAddress: r[10] || '',
+            },
+            shippingAddress: r[10] || '',
+            subtotal: Number(r[14]) || 0,
+            shippingFee: Number(r[15]) || 0,
+            discount: Number(r[16]) || 0,
+            voucherCode: r[17] || '',
+            total: Number(r[18]) || 0,
+            payment: { methodLabel: r[19] || 'COD', status: r[20] || 'UNPAID' },
+            paymentMethod: r[19] || 'COD',
+            paymentStatus: r[20] || 'UNPAID',
+            note: r[21] || '',
+            status: r[22] || 'PENDING',
+            source: r[23] || 'website',
+            trackingCode: r[24] || null,
+            trackingNumber: r[24] || null,
+            carrier: r[25] || null,
+          }
+        })
+
+      sheetOrdersCache = {
+        data: parsedOrders,
+        timestamp: Date.now(),
+      }
+
+      // Backfill tự động vào orderPersistence
+      const newOrdersToPersist = parsedOrders.filter((o) => !orderPersistence.has(o.orderId))
+      if (newOrdersToPersist.length > 0) {
+        orderPersistence.setBatch(newOrdersToPersist)
+      }
+
+      return parsedOrders
+    } catch (err) {
+      console.warn('⚠️ Google Sheets fetchAllOrdersFromSheetCached error:', err.message)
+      return sheetOrdersCache.data || []
+    } finally {
+      inFlightSheetFetchPromise = null
+    }
+  })()
+
+  return inFlightSheetFetchPromise
+}
+
+// ── Tra cứu đơn hàng từ Google Sheet theo Mã Đơn hoặc SĐT (Dùng Cache RAM) ──
+export const searchOrdersFromSheet = async (query) => {
+  const allOrders = await fetchAllOrdersFromSheetCached()
+  if (!query || !String(query).trim()) return allOrders
+
+  const q = String(query).trim().toLowerCase()
+  const cleanPhone = q.replace(/[^0-9]/g, '')
+
+  return allOrders.filter((order) => {
+    const orderId = (order.orderId || '').toLowerCase()
+    const phone = (order.customer?.phone || '').replace(/[^0-9]/g, '')
+    const name = (order.customer?.fullName || '').toLowerCase()
+    return orderId.includes(q) || (cleanPhone && phone.includes(cleanPhone)) || name.includes(q)
+  })
+}
+
+// ── Lấy danh sách nhiều đơn hàng cùng lúc theo mảng Order IDs (Đọc Sheet 1 lần) ──
+export const searchOrdersByIdsFromSheet = async (orderIds = []) => {
+  if (!Array.isArray(orderIds) || orderIds.length === 0) return []
+  const idSet = new Set(orderIds.map((id) => String(id).trim()).filter(Boolean))
+  if (idSet.size === 0) return []
+
+  const allOrders = await fetchAllOrdersFromSheetCached()
+  return allOrders.filter((o) => idSet.has(o.orderId) || idSet.has(o.id))
 }
 
 // ── Cập nhật trạng thái đơn hàng trên Google Sheet ───────────────
@@ -321,7 +408,7 @@ export const updateOrderStatusInSheet = async (orderId, newStatus, note = '', tr
         range: `${SHEET_TABS.ORDERS}!W${rowNumber}`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [[newStatus]] },
-      })
+      }),
     ]
 
     if (note) {
@@ -358,6 +445,7 @@ export const updateOrderStatusInSheet = async (orderId, newStatus, note = '', tr
     }
 
     await Promise.allSettled(updates)
+    invalidateSheetOrdersCache()
     console.log(`✅ Sheet: đơn ${orderId} → ${newStatus}`)
   } catch (err) {
     console.error('updateOrderStatusInSheet lỗi:', err.message)

@@ -90,6 +90,55 @@ export async function getAdminOrderDetail(orderId) {
 }
 
 /**
+ * Xử lý đồng bộ hàng loạt đơn hàng tối ưu:
+ * 1. Đọc nhanh từ orderPersistence (RAM/Disk)
+ * 2. Nếu có đơn chưa có trong bộ nhớ, chỉ gọi Google Sheets duy nhất 1 lần (qua Cache) cho toàn bộ missing IDs
+ * 3. Tự động cập nhật vào persistence
+ */
+export async function handleSyncBatchOrders(orderIds = []) {
+  if (!Array.isArray(orderIds) || orderIds.length === 0) {
+    return { success: true, orders: [] }
+  }
+
+  const cleanIds = Array.from(new Set(orderIds.map((id) => String(id || '').trim()).filter(Boolean))).slice(0, 50)
+  if (cleanIds.length === 0) {
+    return { success: true, orders: [] }
+  }
+
+  const resultOrders = []
+  const missingIds = []
+
+  for (const id of cleanIds) {
+    const localOrder = orderPersistence.get(id)
+    if (localOrder) {
+      resultOrders.push(formatAdminOrder(localOrder))
+    } else {
+      missingIds.push(id)
+    }
+  }
+
+  if (missingIds.length > 0) {
+    try {
+      const { searchOrdersByIdsFromSheet } = await import('./googleSheets.js')
+      const sheetOrders = await searchOrdersByIdsFromSheet(missingIds)
+      for (const order of sheetOrders) {
+        if (order && (order.orderId || order.id)) {
+          const formatted = formatAdminOrder(order)
+          resultOrders.push(formatted)
+        }
+      }
+    } catch (err) {
+      console.warn('handleSyncBatchOrders sheet lookup error:', err.message)
+    }
+  }
+
+  return {
+    success: true,
+    orders: resultOrders,
+  }
+}
+
+/**
  * Fetch and filter orders for Admin
  */
 export async function getAdminOrders(params = {}) {

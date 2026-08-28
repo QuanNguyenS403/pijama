@@ -41,6 +41,42 @@ function orderApiPlugin() {
         }
 
         try {
+          if (pathname === '/api/health' && req.method === 'GET') {
+            return sendJson(200, {
+              status: 'ok',
+              service: 'QuanNguyenS Dev API Server',
+              timestamp: new Date().toISOString(),
+            })
+          }
+
+          if (pathname === '/api/health/email' && req.method === 'GET') {
+            const { verifyTransporter } = await import('./server/lib/emailConfig.js')
+            const result = await verifyTransporter()
+            if (result && result.success) {
+              return sendJson(200, { emailReady: true, message: 'Gmail SMTP sẵn sàng' })
+            }
+            return sendJson(500, { emailReady: false, error: result?.error })
+          }
+
+          if (pathname === '/api/payment/generate-qr' && req.method === 'POST') {
+            const { amount, description, bankCode, accountNumber, accountName, provider = 'VietQR' } = await getBody()
+            if (!amount) {
+              return sendJson(400, { success: false, error: 'Thiếu số tiền thanh toán' })
+            }
+            if (provider === 'SePay') {
+              const { generateSePayQR } = await import('./server/lib/paymentQrService.js')
+              return sendJson(200, generateSePayQR({ amount, description, accountNumber, bankName: bankCode || 'Vietcombank' }))
+            }
+            const { generateVietQRQuickLink } = await import('./server/lib/paymentQrService.js')
+            return sendJson(200, generateVietQRQuickLink({
+              amount,
+              description,
+              bankCode: bankCode || 'VCB',
+              accountNumber: accountNumber || '1050773506',
+              accountName: accountName || 'NGUYEN DUC QUAN',
+            }))
+          }
+
           if (pathname === '/api/orders/submit' && req.method === 'POST') {
             const orderData = await getBody()
             const { handleOrderSubmit } = await import('./server/apiHandler.js')
@@ -122,29 +158,9 @@ function orderApiPlugin() {
 
           if (pathname === '/api/orders/sync-batch' && req.method === 'POST') {
             const { orderIds = [] } = await getBody()
-            const { orderPersistence } = await import('./server/lib/orderPersistence.js')
-            const { formatAdminOrder } = await import('./server/lib/adminOrdersHandler.js')
-            const { searchOrdersFromSheet } = await import('./server/lib/googleSheets.js')
-
-            const resultOrders = []
-            for (const id of (Array.isArray(orderIds) ? orderIds.slice(0, 50) : [])) {
-              if (!id) continue
-              let order = orderPersistence.get(id)
-              if (!order) {
-                try {
-                  const sheetMatches = await searchOrdersFromSheet(id)
-                  order = sheetMatches.find((o) => (o.orderId || o.id) === id) || null
-                } catch {}
-              }
-              if (order) {
-                resultOrders.push(formatAdminOrder(order))
-              }
-            }
-
-            return sendJson(200, {
-              success: true,
-              orders: resultOrders,
-            })
+            const { handleSyncBatchOrders } = await import('./server/lib/adminOrdersHandler.js')
+            const result = await handleSyncBatchOrders(orderIds)
+            return sendJson(200, result)
           }
 
           if (pathname === '/api/orders/cancel-request' && req.method === 'POST') {
@@ -181,32 +197,15 @@ function orderApiPlugin() {
 
           // ── Admin Auth API ─────────────────────────
           if (pathname === '/api/admin/login' && req.method === 'POST') {
-            const body = await getBody()
-            const inputPass = String(body.password || '').trim()
-            
-            // Dynamic reading of env files
-            const validPasswords = new Set(['qnsadmin2026', 'admin', 'admin123', 'quannguyens', 'doi-mat-khau-nay-ngay', '123456', 'ducquan16102006'])
-            try {
-              const { default: fs } = await import('fs')
-              if (fs.existsSync('.env.local')) {
-                const content = fs.readFileSync('.env.local', 'utf-8')
-                const m = content.match(/ADMIN_PASSWORD=["']?([^"'\r\n]+)["']?/)
-                if (m && m[1]) validPasswords.add(m[1].trim())
-              }
-              if (fs.existsSync('.env')) {
-                const content = fs.readFileSync('.env', 'utf-8')
-                const m = content.match(/ADMIN_PASSWORD=["']?([^"'\r\n]+)["']?/)
-                if (m && m[1]) validPasswords.add(m[1].trim())
-              }
-            } catch (e) {}
-            if (process.env.ADMIN_PASSWORD) {
-              validPasswords.add(process.env.ADMIN_PASSWORD.trim())
-            }
-
-            if (inputPass && validPasswords.has(inputPass)) {
-              return sendJson(200, { success: true })
-            }
-            return sendJson(401, { success: false, error: 'Sai mật khẩu quản trị' })
+            const { verifyAdminLogin, adminLoginLimiter } = await import('./server/lib/adminAuth.js')
+            return new Promise((resolve) => {
+              adminLoginLimiter(req, res, async () => {
+                const body = await getBody()
+                const result = verifyAdminLogin(body.password)
+                sendJson(result.status, result.data)
+                resolve()
+              })
+            })
           }
 
           // ── Admin Orders API ─────────────────────────

@@ -1,3 +1,5 @@
+// 🔒 DỮ LIỆU ĐÃ KHOÁ — xem PROTECTED-DATA.md trước khi sửa file này.
+// Chỉ chỉnh sửa khi có yêu cầu rõ ràng, cụ thể nhắm đúng vào nội dung file này.
 import { getTransporter } from './emailConfig.js'
 
 const formatVND = (amount) => Number(amount || 0).toLocaleString('vi-VN') + 'đ'

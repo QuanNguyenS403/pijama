@@ -86,6 +86,21 @@ export const orderPersistence = {
     saveToDisk()
   },
 
+  setBatch(orders) {
+    if (!Array.isArray(orders) || orders.length === 0) return
+    let changed = false
+    orders.forEach((order) => {
+      const id = order?.orderId || order?.id
+      if (id && order) {
+        ordersMap.set(id, order)
+        changed = true
+      }
+    })
+    if (changed) {
+      saveToDisk()
+    }
+  },
+
   has(orderId) {
     return ordersMap.has(orderId)
   },

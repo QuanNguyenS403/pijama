@@ -93,21 +93,38 @@ export function broadcastOrderUpdateClient(order) {
   }
 }
 
+// Throttling: Giãn cách tối thiểu giữa các lần auto-sync nền là 5 phút
+const BATCH_SYNC_THROTTLE_MS = 5 * 60 * 1000
+let lastBatchSyncTime = 0
+
 /**
  * Gửi yêu cầu kiểm tra và đồng bộ trạng thái mới nhất cho danh sách mã đơn hàng
+ * @param {Array<string>} orderIds Danh sách mã đơn
+ * @param {object} options Cấu hình (force: ép buộc đồng bộ không qua throttle)
  */
-export async function syncBatchOrders(orderIds) {
+export async function syncBatchOrders(orderIds, { force = false } = {}) {
   if (!Array.isArray(orderIds) || orderIds.length === 0) return []
 
+  const now = Date.now()
+  if (!force && now - lastBatchSyncTime < BATCH_SYNC_THROTTLE_MS) {
+    // Đã đồng bộ gần đây, tránh gọi lại lặp đi lặp lại
+    return []
+  }
+
   try {
+    const cleanIds = Array.from(new Set(orderIds.map((id) => String(id || '').trim()).filter(Boolean))).slice(0, 50)
+    if (cleanIds.length === 0) return []
+
     const res = await fetch('/api/orders/sync-batch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderIds: orderIds.slice(0, 50) }),
+      body: JSON.stringify({ orderIds: cleanIds }),
     })
 
     if (!res.ok) return []
     const data = await res.json()
+
+    lastBatchSyncTime = Date.now()
 
     if (data.success && Array.isArray(data.orders)) {
       data.orders.forEach((order) => {
@@ -143,7 +160,7 @@ export function initOrderSync() {
     console.warn('Không thể khởi tạo BroadcastChannel:', err)
   }
 
-  // 2. Kết nối Server-Sent Events (SSE)
+  // 2. Kết nối Server-Sent Events (SSE) để nhận sự kiện real-time tức thì từ Admin
   const connectSSE = () => {
     try {
       if (eventSourceInstance) {
@@ -173,12 +190,12 @@ export function initOrderSync() {
 
   connectSSE()
 
-  // 3. Đồng bộ một lần các đơn hiện có trong localStorage khi ứng dụng mở
+  // 3. Đồng bộ một lần có kiểm soát throttle khi mở ứng dụng
   try {
     const localOrders = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
     const ids = localOrders.map((o) => o.orderId || o.id).filter(Boolean)
     if (ids.length > 0) {
-      syncBatchOrders(ids)
+      syncBatchOrders(ids, { force: false })
     }
   } catch (e) {}
 }
