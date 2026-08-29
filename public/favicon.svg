@@ -1,9 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 64 64" width="64" height="64">
   <defs>
-    <linearGradient id="burgundyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#731927" />
-      <stop offset="100%" stop-color="#4E0E18" />
-    </linearGradient>
+    <clipPath id="squircle">
+      <rect width="64" height="64" rx="14" />
+    </clipPath>
     <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#F5E1A4" />
       <stop offset="50%" stop-color="#D4AF37" />
@@ -11,21 +10,12 @@
     </linearGradient>
   </defs>
 
-  <!-- Background Base with subtle rounded squircle -->
-  <rect width="64" height="64" rx="14" fill="url(#burgundyGrad)" />
+  <!-- Base with logo image -->
+  <g clip-path="url(#squircle)">
+    <image href="/images/logo.jpg" x="0" y="0" width="64" height="64" preserveAspectRatio="xMidYMid slice" />
+  </g>
   
-  <!-- Subtle luxury inner border -->
-  <rect x="3.5" y="3.5" width="57" height="57" rx="10.5" fill="none" stroke="url(#goldGrad)" stroke-width="1.2" stroke-opacity="0.85" />
-
-  <!-- Monogram Q for QuanNguyenS -->
-  <text 
-    x="32" 
-    y="44" 
-    text-anchor="middle" 
-    font-family="'Cormorant Garamond', 'Georgia', 'Playfair Display', serif" 
-    font-size="36" 
-    font-weight="700" 
-    letter-spacing="-0.5"
-    fill="url(#goldGrad)"
-  >Q</text>
+  <!-- Subtle luxury inner gold border -->
+  <rect x="1" y="1" width="62" height="62" rx="13" fill="none" stroke="url(#goldGrad)" stroke-width="1.8" stroke-opacity="0.9" />
 </svg>
+

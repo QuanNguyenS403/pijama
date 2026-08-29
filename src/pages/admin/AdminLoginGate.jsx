@@ -57,10 +57,25 @@ export default function AdminLoginGate({ children }) {
         border: '1px solid #D4AF37', boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
         borderRadius: '4px',
       }}>
-        <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '22px', marginBottom: '6px', color: '#631521', fontWeight: 'bold' }}>
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <img
+            src="/images/logo.jpg"
+            alt="QuanNguyenS Logo"
+            style={{
+              width: '68px',
+              height: '68px',
+              borderRadius: '50%',
+              border: '2px solid #D4AF37',
+              objectFit: 'cover',
+              margin: '0 auto',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+            }}
+          />
+        </div>
+        <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '22px', marginBottom: '6px', color: '#631521', fontWeight: 'bold', textAlign: 'center' }}>
           QuanNguyenS Admin
         </h1>
-        <p style={{ fontSize: '13px', color: '#8C7E74', marginBottom: '24px', lineHeight: '1.5' }}>
+        <p style={{ fontSize: '13px', color: '#8C7E74', marginBottom: '24px', lineHeight: '1.5', textAlign: 'center' }}>
           Nhập mật khẩu quản trị để truy cập trang quản lý đơn hàng
         </p>
 

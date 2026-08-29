@@ -136,8 +136,12 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
             className="flex items-center gap-3 group focus:outline-none cursor-pointer"
             aria-label="QuanNguyenS — Trang chủ"
           >
-            <div className="w-8 h-8 rounded-full border border-[#D4AF37] flex items-center justify-center bg-[#4A0D17] text-[#D4AF37] font-serif font-bold text-sm tracking-tighter shadow-xs group-hover:scale-105 transition-transform">
-              QNS
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-[#D4AF37] shadow-sm shrink-0 group-hover:scale-105 group-hover:border-[#F5E1A4] group-hover:shadow-[0_0_14px_rgba(212,175,55,0.45)] transition-all">
+              <img
+                src="/images/logo.jpg"
+                alt="QuanNguyenS Monogram Logo"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="flex flex-col">
               <span className="font-serif text-lg sm:text-xl font-bold tracking-[0.18em] text-[#FAF8F5] uppercase group-hover:text-[#D4AF37] transition-colors">

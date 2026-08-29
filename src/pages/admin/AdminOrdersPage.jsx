@@ -239,16 +239,30 @@ export default function AdminOrdersPage() {
 
       {/* ── HEADER ──────────────────────────── */}
       <div style={{ marginBottom:'24px', display:'flex', justifyContent:'space-between', alignItems:'flex-end', flexWrap:'wrap', gap:'12px' }}>
-        <div>
-          <div style={{ fontSize:'11px', letterSpacing:'2px', textTransform:'uppercase', color:'#7A6E6E', fontWeight:600 }}>
-            HỆ THỐNG QUẢN LÝ
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <img
+            src="/images/logo.jpg"
+            alt="QuanNguyenS Logo"
+            style={{
+              width: '52px',
+              height: '52px',
+              borderRadius: '50%',
+              border: '2px solid #D4AF37',
+              objectFit: 'cover',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            }}
+          />
+          <div>
+            <div style={{ fontSize:'11px', letterSpacing:'2px', textTransform:'uppercase', color:'#7A6E6E', fontWeight:600 }}>
+              HỆ THỐNG QUẢN TRỊ QUANNGUYENS
+            </div>
+            <h1 style={{ fontFamily:'Georgia,serif', fontSize:'26px', fontWeight:600, margin:'2px 0 0', color:'#631521' }}>
+              Quản Lý Đơn Hàng
+            </h1>
+            <p style={{ color:'#7A6E6E', fontSize:'13px', marginTop:'3px' }}>
+              Tổng số: <strong>{total}</strong> đơn hàng · Lần cập nhật cuối: <span style={{ color:'#631521', fontWeight:600 }}>{lastUpdated}</span>
+            </p>
           </div>
-          <h1 style={{ fontFamily:'Georgia,serif', fontSize:'28px', fontWeight:600, margin:'4px 0 0', color:'#631521' }}>
-            Quản Lý Đơn Hàng
-          </h1>
-          <p style={{ color:'#7A6E6E', fontSize:'13px', marginTop:'4px' }}>
-            Tổng số: <strong>{total}</strong> đơn hàng · Lần cập nhật cuối: <span style={{ color:'#631521', fontWeight:600 }}>{lastUpdated}</span>
-          </p>
         </div>
         <button
           onClick={() => fetchOrders(true)}

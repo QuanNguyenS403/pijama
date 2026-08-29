@@ -45,8 +45,12 @@ export default function PolicyModal({ isOpen, onClose, initialPolicy = 'terms' }
           {/* Top Bar */}
           <div className="flex items-center justify-between px-6 py-4 bg-[#631521] text-white border-b border-[#D4AF37]/30 shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full border border-[#D4AF37] flex items-center justify-center bg-[#4A0D17] text-[#D4AF37] font-serif font-bold text-xs">
-                QNS
+              <div className="w-8 h-8 rounded-full overflow-hidden border border-[#D4AF37] shrink-0 shadow-sm">
+                <img
+                  src="/images/logo.jpg"
+                  alt="QuanNguyenS Logo"
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div>
                 <span className="font-serif text-base sm:text-lg font-bold tracking-wider text-[#FAF8F5] uppercase block">

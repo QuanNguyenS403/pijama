@@ -1,5 +1,5 @@
 # 🔒 TÀI LIỆU KHÓA DỮ LIỆU HỆ THỐNG — QuanNguyenS
-*Cập nhật lần cuối: 28/08/2026*
+*Cập nhật lần cuối: 29/08/2026*
 
 ---
 
@@ -18,7 +18,11 @@
 
 ### 1. Catalog Sản Phẩm, Giá Bán & Tồn Kho Gốc
 - **File:** `src/data/products.js`
-- **Lý do khóa:** Đã chốt chính xác 3 sản phẩm chủ đạo (THE DAYBREAK SET, THE NOCTURNE SET, THE BOTANICA SET), giá niêm yết (390.000đ / 450.000đ), giá gốc, tỷ lệ giảm giá, bảng size (S/M), bảng màu và tồn kho ban đầu theo từng biến thể.
+- **Lý do khóa:** Đã chốt chính xác 3 sản phẩm chủ đạo trong BST Thu Đông 2026:
+  1. **THE DAYBREAK SET** (`the-classic-set` · Sọc Hồng · Hành Hỏa) — Giá niêm yết: 390.000đ (Gốc 490.000đ, Giảm 20%)
+  2. **THE STILLWATER SET** (`the-cafe-look` · Caro Navy · Hành Thủy) — Giá niêm yết: 550.000đ
+  3. **THE HEARTH SET** (`the-evening-edit` · Sọc Nâu · Hành Thổ) — Giá niêm yết: 750.000đ
+  Kèm theo thông số bảng size chuẩn hóa (S/M), mã màu swatch, cấu trúc thư viện ảnh `.jpg` và dữ liệu tồn kho khởi tạo.
 
 ### 2. Thông Số Kỹ Thuật & Bảng Màu In Vải Xưởng Sản Xuất
 - **Tham chiếu:** `TAI-LIEU-KY-THUAT-IN-VAI_QuanNguyenS.pdf`

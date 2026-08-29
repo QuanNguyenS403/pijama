@@ -643,9 +643,11 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[10px] text-[#8C7E74]">
-                      QNS
-                    </div>
+                    <img
+                      src="/images/logo.jpg"
+                      alt="QuanNguyenS Logo"
+                      className="w-full h-full object-cover opacity-80"
+                    />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
