@@ -48,7 +48,7 @@ export default function AdminLoginGate({ children }) {
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center',
       justifyContent: 'center', background: '#2C201A',
-      fontFamily: 'DM Sans, Arial, sans-serif',
+      fontFamily: 'Inter, Arial, sans-serif',
       padding: '20px',
       color: '#1A1614',
     }}>
@@ -96,7 +96,7 @@ export default function AdminLoginGate({ children }) {
               boxSizing: 'border-box',
               color: '#000000',
               backgroundColor: '#FFFFFF',
-              fontFamily: 'DM Sans, Arial, sans-serif',
+              fontFamily: 'Inter, Arial, sans-serif',
               fontWeight: 600,
               letterSpacing: showPassword ? 'normal' : '2px',
             }}

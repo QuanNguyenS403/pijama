@@ -224,7 +224,7 @@ export default function AdminOrdersPage() {
         fontWeight:    600,
         cursor:        actionLoading ? 'not-allowed' : 'pointer',
         letterSpacing: '0.5px',
-        fontFamily:    'DM Sans, Arial, sans-serif',
+        fontFamily:    'Inter, Arial, sans-serif',
         borderRadius:  '2px',
         opacity:       actionLoading ? 0.6 : 1,
         transition:    'opacity 0.2s',
@@ -235,7 +235,7 @@ export default function AdminOrdersPage() {
   )
 
   return (
-    <div style={{ padding:'24px', fontFamily:'DM Sans, Arial, sans-serif', color:'#3A3535', minHeight:'100vh', background:'#FAF8F5' }}>
+    <div style={{ padding:'24px', fontFamily:'Inter, Arial, sans-serif', color:'#3A3535', minHeight:'100vh', background:'#FAF8F5' }}>
 
       {/* ── HEADER ──────────────────────────── */}
       <div style={{ marginBottom:'24px', display:'flex', justifyContent:'space-between', alignItems:'flex-end', flexWrap:'wrap', gap:'12px' }}>
@@ -504,7 +504,7 @@ export default function AdminOrdersPage() {
         }}>
           <div style={{
             background:'#fff', padding:'32px', width:'440px', maxWidth:'95vw',
-            fontFamily:'DM Sans, Arial, sans-serif',
+            fontFamily:'Inter, Arial, sans-serif',
             boxShadow:'0 20px 40px rgba(0,0,0,0.2)',
             borderRadius:'4px',
           }}>
@@ -623,7 +623,7 @@ export default function AdminOrdersPage() {
           <div style={{
             background:'#fff', padding:'28px', width:'560px', maxWidth:'95vw',
             maxHeight:'85vh', overflowY:'auto',
-            fontFamily:'DM Sans, Arial, sans-serif',
+            fontFamily:'Inter, Arial, sans-serif',
             boxShadow:'0 20px 40px rgba(0,0,0,0.2)',
             borderRadius:'4px',
           }} onClick={e => e.stopPropagation()}>
@@ -737,7 +737,7 @@ export default function AdminOrdersPage() {
 const inputStyle = {
   padding:'8px 12px', fontSize:'13px',
   border:'1px solid #D9CFC4', outline:'none',
-  fontFamily:'DM Sans, Arial, sans-serif',
+  fontFamily:'Inter, Arial, sans-serif',
   minWidth:'160px',
   borderRadius:'2px',
 }
@@ -746,11 +746,11 @@ const btnStyle = {
   border:'none', padding:'8px 16px',
   fontSize:'12px', fontWeight:600,
   letterSpacing:'0.5px', cursor:'pointer',
-  fontFamily:'DM Sans, Arial, sans-serif',
+  fontFamily:'Inter, Arial, sans-serif',
   textTransform:'uppercase',
   borderRadius:'2px',
 }
 const modalTitle    = { fontFamily:'Georgia,serif', fontSize:'20px', marginBottom:'10px', color:'#631521' }
 const modalDesc     = { fontSize:'13px', color:'#5A5050', lineHeight:1.7, marginBottom:'16px' }
-const textareaStyle = { width:'100%', padding:'10px 12px', fontSize:'13px', border:'1px solid #D9CFC4', resize:'vertical', fontFamily:'DM Sans, Arial, sans-serif', marginBottom:'16px', boxSizing:'border-box', borderRadius:'2px' }
+const textareaStyle = { width:'100%', padding:'10px 12px', fontSize:'13px', border:'1px solid #D9CFC4', resize:'vertical', fontFamily:'Inter, Arial, sans-serif', marginBottom:'16px', boxSizing:'border-box', borderRadius:'2px' }
 const modalActions  = { display:'flex', gap:'10px' }

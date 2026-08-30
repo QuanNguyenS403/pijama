@@ -9,7 +9,7 @@ const vnd = (n) => Number(n).toLocaleString('vi-VN') + 'đ'
 const baseStyles = `
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:'DM Sans',Arial,sans-serif; background:#F5F0E8; color:#3A3535; }
+  body { font-family:'Inter',Arial,sans-serif; background:#F5F0E8; color:#3A3535; }
   .wrap { max-width:600px; margin:20px auto; background:#fff; border:1px solid #D9CFC4; }
   .header { background:#7B2D3E; padding:28px 40px; text-align:center; }
   .logo   { font-family:Georgia,serif; font-size:26px; font-weight:bold; color:#F5F0E8; letter-spacing:3px; }
