@@ -54,6 +54,28 @@
       "priceRange": "390.000đ - 750.000đ"
     }
     </script>
+
+    <!-- UTM Campaign Attribution Tracking -->
+    <script>
+      (function() {
+        try {
+          var params = new URLSearchParams(window.location.search);
+          var utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+          var hasUtm = false;
+          var utmData = {};
+          utmKeys.forEach(function(key) {
+            if (params.has(key)) {
+              utmData[key] = params.get(key);
+              hasUtm = true;
+            }
+          });
+          if (hasUtm) {
+            utmData.capturedAt = new Date().toISOString();
+            sessionStorage.setItem('pijama_utm', JSON.stringify(utmData));
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body class="bg-[#2C201A] text-white antialiased selection:bg-[#D4AF37] selection:text-[#2C201A]">
     <div id="root"></div>

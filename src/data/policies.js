@@ -18,7 +18,7 @@ export const policiesData = {
         content: [
           'Được kiểm tra hàng (đồng kiểm) trước khi thanh toán đối với mọi đơn hàng ship COD trên toàn quốc',
           'Được hỗ trợ tư vấn chọn size, chọn mẫu phù hợp 24/7 qua Hotline/Zalo hoặc kênh mạng xã hội chính thức',
-          'Hưởng trọn vẹn chính sách đổi trả 30 ngày miễn phí tận nhà theo quy định của QuanNguyenS',
+          'Hưởng trọn vẹn chính sách đổi trả 30 ngày theo quy định của QuanNguyenS',
           'Cung cấp chính xác thông tin giao hàng (họ tên, số điện thoại, địa chỉ) để đảm bảo tiến độ vận chuyển chính xác'
         ]
       },
@@ -88,7 +88,7 @@ export const policiesData = {
   return: {
     id: 'return',
     title: 'Chính Sách Đổi Trả',
-    subtitle: 'Đổi trả miễn phí 30 ngày tận nhà — Trải nghiệm mua sắm an tâm tuyệt đối',
+    subtitle: 'Chính sách đổi trả 30 ngày an tâm — Trải nghiệm mua sắm tiện lợi',
     lastUpdated: 'Áp dụng cho toàn bộ sản phẩm QuanNguyenS',
     sections: [
       {
@@ -96,7 +96,7 @@ export const policiesData = {
         content: [
           'Thời gian đổi trả: Trong vòng 30 ngày kể từ ngày quý khách nhận được hàng thành công',
           'Phạm vi áp dụng: Toàn bộ sản phẩm pijama mua tại website hoặc các kênh chính thức của QuanNguyenS',
-          'Hỗ trợ đổi size hoặc đổi sang mẫu khác 01 lần hoàn toàn MIỄN PHÍ tiền ship cả 2 chiều'
+          'Hỗ trợ đổi size hoặc đổi sang mẫu khác 01 lần cho sản phẩm còn nguyên tem mác'
         ]
       },
       {
@@ -115,11 +115,11 @@ export const policiesData = {
         ]
       },
       {
-        heading: '4. Quy trình Đổi trả 3 Bước Đơn giản Tận nhà',
+        heading: '4. Quy trình Đổi hàng Đơn giản',
         content: [
           'Bước 1: Liên hệ với QuanNguyenS qua Hotline/Zalo 0981 753 082 hoặc fanpage chính thức để thông báo yêu cầu đổi hàng',
-          'Bước 2: Chuyên viên CSKH xác nhận size/mẫu mới và tạo đơn giao đổi hàng tận nơi cho quý khách',
-          'Bước 3: Shipper mang sản phẩm mới đến và nhận lại sản phẩm cũ tại nhà quý khách — quý khách không cần phải mang ra bưu cục'
+          'Bước 2: Đóng gói sản phẩm còn nguyên tem mác vào hộp và gửi về địa chỉ kho QuanNguyenS (Amber Riverside, 622 Minh Khai, Hà Nội)',
+          'Bước 3: Sau khi tiếp nhận và kiểm tra tình trạng sản phẩm, QuanNguyenS sẽ gửi lại ngay sản phẩm size/mẫu mới cho quý khách'
         ]
       }
     ]

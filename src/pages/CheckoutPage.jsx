@@ -152,7 +152,7 @@ export default function CheckoutPage() {
       // 2. Gửi đơn hàng lên hệ thống (Google Sheets + Gmail)
       const result = await submitOrder(orderPayload)
 
-      if (result.success) {
+      if (result && result.success && !result.isOfflineFallback) {
         // Lưu đơn hàng vừa tạo vào session storage & localStorage
         try {
           sessionStorage.setItem('latest_order', JSON.stringify(orderPayload))
@@ -178,7 +178,11 @@ export default function CheckoutPage() {
           })
         }
       } else {
-        throw new Error(result.message || 'Không thể ghi nhận đơn hàng')
+        throw new Error(
+          result?.error ||
+          result?.message ||
+          'Không thể kết nối đến máy chủ xử lý đơn hàng. Vui lòng thử lại hoặc liên hệ Hotline: 0981 753 082.'
+        )
       }
     } catch (err) {
       console.error('Checkout error:', err)

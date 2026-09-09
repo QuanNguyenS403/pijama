@@ -59,11 +59,13 @@ export async function submitOrder(orderPayload) {
     }
 
     return {
-      success: true,
+      success: false,
       orderId: orderPayload.orderId,
-      message: 'Đơn hàng đã được ghi nhận thành công',
+      error: error.message || 'Không thể kết nối đến máy chủ xử lý đơn hàng.',
+      message: 'Không thể kết nối đến máy chủ xử lý đơn hàng. Vui lòng thử lại hoặc gọi Hotline 0981 753 082.',
       order: orderPayload,
       isOfflineFallback: true,
     }
   }
 }
+

@@ -56,7 +56,6 @@ export function broadcastOrderUpdate(order) {
     carrier: order.carrier || '',
     cancelReason: order.cancelReason || '',
     adminNote: order.adminNote || '',
-    order,
     updatedAt: new Date().toISOString(),
   })
 

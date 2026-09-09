@@ -164,8 +164,15 @@ export const createOrderPayload = (formData, cartItems, cartSummary) => {
     // ── GHI CHÚ ──────────────────────────────────────────
     note: formData.note ? formData.note.trim() : "",
 
-    // ── META ─────────────────────────────────────────────
+    // ── META & ATTRIBUTION ──────────────────────────────
     source: "website",
     userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'browser',
+    utm: (() => {
+      try {
+        return JSON.parse(sessionStorage.getItem('pijama_utm') || '{}')
+      } catch {
+        return {}
+      }
+    })(),
   }
 }

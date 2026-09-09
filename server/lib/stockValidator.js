@@ -44,6 +44,12 @@ export function validateOrderStock(order) {
 
     if (!catalogProduct) continue
 
+    // Sản phẩm đặt trước (Pre-order) được phép đặt hàng theo thời gian giao 7-10 ngày mà không bị chặn tồn kho cứng
+    const isPreOrder = !!(catalogProduct.preOrder?.enabled || item.isPreOrder)
+    if (isPreOrder) {
+      continue
+    }
+
     const colorName = String(item.color?.name || item.color || '').trim()
     const size = String(item.size || '').trim()
     const reqQty = parseInt(item.quantity, 10) || 1

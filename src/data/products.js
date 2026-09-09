@@ -91,7 +91,7 @@ Họa tiết Sọc Hồng (Pink Stripe) biểu trưng cho năng lượng Hỏa �
       "Ủi nhiệt độ thấp nếu cần",
     ],
 
-    returnPolicy: "Đổi trả miễn phí trong 30 ngày kể từ ngày nhận hàng — Sản phẩm còn nguyên tag và chưa qua sử dụng — Hỗ trợ đổi size tận nhà — Liên hệ hotline 0981 753 082 để được hỗ trợ",
+    returnPolicy: "Đổi trả miễn phí trong 30 ngày kể từ ngày nhận hàng — Sản phẩm còn nguyên tag và chưa qua sử dụng — Liên hệ hotline 0981 753 082 để được hỗ trợ",
 
     highlights: [
       "Họa tiết Sọc Hồng năng lượng Hỏa — ấm áp, dịu dàng, tràn đầy sinh khí như nắng sớm",
@@ -175,14 +175,14 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
         hex: "#222636",
         patternPreview: true,
         patternType: "plaid",
-        stock: { S: 8, M: 10 },
+        stock: { M: 50, L: 50 },
       },
     ],
 
-    sizes: ['S', 'M'],
+    sizes: ['M', 'L'],
     sizeGuide: {
-      S:  { weight: '40–49 kg', height: '150–160 cm', chest: '82–86 cm', waist: '64–69 cm', trouserLength: '91 cm', sleeveLength: '53 cm' },
       M:  { weight: '50–57 kg', height: '158–165 cm', chest: '87–92 cm', waist: '70–75 cm', trouserLength: '93 cm', sleeveLength: '54 cm' },
+      L:  { weight: '58–66 kg', height: '162–172 cm', chest: '93–98 cm', waist: '76–82 cm', trouserLength: '95 cm', sleeveLength: '55 cm' },
     },
     fabric: '95% Modal Sợi Gỗ Tự Nhiên & 5% Spandex Cao Cấp',
     fabricDetail: 'Định lượng 180 GSM · Xử lý vi sinh xoa mềm bề mặt · Cảm giác mướt mát, chống nhăn tự nhiên',
@@ -194,7 +194,7 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
       'Không sấy máy — để vải giữ form tự nhiên',
       'Ủi ở nhiệt độ thấp nếu cần — vải sẽ tự rũ đẹp khi mặc',
     ],
-    returnPolicy: 'Đổi trả miễn phí trong 30 ngày kể từ ngày nhận hàng — Sản phẩm còn nguyên tag và chưa qua sử dụng — Hỗ trợ đổi size tận nhà — Liên hệ hotline 0981 753 082 để được hỗ trợ',
+    returnPolicy: 'Đổi trả miễn phí trong 30 ngày kể từ ngày nhận hàng — Sản phẩm còn nguyên tag và chưa qua sử dụng — Liên hệ hotline 0981 753 082 để được hỗ trợ',
     highlights: [
       'Họa tiết Caro Navy năng lượng Thủy — tĩnh tại, sâu lắng, mang lại cảm giác an yên như mặt nước lặng',
       'Cổ V thanh lịch, viền tương phản nổi bật tôn dáng cổ và xương quai xanh',
@@ -210,6 +210,11 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
     subtitle: 'Pijama Wide-Leg Cao Cấp · Sọc Nâu Vững Chãi',
     collection: 'Thu Đông 2026',
     badge: 'PHIÊN BẢN GIỚI HẠN',
+    preOrder: {
+      enabled: true,
+      leadTimeDays: [7, 10],
+      message: 'Hàng đặt trước — Giao hàng dự kiến trong 7-10 ngày làm việc',
+    },
 
     description: 'Dáng wide-leg sang trọng kết hợp họa tiết Sọc Nâu mocha ấm áp — mang năng lượng Thổ vững chãi, nuôi dưỡng và vỗ về cảm xúc. Phiên bản giới hạn dành cho những khoảnh khắc thư giãn đỉnh cao và bữa tối ấm cúng cuối ngày.',
 
@@ -282,7 +287,7 @@ Họa tiết Sọc Nâu mocha (Brown Stripe) đại diện cho năng lượng h�
       'Không sấy khô',
       'Ủi nhiệt độ thấp nhất',
     ],
-    returnPolicy: 'Đổi trả miễn phí trong 30 ngày kể từ ngày nhận hàng — Sản phẩm còn nguyên tag và chưa qua sử dụng — Hỗ trợ đổi size tận nhà — Liên hệ hotline 0981 753 082 để được hỗ trợ',
+    returnPolicy: 'Đổi trả miễn phí trong 30 ngày kể từ ngày nhận hàng — Sản phẩm còn nguyên tag và chưa qua sử dụng — Liên hệ hotline 0981 753 082 để được hỗ trợ',
     highlights: [
       'Họa tiết Sọc Nâu năng lượng Thổ — vững chãi, ấm áp, mang lại cảm giác bình yên như trở về nhà',
       'Chất vải Tencel thượng hạng — độ rủ thướt tha, mềm mướt và thoáng khí vượt trội',
