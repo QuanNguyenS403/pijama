@@ -3,6 +3,7 @@
 // Route: /admin/orders
 
 import { useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { broadcastOrderUpdateClient } from '../../lib/orderSync'
 
 // ── Status config ─────────────────────────────────
@@ -264,32 +265,54 @@ export default function AdminOrdersPage() {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => fetchOrders(true)}
-          disabled={isRefreshing || loading}
-          title="Click để tải lại danh sách đơn hàng mới nhất từ máy chủ"
-          style={{
-            ...btnStyle,
-            background: '#631521',
-            padding: '10px 18px',
-            fontSize: '12px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            cursor: (isRefreshing || loading) ? 'not-allowed' : 'pointer',
-            opacity: (isRefreshing || loading) ? 0.7 : 1,
-            boxShadow: '0 2px 4px rgba(99,21,33,0.15)',
-          }}
-        >
-          <span style={{
-            display: 'inline-block',
-            transition: 'transform 0.5s linear',
-            transform: isRefreshing ? 'rotate(360deg)' : 'none',
-          }}>
-            🔄
-          </span>
-          <span>{isRefreshing ? 'Đang cập nhật...' : 'Làm mới dữ liệu'}</span>
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <Link
+            to="/admin/broadcast"
+            title="Soạn và gửi thông báo email hàng loạt cho khách hàng"
+            style={{
+              ...btnStyle,
+              background: '#FAF8F5',
+              color: '#631521',
+              border: '1px solid #D4AF37',
+              padding: '10px 16px',
+              fontSize: '12px',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontWeight: 600,
+              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+            }}
+          >
+            <span>📢 Gửi Broadcast</span>
+          </Link>
+          <button
+            onClick={() => fetchOrders(true)}
+            disabled={isRefreshing || loading}
+            title="Click để tải lại danh sách đơn hàng mới nhất từ máy chủ"
+            style={{
+              ...btnStyle,
+              background: '#631521',
+              padding: '10px 18px',
+              fontSize: '12px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: (isRefreshing || loading) ? 'not-allowed' : 'pointer',
+              opacity: (isRefreshing || loading) ? 0.7 : 1,
+              boxShadow: '0 2px 4px rgba(99,21,33,0.15)',
+            }}
+          >
+            <span style={{
+              display: 'inline-block',
+              transition: 'transform 0.5s linear',
+              transform: isRefreshing ? 'rotate(360deg)' : 'none',
+            }}>
+              🔄
+            </span>
+            <span>{isRefreshing ? 'Đang cập nhật...' : 'Làm mới dữ liệu'}</span>
+          </button>
+        </div>
       </div>
 
       {/* ── BANNER LỖI NẾU CÓ ─────────────────── */}

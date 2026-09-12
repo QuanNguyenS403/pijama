@@ -12,6 +12,7 @@ import { handlePaymentWebhook, getOrderPaymentStatus } from './lib/paymentWebhoo
 import { createRateLimiter } from './lib/rateLimiter.js'
 import { addSseClient } from './lib/orderEvents.js'
 import { verifyAdminLogin, adminLoginLimiter } from './lib/adminAuth.js'
+import { registerAuthEndpoints } from './lib/authEndpoints.js'
 
 // Load environment variables from .env or .env.local
 dotenv.config({ path: '.env.local' })
@@ -363,6 +364,9 @@ app.patch('/api/admin/orders/:orderId', async (req, res) => {
     return res.status(500).json({ success: false, error: err.message })
   }
 })
+
+// ── 10. Hệ Thống Tài Khoản Khách Hàng, Voucher & Broadcast ──────
+registerAuthEndpoints(app)
 
 // ── P1-2: Phục vụ Frontend SPA trong môi trường Production ─────
 const distPath = path.resolve(__dirname, '../dist')

@@ -25,6 +25,7 @@
   "homepage": "https://github.com/QuanNguyenS403/pijama#readme",
   "dependencies": {
     "@fontsource/be-vietnam-pro": "^5.3.0",
+    "better-sqlite3": "^13.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.19.2",

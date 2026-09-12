@@ -76,6 +76,21 @@
         } catch (e) {}
       })();
     </script>
+    <!-- Google Identity Services (cho Google OAuth login / tài khoản khách hàng) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <!-- Facebook SDK (cho Facebook Login / tài khoản khách hàng) -->
+    <script>
+      window.fbAsyncInit = function() {
+        // App ID sẽ được set bởi AccountPromptBanner sau khi fetch /api/auth/config
+        var appId = window._fbAppId || '';
+        if (appId) {
+          FB.init({ appId: appId, cookie: true, xfbml: false, version: 'v19.0' });
+        }
+        window._fbSdkReady = true;
+      };
+    </script>
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/vi_VN/sdk.js"></script>
   </head>
   <body class="bg-[#2C201A] text-white antialiased selection:bg-[#D4AF37] selection:text-[#2C201A]">
     <div id="root"></div>

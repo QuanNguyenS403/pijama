@@ -4,6 +4,7 @@ import { sendOwnerEmail } from './lib/emailOwner.js'
 import { orderPaymentStore } from './lib/paymentWebhook.js'
 import { validateOrderPricing } from './lib/pricingValidator.js'
 import { validateOrderStock } from './lib/stockValidator.js'
+import { redeemVoucher } from './lib/voucherValidator.js'
 
 /**
  * Controller xử lý submit đơn hàng:
@@ -65,6 +66,7 @@ export async function handleOrderSubmit(order) {
     subtotal: validatedSummary.subtotal,
     shippingFee: validatedSummary.shippingFee,
     discount: validatedSummary.discount,
+    voucherCode: validatedSummary.voucherCode || order.voucherCode || null,
     total: validatedSummary.total,
     status: isBankTransfer ? 'AWAITING_PAYMENT' : 'PENDING',
     payment: {
@@ -86,8 +88,16 @@ export async function handleOrderSubmit(order) {
   console.log(`\n📦 [ORDER VALIDATED] Đang tiếp nhận đơn hàng: ${order.orderId}`)
   console.log(`👤 Khách hàng: ${order.customer?.fullName} (${order.customer?.phone} | ${order.customer?.email})`)
   console.log(`💰 Tổng tiền xác thực: ${orderRecord.total}đ (Tạm tính: ${orderRecord.subtotal}đ, Giảm: ${orderRecord.discount}đ, Ship: ${orderRecord.shippingFee}đ) | Phương thức: ${order.payment?.methodLabel || order.payment?.method}`)
+  if (orderRecord.voucherCode) {
+    console.log(`🎟️ Áp dụng voucher: ${orderRecord.voucherCode}`)
+  }
 
   orderPaymentStore.set(order.orderId, orderRecord)
+
+  // Khóa voucher ngay lập tức khi đơn hàng đã được tiếp nhận thành công
+  if (orderRecord.voucherCode) {
+    redeemVoucher(orderRecord.voucherCode, order.orderId)
+  }
 
   if (isBankTransfer) {
     // ── LUỒNG CHUYỂN KHOẢN NGÂN HÀNG (VIETQR) ─────────────────

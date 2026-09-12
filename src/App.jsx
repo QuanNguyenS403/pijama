@@ -10,7 +10,9 @@ const CheckoutPage = lazy(() => import('./pages/CheckoutPage'))
 const BankTransferPaymentPage = lazy(() => import('./pages/BankTransferPaymentPage'))
 const OrderSuccessPage = lazy(() => import('./pages/OrderSuccessPage'))
 const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage'))
+const AdminBroadcastPage = lazy(() => import('./pages/admin/AdminBroadcastPage'))
 const AdminLoginGate = lazy(() => import('./pages/admin/AdminLoginGate'))
+import AccountPromptBanner from './components/ui/AccountPromptBanner'
 
 function PageFallback() {
   return (
@@ -36,6 +38,7 @@ export default function App() {
   return (
     <>
       <ScrollToTop />
+      <AccountPromptBanner />
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
@@ -45,6 +48,7 @@ export default function App() {
           <Route path="/thanh-toan-chuyen-khoan" element={<BankTransferPaymentPage />} />
           <Route path="/dat-hang-thanh-cong" element={<OrderSuccessPage />} />
           <Route path="/admin/orders" element={<AdminLoginGate><AdminOrdersPage /></AdminLoginGate>} />
+          <Route path="/admin/broadcast" element={<AdminLoginGate><AdminBroadcastPage /></AdminLoginGate>} />
           {/* Fallback */}
           <Route path="*" element={<LandingPage />} />
         </Routes>

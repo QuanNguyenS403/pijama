@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import CartDrawer from '../components/cart/CartDrawer'
+import VoucherInput from '../components/cart/VoucherInput'
 import Section12Footer from '../components/sections/Section12Footer'
 import { useCart } from '../hooks/useCart'
 import { VIETNAM_PROVINCES } from '../data/provinces'
@@ -49,6 +50,26 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
+  const [customerAccount, setCustomerAccount] = useState(null)
+  const [appliedVoucher, setAppliedVoucher] = useState(null)
+
+  // Tự động điền thông tin nếu khách đã có tài khoản
+  useEffect(() => {
+    try {
+      const savedAcc = JSON.parse(localStorage.getItem('qns_customer_account') || 'null')
+      if (savedAcc) {
+        setCustomerAccount(savedAcc)
+        setFormData((prev) => ({
+          ...prev,
+          fullName: prev.fullName || savedAcc.fullName || '',
+          phone: prev.phone || savedAcc.phone || '',
+          email: prev.email || savedAcc.email || '',
+        }))
+      }
+    } catch {
+      // ignore
+    }
+  }, [])
 
   // Calculate 10% discount for bank transfer (VietQR) or e-wallet (MoMo)
   const isBankTransfer = formData.paymentMethod === 'BANK_TRANSFER' || formData.paymentMethod === 'MOMO'
@@ -56,10 +77,23 @@ export default function CheckoutPage() {
     return isBankTransfer ? Math.round(subtotal * 0.10) : 0
   }, [isBankTransfer, subtotal])
 
+  // Calculate voucher benefits (10% + Freeship)
+  const voucherDiscount = useMemo(() => {
+    if (!appliedVoucher) return 0
+    return Math.round(subtotal * (Number(appliedVoucher.discountPercent || 10) / 100))
+  }, [appliedVoucher, subtotal])
+
+  const effectiveShippingFee = useMemo(() => {
+    if (appliedVoucher?.freeShipping) return 0
+    return shippingFee
+  }, [appliedVoucher, shippingFee])
+
+  const totalDiscount = bankTransferDiscount + voucherDiscount
+
   // Calculated totals
   const total = useMemo(() => {
-    return Math.max(0, subtotal + shippingFee - bankTransferDiscount)
-  }, [subtotal, shippingFee, bankTransferDiscount])
+    return Math.max(0, subtotal + effectiveShippingFee - totalDiscount)
+  }, [subtotal, effectiveShippingFee, totalDiscount])
 
   // Handle Input Changes
   const handleInputChange = (field, value) => {
@@ -142,17 +176,30 @@ export default function CheckoutPage() {
         items,
         {
           subtotal,
-          shippingFee,
-          discount: bankTransferDiscount,
-          discountPercent: isBankTransfer ? 10 : 0,
+          shippingFee: effectiveShippingFee,
+          discount: totalDiscount,
+          discountPercent: (isBankTransfer ? 10 : 0) + (appliedVoucher ? appliedVoucher.discountPercent : 0),
+          voucherCode: appliedVoucher ? appliedVoucher.code : '',
           total,
         }
       )
+      if (customerAccount?.id) {
+        orderPayload.customer.accountId = customerAccount.id
+      }
 
       // 2. Gửi đơn hàng lên hệ thống (Google Sheets + Gmail)
       const result = await submitOrder(orderPayload)
 
       if (result && result.success && !result.isOfflineFallback) {
+        // Nếu đã dùng voucher, xóa voucher active trên máy để không gợi ý lại
+        if (appliedVoucher) {
+          try {
+            localStorage.removeItem('qns_active_voucher')
+          } catch {
+            // ignore
+          }
+        }
+
         // Lưu đơn hàng vừa tạo vào session storage & localStorage
         try {
           sessionStorage.setItem('latest_order', JSON.stringify(orderPayload))
@@ -628,6 +675,18 @@ export default function CheckoutPage() {
                     })}
                   </div>
 
+                  {/* Voucher Input */}
+                  <div className="pt-2 pb-2 border-t border-[#E8DFD5]">
+                    <span className="font-serif text-xs font-bold text-[#631521] uppercase tracking-wider block mb-1">
+                      Mã Ưu Đãi / Voucher
+                    </span>
+                    <VoucherInput
+                      onApply={(v) => setAppliedVoucher(v)}
+                      currentSubtotal={subtotal}
+                      accountId={customerAccount?.id}
+                    />
+                  </div>
+
                   {/* Price Calculations */}
                   <div className="space-y-2.5 pt-4 border-t border-[#E8DFD5] text-xs font-sans">
                     <div className="flex justify-between text-[#4A3F38]">
@@ -638,13 +697,28 @@ export default function CheckoutPage() {
                     <div className="flex justify-between text-[#4A3F38]">
                       <span>Phí vận chuyển</span>
                       <span>
-                        {shippingFee === 0 ? (
-                          <span className="text-[#2E7D32] font-semibold">Miễn phí</span>
+                        {effectiveShippingFee === 0 ? (
+                          <span className="text-[#2E7D32] font-semibold">
+                            Miễn phí {appliedVoucher?.freeShipping ? '(Voucher)' : ''}
+                          </span>
                         ) : (
-                          formatVND(shippingFee)
+                          formatVND(effectiveShippingFee)
                         )}
                       </span>
                     </div>
+
+                    {/* Voucher Discount Breakdown */}
+                    {voucherDiscount > 0 && (
+                      <div className="flex justify-between items-center bg-[#FAF5F0] px-2.5 py-1.5 rounded-[2px] border border-[#D4AF37]/50 text-[#631521]">
+                        <span className="font-medium flex items-center gap-1">
+                          <Gift className="w-3.5 h-3.5" />
+                          Ưu đãi Voucher ({appliedVoucher?.code || 'WELCOME'})
+                        </span>
+                        <span className="font-serif font-bold text-sm">
+                          -{formatVND(voucherDiscount)}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Bank Transfer 10% Discount Breakdown */}
                     {bankTransferDiscount > 0 && (

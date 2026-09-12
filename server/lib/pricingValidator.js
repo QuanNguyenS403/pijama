@@ -1,6 +1,7 @@
 // 🔒 DỮ LIỆU ĐÃ KHOÁ — xem PROTECTED-DATA.md trước khi sửa file này.
 // Chỉ chỉnh sửa khi có yêu cầu rõ ràng, cụ thể nhắm đúng vào nội dung file này.
 import { products } from '../../src/data/products.js'
+import { validateVoucher } from './voucherValidator.js'
 
 /**
  * Server-side Pricing Validator:
@@ -65,22 +66,51 @@ export function validateOrderPricing(order) {
     })
   }
 
-  // 2. Tính phí vận chuyển (Freeship từ 500.000đ, dưới 500.000đ phí 30.000đ)
-  const calculatedShippingFee = calculatedSubtotal >= 500000 ? 0 : 30000
+  // 2. Kiểm tra Voucher (nếu khách có áp dụng mã ưu đãi)
+  let voucherDiscount = 0
+  let isFreeShippingFromVoucher = false
+  let validatedVoucherData = null
 
-  // 3. Tính giảm giá theo phương thức thanh toán
-  const paymentMethod = order.payment?.method || 'COD'
-  let calculatedDiscount = 0
+  if (order.voucherCode && String(order.voucherCode).trim()) {
+    const voucherRes = validateVoucher(order.voucherCode, {
+      accountId: order.customer?.accountId,
+      subtotal: calculatedSubtotal,
+    })
 
-  if (paymentMethod === 'BANK_TRANSFER') {
-    // Giảm 10% trực tiếp trên tạm tính
-    calculatedDiscount = Math.round(calculatedSubtotal * 0.10)
+    if (!voucherRes.isValid) {
+      return {
+        isValid: false,
+        error: voucherRes.error || 'Mã ưu đãi không hợp lệ hoặc đã được sử dụng',
+      }
+    }
+
+    validatedVoucherData = voucherRes.voucher
+    const discountPercent = Number(validatedVoucherData.discountPercent) || 0
+    voucherDiscount = Math.round(calculatedSubtotal * (discountPercent / 100))
+    isFreeShippingFromVoucher = Boolean(validatedVoucherData.freeShipping)
   }
 
-  // 4. Tính tổng thanh toán cuối cùng
+  // 3. Tính phí vận chuyển (Freeship từ 500.000đ, hoặc có Voucher Freeship, dưới 500.000đ phí 30.000đ)
+  let calculatedShippingFee = calculatedSubtotal >= 500000 ? 0 : 30000
+  if (isFreeShippingFromVoucher) {
+    calculatedShippingFee = 0
+  }
+
+  // 4. Tính giảm giá theo phương thức thanh toán & Voucher
+  const paymentMethod = order.payment?.method || 'COD'
+  let bankTransferDiscount = 0
+
+  if (paymentMethod === 'BANK_TRANSFER') {
+    // Giảm 10% trực tiếp trên tạm tính cho chuyển khoản VietQR
+    bankTransferDiscount = Math.round(calculatedSubtotal * 0.10)
+  }
+
+  const calculatedDiscount = bankTransferDiscount + voucherDiscount
+
+  // 5. Tính tổng thanh toán cuối cùng
   const calculatedTotal = Math.max(0, calculatedSubtotal + calculatedShippingFee - calculatedDiscount)
 
-  // 5. Đối chiếu subtotal và total client gửi lên
+  // 6. Đối chiếu subtotal và total client gửi lên
   const clientSubtotal = Number(order.subtotal)
   const clientTotal = Number(order.total)
 
@@ -104,6 +134,9 @@ export function validateOrderPricing(order) {
       subtotal: calculatedSubtotal,
       shippingFee: calculatedShippingFee,
       discount: calculatedDiscount,
+      bankTransferDiscount,
+      voucherDiscount,
+      voucherCode: validatedVoucherData ? validatedVoucherData.code : null,
       total: calculatedTotal,
       items: validatedItems,
     },

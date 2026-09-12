@@ -10,4 +10,7 @@ dist/
 !package-lock.json
 !tsconfig.json
 _archive/
-
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
