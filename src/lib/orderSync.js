@@ -161,13 +161,21 @@ export function initOrderSync() {
   }
 
   // 2. Kết nối Server-Sent Events (SSE) để nhận sự kiện real-time tức thì từ Admin
+  let sseRetryTimer = null
+  let sseErrorCount = 0
+
   const connectSSE = () => {
     try {
       if (eventSourceInstance) {
         eventSourceInstance.close()
+        eventSourceInstance = null
       }
 
       eventSourceInstance = new EventSource('/api/orders/events')
+
+      eventSourceInstance.onopen = () => {
+        sseErrorCount = 0
+      }
 
       eventSourceInstance.addEventListener('order_updated', (e) => {
         try {
@@ -181,7 +189,19 @@ export function initOrderSync() {
       })
 
       eventSourceInstance.onerror = () => {
-        // EventSource tự động reconnect theo retry time
+        sseErrorCount++
+        // Khi backend chưa chạy, ngắt SSE và thử lại sau 30 giây thay vì để trình duyệt retry liên tục mỗi 3 giây
+        if (sseErrorCount >= 2) {
+          if (eventSourceInstance) {
+            eventSourceInstance.close()
+            eventSourceInstance = null
+          }
+          if (sseRetryTimer) clearTimeout(sseRetryTimer)
+          sseRetryTimer = setTimeout(() => {
+            sseErrorCount = 0
+            connectSSE()
+          }, 30000)
+        }
       }
     } catch (sseErr) {
       console.warn('Không thể kết nối SSE:', sseErr.message)

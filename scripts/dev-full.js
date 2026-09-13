@@ -24,7 +24,7 @@ const backend = spawn(nodeCmd, ['server/index.js'], {
 })
 
 // 2. Khởi động Frontend Vite Dev Server (Port 3000)
-const frontend = spawn(npmCmd, ['run', 'dev', '--', '--port', '3000'], {
+const frontend = spawn(npmCmd, ['run', 'dev:client', '--', '--port', '3000'], {
   cwd: rootDir,
   stdio: 'inherit',
   shell: true,

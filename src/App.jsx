@@ -1,5 +1,5 @@
 import { useEffect, lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import ScrollToTop from './components/ui/ScrollToTop'
 import LandingPage from './pages/LandingPage'
 import { initOrderSync } from './lib/orderSync'
@@ -40,6 +40,8 @@ export default function App() {
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/thanh-toan-chuyen-khoan" element={<BankTransferPaymentPage />} />
           <Route path="/dat-hang-thanh-cong" element={<OrderSuccessPage />} />
+          <Route path="/admin" element={<Navigate to="/admin/orders" replace />} />
+          <Route path="/admin/login" element={<Navigate to="/admin/orders" replace />} />
           <Route path="/admin/orders" element={<AdminLoginGate><AdminOrdersPage /></AdminLoginGate>} />
           <Route path="/admin/broadcast" element={<AdminLoginGate><AdminBroadcastPage /></AdminLoginGate>} />
           {/* Fallback */}
