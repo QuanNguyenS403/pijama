@@ -41,6 +41,14 @@ export default function AdminOrdersPage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [toast, setToast]                 = useState(null)
 
+  const getAdminHeaders = () => {
+    const token = sessionStorage.getItem('qns_admin_token') || ''
+    return {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+    }
+  }
+
   // ── Fetch orders ────────────────────────────────
   const fetchOrders = useCallback(async (isManual = false) => {
     if (isManual) {
@@ -57,7 +65,15 @@ export default function AdminOrdersPage() {
         ...(filters.search  && { search:  filters.search  }),
         ...(filters.date    && { date:    filters.date    }),
       })
-      const res = await fetch(`/api/admin/orders?${q}`)
+      const res = await fetch(`/api/admin/orders?${q}`, {
+        headers: getAdminHeaders(),
+      })
+      if (res.status === 401) {
+        sessionStorage.removeItem('qns_admin_session')
+        sessionStorage.removeItem('qns_admin_token')
+        window.location.reload()
+        return
+      }
       if (!res.ok) {
         throw new Error(`Lỗi kết nối máy chủ (${res.status})`)
       }
@@ -85,9 +101,15 @@ export default function AdminOrdersPage() {
     try {
       const res = await fetch(`/api/admin/orders/${orderId}`, {
         method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body:    JSON.stringify({ action, ...extra }),
       })
+      if (res.status === 401) {
+        sessionStorage.removeItem('qns_admin_session')
+        sessionStorage.removeItem('qns_admin_token')
+        window.location.reload()
+        return
+      }
       const data = await res.json()
 
       if (!res.ok) throw new Error(data.error || 'Thao tác thất bại')

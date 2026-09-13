@@ -53,12 +53,28 @@ Nếu bạn có bất kỳ câu hỏi nào về bảng size hoặc chất liệu
   const [sendResult, setSendResult] = useState(null)
   const [error, setError] = useState(null)
 
+  const getAdminHeaders = () => {
+    const token = sessionStorage.getItem('qns_admin_token') || ''
+    return {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+    }
+  }
+
   // Tải thống kê
   const fetchStats = async () => {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/admin/broadcast/stats')
+      const res = await fetch('/api/admin/broadcast/stats', {
+        headers: getAdminHeaders(),
+      })
+      if (res.status === 401) {
+        sessionStorage.removeItem('qns_admin_session')
+        sessionStorage.removeItem('qns_admin_token')
+        window.location.reload()
+        return
+      }
       const data = await res.json()
       if (data.success) {
         setStats(data.stats || {})
@@ -77,11 +93,6 @@ Nếu bạn có bất kỳ câu hỏi nào về bảng size hoặc chất liệu
 
   // Xử lý gửi thông báo
   const handleSendBroadcast = async () => {
-    if (!adminPassword) {
-      setError('Vui lòng nhập mật khẩu quản trị để xác nhận gửi')
-      return
-    }
-
     setIsSending(true)
     setError(null)
     setSendResult(null)
@@ -95,14 +106,20 @@ Nếu bạn có bất kỳ câu hỏi nào về bảng size hoặc chất liệu
 
       const res = await fetch('/api/admin/broadcast', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify({
-          password: adminPassword,
           subject,
           contentHtml: htmlBody,
           broadcastType,
         }),
       })
+
+      if (res.status === 401) {
+        sessionStorage.removeItem('qns_admin_session')
+        sessionStorage.removeItem('qns_admin_token')
+        window.location.reload()
+        return
+      }
 
       const data = await res.json()
 

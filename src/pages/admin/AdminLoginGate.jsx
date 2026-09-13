@@ -11,7 +11,14 @@ export default function AdminLoginGate({ children }) {
 
   useEffect(() => {
     const session = sessionStorage.getItem(ADMIN_SESSION_KEY)
-    if (session === 'true') setIsAuthed(true)
+    const token = sessionStorage.getItem('qns_admin_token')
+    if (session === 'true' && token) {
+      setIsAuthed(true)
+    } else {
+      sessionStorage.removeItem(ADMIN_SESSION_KEY)
+      sessionStorage.removeItem('qns_admin_token')
+      setIsAuthed(false)
+    }
     setChecking(false)
   }, [])
 
@@ -30,7 +37,8 @@ export default function AdminLoginGate({ children }) {
         body: JSON.stringify({ password: cleanPassword }),
       })
       const data = await res.json()
-      if (data.success) {
+      if (data.success && data.token) {
+        sessionStorage.setItem('qns_admin_token', data.token)
         sessionStorage.setItem(ADMIN_SESSION_KEY, 'true')
         setIsAuthed(true)
       } else {

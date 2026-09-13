@@ -6,6 +6,10 @@ import SizeGuideModal from '../ui/SizeGuideModal'
 import { useCart } from '../../hooks/useCart'
 import { products } from '../../data/products'
 
+/**
+ * @deprecated [FE-007, ARCH-001] This component is not mounted in LandingPage or PDP.
+ * Preserved for historical reference; do not use as source of truth for pricing.
+ */
 export default function PricingSection({ onAddToCart }) {
   const [selectedTier, setSelectedTier] = useState('combo-2')
   const [selectedColor, setSelectedColor] = useState('Màu Ngà (Classic Ivory)')

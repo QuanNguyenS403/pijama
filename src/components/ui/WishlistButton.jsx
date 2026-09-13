@@ -7,8 +7,8 @@ export default function WishlistButton({
   size = 'default',
   className = '',
 }) {
-  // Key: product + selected color (each variant can be wishlisted separately)
-  const wishlistKey = `${productId}-${colorName}`
+  // Key: product + selected color (separated by :: to support IDs with hyphens)
+  const wishlistKey = `${productId}::${colorName}`
 
   const [isWishlisted, setIsWishlisted] = useState(() => {
     try {

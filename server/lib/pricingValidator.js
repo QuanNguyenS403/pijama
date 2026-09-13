@@ -36,13 +36,14 @@ export function validateOrderPricing(order) {
       }
     }
 
-    const quantity = parseInt(item.quantity, 10)
-    if (isNaN(quantity) || quantity <= 0) {
+    const rawQty = Number(item.quantity)
+    if (!Number.isInteger(rawQty) || rawQty <= 0) {
       return {
         isValid: false,
-        error: `Số lượng sản phẩm "${catalogProduct.name}" không hợp lệ (${item.quantity})`,
+        error: `Số lượng sản phẩm "${catalogProduct.name}" không hợp lệ (yêu cầu số nguyên dương, nhận: ${item.quantity})`,
       }
     }
+    const quantity = rawQty
 
     const officialUnitPrice = catalogProduct.price
     const officialTotalPrice = officialUnitPrice * quantity
@@ -96,10 +97,16 @@ export function validateOrderPricing(order) {
     calculatedShippingFee = 0
   }
 
-  // 4. Tính giảm giá theo phương thức thanh toán & Voucher
-  const paymentMethod = order.payment?.method || 'COD'
-  let bankTransferDiscount = 0
+  // 4. Validate enum Phương thức thanh toán (COM-001)
+  const paymentMethod = order.payment?.method
+  if (!paymentMethod || !['COD', 'BANK_TRANSFER'].includes(paymentMethod)) {
+    return {
+      isValid: false,
+      error: `Phương thức thanh toán không hợp lệ ("${paymentMethod}"). Chỉ chấp nhận COD hoặc BANK_TRANSFER.`,
+    }
+  }
 
+  let bankTransferDiscount = 0
   if (paymentMethod === 'BANK_TRANSFER') {
     // Giảm 10% trực tiếp trên tạm tính cho chuyển khoản VietQR
     bankTransferDiscount = Math.round(calculatedSubtotal * 0.10)
@@ -110,18 +117,18 @@ export function validateOrderPricing(order) {
   // 5. Tính tổng thanh toán cuối cùng
   const calculatedTotal = Math.max(0, calculatedSubtotal + calculatedShippingFee - calculatedDiscount)
 
-  // 6. Đối chiếu subtotal và total client gửi lên
+  // 6. Đối chiếu subtotal và total client gửi lên (PAY-005: Exact match 0đ tolerance)
   const clientSubtotal = Number(order.subtotal)
   const clientTotal = Number(order.total)
 
-  if (!isNaN(clientSubtotal) && Math.abs(clientSubtotal - calculatedSubtotal) > 100) {
+  if (!isNaN(clientSubtotal) && clientSubtotal !== calculatedSubtotal) {
     return {
       isValid: false,
       error: `Tạm tính không hợp lệ (Server: ${calculatedSubtotal}đ, Client: ${clientSubtotal}đ)`,
     }
   }
 
-  if (!isNaN(clientTotal) && Math.abs(clientTotal - calculatedTotal) > 100) {
+  if (!isNaN(clientTotal) && clientTotal !== calculatedTotal) {
     return {
       isValid: false,
       error: `Tổng thanh toán không hợp lệ (Server: ${calculatedTotal}đ, Client: ${clientTotal}đ)`,

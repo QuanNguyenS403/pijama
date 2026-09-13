@@ -5,15 +5,17 @@ import { orderPaymentStore } from './lib/paymentWebhook.js'
 import { validateOrderPricing } from './lib/pricingValidator.js'
 import { validateOrderStock } from './lib/stockValidator.js'
 import { redeemVoucher } from './lib/voucherValidator.js'
+import { generateTrackingToken } from './lib/orderTokenService.js'
 
 /**
  * Controller xử lý submit đơn hàng:
- * 1. Validate payload cơ bản
- * 2. Validate ĐƠN GIÁ & TỔNG TIỀN độc lập từ catalog server (P0-1)
- * 3. Validate TỒN KHO THỰC TẾ (P0-4)
- * 4. Phân loại luồng theo Phương thức thanh toán:
+ * 1. Idempotency check: Tránh duplicate orderId (COM-002 / G-18)
+ * 2. Validate payload cơ bản & schema
+ * 3. Validate ĐƠN GIÁ & TỔNG TIỀN độc lập từ catalog server (P0-1)
+ * 4. Validate TỒN KHO THỰC TẾ (P0-4 / INV-001)
+ * 5. Phân loại luồng theo Phương thức thanh toán:
  *    - COD: Ghi Sheet + Gửi Email xác nhận đặt hàng ngay lập tức.
- *    - BANK_TRANSFER / MOMO: Ghi Sheet ở trạng thái CHỜ THANH TOÁN, Lưu trữ mã QR 1 lần.
+ *    - BANK_TRANSFER: Ghi Sheet ở trạng thái CHỜ THANH TOÁN. Trạng thái payment ban đầu là AWAITING_PAYMENT.
  *      TUYỆT ĐỐI CHƯA gửi email xác nhận thanh toán cho đến khi tiền thực sự về tài khoản (qua Webhook có secret).
  */
 export async function handleOrderSubmit(order) {
@@ -24,6 +26,23 @@ export async function handleOrderSubmit(order) {
       data: {
         success: false,
         error: 'Dữ liệu đơn hàng không hợp lệ (thiếu mã đơn, email hoặc sản phẩm)',
+      },
+    }
+  }
+
+  // 1.1 Idempotency check: Nếu đơn hàng đã tồn tại trong store (COM-002 / G-18)
+  const existingOrder = orderPaymentStore.get(order.orderId)
+  if (existingOrder) {
+    console.log(`ℹ️ [IDEMPOTENCY] Đơn hàng ${order.orderId} đã tồn tại. Trả lại canonical response không lặp side-effects.`)
+    return {
+      status: 200,
+      data: {
+        success: true,
+        orderId: existingOrder.orderId,
+        status: existingOrder.status,
+        trackingToken: existingOrder.trackingToken || generateTrackingToken(existingOrder.orderId, existingOrder.customer?.phone),
+        message: 'Đơn hàng đã được tiếp nhận thành công.',
+        qrExpiresAt: existingOrder.payment?.qrExpiresAt,
       },
     }
   }
@@ -41,7 +60,7 @@ export async function handleOrderSubmit(order) {
     }
   }
 
-  // 3. Kiểm tra tồn kho khả dụng (P0-4)
+  // 3. Kiểm tra tồn kho khả dụng (P0-4 / INV-001)
   const stockCheck = validateOrderStock(order)
   if (!stockCheck.isValid) {
     console.warn(`⛔ [STOCK REJECTED] Đơn hàng ${order.orderId} bị từ chối: ${stockCheck.error}`)
@@ -60,6 +79,8 @@ export async function handleOrderSubmit(order) {
   // Gán lại các giá trị đã được server xác thực chuẩn xác 100%
   const validatedSummary = pricingCheck.summary
   const createdDate = order.createdAt || new Date().toISOString()
+  const trackingToken = generateTrackingToken(order.orderId, order.customer?.phone)
+
   const orderRecord = {
     ...order,
     items: validatedSummary.items,
@@ -69,9 +90,11 @@ export async function handleOrderSubmit(order) {
     voucherCode: validatedSummary.voucherCode || order.voucherCode || null,
     total: validatedSummary.total,
     status: isBankTransfer ? 'AWAITING_PAYMENT' : 'PENDING',
+    trackingToken,
     payment: {
       ...(order.payment || {}),
-      status: isBankTransfer ? 'PAID' : 'UNPAID',
+      method: isBankTransfer ? 'BANK_TRANSFER' : 'COD',
+      status: isBankTransfer ? 'AWAITING_PAYMENT' : 'UNPAID', // PAY-001: Ban đầu là AWAITING_PAYMENT
       qrGeneratedAt: now,
       qrExpiresAt: now + 15 * 60 * 1000, // 15 phút hiệu lực
       isQrInvalidated: false,
@@ -117,6 +140,7 @@ export async function handleOrderSubmit(order) {
       data: {
         success: true,
         orderId: order.orderId,
+        trackingToken,
         status: 'AWAITING_PAYMENT',
         message: 'Đơn hàng đã được khởi tạo. Đang chờ chuyển khoản để kích hoạt email xác nhận.',
         qrExpiresAt: orderRecord.payment.qrExpiresAt,

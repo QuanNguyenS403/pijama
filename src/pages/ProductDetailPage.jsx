@@ -266,6 +266,8 @@ export default function ProductDetailPage() {
               product={product}
               selectedColor={selectedColor}
               onColorChange={setSelectedColor}
+              selectedSize={selectedSize}
+              onSizeChange={setSelectedSize}
               onAddToCart={handleAddToCart}
             />
           </div>

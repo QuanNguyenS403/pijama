@@ -27,14 +27,21 @@ export default function BankTransferPaymentPage() {
   const [searchParams] = useSearchParams()
   const location = useLocation()
   const navigate = useNavigate()
-  const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
-  const orderId = searchParams.get('orderId') || 'QNS-' + Date.now().toString().slice(-6)
+  const orderId = searchParams.get('orderId')
+
+  // FE-003: Bắt buộc phải có orderId hợp lệ, không fallback sang đơn người khác
+  useEffect(() => {
+    if (!orderId) {
+      navigate('/checkout', { replace: true })
+    }
+  }, [orderId, navigate])
 
   // Order state from location state or sessionStorage / localStorage
   const [order, setOrder] = useState(() => {
     if (location.state?.order) return location.state.order
+    if (!orderId) return null
     try {
-      const saved = sessionStorage.getItem(`last_order_${orderId}`) || sessionStorage.getItem('latest_order')
+      const saved = sessionStorage.getItem(`last_order_${orderId}`)
       if (saved) return JSON.parse(saved)
       const allOrders = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
       return allOrders.find((o) => o.orderId === orderId) || null
@@ -52,17 +59,16 @@ export default function BankTransferPaymentPage() {
   // Countdown timer 15 minutes (900 seconds)
   const [timeLeft, setTimeLeft] = useState(900)
 
-  // Customer & Payment Data (Tuyệt đối không dùng số tiền giả)
+  // Customer & Payment Data
   const customerName = order?.customer?.fullName || 'Quý khách'
   const customerPhone = order?.customer?.phone || ''
   const customerEmail = order?.customer?.email || ''
   const total = order?.total || 0
   const discount = order?.discount || 0
-  const transferContent = order?.customer?.fullName && order?.customer?.phone
-    ? `${order.customer.fullName} ${order.customer.phone}`.trim()
-    : `QNS ${orderId}`
+  // PAY-004: Nội dung chuyển khoản chuẩn hóa chứa mã đơn để webhook đối soát
+  const transferContent = `QNS ${orderId}`
   const qrUrl = total > 0
-    ? `https://img.vietqr.io/image/vietcombank-1050773506-compact2.png?amount=${total}&accountName=NGUYEN%20DUC%20QUAN`
+    ? `https://img.vietqr.io/image/vietcombank-1050773506-compact2.png?amount=${total}&addInfo=${encodeURIComponent('QNS ' + orderId)}&accountName=NGUYEN%20DUC%20QUAN`
     : ''
 
   // Countdown effect

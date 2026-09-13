@@ -111,12 +111,14 @@ export async function sendSmsOtp(phone, code) {
   }
 
   // 2. Mock mode (chưa cấu hình ZALO_OA_TOKEN)
-  const message = `[QuanNguyenS] Ma xac minh dang ky tai khoan: ${code}. Hieu luc 10 phut.`
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Dịch vụ gửi mã xác minh SMS/Zalo chưa được cấu hình trên máy chủ')
+  }
+
+  const message = `[QuanNguyenS] Ma xac minh: ${code}. Hieu luc 10 phut.`
   console.log(`\n======================================================`)
-  console.log(`📱 [OTP MOCK - CHẾ ĐỘ THỬ NGHIỆM]`)
+  console.log(`📱 [OTP DEV - CHẾ ĐỘ THỬ NGHIỆM]`)
   console.log(`👉 Số điện thoại: ${normalized}`)
-  console.log(`👉 Mã OTP       : ${code}`)
-  console.log(`👉 Nội dung     : ${message}`)
   console.log(`ℹ️ Để gửi Zalo thật: thêm ZALO_OA_TOKEN + ZALO_OTP_TEMPLATE_ID vào .env`)
   console.log(`======================================================\n`)
 
@@ -124,8 +126,7 @@ export async function sendSmsOtp(phone, code) {
     success: true,
     isMock: true,
     phone: normalized,
-    code,
-    message: 'Mã OTP đã tạo (chế độ thử nghiệm)',
+    message: 'Mã OTP đã tạo (chế độ thử nghiệm dev)',
   }
 }
 

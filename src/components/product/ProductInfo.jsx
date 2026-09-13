@@ -44,6 +44,8 @@ export default function ProductInfo({
   product,
   selectedColor: controlledColor,
   onColorChange,
+  selectedSize: controlledSize,
+  onSizeChange,
   onAddToCart,
 }) {
   const [internalColor, setInternalColor] = useState(product.colors?.[0] || null)
@@ -53,7 +55,12 @@ export default function ProductInfo({
     setInternalColor(col)
   }
 
-  const [selectedSize, setSelectedSize] = useState(null)
+  const [internalSize, setInternalSize] = useState(null)
+  const selectedSize = controlledSize !== undefined ? controlledSize : internalSize
+  const setSelectedSize = (sz) => {
+    if (onSizeChange) onSizeChange(sz)
+    setInternalSize(sz)
+  }
   const [quantity, setQuantity] = useState(1)
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false)
   const [addedState, setAddedState] = useState(false)

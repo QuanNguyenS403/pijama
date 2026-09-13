@@ -22,7 +22,7 @@ import {
 import { sendVerificationCodeEmail, sendWelcomeVoucherEmail, sendBroadcastEmail } from './emailAccount.js'
 import { sendSmsOtp, normalizeVietnamesePhone, isValidVietnamesePhone, isZaloConfigured } from './smsService.js'
 import { validateVoucher } from './voucherValidator.js'
-import { verifyAdminLogin } from './adminAuth.js'
+import { verifyAdminLogin, requireAdminAuth } from './adminAuth.js'
 
 // Rate limiter cho gửi OTP xác minh (chống spam SMS/Email)
 const otpRateLimiter = createRateLimiter({
@@ -126,9 +126,8 @@ export function registerAuthEndpoints(app) {
         target: maskPhone(normalized),
         targetType: 'sms',
         isMock: smsResult.isMock || false,
-        mockCode: smsResult.isMock ? smsResult.code : undefined,
         message: smsResult.isMock
-          ? `Mã thử nghiệm: ${code} (đã ghi log server)`
+          ? `Mã thử nghiệm đã tạo trong môi trường dev`
           : `Đã gửi mã xác minh 6 số tới ${maskPhone(normalized)}`,
       })
     } catch (err) {
@@ -159,7 +158,13 @@ export function registerAuthEndpoints(app) {
         name = tokenData.name || ''
         picture = tokenData.picture || ''
       } else if (userInfo && userInfo.email && userInfo.googleId) {
-        // Dùng khi dev test hoặc client đã parse an toàn
+        if (process.env.NODE_ENV === 'production') {
+          return res.status(400).json({
+            success: false,
+            error: 'Môi trường production yêu cầu Google ID token (credential) có chữ ký hợp lệ',
+          })
+        }
+        // Chỉ dùng trong dev test local
         email = userInfo.email
         googleId = userInfo.googleId
         name = userInfo.name || ''
@@ -185,7 +190,7 @@ export function registerAuthEndpoints(app) {
         })
       }
 
-      // Theo yêu cầu của Quan: Bắt buộc gửi mã xác minh 6 số về email của tài khoản Google này
+      // Bắt buộc gửi mã xác minh 6 số về email của tài khoản Google này
       const code = generateSixDigitCode()
       createVerificationCode({
         account_id: account.id,
@@ -200,15 +205,19 @@ export function registerAuthEndpoints(app) {
         await sendVerificationCodeEmail({ to: email, code, name: name || 'Quý khách' })
       } catch (mailErr) {
         console.warn('⚠️ Gửi email OTP Google thất bại:', mailErr.message)
-        // Nếu lỗi mail trong dev, vẫn trả về code để test
+        if (process.env.NODE_ENV === 'production') {
+          return res.status(500).json({
+            success: false,
+            error: 'Không thể gửi mã xác minh đến email của bạn lúc này. Vui lòng thử lại sau.',
+          })
+        }
         return res.json({
           success: true,
           accountId: account.id,
           email: maskEmail(email),
           targetType: 'email',
           isMock: true,
-          mockCode: code,
-          message: `Không gửi được mail thật (${mailErr.message}). Mã test là: ${code}`,
+          message: `Không gửi được mail thật (${mailErr.message}). Mã test được ghi log dev.`,
         })
       }
 
@@ -244,6 +253,12 @@ export function registerAuthEndpoints(app) {
         name = fbData.name
         email = fbData.email || ''
       } else if (userInfo && userInfo.facebookId) {
+        if (process.env.NODE_ENV === 'production') {
+          return res.status(400).json({
+            success: false,
+            error: 'Môi trường production yêu cầu Facebook Access Token có chữ ký hợp lệ',
+          })
+        }
         facebookId = userInfo.facebookId
         email = userInfo.email || ''
         name = userInfo.name || ''
@@ -470,7 +485,7 @@ export function registerAuthEndpoints(app) {
   })
 
   // ── 9. Thống kê tài khoản & Voucher cho trang Admin Broadcast ──
-  app.get('/api/admin/broadcast/stats', (req, res) => {
+  app.get('/api/admin/broadcast/stats', requireAdminAuth, (req, res) => {
     try {
       const stats = getAccountStats()
       const logs = getBroadcastLogs(10)
@@ -486,15 +501,9 @@ export function registerAuthEndpoints(app) {
   })
 
   // ── 10. Gửi thông báo hàng loạt (Admin Broadcast) ───────────────
-  app.post('/api/admin/broadcast', async (req, res) => {
+  app.post('/api/admin/broadcast', requireAdminAuth, async (req, res) => {
     try {
-      const { password, subject, contentHtml, broadcastType = 'Sản phẩm mới' } = req.body
-
-      // Xác thực mật khẩu quản trị
-      const authCheck = verifyAdminLogin(password)
-      if (authCheck.status !== 200) {
-        return res.status(authCheck.status).json(authCheck.data)
-      }
+      const { subject, contentHtml, broadcastType = 'Sản phẩm mới' } = req.body
 
       if (!subject || !contentHtml || !String(subject).trim() || !String(contentHtml).trim()) {
         return res.status(400).json({

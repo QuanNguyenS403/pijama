@@ -26,13 +26,6 @@ export default function App() {
   useEffect(() => {
     // Khởi tạo kênh đồng bộ realtime (SSE + BroadcastChannel)
     initOrderSync()
-
-    // Reset past test orders once
-    if (typeof window !== 'undefined' && !localStorage.getItem('qns_orders_reset_2026')) {
-      localStorage.removeItem('pijama_orders')
-      localStorage.setItem('qns_orders_reset_2026', 'true')
-      window.dispatchEvent(new Event('orders_updated'))
-    }
   }, [])
 
   return (

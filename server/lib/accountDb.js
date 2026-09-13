@@ -84,6 +84,22 @@ function initSchema(database) {
     CREATE INDEX IF NOT EXISTS idx_vouchers_used ON vouchers(used);
   `)
 
+  // Seed system campaign voucher QNS10 if not present for persistent tracking
+  const qns10 = database.prepare('SELECT id FROM vouchers WHERE UPPER(code) = ?').get('QNS10')
+  if (!qns10) {
+    const sysAccount = database.prepare('SELECT id FROM accounts WHERE id = ?').get('system')
+    if (!sysAccount) {
+      database.prepare(`
+        INSERT INTO accounts (id, method, full_name, verified, created_at)
+        VALUES ('system', 'system', 'System Promotion', 1, ?)
+      `).run(new Date().toISOString())
+    }
+    database.prepare(`
+      INSERT INTO vouchers (id, account_id, code, discount_percent, free_shipping, used, created_at)
+      VALUES ('vouch_qns10_campaign', 'system', 'QNS10', 10, 0, 0, ?)
+    `).run(new Date().toISOString())
+  }
+
   // 4. Bảng nhật ký thông báo hàng loạt (Admin Broadcast)
   database.exec(`
     CREATE TABLE IF NOT EXISTS broadcast_logs (

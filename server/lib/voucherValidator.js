@@ -42,20 +42,7 @@ export function validateVoucher(code, context = {}) {
         discountPercent: voucher.discount_percent || 10,
         freeShipping: Boolean(voucher.free_shipping),
         accountId: voucher.account_id,
-        isWelcomeVoucher: true,
-      },
-    }
-  }
-
-  // 2. Hỗ trợ mã ưu đãi demo QNS10 (nếu có khách hàng cũ nhập thử)
-  if (cleanCode === 'QNS10') {
-    return {
-      isValid: true,
-      voucher: {
-        code: 'QNS10',
-        discountPercent: 10,
-        freeShipping: false,
-        isWelcomeVoucher: false,
+        isWelcomeVoucher: voucher.account_id !== 'system',
       },
     }
   }
@@ -96,7 +83,6 @@ export function calculateVoucherBenefits(voucher, subtotal, originalShippingFee)
 export function redeemVoucher(code, orderId) {
   if (!code) return false
   const cleanCode = String(code).trim().toUpperCase()
-  if (cleanCode === 'QNS10') return true // Demo code không cần lưu
 
   const success = markVoucherUsed(cleanCode, orderId)
   if (success) {

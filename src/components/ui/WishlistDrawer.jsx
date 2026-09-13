@@ -42,7 +42,19 @@ export default function WishlistDrawer({ isOpen, onClose, onAddToCart }) {
 
   // Parse wishlist items into rich product data
   const wishlistedItems = wishlistKeys.map((key) => {
-    const [productId, colorName] = key.split('-')
+    let productId = key
+    let colorName = 'default'
+    if (key.includes('::')) {
+      const parts = key.split('::')
+      productId = parts[0]
+      colorName = parts[1] || 'default'
+    } else {
+      const idx = key.lastIndexOf('-')
+      if (idx !== -1) {
+        productId = key.substring(0, idx)
+        colorName = key.substring(idx + 1)
+      }
+    }
     const product = products.find((p) => p.id === productId) || products[0]
     const colorObj = product?.colors?.find((c) => c.name === colorName) || product?.colors?.[0]
     

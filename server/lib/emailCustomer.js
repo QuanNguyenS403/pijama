@@ -36,8 +36,8 @@ export const sendCustomerEmail = async (order) => {
 // Template 3: BANK TRANSFER (VietQR - Chuyển khoản ngân hàng)
 // ──────────────────────────────────────────────────────────
 export const buildBankTransferEmailHTML = (order) => {
-  const transferContent = `${order.customer?.fullName || ''} ${order.customer?.phone || ''}`.trim()
-  const qrUrl = `https://img.vietqr.io/image/vietcombank-1050773506-compact2.png?amount=${order.total}&accountName=NGUYEN%20DUC%20QUAN`
+  const transferContent = `QNS ${order.orderId}`
+  const qrUrl = `https://img.vietqr.io/image/vietcombank-1050773506-compact2.png?amount=${order.total}&addInfo=${encodeURIComponent('QNS ' + order.orderId)}&accountName=NGUYEN%20DUC%20QUAN`
   const hasPreOrder = !!(
     order.hasPreOrder ||
     order.items?.some(

@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import { appendOrderToSheet } from './googleSheets.js'
 import { sendCustomerEmail } from './emailCustomer.js'
 import { sendOwnerEmail } from './emailOwner.js'
@@ -14,16 +15,18 @@ export const processedTransactionIds = {
  * ==============================================================================
  * 1. WEBHOOK XỬ LÝ BIẾN ĐỘNG SỐ DƯ TỰ ĐỘNG (SEPAY / CASSO / PAYOS / VIETQR)
  * ==============================================================================
- * Khi tiền thực sự về tài khoản ngân hàng:
- * 1. Khớp mã đơn hàng & kiểm tra số tiền
- * 2. VÔ HIỆU HÓA MÃ QR ĐÓ NGAY LẬP TỨC (Không cho quét lại)
- * 3. KÍCH HOẠT GỬI GMAIL XÁC NHẬN ĐẶT HÀNG & THANH TOÁN CHO KHÁCH VÀ CHỦ SHOP
- * 4. Cập nhật Google Sheets
+ * Tiêu chí G-10, G-11, G-12:
+ * 1. Khớp mã đơn hàng & kiểm tra CHÍNH XÁC số tiền (amountIn === order.total)
+ * 2. Xác thực chữ ký bí mật bằng timing-safe check
+ * 3. Chống xử lý trùng lặp giao dịch (Idempotency theo txId)
+ * 4. Từ chối unknown order và đơn đã hủy/kết thúc
+ * 5. VÔ HIỆU HÓA MÃ QR NGAY LẬP TỨC
+ * 6. KÍCH HOẠT GỬI GMAIL XÁC NHẬN ĐẶT HÀNG & THANH TOÁN
  */
 export async function handlePaymentWebhook(req) {
   try {
-    // ── P0-3: Fail-closed Webhook Security ───────────────────────
-    const authHeader = req.headers['authorization'] || req.headers['x-api-key'] || ''
+    // ── P0-3 / G-10: Fail-closed Webhook Security ─────────────────
+    const rawAuthHeader = req.headers['authorization'] || req.headers['x-api-key'] || ''
     const expectedSecret = process.env.SEPAY_WEBHOOK_API_KEY || process.env.PAYMENT_WEBHOOK_SECRET
 
     if (!expectedSecret) {
@@ -37,13 +40,25 @@ export async function handlePaymentWebhook(req) {
       }
     }
 
-    if (!authHeader.includes(expectedSecret)) {
-      console.warn('⛔ [WEBHOOK REJECTED] Sai Secret Token / Unauthorized request')
+    const authHeader = String(rawAuthHeader).replace(/^Bearer\s+/i, '').trim()
+    const secretStr = String(expectedSecret).trim()
+
+    let isSecretValid = false
+    if (authHeader.length === secretStr.length && secretStr.length > 0) {
+      isSecretValid = crypto.timingSafeEqual(Buffer.from(authHeader), Buffer.from(secretStr))
+    }
+
+    if (!isSecretValid) {
+      console.warn('⛔ [WEBHOOK REJECTED] Sai Secret Token / Unauthorized request (timing-safe check failed)')
       return { status: 401, data: { success: false, message: 'Unauthorized webhook request' } }
     }
 
     const payload = req.body || {}
-    console.log('\n🔔 [PAYMENT WEBHOOK] Nhận thông báo giao dịch:', JSON.stringify(payload))
+    console.log('\n🔔 [PAYMENT WEBHOOK] Nhận thông báo giao dịch an toàn:', JSON.stringify({
+      id: payload.id,
+      amount: payload.amount || payload.transferAmount,
+      content: payload.content || payload.description,
+    }))
 
     // Kiểm tra giao dịch tiền vào
     const amountIn = Number(payload.transferAmount || payload.amount || 0)
@@ -54,8 +69,9 @@ export async function handlePaymentWebhook(req) {
       return { status: 200, data: { success: true, message: 'Bỏ qua giao dịch tiền ra' } }
     }
 
-    // Chống xử lý trùng lặp giao dịch (Idempotency)
+    // G-12: Chống xử lý trùng lặp giao dịch (Idempotency)
     if (processedTransactionIds.has(txId)) {
+      console.log(`ℹ️ [WEBHOOK IDEMPOTENT] Giao dịch ${txId} đã được xử lý trước đó. Bỏ qua side-effects.`)
       return { status: 200, data: { success: true, message: 'Giao dịch đã được ghi nhận trước đó' } }
     }
 
@@ -64,24 +80,50 @@ export async function handlePaymentWebhook(req) {
     const matchedOrderId = orderIdMatch ? orderIdMatch[0] : null
 
     if (!matchedOrderId) {
-      console.warn(`⚠️ [WEBHOOK] Không tìm thấy mã đơn hàng trong nội dung: "${content}"`)
+      console.warn(`⚠️ [WEBHOOK] Không tìm thấy mã đơn hàng trong nội dung chuyển khoản: "${content}"`)
       return { status: 200, data: { success: true, message: 'Đã lưu giao dịch chờ đối soát thủ công' } }
     }
 
-    // Tìm đơn hàng trong hệ thống
+    // Tìm đơn hàng trong hệ thống (G-11: REJECT unknown order, TUYỆT ĐỐI không tự tạo đơn ảo)
     let order = orderPaymentStore.get(matchedOrderId)
 
     if (!order) {
-      console.warn(`⚠️ Đơn hàng ${matchedOrderId} không tồn tại trong cache bộ nhớ. Đang tạo record hoàn tất...`)
-      order = {
-        orderId: matchedOrderId,
-        total: amountIn,
-        customer: { fullName: 'Khách hàng', email: '', phone: '' },
+      console.warn(`⛔ [WEBHOOK REJECTED - G-11] Đơn hàng ${matchedOrderId} không tồn tại trong hệ thống. Từ chối tạo đơn ảo.`)
+      return {
+        status: 404,
+        data: {
+          success: false,
+          error: `Đơn hàng ${matchedOrderId} không tồn tại trong hệ thống`,
+        },
+      }
+    }
+
+    // G-11: Chặn thanh toán cho đơn hàng đã hủy hoặc đã kết thúc
+    if (order.status === 'CANCELLED') {
+      console.warn(`⛔ [WEBHOOK REJECTED - G-11] Đơn hàng ${matchedOrderId} đã bị HỦY trước đó. Cần hoàn tiền thủ công.`)
+      return {
+        status: 400,
+        data: {
+          success: false,
+          error: `Đơn hàng ${matchedOrderId} đã bị hủy trước đó`,
+        },
+      }
+    }
+
+    // G-11: So khớp CHÍNH XÁC số tiền cần thanh toán
+    if (amountIn !== order.total) {
+      console.warn(`⛔ [WEBHOOK REJECTED - G-11] Sai lệch số tiền: nhận ${amountIn}đ nhưng đơn hàng ${matchedOrderId} yêu cầu ${order.total}đ.`)
+      return {
+        status: 400,
+        data: {
+          success: false,
+          error: `Số tiền chuyển khoản không khớp (Đã nhận: ${amountIn}đ, Cần thanh toán: ${order.total}đ)`,
+        },
       }
     }
 
     // ── XÁC NHẬN THANH TOÁN & VÔ HIỆU HÓA MÃ QR ─────────────────
-    order.status = 'CONFIRMED' // Chuyển sang đã xác nhận, sẵn sàng đóng gói
+    order.status = 'CONFIRMED'
     order.payment = {
       ...(order.payment || {}),
       method: 'BANK_TRANSFER',
@@ -100,7 +142,7 @@ export async function handlePaymentWebhook(req) {
     orderPaymentStore.set(matchedOrderId, order)
     processedTransactionIds.add(txId)
 
-    console.log(`\n🎉 [XÁC NHẬN TIỀN VỀ THÀNH CÔNG] Đơn hàng ${matchedOrderId}: Đã nhận ${amountIn}đ!`)
+    console.log(`\n🎉 [XÁC NHẬN TIỀN VỀ THÀNH CÔNG] Đơn hàng ${matchedOrderId}: Đã nhận đúng ${amountIn}đ!`)
     console.log(`🔒 Mã QR của đơn hàng ${matchedOrderId} đã được VÔ HIỆU HÓA vĩnh viễn.`)
     console.log(`📧 Đang kích hoạt gửi Gmail xác nhận đặt hàng và hóa đơn...`)
 
@@ -138,13 +180,12 @@ export async function handlePaymentWebhook(req) {
 
 /**
  * ==============================================================================
- * 2. API TIẾP NHẬN YÊU CẦU XÁC THỰC TỪ KHÁCH HÀNG (CLIENT CLAIM) — P0-2
+ * 2. API TIẾP NHẬN YÊU CẦU XÁC THỰC TỪ KHÁCH HÀNG (CLIENT CLAIM) — PAY-003 / G-13
  * ==============================================================================
  * Khi khách hàng bấm "Tôi đã chuyển khoản thành công" trên web:
- * 1. KHÔNG TỰ ĐỘNG GÁN TRẠNG THÁI 'PAID' (tránh bị giả mạo thanh toán).
- * 2. Gán trạng thái 'CUSTOMER_CLAIMED_PAID' / Chờ ngân hàng đối soát.
- * 3. Gửi thông báo nhắc chủ shop kiểm tra tài khoản thực tế.
- * 4. Việc chuyển sang 'PAID' chỉ diễn ra khi Webhook ngân hàng gửi tín hiệu hoặc admin xác nhận.
+ * 1. Chỉ cập nhật trên ĐƠN HÀNG THỰC TẾ ĐÃ TỒN TẠI (Canonical Store).
+ * 2. TUYỆT ĐỐI KHÔNG tự chế/ghi nhận đơn hàng ảo từ client payload.
+ * 3. Gán trạng thái payment 'CUSTOMER_CLAIMED_PAID', KHÔNG tự động chuyển 'PAID'.
  */
 export async function confirmOrderPaymentManually(orderPayload) {
   try {
@@ -153,17 +194,18 @@ export async function confirmOrderPaymentManually(orderPayload) {
       return { status: 400, data: { success: false, error: 'Thiếu mã đơn hàng' } }
     }
 
-    let existingOrder = orderPaymentStore.get(orderId) || orderPayload
+    // G-13: Đọc đơn hàng canonical từ persistence, cấm nhận orderPayload tùy tiện
+    const existingOrder = orderPaymentStore.get(orderId)
+    if (!existingOrder) {
+      return { status: 404, data: { success: false, error: `Không tìm thấy đơn hàng ${orderId}` } }
+    }
 
-    existingOrder = {
-      ...existingOrder,
-      status: 'AWAITING_PAYMENT',
-      payment: {
-        ...(existingOrder.payment || {}),
-        status: 'CUSTOMER_CLAIMED_PAID',
-        claimedAt: new Date().toISOString(),
-        claimedNote: 'Khách hàng bấm xác nhận chuyển khoản trên giao diện (chờ đối soát ngân hàng)',
-      },
+    // Cập nhật cờ khách báo chuyển khoản
+    existingOrder.payment = {
+      ...(existingOrder.payment || {}),
+      status: 'CUSTOMER_CLAIMED_PAID',
+      claimedAt: new Date().toISOString(),
+      claimedNote: 'Khách hàng bấm xác nhận chuyển khoản trên giao diện (chờ đối soát ngân hàng)',
     }
 
     orderPaymentStore.set(orderId, existingOrder)
@@ -172,7 +214,7 @@ export async function confirmOrderPaymentManually(orderPayload) {
     // Gửi thông báo nội bộ cho chủ shop kiểm tra số dư
     sendOwnerEmail({
       ...existingOrder,
-      notes: `[KHÁCH BÁO ĐÃ CHUYỂN KHOẢN] Khách hàng vừa bấm xác nhận đã chuyển tiền cho đơn ${orderId}. Vui lòng kiểm tra tài khoản Vietcombank.`,
+      notes: `[KHÁCH BÁO ĐÃ CHUYỂN KHOẢN] Khách hàng vừa bấm xác nhận đã chuyển tiền cho đơn ${orderId}. Vui lòng kiểm tra tài khoản ngân hàng.`,
     }).catch((err) => console.warn('Lỗi gửi email báo chủ shop:', err.message))
 
     return {
@@ -192,7 +234,7 @@ export async function confirmOrderPaymentManually(orderPayload) {
 
 /**
  * ==============================================================================
- * 3. API TRA CỨU TRẠNG THÁI THANH TOÁN & TÌNH TRẠNG MÃ QR (POLLING)
+ * 3. API TRA CỨU TRẠNG THÁI THANH TOÁN & TÌNH TRẠNG MÃ QR (POLLING) — PAY-001 / G-09
  * ==============================================================================
  */
 export function getOrderPaymentStatus(orderId) {
@@ -208,8 +250,8 @@ export function getOrderPaymentStatus(orderId) {
     }
   }
 
-  // Đã thanh toán -> Mã QR vô hiệu hóa
-  if (record.payment?.status === 'PAID' || record.payment?.isQrInvalidated) {
+  // Đã thanh toán thật qua Webhook -> payment.status === 'PAID'
+  if (record.payment?.status === 'PAID') {
     return {
       success: true,
       status: 'PAID',
@@ -237,7 +279,7 @@ export function getOrderPaymentStatus(orderId) {
 
   return {
     success: true,
-    status: 'AWAITING_PAYMENT',
+    status: record.payment?.status || 'AWAITING_PAYMENT',
     isQrValid: true,
     qrStatus: 'ACTIVE',
     expiresInSeconds: remainingSeconds,

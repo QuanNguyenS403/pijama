@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Send, CheckCircle2, ShieldCheck } from 'lucide-react'
 
+/**
+ * @deprecated [ARCH-001] Legacy section, not mounted in routes.
+ */
 export default function Section11CtaForm() {
   const [formData, setFormData] = useState({
     name: '',

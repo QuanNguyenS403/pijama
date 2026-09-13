@@ -3,8 +3,10 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import ProductCard from './ProductCard'
 import QuickViewModal from './QuickViewModal'
+import { useCart } from '../../hooks/useCart'
 
 export default function RelatedProducts({ products = [], onAddToCart }) {
+  const { addItem } = useCart()
   const [quickViewProduct, setQuickViewProduct] = useState(null)
   const [startIdx, setStartIdx] = useState(0)
   const visible = 4
@@ -63,12 +65,29 @@ export default function RelatedProducts({ products = [], onAddToCart }) {
                   product={product}
                   onQuickView={setQuickViewProduct}
                   onAddToCart={(p) => {
+                    const color = p.colors?.[0] || null
+                    const size = p.sizes?.[0] || 'S'
                     const img = Array.isArray(p.images)
                       ? p.images[0]
-                      : (p.images?.[p.colors?.[0]?.name]?.[0] || Object.values(p.images || {})[0]?.[0])
+                      : (p.images?.[color?.name]?.[0] || Object.values(p.images || {})[0]?.[0] || '')
+
+                    const cartItem = {
+                      id: `${p.id}-${color?.name || 'default'}-${size}`,
+                      productId: p.id,
+                      name: p.name,
+                      subtitle: p.subtitle,
+                      color,
+                      size,
+                      quantity: 1,
+                      price: p.price,
+                      originalPrice: p.originalPrice,
+                      image: img,
+                      slug: p.slug,
+                    }
+                    addItem(cartItem)
                     onAddToCart?.({
                       productName: p.name,
-                      variant: `${p.colors?.[0]?.label || p.colors?.[0]?.name || ''} | Size ${p.sizes?.[0] || 'S'}`,
+                      variant: `${color?.label || color?.name || ''} | Size ${size}`,
                       price: p.price,
                       image: img,
                     })

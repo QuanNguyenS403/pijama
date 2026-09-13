@@ -297,6 +297,15 @@ export const fetchAllOrdersFromSheetCached = async ({ forceRefresh = false } = {
         .filter((r) => r && r[0])
         .map((r) => {
           const orderId = String(r[0]).trim()
+          const itemNames = (r[11] || '').split(' | ').map((s) => s.trim()).filter(Boolean)
+          const itemVariants = (r[12] || '').split(' | ').map((s) => s.trim())
+          const itemQtys = (r[13] || '').split(' | ').map((s) => s.trim())
+          const reconstructedItems = itemNames.map((name, idx) => ({
+            productName: name,
+            variant: itemVariants[idx] || '',
+            quantity: Number(itemQtys[idx]) || 1,
+          }))
+
           return {
             orderId,
             id: orderId,
@@ -314,6 +323,7 @@ export const fetchAllOrdersFromSheetCached = async ({ forceRefresh = false } = {
               fullAddress: r[10] || '',
             },
             shippingAddress: r[10] || '',
+            items: reconstructedItems,
             subtotal: Number(r[14]) || 0,
             shippingFee: Number(r[15]) || 0,
             discount: Number(r[16]) || 0,
@@ -444,11 +454,21 @@ export const updateOrderStatusInSheet = async (orderId, newStatus, note = '', tr
       )
     }
 
-    await Promise.allSettled(updates)
+    const results = await Promise.allSettled(updates)
+    const rejected = results.filter((r) => r.status === 'rejected')
+
+    if (rejected.length > 0) {
+      const errMsgs = rejected.map((r) => r.reason?.message || 'Lỗi không xác định').join('; ')
+      console.error(`❌ [SHEET ERROR] Cập nhật ô cho đơn ${orderId} thất bại:`, errMsgs)
+      return { success: false, error: errMsgs }
+    }
+
     invalidateSheetOrdersCache()
     console.log(`✅ Sheet: đơn ${orderId} → ${newStatus}`)
+    return { success: true }
   } catch (err) {
     console.error('updateOrderStatusInSheet lỗi:', err.message)
+    return { success: false, error: err.message }
   }
 }
 

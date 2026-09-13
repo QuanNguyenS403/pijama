@@ -17,19 +17,19 @@
  * @returns {Object} QR Data chứa link ảnh, raw payload và link thanh toán
  */
 export function generateVietQRQuickLink({
-  bankCode = 'VCB',
-  accountNumber = '1050773506',
-  accountName = 'NGUYEN DUC QUAN',
+  bankCode = process.env.BANK_CODE || 'VCB',
+  accountNumber = process.env.BANK_ACCOUNT_NUMBER || '1050773506',
+  accountName = process.env.BANK_ACCOUNT_NAME || 'NGUYEN DUC QUAN',
   amount,
   description,
   template = 'compact2',
-  includeAddInfo = false,
+  includeAddInfo = true,
 }) {
   const sanitizedAmount = Math.round(Number(amount) || 0)
   const encodedDesc = encodeURIComponent(description || '')
   const encodedName = encodeURIComponent(accountName || '')
 
-  // Link ảnh VietQR động chuẩn CDN Napas VietQR.io (không kèm addInfo theo yêu cầu)
+  // Link ảnh VietQR động chuẩn CDN Napas VietQR.io (nhúng addInfo để đối soát webhook tự động - PAY-004)
   const addInfoParam = (includeAddInfo && encodedDesc) ? `&addInfo=${encodedDesc}` : ''
   const qrImageUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-${template}.png?amount=${sanitizedAmount}${addInfoParam}&accountName=${encodedName}`
 

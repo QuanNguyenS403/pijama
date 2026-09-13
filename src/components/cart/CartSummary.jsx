@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import FreeShippingBar from './FreeShippingBar'
 import VoucherInput from './VoucherInput'
 import { useCart } from '../../hooks/useCart'
@@ -6,12 +7,51 @@ function formatPrice(n) {
   return new Intl.NumberFormat('vi-VN').format(n) + 'đ'
 }
 
-export default function CartSummary({ subtotal, shippingFee, freeShippingProgress, remainingForFreeShipping, discount = 0, onCheckout, showVoucher = true }) {
+export default function CartSummary({
+  subtotal,
+  shippingFee,
+  freeShippingProgress,
+  remainingForFreeShipping,
+  discount: propDiscount,
+  onCheckout,
+  showVoucher = true,
+  onApplyVoucher,
+}) {
   const { items } = useCart()
+  const [appliedVoucher, setAppliedVoucher] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('qns_active_voucher') || 'null')
+      return saved && !saved.used ? saved : null
+    } catch {
+      return null
+    }
+  })
+
   const hasPreOrder = items?.some(
     (i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-classic-set' || i.productId === 'the-classic-set'
   )
-  const total = subtotal + shippingFee - discount
+
+  const voucherDiscount = appliedVoucher
+    ? Math.round((subtotal * Number(appliedVoucher.discountPercent || 10)) / 100)
+    : 0
+
+  const effectiveDiscount = propDiscount !== undefined ? propDiscount : voucherDiscount
+  const effectiveShippingFee = appliedVoucher?.freeShipping ? 0 : shippingFee
+  const total = Math.max(0, subtotal + effectiveShippingFee - effectiveDiscount)
+
+  const handleVoucherApply = (voucher) => {
+    setAppliedVoucher(voucher)
+    if (voucher) {
+      try {
+        localStorage.setItem('qns_active_voucher', JSON.stringify(voucher))
+      } catch {}
+    } else {
+      try {
+        localStorage.removeItem('qns_active_voucher')
+      } catch {}
+    }
+    onApplyVoucher?.(voucher)
+  }
 
   return (
     <div className="bg-[#FAF8F5] border border-[#E8DFD5] rounded-[4px] overflow-hidden shadow-sm">
@@ -32,15 +72,15 @@ export default function CartSummary({ subtotal, shippingFee, freeShippingProgres
 
         <div className="flex justify-between items-center font-sans text-sm text-[#4A3F38]">
           <span className="font-light">Phí vận chuyển</span>
-          <span className={shippingFee === 0 ? 'text-[#631521] font-bold' : 'font-bold text-[#1A1614]'}>
-            {shippingFee === 0 ? 'Miễn phí' : formatPrice(shippingFee)}
+          <span className={effectiveShippingFee === 0 ? 'text-[#631521] font-bold' : 'font-bold text-[#1A1614]'}>
+            {effectiveShippingFee === 0 ? 'Miễn phí' : formatPrice(effectiveShippingFee)}
           </span>
         </div>
 
-        {discount > 0 && (
+        {effectiveDiscount > 0 && (
           <div className="flex justify-between items-center font-sans text-sm text-[#4A3F38]">
-            <span className="font-light">Giảm giá ưu đãi</span>
-            <span className="text-[#631521] font-bold">−{formatPrice(discount)}</span>
+            <span className="font-light">Giảm giá ưu đãi {appliedVoucher ? `(${appliedVoucher.code})` : ''}</span>
+            <span className="text-[#631521] font-bold">−{formatPrice(effectiveDiscount)}</span>
           </div>
         )}
 
@@ -53,7 +93,12 @@ export default function CartSummary({ subtotal, shippingFee, freeShippingProgres
           </span>
         </div>
 
-        {showVoucher && <VoucherInput />}
+        {showVoucher && (
+          <VoucherInput
+            onApply={handleVoucherApply}
+            currentSubtotal={subtotal}
+          />
+        )}
 
         {onCheckout && (
           <button

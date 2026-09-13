@@ -52,22 +52,34 @@ function loadFromDisk() {
   }
 }
 
-// Flush to disk
+// Flush to disk atomically
 function saveToDisk() {
+  const tmpFile = `${STORE_FILE}.${Date.now()}.${Math.random().toString(36).slice(2, 8)}.tmp`
   try {
     const ordersArray = Array.from(ordersMap.values())
-    fs.writeFileSync(STORE_FILE, JSON.stringify(ordersArray, null, 2), 'utf-8')
+    fs.writeFileSync(tmpFile, JSON.stringify(ordersArray, null, 2), 'utf-8')
+    fs.renameSync(tmpFile, STORE_FILE)
   } catch (err) {
-    console.warn('⚠️ Lỗi ghi orders_store.json:', err.message)
+    try {
+      if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile)
+    } catch {}
+    console.error('🚨 [CRITICAL PERSISTENCE] Lỗi ghi nguyên tử orders_store.json:', err.message)
+    throw err
   }
 }
 
 function saveTxToDisk() {
+  const tmpFile = `${TX_FILE}.${Date.now()}.${Math.random().toString(36).slice(2, 8)}.tmp`
   try {
     const txArray = Array.from(processedTxSet.values())
-    fs.writeFileSync(TX_FILE, JSON.stringify(txArray, null, 2), 'utf-8')
+    fs.writeFileSync(tmpFile, JSON.stringify(txArray, null, 2), 'utf-8')
+    fs.renameSync(tmpFile, TX_FILE)
   } catch (err) {
-    console.warn('⚠️ Lỗi ghi processed_tx.json:', err.message)
+    try {
+      if (fs.existsSync(tmpFile)) fs.unlinkSync(tmpFile)
+    } catch {}
+    console.error('🚨 [CRITICAL PERSISTENCE] Lỗi ghi nguyên tử processed_tx.json:', err.message)
+    throw err
   }
 }
 

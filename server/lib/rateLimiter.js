@@ -4,7 +4,7 @@
 const requestRecords = new Map()
 
 // Dọn dẹp cache IP cũ định kỳ mỗi 5 phút
-setInterval(() => {
+const cleanupInterval = setInterval(() => {
   const now = Date.now()
   for (const [key, records] of requestRecords.entries()) {
     const validRecords = records.filter((timestamp) => now - timestamp < 3600000)
@@ -15,6 +15,10 @@ setInterval(() => {
     }
   }
 }, 300000)
+
+if (cleanupInterval.unref) {
+  cleanupInterval.unref()
+}
 
 /**
  * Tạo middleware rate limiter
