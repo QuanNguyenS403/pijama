@@ -49,7 +49,9 @@ export default function VoucherInput({ onApply, currentSubtotal = 0, accountId =
         subtotal: String(currentSubtotal || 0),
       })
 
-      const res = await fetch(`/api/vouchers/validate?${q}`)
+      const res = await fetch(`/api/vouchers/validate?${q}`, {
+        credentials: 'include',
+      })
       const data = await res.json()
 
       if (data.isValid && data.voucher) {

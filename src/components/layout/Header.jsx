@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, ShoppingBag, Heart, Package } from 'lucide-react'
+import { Menu, X, ShoppingBag, Heart, Package, User } from 'lucide-react'
 import { useCart } from '../../hooks/useCart'
 import WishlistDrawer from '../ui/WishlistDrawer'
 import OrdersHistoryDrawer from '../ui/OrdersHistoryDrawer'
@@ -13,6 +13,7 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
   const [wishlistCount, setWishlistCount] = useState(0)
   const [ordersDrawerOpen, setOrdersDrawerOpen] = useState(false)
   const [ordersCount, setOrdersCount] = useState(0)
+  const [customerAccount, setCustomerAccount] = useState(null)
 
   const { totalItems } = useCart()
   const navigate = useNavigate()
@@ -38,34 +39,48 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
     }
   }
 
+  const updateCustomerSession = () => {
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated && data.account) {
+          setCustomerAccount(data.account)
+        } else {
+          setCustomerAccount(null)
+        }
+      })
+      .catch(() => setCustomerAccount(null))
+  }
+
   useEffect(() => {
     updateWishlistCount()
     updateOrdersCount()
+    updateCustomerSession()
 
     const handleStorage = () => {
       updateWishlistCount()
       updateOrdersCount()
+      updateCustomerSession()
     }
     const handleOrdersUpdated = () => updateOrdersCount()
+    const handleAccountUpdated = () => updateCustomerSession()
     const handleOpenOrdersEvent = () => setOrdersDrawerOpen(true)
-
-    window.addEventListener('storage', handleStorage)
-    window.addEventListener('orders_updated', handleOrdersUpdated)
-    window.addEventListener('open_orders_drawer', handleOpenOrdersEvent)
     const interval = setInterval(() => {
       updateWishlistCount()
       updateOrdersCount()
-    }, 1500)
+    }, 3000)
 
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener('customer_account_updated', handleAccountUpdated)
 
     return () => {
+      clearInterval(interval)
       window.removeEventListener('storage', handleStorage)
       window.removeEventListener('orders_updated', handleOrdersUpdated)
       window.removeEventListener('open_orders_drawer', handleOpenOrdersEvent)
+      window.removeEventListener('customer_account_updated', handleAccountUpdated)
       window.removeEventListener('scroll', handleScroll)
-      clearInterval(interval)
     }
   }, [])
 
@@ -170,6 +185,19 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
 
             {/* Icon row */}
             <div className="flex items-center gap-2.5 sm:gap-3.5">
+              {/* Account Button */}
+              <Link
+                to="/tai-khoan"
+                aria-label={customerAccount ? `Tài khoản: ${customerAccount.fullName || 'Khách hàng'}` : 'Đăng nhập tài khoản'}
+                className="flex items-center gap-1.5 text-white/85 hover:text-[#D4AF37] px-2.5 py-1 rounded-[2px] border border-white/20 hover:border-[#D4AF37]/50 bg-white/5 text-[11px] font-sans font-medium tracking-wider uppercase transition-colors cursor-pointer"
+                title={customerAccount ? 'Tài khoản của bạn' : 'Đăng nhập / Đăng ký'}
+              >
+                <User className="w-4 h-4 text-[#D4AF37]" />
+                <span className="hidden sm:inline">
+                  {customerAccount ? (customerAccount.fullName ? customerAccount.fullName.split(' ').slice(-1)[0] : 'Tài khoản') : 'Tài khoản'}
+                </span>
+              </Link>
+
               {/* Placed Orders Button */}
               <button
                 onClick={() => setOrdersDrawerOpen(true)}
@@ -265,6 +293,18 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
                     {link.label}
                   </Link>
                 ))}
+
+                {/* Mobile Account Link */}
+                <Link
+                  to="/tai-khoan"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-between text-white/90 hover:text-[#D4AF37] py-2 border-b border-white/10 text-sm font-sans font-medium uppercase tracking-wider"
+                >
+                  <span className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-[#D4AF37]" />
+                    <span>{customerAccount ? `Tài khoản (${customerAccount.fullName || 'Thành viên'})` : 'Đăng nhập / Đăng ký'}</span>
+                  </span>
+                </Link>
 
                 {/* Mobile Orders History Link */}
                 <button

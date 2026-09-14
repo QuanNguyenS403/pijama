@@ -1,8 +1,10 @@
 import { getTransporter } from './emailConfig.js'
+import { generateUnsubscribeToken } from './authCrypto.js'
 
 const SHOP_NAME = process.env.SHOP_NAME || 'QuanNguyenS'
 const SHOP_PHONE = process.env.SHOP_PHONE || '0981 753 082'
 const SHOP_ADDRESS = process.env.SHOP_ADDRESS || 'Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội'
+const APP_URL = process.env.APP_URL || process.env.CLIENT_ORIGIN || 'http://localhost:3000'
 
 /**
  * Gửi mã xác minh 6 số (chống tài khoản rác cho Google / Facebook / Email)
@@ -204,11 +206,16 @@ export async function sendWelcomeVoucherEmail({ to, code, name = 'Quý khách' }
 }
 
 /**
- * Gửi email thông báo sản phẩm mới / Livestream do Quân chủ động gửi (Broadcast)
+ * Gửi email thông báo sản phẩm mới / Livestream / Ưu đãi (Marketing Broadcast)
+ * Có cơ chế Unsubscribe bảo mật và tôn trọng opt-out theo luật bảo vệ dữ liệu
  */
-export async function sendBroadcastEmail({ to, subject, contentHtml, broadcastType = 'Sản Phẩm Mới' }) {
+export async function sendBroadcastEmail({ to, subject, contentHtml, broadcastType = 'Sản Phẩm Mới', accountId = null }) {
   const transporter = getTransporter()
   const user = (process.env.GMAIL_USER || '').trim()
+
+  const unsubToken = generateUnsubscribeToken(to, accountId)
+  const unsubscribeUrl = `${APP_URL}/huy-dang-ky?token=${encodeURIComponent(unsubToken)}`
+  const directApiUnsubUrl = `${APP_URL}/api/auth/unsubscribe?token=${encodeURIComponent(unsubToken)}`
 
   const html = `
     <!DOCTYPE html>
@@ -248,7 +255,7 @@ export async function sendBroadcastEmail({ to, subject, contentHtml, broadcastTy
                 </td>
               </tr>
 
-              <!-- Footer -->
+              <!-- Footer with Compliant Unsubscribe Link -->
               <tr>
                 <td style="padding: 24px 32px; background-color: #F5EFE6; border-top: 1px solid #E8DFD5; text-align: center;">
                   <p style="margin: 0 0 6px 0; font-size: 12px; color: #631521; font-weight: 600;">
@@ -257,8 +264,12 @@ export async function sendBroadcastEmail({ to, subject, contentHtml, broadcastTy
                   <p style="margin: 0 0 4px 0; font-size: 11px; color: #8C7E74;">
                     Hotline: ${SHOP_PHONE} · Địa chỉ: ${SHOP_ADDRESS}
                   </p>
-                  <p style="margin: 8px 0 0 0; font-size: 10.5px; color: #A89F91;">
-                    Bạn nhận được thông báo này vì đã đăng ký tài khoản thành viên tại website QuanNguyenS.
+                  <p style="margin: 8px 0 0 0; font-size: 10.5px; color: #A89F91; line-height: 1.5;">
+                    Bạn nhận được thông báo này vì đã đồng ý nhận email marketing tại QuanNguyenS.<br>
+                    Nếu không muốn nhận các thông báo này trong tương lai, bạn có thể 
+                    <a href="${unsubscribeUrl}" style="color: #631521; text-decoration: underline; font-weight: 600;">
+                      hủy đăng ký tại đây
+                    </a>. Quyền lợi tài khoản và ưu đãi voucher của bạn vẫn được bảo lưu.
                   </p>
                 </td>
               </tr>
@@ -275,5 +286,9 @@ export async function sendBroadcastEmail({ to, subject, contentHtml, broadcastTy
     to,
     subject: `[${SHOP_NAME}] ${subject}`,
     html,
+    headers: {
+      'List-Unsubscribe': `<${directApiUnsubUrl}>, <${unsubscribeUrl}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
   })
 }

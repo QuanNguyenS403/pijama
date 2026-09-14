@@ -18,7 +18,17 @@ import { generateTrackingToken } from './lib/orderTokenService.js'
  *    - BANK_TRANSFER: Ghi Sheet ở trạng thái CHỜ THANH TOÁN. Trạng thái payment ban đầu là AWAITING_PAYMENT.
  *      TUYỆT ĐỐI CHƯA gửi email xác nhận thanh toán cho đến khi tiền thực sự về tài khoản (qua Webhook có secret).
  */
-export async function handleOrderSubmit(order) {
+export async function handleOrderSubmit(order, context = {}) {
+  // Bind verified account from session if available; strip client-spoofed accountId on HTTP requests
+  if (context.customerAccount) {
+    if (order.customer) {
+      order.customer.accountId = context.customerAccount.id
+    }
+  } else if (context.fromHttpRequest) {
+    if (order.customer) {
+      order.customer.accountId = null
+    }
+  }
   // 1. Validate tối thiểu
   if (!order || !order.orderId || !order.customer?.email || !order.items?.length) {
     return {

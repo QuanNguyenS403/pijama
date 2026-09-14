@@ -15,6 +15,8 @@ import { verifyAdminLogin, adminLoginLimiter, requireAdminAuth } from './lib/adm
 import { registerAuthEndpoints } from './lib/authEndpoints.js'
 import { verifyTrackingToken } from './lib/orderTokenService.js'
 import { normalizeVietnamesePhone } from './lib/smsService.js'
+import { customerSessionMiddleware } from './lib/customerSessionMiddleware.js'
+import { releaseVoucher } from './lib/voucherValidator.js'
 
 // Load environment variables from .env or .env.local
 dotenv.config({ path: '.env.local' })
@@ -46,6 +48,7 @@ app.use(
 )
 
 app.use(express.json())
+app.use(customerSessionMiddleware)
 
 // ── P0-5: Rate Limiters cho từng nhóm API nhạy cảm ─────────────
 const submitOrderLimiter = createRateLimiter({
@@ -189,7 +192,10 @@ app.post('/api/payment/confirm', requireAdminAuth, submitOrderLimiter, async (re
 // ── 5. Xử lý Đơn Hàng ─────────────────────────────────────────
 app.post('/api/orders/submit', submitOrderLimiter, async (req, res) => {
   try {
-    const result = await handleOrderSubmit(req.body)
+    const result = await handleOrderSubmit(req.body, {
+      customerAccount: req.customerAccount,
+      fromHttpRequest: true,
+    })
     return res.status(result.status).json(result.data)
   } catch (error) {
     console.error('Server error on /api/orders/submit:', error)
@@ -397,6 +403,10 @@ app.post('/api/orders/cancel-request', async (req, res) => {
     order.cancelReason = reason
     order.cancelledAt = new Date().toISOString()
     orderPersistence.set(orderId, order)
+
+    if (order.voucherCode) {
+      releaseVoucher(order.voucherCode, orderId)
+    }
 
     const { sendCancelledEmail } = await import('./lib/emailStatusUpdates.js')
     const { updateOrderStatusInSheet } = await import('./lib/googleSheets.js')

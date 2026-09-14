@@ -3,10 +3,13 @@ import { registerAuthEndpoints } from '../server/lib/authEndpoints.js'
 import { getVoucherByCode } from '../server/lib/accountDb.js'
 import { handleOrderSubmit } from '../server/apiHandler.js'
 
+import { customerSessionMiddleware } from '../server/lib/customerSessionMiddleware.js'
+
 async function runApiTests() {
   console.log('=== RUNNING API END-TO-END TESTS ===')
   const app = express()
   app.use(express.json())
+  app.use(customerSessionMiddleware)
   registerAuthEndpoints(app)
 
   const server = await new Promise((resolve) => {
@@ -23,19 +26,29 @@ async function runApiTests() {
     console.log('Config response:', configData)
     if (!configData.success) throw new Error('Config API failed')
 
-    // 2. Test Phone OTP
-    console.log('\n2. Testing POST /api/auth/phone/send-otp...')
-    const testPhone = '0981753082'
-    const otpRes = await fetch(`${baseUrl}/api/auth/phone/send-otp`, {
+    // 2. Test Phone OTP is disabled (410)
+    console.log('\n2. Testing POST /api/auth/phone/send-otp is discontinued (410)...')
+    const phoneRes = await fetch(`${baseUrl}/api/auth/phone/send-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: testPhone }),
+      body: JSON.stringify({ phone: '0981753082' }),
     })
-    const otpData = await otpRes.json()
-    console.log('OTP response:', otpData)
-    if (!otpData.success || !otpData.accountId) throw new Error('Send OTP failed')
+    console.log('Phone OTP status:', phoneRes.status)
+    if (phoneRes.status !== 410) throw new Error('Phone OTP should be disabled with status 410')
 
-    const mockCode = otpData.mockCode || '123456'
+    // 2b. Test Google Auth Mock
+    process.env.AUTH_TEST_MODE = 'true'
+    console.log('\n2b. Testing POST /api/auth/google...')
+    const googleRes = await fetch(`${baseUrl}/api/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential: 'mock-google-token:sub-test-1:test@example.com' }),
+    })
+    const googleData = await googleRes.json()
+    console.log('Google Auth response:', googleData)
+    if (!googleData.success) throw new Error('Google auth failed')
+
+    const mockCode = googleData.mockCode || '123456'
     console.log(`Using verification code: ${mockCode}`)
 
     // 3. Test Verify OTP
@@ -43,7 +56,13 @@ async function runApiTests() {
     const verifyRes = await fetch(`${baseUrl}/api/auth/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accountId: otpData.accountId, code: mockCode }),
+      body: JSON.stringify({
+        target: googleData.rawTarget,
+        code: mockCode,
+        provider: 'google',
+        providerSub: googleData.providerSub,
+        fullName: googleData.fullName,
+      }),
     })
     const verifyData = await verifyRes.json()
     console.log('Verify response:', verifyData)
@@ -52,9 +71,13 @@ async function runApiTests() {
     const welcomeCode = verifyData.voucher.code
     console.log(`✅ Welcome Voucher Issued: ${welcomeCode}`)
 
+    const cookie = verifyRes.headers.get('set-cookie')
+
     // 4. Test Voucher Validation API
     console.log(`\n4. Testing GET /api/vouchers/validate?code=${welcomeCode}...`)
-    const valRes = await fetch(`${baseUrl}/api/vouchers/validate?code=${welcomeCode}&subtotal=750000`)
+    const valRes = await fetch(`${baseUrl}/api/vouchers/validate?code=${welcomeCode}&subtotal=750000`, {
+      headers: cookie ? { Cookie: cookie.split(';')[0] } : {},
+    })
     const valData = await valRes.json()
     console.log('Validate voucher response:', valData)
     if (!valData.isValid || valData.voucher?.freeShipping !== true) {
@@ -73,7 +96,7 @@ async function runApiTests() {
         fullName: 'Nguyễn Đức Quân',
         phone: '0981753082',
         email: 'ducquan16102006@gmail.com',
-        accountId: otpData.accountId,
+        accountId: verifyData.account.id,
       },
       shipping: {
         address: '622 Minh Khai',

@@ -1,9 +1,16 @@
-import { getVoucherByCode, markVoucherUsed } from './accountDb.js'
+import {
+  getVoucherByCode,
+  markVoucherUsed,
+  reserveVoucher as dbReserveVoucher,
+  releaseVoucher as dbReleaseVoucher,
+  isFirstOrderEligible,
+} from './accountDb.js'
 
 /**
  * Server-side Voucher Validator:
  * Xác thực toàn vẹn mã giảm giá từ SQLite database.
- * Tuyệt đối không tin tưởng client, đảm bảo voucher chỉ dùng được 1 lần duy nhất.
+ * Tuyệt đối không tin tưởng client, đảm bảo voucher chỉ dùng được 1 lần duy nhất,
+ * đúng quyền sở hữu tài khoản và đúng điều kiện first eligible order.
  */
 export function validateVoucher(code, context = {}) {
   if (!code || typeof code !== 'string') {
@@ -18,38 +25,57 @@ export function validateVoucher(code, context = {}) {
   // 1. Tra cứu voucher trong SQLite database
   const voucher = getVoucherByCode(cleanCode)
 
-  if (voucher) {
-    // Kiểm tra trạng thái đã sử dụng
-    if (voucher.used) {
+  if (!voucher) {
+    return {
+      isValid: false,
+      error: 'Mã ưu đãi không tồn tại hoặc đã hết hạn',
+    }
+  }
+
+  // 2. Kiểm tra trạng thái đã sử dụng
+  if (voucher.used || voucher.status === 'used') {
+    return {
+      isValid: false,
+      error: 'Mã ưu đãi này đã được sử dụng cho một đơn hàng trước đó',
+    }
+  }
+
+  // 3. Kiểm tra quyền sở hữu (Ownership)
+  const isSystemCampaign = voucher.account_id === 'system'
+  if (!isSystemCampaign) {
+    // Nếu là voucher cá nhân (Welcome Voucher), bắt buộc phải có accountId và khớp chủ sở hữu
+    if (!context.accountId) {
       return {
         isValid: false,
-        error: 'Mã ưu đãi này đã được sử dụng cho một đơn hàng trước đó',
+        error: 'Voucher chào mừng này yêu cầu đăng nhập tài khoản sở hữu để sử dụng',
       }
     }
 
-    // Nếu có truyền accountId, kiểm tra tính sở hữu (nếu muốn khoá chặt)
-    if (context.accountId && voucher.account_id && voucher.account_id !== context.accountId) {
+    if (voucher.account_id !== context.accountId) {
       return {
         isValid: false,
         error: 'Mã ưu đãi này không thuộc tài khoản hiện tại của bạn',
       }
     }
 
-    return {
-      isValid: true,
-      voucher: {
-        code: voucher.code,
-        discountPercent: voucher.discount_percent || 10,
-        freeShipping: Boolean(voucher.free_shipping),
-        accountId: voucher.account_id,
-        isWelcomeVoucher: voucher.account_id !== 'system',
-      },
+    // 4. Kiểm tra điều kiện First Eligible Order cho Welcome Voucher
+    if (!isFirstOrderEligible(voucher.account_id)) {
+      return {
+        isValid: false,
+        error: 'Voucher chào mừng chỉ áp dụng cho đơn hàng hợp lệ đầu tiên của tài khoản',
+      }
     }
   }
 
   return {
-    isValid: false,
-    error: 'Mã ưu đãi không tồn tại hoặc đã hết hạn',
+    isValid: true,
+    voucher: {
+      code: voucher.code,
+      discountPercent: voucher.discount_percent || 10,
+      freeShipping: Boolean(voucher.free_shipping),
+      accountId: voucher.account_id,
+      isWelcomeVoucher: !isSystemCampaign,
+    },
   }
 }
 
@@ -75,6 +101,24 @@ export function calculateVoucherBenefits(voucher, subtotal, originalShippingFee)
     shippingFee,
     freeShipping,
   }
+}
+
+/**
+ * Tạm giữ (reserve) voucher khi đơn hàng khởi tạo
+ */
+export function reserveVoucher(code, accountId, orderId) {
+  if (!code) return false
+  const cleanCode = String(code).trim().toUpperCase()
+  return dbReserveVoucher(cleanCode, accountId, orderId)
+}
+
+/**
+ * Hoàn lại (release) voucher khi đơn hàng bị hủy hoặc giao dịch thất bại
+ */
+export function releaseVoucher(code, orderId) {
+  if (!code) return false
+  const cleanCode = String(code).trim().toUpperCase()
+  return dbReleaseVoucher(cleanCode, orderId)
 }
 
 /**

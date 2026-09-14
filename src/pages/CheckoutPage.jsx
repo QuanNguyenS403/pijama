@@ -53,22 +53,26 @@ export default function CheckoutPage() {
   const [customerAccount, setCustomerAccount] = useState(null)
   const [appliedVoucher, setAppliedVoucher] = useState(null)
 
-  // Tự động điền thông tin nếu khách đã có tài khoản
+  // Revalidate session từ server và tự động điền thông tin nếu khách đã đăng nhập
   useEffect(() => {
-    try {
-      const savedAcc = JSON.parse(localStorage.getItem('qns_customer_account') || 'null')
-      if (savedAcc) {
-        setCustomerAccount(savedAcc)
-        setFormData((prev) => ({
-          ...prev,
-          fullName: prev.fullName || savedAcc.fullName || '',
-          phone: prev.phone || savedAcc.phone || '',
-          email: prev.email || savedAcc.email || '',
-        }))
-      }
-    } catch {
-      // ignore
-    }
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated && data.account) {
+          setCustomerAccount(data.account)
+          setFormData((prev) => ({
+            ...prev,
+            fullName: prev.fullName || data.account.fullName || '',
+            phone: prev.phone || data.account.phone || '',
+            email: prev.email || data.account.email || '',
+          }))
+        } else {
+          setCustomerAccount(null)
+          // Xóa untrusted localStorage cache nếu server không xác nhận session
+          localStorage.removeItem('qns_customer_account')
+        }
+      })
+      .catch(() => setCustomerAccount(null))
   }, [])
 
   // Calculate 10% discount for bank transfer (VietQR) or e-wallet (MoMo)

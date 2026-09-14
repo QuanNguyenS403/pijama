@@ -8,6 +8,7 @@ export async function submitOrder(orderPayload) {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify(orderPayload),
     })
 
