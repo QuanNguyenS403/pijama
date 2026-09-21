@@ -38,8 +38,10 @@ export default function AdminOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [actionModal, setActionModal]     = useState(null) // { type, orderId }
   const [actionInput, setActionInput]     = useState('')
+  const [selectedCarrier, setSelectedCarrier] = useState('Viettel Post')
   const [actionLoading, setActionLoading] = useState(false)
   const [toast, setToast]                 = useState(null)
+  const [isSyncingViettel, setIsSyncingViettel] = useState(false)
 
   const getAdminHeaders = () => {
     const token = sessionStorage.getItem('qns_admin_token') || ''
@@ -90,10 +92,66 @@ export default function AdminOrdersPage() {
     }
   }, [page, filters, orders.length])
 
-  // Chỉ tải khi vào trang hoặc thay đổi bộ lọc / phân trang — KHÔNG chạy polling liên tục
+  // Chỉ tải khi vào trang hoặc thay đổi bộ lọc / phân trang — tự động sync Viettel Post
   useEffect(() => {
     fetchOrders(false)
+    // Tự động kiểm tra hành trình Viettel Post trong nền khi mở trang
+    handleSyncViettelPost(true)
   }, [page, filters])
+
+  // ── Đồng bộ tự động toàn bộ đơn SHIPPED từ Viettel Post ─────────────
+  const handleSyncViettelPost = async (silent = false) => {
+    if (!silent) setIsSyncingViettel(true)
+    try {
+      const res = await fetch('/api/admin/orders/sync-viettelpost', {
+        method: 'POST',
+        headers: getAdminHeaders(),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (!silent) {
+          showToast(data.message || 'Đã đồng bộ thành công với Viettel Post', 'success')
+        }
+        fetchOrders(false)
+      }
+    } catch (err) {
+      if (!silent) {
+        showToast('Không thể đồng bộ Viettel Post: ' + err.message, 'error')
+      }
+    } finally {
+      if (!silent) setIsSyncingViettel(false)
+    }
+  }
+
+  // ── Đồng bộ 1 đơn hàng cụ thể từ Viettel Post ─────────────────────
+  const handleSyncSingleOrder = async (orderId, { forceDeliver = false } = {}) => {
+    setActionLoading(true)
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/sync-viettelpost`, {
+        method: 'POST',
+        headers: getAdminHeaders(),
+        body: JSON.stringify({ forceDeliver }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Đồng bộ thất bại')
+
+      showToast(data.message || 'Đã đồng bộ với Viettel Post', 'success')
+      if (data.order) {
+        broadcastOrderUpdateClient(data.order)
+        setOrders((prev) =>
+          prev.map((o) => ((o.orderId || o.id) === orderId ? data.order : o))
+        )
+        if (selectedOrder?.orderId === orderId || selectedOrder?.id === orderId) {
+          setSelectedOrder(data.order)
+        }
+      }
+      fetchOrders(false)
+    } catch (err) {
+      showToast(err.message, 'error')
+    } finally {
+      setActionLoading(false)
+    }
+  }
 
   // ── Gọi action API ──────────────────────────────
   const callAction = async (orderId, action, extra = {}) => {
@@ -224,11 +282,18 @@ export default function AdminOrdersPage() {
           </>
         )}
         {status === 'SHIPPED' && (
-          <ActionBtn
-            label="🎉 Giao thành công"
-            color="#16A34A"
-            onClick={() => callAction(orderId, 'DELIVER')}
-          />
+          <>
+            <ActionBtn
+              label="⚡ Sync Viettel Post"
+              color="#EA580C"
+              onClick={() => handleSyncSingleOrder(orderId)}
+            />
+            <ActionBtn
+              label="🎉 Giao thành công"
+              color="#16A34A"
+              onClick={() => callAction(orderId, 'DELIVER')}
+            />
+          </>
         )}
       </div>
     )
@@ -287,7 +352,7 @@ export default function AdminOrdersPage() {
             </p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <Link
             to="/admin/broadcast"
             title="Soạn và gửi thông báo email hàng loạt cho khách hàng"
@@ -308,6 +373,32 @@ export default function AdminOrdersPage() {
           >
             <span>📢 Gửi Broadcast</span>
           </Link>
+          <button
+            onClick={() => handleSyncViettelPost(false)}
+            disabled={isSyncingViettel || loading}
+            title="Tự động kiểm tra hành trình Viettel Post và cập nhật đơn Đã giao nếu khách đã nhận hàng"
+            style={{
+              ...btnStyle,
+              background: '#EA580C',
+              padding: '10px 16px',
+              fontSize: '12px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: (isSyncingViettel || loading) ? 'not-allowed' : 'pointer',
+              opacity: (isSyncingViettel || loading) ? 0.7 : 1,
+              boxShadow: '0 2px 4px rgba(234,88,12,0.2)',
+            }}
+          >
+            <span style={{
+              display: 'inline-block',
+              transition: 'transform 0.5s linear',
+              transform: isSyncingViettel ? 'rotate(360deg)' : 'none',
+            }}>
+              ⚡
+            </span>
+            <span>{isSyncingViettel ? 'Đang đồng bộ...' : 'Đồng bộ Viettel Post'}</span>
+          </button>
           <button
             onClick={() => fetchOrders(true)}
             disabled={isRefreshing || loading}
@@ -405,7 +496,7 @@ export default function AdminOrdersPage() {
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'13px' }}>
             <thead>
               <tr style={{ background:'#631521', color:'#FAF8F5' }}>
-                {['Mã đơn','Khách hàng','Sản phẩm','Tổng tiền','Thanh toán','Trạng thái','Ngày đặt','Thao tác'].map(h => (
+                {['Mã đơn','Khách hàng','Sản phẩm','Địa chỉ nhận','Tổng tiền','Thanh toán','Trạng thái','Ngày đặt','Thao tác'].map(h => (
                   <th key={h} style={{ padding:'12px 14px', textAlign:'left', fontSize:'11px', letterSpacing:'1px', textTransform:'uppercase', fontWeight:600, whiteSpace:'nowrap' }}>
                     {h}
                   </th>
@@ -415,7 +506,7 @@ export default function AdminOrdersPage() {
             <tbody>
               {orders.length === 0 && (
                 <tr>
-                  <td colSpan={8} style={{ padding:'48px', textAlign:'center', color:'#7A6E6E' }}>
+                  <td colSpan={9} style={{ padding:'48px', textAlign:'center', color:'#7A6E6E' }}>
                     Không tìm thấy đơn hàng nào phù hợp
                   </td>
                 </tr>
@@ -445,7 +536,7 @@ export default function AdminOrdersPage() {
                     </td>
 
                     {/* Sản phẩm */}
-                    <td style={{ padding:'12px 14px', minWidth:'220px', maxWidth:'320px' }}>
+                    <td style={{ padding:'12px 14px', minWidth:'220px', maxWidth:'300px' }}>
                       {order.items?.map((item, idx) => (
                         <div key={idx} style={{ fontSize:'12px', marginBottom:'4px', lineHeight:'1.4' }}>
                           <div style={{ fontWeight: 600, color: '#1A1614' }}>
@@ -456,6 +547,18 @@ export default function AdminOrdersPage() {
                           </div>
                         </div>
                       ))}
+                    </td>
+
+                    {/* Địa chỉ nhận */}
+                    <td style={{ padding:'12px 14px', minWidth:'180px', maxWidth:'260px', fontSize:'12px', lineHeight:'1.4' }}>
+                      <div style={{ color:'#1A1614', fontWeight:500, wordBreak:'break-word' }}>
+                        {order.shippingAddress || order.shipping?.fullAddress || 'Chưa cung cấp'}
+                      </div>
+                      {order.customerNote && (
+                        <div style={{ color:'#854D0E', fontSize:'11px', marginTop:'3px', background:'#FEF9C3', padding:'2px 6px', borderRadius:'2px', display:'inline-block' }}>
+                          Ghi chú: {order.customerNote}
+                        </div>
+                      )}
                     </td>
 
                     {/* Tổng tiền */}
@@ -496,6 +599,18 @@ export default function AdminOrdersPage() {
                     {/* Trạng thái */}
                     <td style={{ padding:'12px 14px' }}>
                       <StatusBadge status={order.status} />
+                      {order.status === 'SHIPPED' && (
+                        <div style={{ marginTop:'5px', fontSize:'11px', color:'#EA580C', display:'flex', alignItems:'center', gap:'4px' }}>
+                          <span>🚚</span>
+                          <span style={{ fontWeight:500 }}>{order.viettelPostStatus || 'Đang luân chuyển'}</span>
+                        </div>
+                      )}
+                      {order.status === 'DELIVERED' && order.viettelPostLastSync && (
+                        <div style={{ marginTop:'4px', fontSize:'10px', color:'#16A34A', display:'flex', alignItems:'center', gap:'3px' }}>
+                          <span>✓</span>
+                          <span>Đã xác thực Viettel Post</span>
+                        </div>
+                      )}
                     </td>
 
                     {/* Ngày đặt */}
@@ -588,6 +703,21 @@ export default function AdminOrdersPage() {
               <>
                 <h2 style={modalTitle}>🚚 Giao cho shipper</h2>
                 <p style={modalDesc}>Nhập mã vận đơn bưu tá. Email thông báo kèm mã vận đơn sẽ được gửi ngay cho khách hàng.</p>
+                <div style={{ marginBottom:'12px' }}>
+                  <label style={{ display:'block', fontSize:'12px', fontWeight:600, color:'#374151', marginBottom:'4px' }}>
+                    Đơn vị vận chuyển:
+                  </label>
+                  <select
+                    value={selectedCarrier}
+                    onChange={e => setSelectedCarrier(e.target.value)}
+                    style={{ ...inputStyle, width:'100%', display:'block', boxSizing:'border-box', cursor:'pointer' }}
+                  >
+                    <option value="Viettel Post">Viettel Post (Mặc định)</option>
+                    <option value="Giao Hàng Tiết Kiệm">Giao Hàng Tiết Kiệm (GHTK)</option>
+                    <option value="Giao Hàng Nhanh">Giao Hàng Nhanh (GHN)</option>
+                    <option value="SPX Express">SPX Express</option>
+                  </select>
+                </div>
                 <input
                   placeholder="Mã vận đơn (tracking number)"
                   value={actionInput}
@@ -596,14 +726,14 @@ export default function AdminOrdersPage() {
                 />
                 <div style={modalActions}>
                   <button
-                    onClick={() => callAction(actionModal.orderId, 'SHIP', { trackingNumber: actionInput })}
+                    onClick={() => callAction(actionModal.orderId, 'SHIP', { trackingNumber: actionInput, carrier: selectedCarrier })}
                     disabled={actionLoading}
                     style={{ ...btnStyle, background:'#EA580C' }}
                   >
                     {actionLoading ? 'Đang xử lý...' : '🚚 Xác nhận giao hàng'}
                   </button>
                   <button
-                    onClick={() => setActionModal(null)}
+                    onClick={() => { setActionModal(null); setSelectedCarrier('Viettel Post') }}
                     disabled={actionLoading}
                     style={{ ...btnStyle, background:'#6B7280' }}
                   >
@@ -702,9 +832,82 @@ export default function AdminOrdersPage() {
               <div><strong>Phương thức TT:</strong> {PAYMENT_LABELS[selectedOrder.paymentMethod] || selectedOrder.paymentMethod} ({selectedOrder.paymentStatus === 'PAID' ? '✅ Đã TT' : '⏳ Chưa TT'})</div>
               {selectedOrder.customerNote && <div><strong>Ghi chú khách:</strong> {selectedOrder.customerNote}</div>}
               {selectedOrder.adminNote && <div><strong>Ghi chú nội bộ:</strong> {selectedOrder.adminNote}</div>}
-              {selectedOrder.trackingNumber && <div><strong>Mã vận đơn:</strong> {selectedOrder.trackingNumber} ({selectedOrder.carrier || 'GHN'})</div>}
+              {selectedOrder.trackingNumber && <div><strong>Mã vận đơn:</strong> {selectedOrder.trackingNumber} ({selectedOrder.carrier || 'Viettel Post'})</div>}
               {selectedOrder.cancelReason && <div style={{ color: '#EF4444' }}><strong>Lý do hủy:</strong> {selectedOrder.cancelReason}</div>}
             </div>
+
+            {/* Khối Hành trình Viettel Post tự động */}
+            {(selectedOrder.status === 'SHIPPED' || selectedOrder.status === 'DELIVERED' || selectedOrder.trackingNumber) && (
+              <div style={{ background: '#FFF7ED', border: '1px solid #FFEDD5', padding: '14px', marginBottom: '16px', borderRadius: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#C2410C', fontSize: '13px' }}>
+                    <span>📮</span>
+                    <span>HÀNH TRÌNH VIETTEL POST (TỰ ĐỘNG SYNC)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSyncSingleOrder(selectedOrder.orderId || selectedOrder.id)}
+                    disabled={actionLoading}
+                    style={{
+                      background: '#EA580C',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '4px 10px',
+                      fontSize: '11px',
+                      borderRadius: '2px',
+                      cursor: actionLoading ? 'not-allowed' : 'pointer',
+                      fontWeight: 600,
+                    }}
+                  >
+                    🔄 Kiểm tra ngay
+                  </button>
+                </div>
+                <div style={{ fontSize: '12px', color: '#431407', lineHeight: '1.7' }}>
+                  <div><strong>Đơn vị vận chuyển:</strong> {selectedOrder.carrier || 'Viettel Post'}</div>
+                  <div>
+                    <strong>Mã vận đơn:</strong>{' '}
+                    <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#EA580C', background: '#FFE8D6', padding: '2px 6px', borderRadius: '2px' }}>
+                      {selectedOrder.trackingNumber || selectedOrder.trackingCode || 'Chưa tạo'}
+                    </span>
+                  </div>
+                  <div>
+                    <strong>Trạng thái bưu gửi:</strong>{' '}
+                    <span style={{ fontWeight: 600, color: selectedOrder.status === 'DELIVERED' ? '#16A34A' : '#C2410C' }}>
+                      {selectedOrder.viettelPostStatus || (selectedOrder.status === 'DELIVERED' ? 'Đã phát thành công — Khách hàng đã nhận' : 'Đang luân chuyển qua mạng lưới Viettel Post')}
+                    </span>
+                  </div>
+                  {selectedOrder.viettelPostLocation && <div><strong>Vị trí gần nhất:</strong> {selectedOrder.viettelPostLocation}</div>}
+                  {selectedOrder.viettelPostLastSync && <div><strong>Lần sync gần nhất:</strong> {new Date(selectedOrder.viettelPostLastSync).toLocaleTimeString('vi-VN')} ({new Date(selectedOrder.viettelPostLastSync).toLocaleDateString('vi-VN')})</div>}
+                </div>
+
+                {selectedOrder.status === 'SHIPPED' && (
+                  <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #FDBA74', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                    <span style={{ fontSize: '11px', color: '#9A3412', fontStyle: 'italic' }}>
+                      💡 Hệ thống tự động chuyển sang "Đã giao" khi Viettel Post cập nhật giao thành công.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleSyncSingleOrder(selectedOrder.orderId || selectedOrder.id, { forceDeliver: true })}
+                      disabled={actionLoading}
+                      title="Thử nghiệm kịch bản khi bưu tá Viettel Post giao hàng thành công"
+                      style={{
+                        background: '#16A34A',
+                        color: '#fff',
+                        border: 'none',
+                        padding: '6px 12px',
+                        fontSize: '11px',
+                        borderRadius: '2px',
+                        cursor: actionLoading ? 'not-allowed' : 'pointer',
+                        fontWeight: 600,
+                        boxShadow: '0 1px 3px rgba(22,163,74,0.3)',
+                      }}
+                    >
+                      🎯 Kích hoạt bưu tá giao thành công (Test Sync)
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div style={{ marginBottom:'16px' }}>
               <div style={{ fontSize:'12px', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'8px', color:'#7A6E6E' }}>

@@ -4,6 +4,7 @@ import { sendOwnerEmail } from './lib/emailOwner.js'
 import { orderPaymentStore } from './lib/paymentWebhook.js'
 import { validateOrderPricing } from './lib/pricingValidator.js'
 import { validateOrderStock } from './lib/stockValidator.js'
+import { calculateShippingDistance } from './lib/distanceService.js'
 import { redeemVoucher } from './lib/voucherValidator.js'
 import { generateTrackingToken } from './lib/orderTokenService.js'
 
@@ -80,6 +81,32 @@ export async function handleOrderSubmit(order, context = {}) {
         success: false,
         error: stockCheck.error || 'Sản phẩm đã hết hàng trong kho',
       },
+    }
+  }
+
+  // 3.1 Kiểm tra bán kính 30km từ Amber Riverside đối với phương thức Ship COD
+  const effectivePaymentMethod = order.payment?.method || order.paymentMethod || 'COD'
+  if (effectivePaymentMethod === 'COD') {
+    const shipping = order.shipping || order.customer || {}
+    const codCheck = await calculateShippingDistance({
+      address: shipping.address || order.customer?.address,
+      ward: shipping.ward || order.customer?.ward,
+      district: shipping.district || order.customer?.district,
+      city: shipping.city || order.customer?.city,
+    })
+
+    if (!codCheck.isCodAllowed) {
+      console.warn(`⛔ [COD REJECTED] Đơn hàng ${order.orderId} bị từ chối do vượt quá bán kính 30km: ${codCheck.message}`)
+      return {
+        status: 400,
+        data: {
+          success: false,
+          error: `Phương thức Ship COD chỉ áp dụng cho đơn hàng trong bán kính 30km từ kho Amber Riverside, 622 Minh Khai, Hà Nội (Khoảng cách tính toán: ~${codCheck.distanceKm}km). Vui lòng chọn phương thức Chuyển khoản VietQR để nhận ưu đãi giảm 10%.`,
+          code: 'COD_DISTANCE_EXCEEDED',
+          distanceKm: codCheck.distanceKm,
+          maxCodRadiusKm: codCheck.maxCodRadiusKm,
+        },
+      }
     }
   }
 

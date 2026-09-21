@@ -24,18 +24,9 @@ import {
   HelpCircle,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { formatVND, ORDER_STATUSES, CARRIER_TRACKING_URLS } from '../../data/checkoutConfig'
-import { syncBatchOrders } from '../../lib/orderSync'
-
-// Helper resolved tracking URL
-const getCarrierTrackingUrl = (carrier, trackingCode) => {
-  if (!trackingCode) return null
-  const c = String(carrier || '').toUpperCase()
-  if (c.includes('GHTK') || c.includes('TIẾT KIỆM')) return CARRIER_TRACKING_URLS.GHTK(trackingCode)
-  if (c.includes('VIETTEL')) return CARRIER_TRACKING_URLS.VIETTEL_POST(trackingCode)
-  if (c.includes('SPX') || c.includes('SHOPEE')) return CARRIER_TRACKING_URLS.SPX(trackingCode)
-  return CARRIER_TRACKING_URLS.GHN(trackingCode)
-}
+import { formatVND, ORDER_STATUSES, CARRIER_TRACKING_URLS, getCarrierTrackingUrl } from '../../data/checkoutConfig'
+import { syncBatchOrders, getSavedOrders } from '../../lib/orderSync'
+import ViettelPostTracker from '../shipping/ViettelPostTracker'
 
 // Order Timeline Stepper Component
 function OrderTrackingTimeline({ status, isVietQR, cancelReason }) {
@@ -139,16 +130,20 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [syncToast, setSyncToast] = useState(null)
 
-  // Online Lookup State
+  // Online Lookup & Viettel Post Tracking State
   const [lookupQuery, setLookupQuery] = useState('')
   const [isLookingUp, setIsLookingUp] = useState(false)
   const [lookupResults, setLookupResults] = useState(null)
+  const [liveTrackingResult, setLiveTrackingResult] = useState(null)
   const [lookupError, setLookupError] = useState(null)
+  const [expandedTrackingOrderId, setExpandedTrackingOrderId] = useState(null)
+  const [cardTrackingData, setCardTrackingData] = useState({})
+  const [loadingTrackingOrderId, setLoadingTrackingOrderId] = useState(null)
 
-  // Load orders from localStorage
+  // Load orders from resilient permanent store
   const loadOrders = () => {
     try {
-      const stored = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
+      const stored = getSavedOrders()
       setOrders(Array.isArray(stored) ? stored : [])
     } catch (e) {
       console.error('Error loading orders:', e)
@@ -163,7 +158,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
 
       // Tự động kiểm tra trạng thái mới nhất từ server khi mở Drawer
       try {
-        const stored = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
+        const stored = getSavedOrders()
         const ids = stored.map((o) => o.orderId || o.id).filter(Boolean)
         if (ids.length > 0) {
           syncBatchOrders(ids).then(() => {
@@ -202,51 +197,86 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
     setTimeout(() => setCopiedKey(null), 2000)
   }
 
-  // Handle Online Nationwide Lookup (P1 Item 7)
+  // Bật/tắt xem trực tiếp lộ trình Viettel Post của từng đơn hàng
+  const handleToggleInlineTracking = async (order) => {
+    const orderId = order.orderId || order.id
+    if (expandedTrackingOrderId === orderId) {
+      setExpandedTrackingOrderId(null)
+      return
+    }
+
+    setExpandedTrackingOrderId(orderId)
+    if (!cardTrackingData[orderId]) {
+      setLoadingTrackingOrderId(orderId)
+      try {
+        const code = order.trackingCode || order.trackingNumber || orderId
+        const res = await fetch(`/api/shipping/viettelpost/track?query=${encodeURIComponent(code)}`)
+        const data = await res.json()
+        if (data.success) {
+          setCardTrackingData((prev) => ({ ...prev, [orderId]: data }))
+        }
+      } catch (e) {
+        console.warn('Tracking fetch error:', e)
+      } finally {
+        setLoadingTrackingOrderId(null)
+      }
+    }
+  }
+
+  // Handle Online Nationwide Lookup & Viettel Post Track
   const handleOnlineLookup = async (e) => {
     if (e) e.preventDefault()
     const q = lookupQuery.trim()
-    if (!q || q.length < 3) {
-      setLookupError('Vui lòng nhập tối thiểu 3 số điện thoại hoặc mã đơn hàng.')
+    if (!q) {
+      setLookupError('Vui lòng nhập chính xác Mã vận đơn (Tracking code) đã được cấp tại mục "Đơn hàng của bạn".')
       return
     }
+
+    const cleanQ = q.toLowerCase()
+
+    // Chặn nếu người dùng nhập nhầm SĐT hoặc Mã đơn QNS
+    if (/^0[0-9]{8,10}$/.test(cleanQ)) {
+      setLookupError('Mục này chỉ tra cứu bằng Mã vận đơn (Tracking code), không tra cứu bằng Số điện thoại. Vui lòng kiểm tra mã vận đơn tại mục "Đơn hàng của bạn".')
+      return
+    }
+    if (cleanQ.startsWith('qns-')) {
+      setLookupError('Mục này chỉ tra cứu bằng Mã vận đơn (Tracking code), không tra cứu bằng Mã đơn hàng. Vui lòng mở mục "Đơn hàng của bạn" để lấy mã vận đơn khi đơn đã được bàn giao cho shipper.')
+      return
+    }
+
+    // Kiểm tra mã vận đơn trong các đơn hàng của khách hiện có trên thiết bị
+    const myOrders = orders || []
+    const stored = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
+    const allKnownOrders = [...myOrders, ...stored]
+    const matchedLocalOrder = allKnownOrders.find((o) => {
+      const track = String(o.trackingCode || o.trackingNumber || '').toLowerCase().trim()
+      return track && (track === cleanQ || track === cleanQ.replace(/\s+/g, ''))
+    })
 
     setIsLookingUp(true)
     setLookupError(null)
     setLookupResults(null)
+    setLiveTrackingResult(null)
 
     try {
-      const res = await fetch(`/api/orders/lookup?query=${encodeURIComponent(q)}`)
-      let data = {}
-      try {
-        data = await res.json()
-      } catch (e) {
-        data = { success: false, error: 'Không thể đọc phản hồi từ máy chủ' }
-      }
+      const res = await fetch(`/api/shipping/viettelpost/track?trackingCode=${encodeURIComponent(q)}&strictTrackingOnly=true`)
+      const trackData = await res.json()
 
-      if (data.success) {
-        setLookupResults(data.orders || [])
-        if (!data.orders || data.orders.length === 0) {
-          setLookupError(`Không tìm thấy đơn hàng nào khớp với "${q}".`)
+      if (trackData && trackData.success) {
+        setLiveTrackingResult(trackData)
+        if (matchedLocalOrder) {
+          setLookupResults([matchedLocalOrder])
+        } else if (trackData.order) {
+          setLookupResults([trackData.order])
         }
       } else {
-        setLookupError(data.error || 'Không tìm thấy thông tin đơn hàng.')
+        setLookupError(
+          trackData?.error ||
+          `Mã vận đơn "${q}" không tồn tại hoặc chưa được cấp cho bất kỳ đơn hàng nào. Vui lòng kiểm tra lại tại mục "Đơn hàng của bạn".`
+        )
       }
     } catch (err) {
-      // Fallback search local storage
-      const stored = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
-      const localMatches = stored.filter((o) => {
-        const id = (o.orderId || '').toLowerCase()
-        const phone = (o.customer?.phone || '').replace(/[^0-9]/g, '')
-        const cleanQ = q.replace(/[^0-9]/g, '')
-        return id.includes(q.toLowerCase()) || (cleanQ && phone.includes(cleanQ))
-      })
-
-      if (localMatches.length > 0) {
-        setLookupResults(localMatches)
-      } else {
-        setLookupError(`Không tìm thấy đơn hàng nào khớp với "${q}".`)
-      }
+      setLookupError('Có lỗi xảy ra khi kết nối máy chủ tra cứu hành trình Viettel Post.')
     } finally {
       setIsLookingUp(false)
     }
@@ -256,7 +286,13 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
   const filteredOrders = useMemo(() => {
     let result = orders
 
-    if (statusFilter !== 'ALL') {
+    if (statusFilter === 'DELIVERED') {
+      result = result.filter((o) => o.status === 'DELIVERED' || o.isDelivered)
+    } else if (statusFilter === 'SHIPPED') {
+      result = result.filter((o) => o.status === 'SHIPPED')
+    } else if (statusFilter === 'AWAITING_PAYMENT') {
+      result = result.filter((o) => o.status === 'AWAITING_PAYMENT')
+    } else if (statusFilter !== 'ALL') {
       result = result.filter((o) => o.status === statusFilter)
     }
 
@@ -266,7 +302,8 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
         (o) =>
           o.orderId?.toLowerCase().includes(q) ||
           o.customer?.phone?.toLowerCase().includes(q) ||
-          o.customer?.fullName?.toLowerCase().includes(q)
+          o.customer?.fullName?.toLowerCase().includes(q) ||
+          (o.trackingCode && o.trackingCode.toLowerCase().includes(q))
       )
     }
 
@@ -304,7 +341,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                 </div>
                 <div>
                   <h2 className="font-serif text-base sm:text-lg font-bold tracking-wide flex items-center gap-2">
-                    Lịch Sử & Tra Cứu Đơn
+                    Lịch Sử & Theo Dõi Đơn Hàng
                     {orders.length > 0 && (
                       <span className="text-[11px] font-sans font-semibold bg-[#D4AF37] text-[#2C201A] px-2 py-0.5 rounded-full">
                         {orders.length}
@@ -312,7 +349,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                     )}
                   </h2>
                   <p className="text-[11px] text-white/70 font-light">
-                    Theo dõi hành trình vận chuyển & hóa đơn
+                    Theo dõi hành trình bưu phẩm Viettel Post & hóa đơn
                   </p>
                 </div>
               </div>
@@ -336,7 +373,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                     : 'border-transparent text-[#8C7E74] hover:text-[#1A1614]'
                 }`}
               >
-                Đơn Trên Thiết Bị ({orders.length})
+                Đơn hàng của bạn ({orders.length})
               </button>
               <button
                 onClick={() => setActiveTab('ONLINE_LOOKUP')}
@@ -346,8 +383,8 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                     : 'border-transparent text-[#8C7E74] hover:text-[#1A1614]'
                 }`}
               >
-                <Globe className="w-3.5 h-3.5" />
-                Tra Cứu Bằng SĐT / Mã Đơn
+                <Truck className="w-3.5 h-3.5 text-[#EE0033]" />
+                Theo dõi đơn hàng
               </button>
             </div>
 
@@ -405,11 +442,31 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                         Tất cả ({orders.length})
                       </button>
                       <button
+                        onClick={() => setStatusFilter('DELIVERED')}
+                        className={`px-2.5 py-1 rounded-[2px] border transition-colors cursor-pointer ${
+                          statusFilter === 'DELIVERED'
+                            ? 'bg-[#2E7D32] text-white border-[#2E7D32] font-semibold'
+                            : 'bg-[#FAF8F5] text-[#2E7D32] border-[#C8E6C9] hover:bg-white'
+                        }`}
+                      >
+                        Đã giao ({orders.filter((o) => o.status === 'DELIVERED' || o.isDelivered).length})
+                      </button>
+                      <button
+                        onClick={() => setStatusFilter('SHIPPED')}
+                        className={`px-2.5 py-1 rounded-[2px] border transition-colors cursor-pointer ${
+                          statusFilter === 'SHIPPED'
+                            ? 'bg-[#631521] text-white border-[#631521] font-semibold'
+                            : 'bg-[#FAF8F5] text-[#4A3F38] border-[#E8DFD5] hover:bg-white'
+                        }`}
+                      >
+                        Đang giao ({orders.filter((o) => o.status === 'SHIPPED').length})
+                      </button>
+                      <button
                         onClick={() => setStatusFilter('AWAITING_PAYMENT')}
                         className={`px-2.5 py-1 rounded-[2px] border transition-colors cursor-pointer ${
                           statusFilter === 'AWAITING_PAYMENT'
-                            ? 'bg-[#631521] text-white border-[#631521] font-semibold'
-                            : 'bg-[#FAF8F5] text-[#4A3F38] border-[#E8DFD5] hover:bg-white'
+                            ? 'bg-[#1967D2] text-white border-[#1967D2] font-semibold'
+                            : 'bg-[#FAF8F5] text-[#1967D2] border-[#AECBFA] hover:bg-white'
                         }`}
                       >
                         Chờ VietQR ({orders.filter((o) => o.status === 'AWAITING_PAYMENT').length})
@@ -427,10 +484,10 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                         <Package className="w-8 h-8 stroke-[1.5]" />
                       </div>
                       <h3 className="font-serif text-lg font-bold text-[#1A1614] mb-1.5">
-                        Chưa có đơn hàng nào trên thiết bị này
+                        Chưa có đơn hàng nào trong danh sách
                       </h3>
                       <p className="text-xs text-[#8C7E74] max-w-xs mb-6 font-light leading-relaxed">
-                        Bạn có thể chuyển sang mục <strong>"Tra Cứu Bằng SĐT"</strong> để tìm đơn đã đặt trước đó, hoặc khám phá bộ sưu tập mới nhất.
+                        Bạn có thể chuyển sang mục <strong>"Theo dõi đơn hàng"</strong> để theo dõi lộ trình vận chuyển bưu phẩm Viettel Post hoặc tìm lại đơn đã đặt.
                       </p>
                       <button
                         onClick={onClose}
@@ -462,16 +519,19 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
               </>
             )}
 
-            {/* TAB 2: NATIONWIDE ONLINE LOOKUP (P1 Item 7) */}
+            {/* TAB 2: THEO DÕI ĐƠN HÀNG (VIETTEL POST DIRECT INTEGRATION) */}
             {activeTab === 'ONLINE_LOOKUP' && (
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 pdp-scrollbar">
-                <div className="bg-white p-5 rounded-[4px] border border-[#E8DFD5] space-y-3">
-                  <h3 className="font-serif text-sm font-bold text-[#1A1614] uppercase tracking-wider flex items-center gap-2">
-                    <Search className="w-4 h-4 text-[#631521]" />
-                    Tra Cứu Đơn Hàng Toàn Quốc
-                  </h3>
+                <div className="bg-white p-5 rounded-[4px] border border-[#E8DFD5] space-y-3 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-serif text-sm font-bold text-[#1A1614] uppercase tracking-wider flex items-center gap-2">
+                      <Truck className="w-4 h-4 text-[#EE0033]" />
+                      Theo Dõi Đơn Hàng
+                    </h3>
+                  </div>
+
                   <p className="text-xs text-[#4A3F38] font-light leading-relaxed">
-                    Dù bạn đã xóa lịch sử duyệt web hoặc đặt hàng từ thiết bị khác, chỉ cần nhập <strong>Số điện thoại</strong> hoặc <strong>Mã đơn hàng (QNS-...)</strong> để kiểm tra trực tiếp.
+                    Mục này chỉ dành để tra cứu chính xác <strong>Mã vận đơn (Tracking code)</strong> đã được cấp tại mục <strong>Đơn hàng của bạn</strong> để theo dõi trực tiếp hành trình đơn hàng trên website:
                   </p>
 
                   <form onSubmit={handleOnlineLookup} className="flex gap-2 pt-1">
@@ -479,7 +539,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                       type="text"
                       value={lookupQuery}
                       onChange={(e) => setLookupQuery(e.target.value)}
-                      placeholder="Nhập SĐT (VD: 0981753082) hoặc Mã đơn..."
+                      placeholder="Nhập chính xác Mã vận đơn đã được cấp (ví dụ: VT123456789)..."
                       className="flex-1 px-3.5 py-2.5 bg-[#FAF8F5] border border-[#E8DFD5] rounded-[3px] text-xs text-[#1A1614] focus:outline-none focus:border-[#631521] focus:bg-white"
                     />
                     <button
@@ -488,7 +548,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                       className="bg-[#631521] text-white px-5 py-2.5 rounded-[3px] font-sans font-bold text-xs uppercase tracking-wider hover:bg-[#4A0D17] transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shrink-0"
                     >
                       {isLookingUp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                      <span>Tìm Kiếm</span>
+                      <span>Theo Dõi</span>
                     </button>
                   </form>
 
@@ -499,11 +559,18 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                   )}
                 </div>
 
+                {/* Kết quả Tra cứu trực tiếp hành trình Viettel Post */}
+                {liveTrackingResult && (
+                  <div className="space-y-2">
+                    <ViettelPostTracker trackingData={liveTrackingResult} />
+                  </div>
+                )}
+
                 {/* Lookup Results */}
                 {lookupResults && lookupResults.length > 0 && (
                   <div className="space-y-4">
                     <p className="text-xs font-semibold text-[#631521]">
-                      Tìm thấy {lookupResults.length} đơn hàng:
+                      Đơn hàng tương ứng ({lookupResults.length}):
                     </p>
                     {lookupResults.map((order) => renderOrderCard(order))}
                   </div>
@@ -528,7 +595,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
 
   // Render individual Order Card
   function renderOrderCard(order) {
-    const isVietQR = order.payment?.method === 'BANK_TRANSFER' || order.payment?.method === 'MOMO'
+    const isVietQR = order.payment?.method === 'BANK_TRANSFER'
     const isExpandedQr = expandedQrOrderId === order.orderId
     const transferContent = `${order.customer?.fullName || 'Khach Hang'} ${order.customer?.phone || ''}`.trim()
     const qrUrl = `https://img.vietqr.io/image/vietcombank-1050773506-compact2.png?amount=${order.total}&accountName=NGUYEN%20DUC%20QUAN`
@@ -564,12 +631,17 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
             </span>
           </div>
 
-          {/* Payment Method Badge */}
+          {/* Status & Payment Badge */}
           <div>
             {order.status === 'CANCELLED' ? (
               <span className="inline-flex items-center gap-1 bg-[#FFEBEE] text-[#C62828] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#FFCDD2]">
                 <Ban className="w-3 h-3" />
                 Đã Hủy
+              </span>
+            ) : order.status === 'DELIVERED' || order.isDelivered ? (
+              <span className="inline-flex items-center gap-1 bg-[#E8F5E9] text-[#2E7D32] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#A5D6A7] shadow-xs">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#2E7D32]" />
+                Đã giao thành công
               </span>
             ) : isVietQR && order.payment?.status !== 'PAID' ? (
               <span className="inline-flex items-center gap-1 bg-[#E8F0FE] text-[#1967D2] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#AECBFA]">
@@ -577,7 +649,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                 Chờ VietQR (-10%)
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 bg-[#E8F5E9] text-[#2E7D32] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#C8E6C9]">
+              <span className="inline-flex items-center gap-1 bg-[#FAF5F0] text-[#631521] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#D4AF37]/40">
                 <Truck className="w-3 h-3" />
                 {order.payment?.methodLabel || (isVietQR ? 'VietQR (Đã thanh toán)' : 'COD')}
               </span>
@@ -597,7 +669,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
               <p className="text-[11px] text-[#8C7E74]">Đơn vị vận chuyển:</p>
               <p className="font-bold text-[#1A1614] flex items-center gap-1.5">
                 <Truck className="w-3.5 h-3.5 text-[#631521]" />
-                {order.carrier || 'Giao Hàng Nhanh (GHN)'}
+                {order.carrier || 'Viettel Post'}
               </p>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="text-[11px] text-[#8C7E74]">Mã vận đơn:</span>
@@ -615,23 +687,11 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                 </button>
               </div>
             </div>
-
-            {carrierUrl && (
-              <a
-                href={carrierUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 bg-[#631521] text-white text-[11px] font-bold px-3 py-1.5 rounded-[2px] hover:bg-[#4A0D17] transition-colors"
-              >
-                <span>Tra cứu hành trình</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
           </div>
         )}
 
         {/* Items */}
-        {order.items && order.items.length > 0 && (
+        {order.items && order.items.length > 0 ? (
           <div className="p-3.5 sm:p-4 space-y-3">
             {order.items.map((item, i) => (
               <div key={i} className="flex items-start gap-3 text-xs">
@@ -663,6 +723,11 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                 </div>
               </div>
             ))}
+          </div>
+        ) : (
+          <div className="p-3.5 sm:p-4 bg-[#FAF8F5] text-xs text-[#4A3F38] italic flex items-center gap-2">
+            <Package className="w-4 h-4 text-[#8C7E74]" />
+            <span>Bộ sản phẩm Pijama thiết kế lụa cao cấp QuanNguyenS · Đơn hàng #{order.orderId}</span>
           </div>
         )}
 

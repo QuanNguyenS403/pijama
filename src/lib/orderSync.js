@@ -1,12 +1,65 @@
 // src/lib/orderSync.js
 // Quản lý đồng bộ trạng thái đơn hàng thời gian thực giữa Admin và Khách hàng
+// NGUYÊN TẮC BẢO MẬT: Tuyệt đối không tự ý xóa nội dung đơn hàng (sản phẩm, giá tiền, địa chỉ) khi đơn hoàn tất hoặc nhận hàng thành công.
+
+export const ACTIVE_ORDERS_KEY = 'pijama_orders'
+export const PERMANENT_ORDERS_KEY = 'pijama_orders_archive'
 
 let eventSourceInstance = null
 let broadcastChannelInstance = null
 let isInitialized = false
 
 /**
+ * Lấy toàn bộ danh sách đơn hàng đã lưu với cơ chế tự phục hồi từ kho lưu trữ vĩnh viễn
+ */
+export function getSavedOrders() {
+  if (typeof window === 'undefined') return []
+  try {
+    const active = JSON.parse(localStorage.getItem(ACTIVE_ORDERS_KEY) || '[]')
+    const archive = JSON.parse(localStorage.getItem(PERMANENT_ORDERS_KEY) || '[]')
+
+    const map = new Map()
+
+    // 1. Nạp từ kho lưu trữ vĩnh viễn (đặc biệt là các đơn DELIVERED)
+    if (Array.isArray(archive)) {
+      archive.forEach((o) => {
+        const id = o?.orderId || o?.id
+        if (id) map.set(id, o)
+      })
+    }
+
+    // 2. Nạp và đối chiếu với active orders
+    if (Array.isArray(active)) {
+      active.forEach((o) => {
+        const id = o?.orderId || o?.id
+        if (id) {
+          const existing = map.get(id)
+          if (existing) {
+            // Bảo toàn items: Không để danh sách sản phẩm bị rỗng
+            const items = (Array.isArray(o.items) && o.items.length > 0)
+              ? o.items
+              : (Array.isArray(existing.items) && existing.items.length > 0 ? existing.items : [])
+            map.set(id, { ...existing, ...o, items })
+          } else {
+            map.set(id, o)
+          }
+        }
+      })
+    }
+
+    const mergedList = Array.from(map.values())
+    // Sắp xếp đơn mới nhất lên đầu
+    mergedList.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+    return mergedList
+  } catch (err) {
+    console.error('Lỗi khi đọc danh sách đơn hàng đã lưu:', err)
+    return []
+  }
+}
+
+/**
  * Cập nhật đơn hàng cục bộ vào localStorage và sessionStorage
+ * Đảm bảo khi khách hàng nhận hàng thành công (DELIVERED), toàn bộ nội dung đơn hàng KHÔNG BAO GIỜ bị xóa
  * @param {object} updatedOrder Dữ liệu đơn hàng mới nhất từ Server hoặc Admin
  */
 export function applyOrderUpdateLocally(updatedOrder) {
@@ -15,39 +68,91 @@ export function applyOrderUpdateLocally(updatedOrder) {
   if (!orderId) return null
 
   try {
-    // 1. Cập nhật mảng pijama_orders trong localStorage
-    const stored = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
+    // 1. Đọc kho lưu trữ hiện tại
+    const stored = getSavedOrders()
     let foundIndex = stored.findIndex((o) => (o.orderId || o.id) === orderId)
+    const existing = foundIndex >= 0 ? stored[foundIndex] : null
 
-    let mergedOrder = updatedOrder
-    if (foundIndex >= 0) {
-      // Merge giữ lại các thông tin chi tiết của client nếu server trả về tóm tắt
-      const existing = stored[foundIndex]
-      mergedOrder = {
-        ...existing,
-        ...updatedOrder,
-        status: updatedOrder.status || existing.status,
-        trackingCode: updatedOrder.trackingCode || updatedOrder.trackingNumber || existing.trackingCode || existing.trackingNumber || '',
-        trackingNumber: updatedOrder.trackingCode || updatedOrder.trackingNumber || existing.trackingCode || existing.trackingNumber || '',
-        carrier: updatedOrder.carrier || existing.carrier || 'GHN',
-        paymentStatus: updatedOrder.paymentStatus || existing.paymentStatus,
-        payment: {
-          ...(existing.payment || {}),
-          ...(updatedOrder.payment || {}),
-          status: updatedOrder.paymentStatus || updatedOrder.payment?.status || existing.payment?.status,
-        },
-        cancelReason: updatedOrder.cancelReason || existing.cancelReason || '',
-        adminNote: updatedOrder.adminNote || existing.adminNote || '',
-        updatedAt: updatedOrder.updatedAt || new Date().toISOString(),
-      }
-      stored[foundIndex] = mergedOrder
-    } else {
-      stored.unshift(updatedOrder)
+    // 2. Bảo tồn tuyệt đối nội dung đơn hàng (Items, Customer, Shipping, Totals)
+    // ĐẶC BIỆT KHI KHÁCH NHẬN HÀNG THÀNH CÔNG (DELIVERED), KHÔNG BAO GIỜ ĐƯỢC XÓA SẢN PHẨM HOẶC BỎ TRỐNG
+    const preservedItems = (Array.isArray(updatedOrder.items) && updatedOrder.items.length > 0)
+      ? updatedOrder.items
+      : (Array.isArray(existing?.items) && existing.items.length > 0 ? existing.items : [])
+
+    const preservedCustomer = {
+      ...(existing?.customer || {}),
+      ...(updatedOrder.customer || {}),
+      fullName: updatedOrder.customer?.fullName || updatedOrder.customerName || existing?.customer?.fullName || existing?.customerName || '',
+      phone: updatedOrder.customer?.phone || updatedOrder.customerPhone || existing?.customer?.phone || existing?.customerPhone || '',
+      email: updatedOrder.customer?.email || updatedOrder.customerEmail || existing?.customer?.email || existing?.customerEmail || '',
     }
 
-    localStorage.setItem('pijama_orders', JSON.stringify(stored.slice(0, 50)))
+    const preservedShipping = {
+      ...(existing?.shipping || {}),
+      ...(updatedOrder.shipping || {}),
+      fullAddress: updatedOrder.shipping?.fullAddress || updatedOrder.shippingAddress || existing?.shipping?.fullAddress || existing?.shippingAddress || '',
+      carrier: updatedOrder.carrier || updatedOrder.shipping?.carrier || existing?.carrier || existing?.shipping?.carrier || 'Viettel Post',
+    }
 
-    // 2. Cập nhật sessionStorage nếu đúng đơn hàng vừa xem
+    const finalStatus = updatedOrder.status || existing?.status || 'PENDING'
+    const isDelivered = finalStatus === 'DELIVERED'
+
+    const mergedOrder = {
+      ...(existing || {}),
+      ...updatedOrder,
+      items: preservedItems,
+      customer: preservedCustomer,
+      shipping: preservedShipping,
+      status: finalStatus,
+      isDelivered: isDelivered || Boolean(existing?.isDelivered),
+      deliveredAt: isDelivered ? (updatedOrder.deliveredAt || existing?.deliveredAt || new Date().toISOString()) : existing?.deliveredAt,
+      // Đánh dấu cờ bảo vệ vĩnh viễn không được xóa
+      isPermanentRetention: true,
+      subtotal: updatedOrder.subtotal ?? existing?.subtotal ?? 0,
+      total: updatedOrder.total ?? existing?.total ?? 0,
+      discount: updatedOrder.discount ?? existing?.discount ?? 0,
+      shippingFee: updatedOrder.shippingFee ?? existing?.shippingFee ?? 0,
+      orderDateVN: updatedOrder.orderDateVN || existing?.orderDateVN || '',
+      createdAt: updatedOrder.createdAt || existing?.createdAt || new Date().toISOString(),
+      trackingCode: updatedOrder.trackingCode || updatedOrder.trackingNumber || existing?.trackingCode || existing?.trackingNumber || '',
+      trackingNumber: updatedOrder.trackingCode || updatedOrder.trackingNumber || existing?.trackingCode || existing?.trackingNumber || '',
+      carrier: updatedOrder.carrier || existing?.carrier || 'Viettel Post',
+      paymentStatus: updatedOrder.paymentStatus || existing?.paymentStatus || (isDelivered ? 'PAID' : undefined),
+      payment: {
+        ...(existing?.payment || {}),
+        ...(updatedOrder.payment || {}),
+        status: updatedOrder.paymentStatus || updatedOrder.payment?.status || (isDelivered ? 'PAID' : existing?.payment?.status),
+      },
+      cancelReason: updatedOrder.cancelReason || existing?.cancelReason || '',
+      adminNote: updatedOrder.adminNote || existing?.adminNote || '',
+      updatedAt: updatedOrder.updatedAt || new Date().toISOString(),
+    }
+
+    if (foundIndex >= 0) {
+      stored[foundIndex] = mergedOrder
+    } else {
+      stored.unshift(mergedOrder)
+    }
+
+    // 3. Ghi an toàn vào localStorage (cả ACTIVE và ARCHIVE vĩnh viễn)
+    // Không cắt bỏ đơn hàng đã giao thành công
+    localStorage.setItem(ACTIVE_ORDERS_KEY, JSON.stringify(stored))
+
+    // Cập nhật kho vĩnh viễn PERMANENT_ORDERS_KEY
+    try {
+      const archive = JSON.parse(localStorage.getItem(PERMANENT_ORDERS_KEY) || '[]')
+      const aIdx = archive.findIndex((o) => (o.orderId || o.id) === orderId)
+      if (aIdx >= 0) {
+        archive[aIdx] = mergedOrder
+      } else {
+        archive.unshift(mergedOrder)
+      }
+      localStorage.setItem(PERMANENT_ORDERS_KEY, JSON.stringify(archive))
+    } catch (archiveErr) {
+      console.warn('Lỗi ghi vào kho vĩnh viễn:', archiveErr)
+    }
+
+    // 4. Cập nhật sessionStorage nếu đúng đơn hàng vừa xem
     try {
       const latestOrder = JSON.parse(sessionStorage.getItem('latest_order') || 'null')
       if (latestOrder && (latestOrder.orderId || latestOrder.id) === orderId) {
@@ -62,7 +167,7 @@ export function applyOrderUpdateLocally(updatedOrder) {
       // Bỏ qua lỗi sessionStorage
     }
 
-    // 3. Bắn CustomEvent để React components tự re-render ngay lập tức
+    // 5. Bắn CustomEvent để React components tự re-render ngay lập tức
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('orders_updated', { detail: mergedOrder }))
     }
@@ -212,7 +317,7 @@ export function initOrderSync() {
 
   // 3. Đồng bộ một lần có kiểm soát throttle khi mở ứng dụng
   try {
-    const localOrders = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
+    const localOrders = getSavedOrders()
     const ids = localOrders.map((o) => o.orderId || o.id).filter(Boolean)
     if (ids.length > 0) {
       syncBatchOrders(ids, { force: false })

@@ -26,6 +26,7 @@ import {
   createOrderPayload,
 } from '../data/checkoutConfig'
 import { submitOrder } from '../lib/orderService'
+import { evaluateCodEligibility, SHOP_ORIGIN } from '../lib/distanceUtils'
 
 export default function CheckoutPage() {
   const navigate = useNavigate()
@@ -75,8 +76,60 @@ export default function CheckoutPage() {
       .catch(() => setCustomerAccount(null))
   }, [])
 
-  // Calculate 10% discount for bank transfer (VietQR) or e-wallet (MoMo)
-  const isBankTransfer = formData.paymentMethod === 'BANK_TRANSFER' || formData.paymentMethod === 'MOMO'
+  // ── KIỂM TRA BÁN KÍNH 30KM ĐỐI VỚI SHIP COD (AMBER RIVERSIDE, 622 MINH KHAI) ──
+  const [codStatus, setCodStatus] = useState(() =>
+    evaluateCodEligibility({
+      address: '',
+      ward: '',
+      district: '',
+      city: 'Hà Nội',
+    })
+  )
+
+  useEffect(() => {
+    // 1. Phân tích ngay lập tức từ thuật toán nội suy tọa độ client (0 delay)
+    const localCheck = evaluateCodEligibility({
+      address: formData.address,
+      ward: formData.ward,
+      district: formData.district,
+      city: formData.city,
+    })
+    setCodStatus(localCheck)
+
+    // Nếu vượt quá 30km và khách đang để COD -> Tự động chuyển mặc định sang VietQR
+    if (!localCheck.isCodAllowed && formData.paymentMethod === 'COD') {
+      setFormData((prev) => ({ ...prev, paymentMethod: 'BANK_TRANSFER' }))
+    }
+
+    // 2. Gọi API server (Google Maps API + Fallback) để tính toán chính xác
+    const timer = setTimeout(async () => {
+      try {
+        const q = new URLSearchParams({
+          address: formData.address || '',
+          ward: formData.ward || '',
+          district: formData.district || '',
+          city: formData.city || 'Hà Nội',
+        })
+        const res = await fetch(`/api/shipping/check-cod?${q.toString()}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data && typeof data.isCodAllowed === 'boolean') {
+            setCodStatus(data)
+            if (!data.isCodAllowed && formData.paymentMethod === 'COD') {
+              setFormData((prev) => ({ ...prev, paymentMethod: 'BANK_TRANSFER' }))
+            }
+          }
+        }
+      } catch (e) {
+        // Giữ nguyên kết quả localCheck
+      }
+    }, 400)
+
+    return () => clearTimeout(timer)
+  }, [formData.city, formData.district, formData.ward, formData.address])
+
+  // Calculate 10% discount for bank transfer (VietQR)
+  const isBankTransfer = formData.paymentMethod === 'BANK_TRANSFER'
   const bankTransferDiscount = useMemo(() => {
     return isBankTransfer ? Math.round(subtotal * 0.10) : 0
   }, [isBankTransfer, subtotal])
@@ -204,12 +257,19 @@ export default function CheckoutPage() {
           }
         }
 
-        // Lưu đơn hàng vừa tạo vào session storage & localStorage
+        // Lưu đơn hàng vừa tạo vào session storage & localStorage (kèm kho lưu trữ vĩnh viễn)
         try {
           sessionStorage.setItem('latest_order', JSON.stringify(orderPayload))
           const existingOrders = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
-          const filtered = existingOrders.filter((o) => o.orderId !== orderPayload.orderId)
-          localStorage.setItem('pijama_orders', JSON.stringify([orderPayload, ...filtered].slice(0, 50)))
+          const filtered = existingOrders.filter((o) => (o.orderId || o.id) !== orderPayload.orderId)
+          localStorage.setItem('pijama_orders', JSON.stringify([orderPayload, ...filtered]))
+
+          try {
+            const archive = JSON.parse(localStorage.getItem('pijama_orders_archive') || '[]')
+            const filteredArchive = archive.filter((o) => (o.orderId || o.id) !== orderPayload.orderId)
+            localStorage.setItem('pijama_orders_archive', JSON.stringify([orderPayload, ...filteredArchive]))
+          } catch {}
+
           window.dispatchEvent(new Event('orders_updated'))
         } catch (err) {
           console.error(err)
@@ -219,7 +279,7 @@ export default function CheckoutPage() {
         clearCart()
 
         // 4. Chuyển hướng theo phương thức thanh toán
-        if (formData.paymentMethod === 'BANK_TRANSFER' || formData.paymentMethod === 'MOMO') {
+        if (formData.paymentMethod === 'BANK_TRANSFER') {
           navigate(`/thanh-toan-chuyen-khoan?orderId=${result.orderId}`, {
             state: { order: orderPayload },
           })
@@ -542,31 +602,55 @@ export default function CheckoutPage() {
                     </span>
                   </div>
 
+                  {/* Thông báo nếu vượt quá bán kính 30km COD */}
+                  {!codStatus.isCodAllowed && (
+                    <div className="p-3.5 mb-4 bg-[#FFF8E1] border border-[#FFE082] rounded-[3px] text-xs text-[#8D6E63] flex items-start gap-2.5 shadow-xs">
+                      <AlertCircle className="w-4 h-4 text-[#F57C00] shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-[#E65100]">
+                          Chỉ hỗ trợ Ship COD trong bán kính 30km từ kho hàng (Amber Riverside, Hà Nội)
+                        </p>
+                        <p className="text-[#5D4037] mt-1 leading-relaxed">
+                          Địa chỉ của bạn cách kho hàng ~<strong>{codStatus.distanceKm}km</strong> (vượt quá bán kính 30km). Hệ thống đã tự động chọn phương thức <strong>Chuyển khoản VietQR</strong> để bạn nhận ngay ưu đãi <strong>GIẢM THÊM 10%</strong> trực tiếp!
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-3">
                     {PAYMENT_METHODS.map((method) => {
+                      const isCod = method.value === 'COD'
+                      const isCodDisabled = isCod && !codStatus.isCodAllowed
                       const isSelected = formData.paymentMethod === method.value
                       const hasDiscount = method.discountPercent > 0
 
                       return (
                         <div
                           key={method.value}
-                          onClick={() => handleInputChange('paymentMethod', method.value)}
-                          className={`p-4 rounded-[3px] border cursor-pointer transition-all ${
-                            isSelected
-                              ? 'border-[#631521] bg-[#FAF5F0] shadow-xs ring-1 ring-[#631521]'
-                              : 'border-[#E8DFD5] bg-white hover:border-[#631521]/60 hover:bg-[#FAF8F5]'
+                          onClick={() => {
+                            if (isCodDisabled) return
+                            handleInputChange('paymentMethod', method.value)
+                          }}
+                          className={`p-4 rounded-[3px] border transition-all ${
+                            isCodDisabled
+                              ? 'border-[#E8DFD5] bg-[#FAF8F5] opacity-60 cursor-not-allowed'
+                              : isSelected
+                              ? 'border-[#631521] bg-[#FAF5F0] shadow-xs ring-1 ring-[#631521] cursor-pointer'
+                              : 'border-[#E8DFD5] bg-white hover:border-[#631521]/60 hover:bg-[#FAF8F5] cursor-pointer'
                           }`}
                         >
                           <div className="flex items-start gap-3.5">
                             <div className="pt-0.5">
                               <div
                                 className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                                  isSelected
+                                  isCodDisabled
+                                    ? 'border-[#D9CFC4] bg-[#E8DFD5]'
+                                    : isSelected
                                     ? 'border-[#631521] bg-[#631521]'
                                     : 'border-[#8C7E74]'
                                 }`}
                               >
-                                {isSelected && <Check className="w-3 h-3 text-white stroke-[3]" />}
+                                {isSelected && !isCodDisabled && <Check className="w-3 h-3 text-white stroke-[3]" />}
                               </div>
                             </div>
 
@@ -578,16 +662,30 @@ export default function CheckoutPage() {
                                     {method.label}
                                   </span>
                                 </div>
-                                {hasDiscount && (
-                                  <span className="inline-flex items-center gap-1 bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] text-[10.5px] font-bold px-2 py-0.5 rounded-[2px]">
-                                    <Gift className="w-3 h-3" />
-                                    GIẢM {method.discountPercent}%
-                                  </span>
-                                )}
+                                <div className="flex items-center gap-1.5">
+                                  {isCodDisabled && (
+                                    <span className="inline-flex items-center gap-1 bg-[#FFEBEE] text-[#C62828] border border-[#FFCDD2] text-[10px] font-bold px-2 py-0.5 rounded-[2px]">
+                                      Vượt quá 30km (Chỉ áp dụng VietQR)
+                                    </span>
+                                  )}
+                                  {isCod && !isCodDisabled && (
+                                    <span className="inline-flex items-center gap-1 bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] text-[10px] font-bold px-2 py-0.5 rounded-[2px]">
+                                      📍 Bán kính ~{codStatus.distanceKm}km (Hỗ trợ COD)
+                                    </span>
+                                  )}
+                                  {hasDiscount && (
+                                    <span className="inline-flex items-center gap-1 bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] text-[10.5px] font-bold px-2 py-0.5 rounded-[2px]">
+                                      <Gift className="w-3 h-3" />
+                                      GIẢM {method.discountPercent}%
+                                    </span>
+                                  )}
+                                </div>
                               </div>
 
                               <p className="font-sans text-xs text-[#4A3F38] mt-1 font-light leading-relaxed">
-                                {method.description}
+                                {isCodDisabled
+                                  ? `Chỉ áp dụng trong bán kính 30km từ Amber Riverside (622 Minh Khai, Hà Nội). Khoảng cách hiện tại là ~${codStatus.distanceKm}km.`
+                                  : method.description}
                               </p>
                             </div>
                           </div>

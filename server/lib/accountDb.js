@@ -14,7 +14,12 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true })
 }
 
-const dbPath = path.resolve(dataDir, 'accounts.db')
+const isTestEnv =
+  process.env.NODE_ENV === 'test' ||
+  Boolean(process.env.ACCOUNT_DB_FILE) ||
+  process.argv.some((arg) => typeof arg === 'string' && (arg.includes('node:test') || arg.includes('tests/') || arg.includes('verify-all')))
+
+const dbPath = process.env.ACCOUNT_DB_FILE || (isTestEnv ? path.resolve(dataDir, 'accounts.test.db') : path.resolve(dataDir, 'accounts.db'))
 let db = null
 
 export function getDb() {
@@ -337,6 +342,10 @@ function formatAccountRow(row) {
   if (!row) return null
   return {
     ...row,
+    fullName: row.full_name || '',
+    avatarUrl: row.avatar_url || '',
+    createdAt: row.created_at || '',
+    updatedAt: row.updated_at || '',
     verified: Boolean(row.verified),
     marketing_email_opt_in: Boolean(row.marketing_email_opt_in),
     suppressed: Boolean(row.suppressed),
@@ -413,6 +422,36 @@ export function updateAccountEmail(id, email) {
   const database = getDb()
   const now = new Date().toISOString()
   database.prepare('UPDATE accounts SET email = ?, updated_at = ? WHERE id = ?').run(email, now, id)
+  return findAccountById(id)
+}
+
+export function updateAccountProfile(id, { fullName = null, avatarUrl = null, email = null } = {}) {
+  if (!id) return null
+  const database = getDb()
+  const now = new Date().toISOString()
+  const updates = []
+  const params = []
+
+  if (fullName !== null && fullName !== undefined && String(fullName).trim() !== '') {
+    updates.push('full_name = ?')
+    params.push(String(fullName).trim())
+  }
+  if (avatarUrl !== null && avatarUrl !== undefined && String(avatarUrl).trim() !== '') {
+    updates.push('avatar_url = ?')
+    params.push(String(avatarUrl).trim())
+  }
+  if (email !== null && email !== undefined && String(email).trim() !== '') {
+    updates.push('email = ?')
+    params.push(String(email).trim().toLowerCase())
+  }
+
+  if (updates.length === 0) return findAccountById(id)
+
+  updates.push('updated_at = ?')
+  params.push(now)
+  params.push(id)
+
+  database.prepare(`UPDATE accounts SET ${updates.join(', ')} WHERE id = ?`).run(...params)
   return findAccountById(id)
 }
 

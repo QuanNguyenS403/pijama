@@ -23,7 +23,9 @@ import {
   revokeCustomerSession,
   generateSessionToken,
   updateAccountEmail,
+  updateAccountProfile,
   linkIdentityToAccount,
+  findAccountByIdentity,
 } from './accountDb.js'
 import { sendVerificationCodeEmail, sendWelcomeVoucherEmail, sendBroadcastEmail } from './emailAccount.js'
 import { sendSmsOtp, normalizeVietnamesePhone, isValidVietnamesePhone, isZaloConfigured } from './smsService.js'
@@ -53,6 +55,13 @@ const verifyRateLimiter = createRateLimiter({
   windowMs: 5 * 60 * 1000,
   max: 15,
   message: 'Bạn đã thử xác minh quá nhiều lần. Vui lòng thử lại sau 5 phút.',
+})
+
+// Rate limiter cho OAuth đăng nhập trực tiếp
+const oauthRateLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  message: 'Bạn đã thử đăng nhập quá nhiều lần. Vui lòng chờ ít phút trước khi thử lại.',
 })
 
 // Helper: Mask email (ducquan16102006@gmail.com -> duc***@gmail.com)
@@ -103,74 +112,152 @@ export function registerAuthEndpoints(app) {
   })
 
   // ── 3. Đăng nhập / Đăng ký qua Google (OAuth) ───────────────────
-  app.post('/api/auth/google', otpRateLimiter, async (req, res) => {
+  app.post('/api/auth/google', oauthRateLimiter, async (req, res) => {
     try {
-      const { credential } = req.body
+      const bodyEmail = req.body.email || req.body.mail || ''
+      const bodyFullName = req.body.fullName || req.body.name || req.body.displayName || ''
+      const bodySub = req.body.sub || req.body.id || req.body.userId || ''
+      const bodyAvatarUrl =
+        req.body.avatarUrl ||
+        req.body.picture?.data?.url ||
+        (typeof req.body.picture === 'string' ? req.body.picture : null)
+      const credential = req.body.credential
+      const marketingOptIn = req.body.marketingOptIn
 
-      if (!credential) {
+      let googleUser = null
+      if (credential) {
+        // Xác thực token chính thức qua Google API (aud, iss, exp, signature)
+        googleUser = await verifyGoogleIdToken(credential)
+      } else if (process.env.AUTH_TEST_MODE === 'true') {
+        // Hỗ trợ fallback tương tác CHỈ khi bật cờ AUTH_TEST_MODE cho controlled test doubles
+        const fallbackSub = bodySub || `google_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+        googleUser = {
+          provider: 'google',
+          sub: fallbackSub,
+          email: bodyEmail ? String(bodyEmail).toLowerCase().trim() : null,
+          name: bodyFullName ? String(bodyFullName).trim() : 'Quý khách Google',
+          picture: bodyAvatarUrl || null,
+          emailVerified: true,
+        }
+      } else {
         return res.status(400).json({
           success: false,
-          error: 'Thiếu Google ID token (credential). Môi trường yêu cầu Google ID token có chữ ký hợp lệ.',
+          error: 'Thiếu Google ID token (credential) hợp lệ để xác thực đăng nhập.',
         })
       }
 
-      // Xác thực token chính thức qua Google API (aud, iss, exp, signature)
-      const googleUser = await verifyGoogleIdToken(credential)
-      const email = googleUser.email?.toLowerCase().trim()
+      const email = googleUser.email?.toLowerCase().trim() || null
       const googleSub = googleUser.sub
+      const customerName = (googleUser.name && googleUser.name.trim()) || 'Quý khách Google'
+      const avatarUrl = googleUser.picture || null
 
-      if (!email) {
-        return res.status(400).json({ success: false, error: 'Không lấy được email đã xác minh từ tài khoản Google' })
+      if (!email && !googleSub) {
+        return res.status(400).json({ success: false, error: 'Không lấy được thông tin định danh từ tài khoản Google' })
       }
 
-      // Kiểm tra cooldown 60s
-      const existing = findActiveChallenge(email)
-      if (existing && Date.now() < existing.cooldown_until) {
-        const waitSec = Math.ceil((existing.cooldown_until - Date.now()) / 1000)
-        return res.status(429).json({
-          success: false,
-          error: `Vui lòng chờ ${waitSec} giây trước khi yêu cầu gửi lại mã xác minh mới.`,
-          cooldownSeconds: waitSec,
+      // ── TÌM HOẶC TẠO TÀI KHOẢN KHÁCH HÀNG RIÊNG TRÊN WEBSITE ──
+      let account = null
+      if (googleSub) {
+        account = findAccountByIdentity('google', googleSub) || findAccountByGoogleId(googleSub)
+      }
+      if (!account && email) {
+        account = findAccountByEmail(email)
+      }
+
+      const optIn = Boolean(marketingOptIn)
+
+      if (!account) {
+        // 1. Tạo tài khoản riêng trên website, tên tài khoản đặt theo tên Google
+        account = createAccount({
+          method: 'google',
+          google_id: googleSub,
+          email,
+          full_name: customerName,
+          avatar_url: avatarUrl,
+          verified: 1,
+          marketing_email_opt_in: optIn ? 1 : 0,
         })
-      }
-
-      // Tạo pending challenge OTP 6 số gửi tới email đã được Google xác thực
-      const code = generateOtpCode()
-      createChallenge({
-        purpose: 'auth',
-        channel: 'email',
-        target: email,
-        targetType: 'email',
-        code,
-        ttlMinutes: 10,
-        ip: req.ip,
-      })
-
-      // Gửi email OTP
-      try {
-        await sendVerificationCodeEmail({ to: email, code, name: googleUser.name || 'Quý khách' })
-      } catch (mailErr) {
-        console.warn('⚠️ Gửi email OTP Google thất bại:', mailErr.message)
-        if (process.env.NODE_ENV === 'production') {
-          return res.status(500).json({
-            success: false,
-            error: 'Không thể gửi mã xác minh đến email của bạn lúc này. Vui lòng thử lại sau.',
+      } else {
+        // 2. Nếu đã có tài khoản, cập nhật tên tài khoản theo tên Google mới nhất
+        account = updateAccountProfile(account.id, {
+          fullName: customerName,
+          avatarUrl: avatarUrl || account.avatar_url,
+          email: account.email || email,
+        })
+        if (googleSub) {
+          linkIdentityToAccount({
+            accountId: account.id,
+            provider: 'google',
+            subject: googleSub,
+            email,
           })
         }
+        account = markAccountVerified(account.id, { marketingOptIn: optIn })
       }
+
+      // Cấp đúng 1 Welcome Voucher cho tài khoản (10% + Freeship)
+      const voucher = createWelcomeVoucher(account.id)
+
+      // Gửi email chúc mừng & tặng voucher (nếu có email)
+      if (account.email) {
+        sendWelcomeVoucherEmail({
+          to: account.email,
+          code: voucher.code,
+          name: account.full_name || 'Quý khách',
+        }).catch((err) => console.warn('⚠️ Gửi email chào mừng lỗi:', err.message))
+      }
+
+      // ── PHÁT HÀNH OPAQUE SESSION TOKEN & HTTPONLY COOKIE ──
+      const cookies = parseCookies(req.headers.cookie)
+      const oldToken = cookies[HOST_COOKIE_NAME] || cookies[COOKIE_NAME]
+      if (oldToken) {
+        revokeCustomerSession(oldToken)
+      }
+
+      const sessionToken = generateSessionToken()
+      createCustomerSession({
+        accountId: account.id,
+        token: sessionToken,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] || '',
+      })
+
+      setCustomerSessionCookie(res, sessionToken)
 
       return res.json({
         success: true,
-        target: maskEmail(email),
-        rawTarget: email,
-        targetType: 'email',
+        authenticated: true,
+        account: {
+          id: account.id,
+          fullName: account.full_name,
+          name: account.full_name,
+          email: account.email,
+          phone: account.phone,
+          avatarUrl: account.avatar_url,
+          verified: true,
+          marketingEmailOptIn: Boolean(account.marketing_email_opt_in),
+          createdAt: account.created_at,
+        },
+        user: {
+          id: account.id,
+          fullName: account.full_name,
+          name: account.full_name,
+          email: account.email,
+          phone: account.phone,
+          avatarUrl: account.avatar_url,
+        },
+        voucher: {
+          code: voucher.code,
+          discountPercent: voucher.discount_percent,
+          freeShipping: Boolean(voucher.free_shipping),
+          used: Boolean(voucher.used),
+        },
+        target: maskEmail(email || ''),
+        rawTarget: email || '',
         provider: 'google',
         providerSub: googleSub,
-        fullName: googleUser.name,
-        avatarUrl: googleUser.picture,
-        cooldownSeconds: 60,
-        message: `Mã xác minh 6 số đã được gửi về ${maskEmail(email)}. Vui lòng kiểm tra hộp thư (cả mục Spam/Thư rác).`,
-        ...(process.env.AUTH_TEST_MODE === 'true' && { mockCode: code }),
+        fullName: account.full_name,
+        message: `Đăng nhập thành công! Chào mừng ${account.full_name} đến với QuanNguyenS.`,
       })
     } catch (err) {
       console.error('Google Auth error:', err)
@@ -179,65 +266,150 @@ export function registerAuthEndpoints(app) {
   })
 
   // ── 4. Đăng nhập / Đăng ký qua Facebook (OAuth) ─────────────────
-  app.post('/api/auth/facebook', otpRateLimiter, async (req, res) => {
+  app.post('/api/auth/facebook', oauthRateLimiter, async (req, res) => {
     try {
-      const { accessToken, phone } = req.body
+      const bodyEmail = req.body.email || req.body.mail || ''
+      const bodyFullName = req.body.fullName || req.body.name || req.body.displayName || ''
+      const bodySub = req.body.sub || req.body.id || req.body.userId || ''
+      const bodyAvatarUrl =
+        req.body.avatarUrl ||
+        req.body.picture?.data?.url ||
+        (typeof req.body.picture === 'string' ? req.body.picture : null)
+      const accessToken = req.body.accessToken
+      const marketingOptIn = req.body.marketingOptIn
 
-      if (!accessToken) {
+      let fbUser = null
+      if (accessToken) {
+        // Xác thực token chính thức qua Meta Graph API debug_token
+        fbUser = await verifyFacebookAccessToken(accessToken)
+      } else if (process.env.AUTH_TEST_MODE === 'true') {
+        // Hỗ trợ fallback tương tác CHỈ khi bật cờ AUTH_TEST_MODE cho controlled test doubles
+        const fakeSub = bodySub || `facebook_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+        fbUser = {
+          provider: 'facebook',
+          sub: fakeSub,
+          email: bodyEmail ? String(bodyEmail).toLowerCase().trim() : `${fakeSub}@facebook.user`,
+          name: bodyFullName ? String(bodyFullName).trim() : 'Quý khách Facebook',
+          picture: bodyAvatarUrl || null,
+        }
+      } else {
         return res.status(400).json({
           success: false,
-          error: 'Thiếu Facebook Access Token có chữ ký hợp lệ từ Meta SDK',
+          error: 'Thiếu Facebook Access Token hợp lệ để xác thực đăng nhập.',
         })
       }
 
-      // Xác thực token chính thức qua Meta Graph API debug_token
-      const fbUser = await verifyFacebookAccessToken(accessToken)
-      const email = fbUser.email ? fbUser.email.toLowerCase().trim() : null
       const facebookSub = fbUser.sub
+      const email = fbUser.email
+        ? fbUser.email.toLowerCase().trim()
+        : (bodyEmail ? String(bodyEmail).toLowerCase().trim() : `${facebookSub}@facebook.user`)
+      const customerName = (fbUser.name && fbUser.name.trim()) || 'Quý khách Facebook'
+      const avatarUrl = fbUser.picture || null
 
-      // Nếu Facebook không cung cấp email
-      if (fbUser.requiresPhone || !email) {
-        return res.status(400).json({
-          success: false,
-          error: 'Tài khoản Facebook của bạn không chia sẻ địa chỉ email công khai. Vui lòng cho phép quyền truy cập email trên Facebook hoặc đăng nhập bằng tài khoản Google.',
-        })
+      // ── TÌM HOẶC TẠO TÀI KHOẢN KHÁCH HÀNG RIÊNG TRÊN WEBSITE ──
+      let account = null
+      if (facebookSub) {
+        account = findAccountByIdentity('facebook', facebookSub) || findAccountByFacebookId(facebookSub)
+      }
+      if (!account && email && !email.endsWith('@facebook.user')) {
+        account = findAccountByEmail(email)
       }
 
-      // Nếu Facebook có email, gửi OTP tới email đó
-      const code = generateOtpCode()
-      createChallenge({
-        purpose: 'auth',
-        channel: 'email',
-        target: email,
-        targetType: 'email',
-        code,
-        ttlMinutes: 10,
-        ip: req.ip,
-      })
+      const optIn = Boolean(marketingOptIn)
+      const validEmail = email && !email.endsWith('@facebook.user') ? email : null
 
-      try {
-        await sendVerificationCodeEmail({ to: email, code, name: fbUser.name || 'Quý khách' })
-      } catch (mailErr) {
-        console.warn('⚠️ Gửi email OTP Facebook thất bại:', mailErr.message)
-        if (process.env.NODE_ENV === 'production') {
-          return res.status(500).json({
-            success: false,
-            error: 'Không thể gửi email xác minh lúc này. Vui lòng thử lại sau.',
+      if (!account) {
+        // 1. Tạo tài khoản riêng trên website, tên tài khoản đặt theo tên Facebook
+        account = createAccount({
+          method: 'facebook',
+          facebook_id: facebookSub,
+          email: validEmail,
+          full_name: customerName,
+          avatar_url: avatarUrl,
+          verified: 1,
+          marketing_email_opt_in: optIn ? 1 : 0,
+        })
+      } else {
+        // 2. Nếu đã có tài khoản, cập nhật tên tài khoản theo tên Facebook mới nhất
+        account = updateAccountProfile(account.id, {
+          fullName: customerName,
+          avatarUrl: avatarUrl || account.avatar_url,
+          email: account.email || validEmail,
+        })
+        if (facebookSub) {
+          linkIdentityToAccount({
+            accountId: account.id,
+            provider: 'facebook',
+            subject: facebookSub,
+            email: validEmail,
           })
         }
+        account = markAccountVerified(account.id, { marketingOptIn: optIn })
       }
+
+      // Cấp đúng 1 Welcome Voucher cho tài khoản (10% + Freeship)
+      const voucher = createWelcomeVoucher(account.id)
+
+      // Gửi email chúc mừng & tặng voucher (nếu có email thực tế)
+      if (account.email) {
+        sendWelcomeVoucherEmail({
+          to: account.email,
+          code: voucher.code,
+          name: account.full_name || 'Quý khách',
+        }).catch((err) => console.warn('⚠️ Gửi email chào mừng lỗi:', err.message))
+      }
+
+      // ── PHÁT HÀNH OPAQUE SESSION TOKEN & HTTPONLY COOKIE ──
+      const cookies = parseCookies(req.headers.cookie)
+      const oldToken = cookies[HOST_COOKIE_NAME] || cookies[COOKIE_NAME]
+      if (oldToken) {
+        revokeCustomerSession(oldToken)
+      }
+
+      const sessionToken = generateSessionToken()
+      createCustomerSession({
+        accountId: account.id,
+        token: sessionToken,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] || '',
+      })
+
+      setCustomerSessionCookie(res, sessionToken)
 
       return res.json({
         success: true,
-        target: maskEmail(email),
-        rawTarget: email,
-        targetType: 'email',
+        authenticated: true,
+        account: {
+          id: account.id,
+          fullName: account.full_name,
+          name: account.full_name,
+          email: account.email,
+          phone: account.phone,
+          avatarUrl: account.avatar_url,
+          verified: true,
+          marketingEmailOptIn: Boolean(account.marketing_email_opt_in),
+          createdAt: account.created_at,
+        },
+        user: {
+          id: account.id,
+          fullName: account.full_name,
+          name: account.full_name,
+          email: account.email,
+          phone: account.phone,
+          avatarUrl: account.avatar_url,
+        },
+        voucher: {
+          code: voucher.code,
+          discountPercent: voucher.discount_percent,
+          freeShipping: Boolean(voucher.free_shipping),
+          used: Boolean(voucher.used),
+        },
+        target: maskEmail(validEmail || ''),
+        rawTarget: validEmail || '',
         provider: 'facebook',
         providerSub: facebookSub,
-        fullName: fbUser.name,
-        cooldownSeconds: 60,
-        message: `Mã xác minh 6 số đã được gửi về ${maskEmail(email)}. Vui lòng kiểm tra hộp thư.`,
-        ...(process.env.AUTH_TEST_MODE === 'true' && { mockCode: code }),
+        fullName: account.full_name,
+        message: `Đăng nhập thành công! Chào mừng ${account.full_name} đến với QuanNguyenS.`,
       })
     } catch (err) {
       console.error('Facebook Auth error:', err)
@@ -329,6 +501,9 @@ export function registerAuthEndpoints(app) {
       } else {
         // Đánh dấu tài khoản đã xác minh
         account = markAccountVerified(account.id, { marketingOptIn })
+        if (fullName) {
+          account = updateAccountProfile(account.id, { fullName, avatarUrl })
+        }
         if (provider && providerSub) {
           linkIdentityToAccount({
             accountId: account.id,
@@ -480,12 +655,13 @@ export function registerAuthEndpoints(app) {
       authenticated: true,
       account: {
         id: req.customerAccount.id,
-        fullName: req.customerAccount.full_name,
+        fullName: req.customerAccount.full_name || req.customerAccount.fullName || '',
+        avatarUrl: req.customerAccount.avatar_url || req.customerAccount.avatarUrl || '',
         email: req.customerAccount.email,
         phone: req.customerAccount.phone,
         verified: Boolean(req.customerAccount.verified),
         marketingEmailOptIn: Boolean(req.customerAccount.marketing_email_opt_in),
-        createdAt: req.customerAccount.created_at,
+        createdAt: req.customerAccount.created_at || req.customerAccount.createdAt,
       },
       voucher: voucher || null,
     })

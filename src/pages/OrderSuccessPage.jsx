@@ -8,17 +8,20 @@ import {
   Copy,
   Check,
   Gift,
+  ExternalLink,
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Section12Footer from '../components/sections/Section12Footer'
-import { formatVND } from '../data/checkoutConfig'
+import { formatVND, getCarrierTrackingUrl } from '../data/checkoutConfig'
+import { getSavedOrders } from '../lib/orderSync'
+import ViettelPostTracker from '../components/shipping/ViettelPostTracker'
 
 export default function OrderSuccessPage() {
   const [searchParams] = useSearchParams()
   const location = useLocation()
   const orderId = searchParams.get('orderId') || 'QNS-' + Date.now().toString().slice(-6)
 
-  // Lấy dữ liệu order từ location state, sessionStorage hoặc localStorage
+  // Lấy dữ liệu order từ location state, sessionStorage hoặc kho lưu trữ bảo vệ
   const [order, setOrder] = useState(() => {
     if (location.state?.order) return location.state.order
     try {
@@ -27,8 +30,8 @@ export default function OrderSuccessPage() {
         const parsed = JSON.parse(saved)
         if (parsed.orderId === orderId || !searchParams.get('orderId')) return parsed
       }
-      const storedOrders = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
-      return storedOrders.find((o) => o.orderId === orderId) || null
+      const storedOrders = getSavedOrders()
+      return storedOrders.find((o) => (o.orderId || o.id) === orderId) || null
     } catch (e) {
       console.error(e)
       return null
@@ -36,6 +39,32 @@ export default function OrderSuccessPage() {
   })
   const [copiedField, setCopiedField] = useState(null)
   const [liveStatusUpdate, setLiveStatusUpdate] = useState(null)
+  const [showLiveTracker, setShowLiveTracker] = useState(false)
+  const [trackerData, setTrackerData] = useState(null)
+  const [isTrackerLoading, setIsTrackerLoading] = useState(false)
+
+  const handleToggleLiveTracker = async () => {
+    if (showLiveTracker) {
+      setShowLiveTracker(false)
+      return
+    }
+    setShowLiveTracker(true)
+    const code = order?.trackingCode || order?.trackingNumber || order?.orderId
+    if (!trackerData && code) {
+      setIsTrackerLoading(true)
+      try {
+        const res = await fetch(`/api/shipping/viettelpost/track?query=${encodeURIComponent(code)}`)
+        const data = await res.json()
+        if (data.success) {
+          setTrackerData(data)
+        }
+      } catch (e) {
+        console.warn(e)
+      } finally {
+        setIsTrackerLoading(false)
+      }
+    }
+  }
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
@@ -50,7 +79,7 @@ export default function OrderSuccessPage() {
             return
           }
         }
-        const storedOrders = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
+        const storedOrders = getSavedOrders()
         const found = storedOrders.find((o) => (o.orderId || o.id) === orderId)
         if (found) setOrder(found)
       } catch (e) {
@@ -62,11 +91,24 @@ export default function OrderSuccessPage() {
       refreshOrderData()
     }
 
-    // Lắng nghe sự kiện Admin cập nhật đơn hàng realtime
+    // Lắng nghe sự kiện Admin cập nhật đơn hàng realtime - bảo tồn trọn vẹn items và thông tin
     const handleOrderUpdated = (e) => {
       const updated = e?.detail
       if (updated && (updated.orderId === orderId || updated.id === orderId)) {
-        setOrder(updated)
+        setOrder((prev) => {
+          const mergedItems = (Array.isArray(updated.items) && updated.items.length > 0)
+            ? updated.items
+            : (Array.isArray(prev?.items) && prev.items.length > 0 ? prev.items : [])
+
+          return {
+            ...prev,
+            ...updated,
+            items: mergedItems,
+            customer: { ...(prev?.customer || {}), ...(updated.customer || {}) },
+            shipping: { ...(prev?.shipping || {}), ...(updated.shipping || {}) },
+            isDelivered: updated.status === 'DELIVERED' || Boolean(prev?.isDelivered),
+          }
+        })
         setLiveStatusUpdate(`Trạng thái đơn hàng vừa được cập nhật: ${updated.status}`)
         setTimeout(() => setLiveStatusUpdate(null), 5000)
       } else {
@@ -98,7 +140,7 @@ export default function OrderSuccessPage() {
   const customerName = order?.customer?.fullName || 'Quý khách'
   const customerPhone = order?.customer?.phone || ''
   const total = order?.total || 0
-  const isBankTransfer = order?.payment?.method === 'BANK_TRANSFER' || order?.payment?.method === 'MOMO'
+  const isBankTransfer = order?.payment?.method === 'BANK_TRANSFER'
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#1A1614]">
@@ -200,7 +242,16 @@ export default function OrderSuccessPage() {
                     </motion.div>
                   )}
 
-                  {order.status === 'CANCELLED' ? (
+                  {order.status === 'DELIVERED' ? (
+                    <div className="bg-[#E8F5E9] border border-[#A5D6A7] p-4 rounded-[4px] text-xs text-[#2E7D32] space-y-1.5 text-left shadow-xs">
+                      <p className="font-bold flex items-center gap-1.5 text-sm">
+                        <span>🎉</span> Đơn hàng đã giao nhận thành công!
+                      </p>
+                      <p className="text-[#1B5E20] font-light leading-relaxed">
+                        Cảm ơn quý khách đã tin tưởng và đồng hành cùng QuanNguyenS. Toàn bộ nội dung đơn hàng, sản phẩm và hóa đơn bảo hành được lưu trữ trọn đời trên hệ thống và thiết bị của bạn.
+                      </p>
+                    </div>
+                  ) : order.status === 'CANCELLED' ? (
                     <div className="bg-[#FFEBEE] border border-[#FFCDD2] p-3.5 rounded-[3px] text-xs text-[#C62828] space-y-1 text-left">
                       <p className="font-bold flex items-center gap-1.5">
                         <span>❌</span> Đơn hàng đã được hủy bởi cửa hàng
@@ -237,26 +288,28 @@ export default function OrderSuccessPage() {
                         Đơn hàng đang trên đường giao
                       </span>
                       <p className="text-xs text-[#1A1614] mt-1 font-medium">
-                        Đơn vị: <strong>{order.carrier || 'GHN'}</strong> · Mã vận đơn:{' '}
+                        Đơn vị: <strong>{order.carrier || 'Viettel Post'}</strong> · Mã vận đơn:{' '}
                         <strong className="font-mono text-[#631521] text-sm">{order.trackingCode || order.trackingNumber}</strong>
                       </p>
                     </div>
-                    <button
-                      onClick={() => handleCopy(order.trackingCode || order.trackingNumber, 'tracking')}
-                      className="inline-flex items-center gap-1.5 bg-[#631521] text-white text-xs font-semibold px-3 py-1.5 rounded-[2px] hover:bg-[#4A0D17] transition-colors cursor-pointer"
-                    >
-                      {copiedField === 'tracking' ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-[#A5D6A7]" />
-                          <span>Đã sao chép mã</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Sao chép mã</span>
-                        </>
-                      )}
-                    </button>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={() => handleCopy(order.trackingCode || order.trackingNumber, 'tracking')}
+                        className="inline-flex items-center gap-1.5 bg-[#631521] text-white text-xs font-semibold px-3 py-1.5 rounded-[2px] hover:bg-[#4A0D17] transition-colors cursor-pointer"
+                      >
+                        {copiedField === 'tracking' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-[#A5D6A7]" />
+                            <span>Đã sao chép</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>Sao chép mã</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -339,7 +392,7 @@ export default function OrderSuccessPage() {
                     <div className="border-t border-[#E8DFD5] pt-2 flex justify-between items-center text-xs text-[#2E7D32]">
                       <span className="font-medium flex items-center gap-1">
                         <Gift className="w-3.5 h-3.5" />
-                        Ưu đãi Thanh toán ({order.payment?.method === 'MOMO' ? 'MoMo' : 'VietQR'}) 10%
+                        Ưu đãi Thanh toán VietQR 10%
                       </span>
                       <span className="font-serif font-bold">
                         -{formatVND(order.discount)}

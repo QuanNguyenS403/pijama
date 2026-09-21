@@ -17,6 +17,8 @@ import { verifyTrackingToken } from './lib/orderTokenService.js'
 import { normalizeVietnamesePhone } from './lib/smsService.js'
 import { customerSessionMiddleware } from './lib/customerSessionMiddleware.js'
 import { releaseVoucher } from './lib/voucherValidator.js'
+import { calculateShippingDistance } from './lib/distanceService.js'
+import { trackOrderUniversal, queryViettelPostTracking } from './lib/viettelPostService.js'
 
 // Load environment variables from .env or .env.local
 dotenv.config({ path: '.env.local' })
@@ -190,7 +192,7 @@ app.post('/api/payment/confirm', requireAdminAuth, submitOrderLimiter, async (re
 })
 
 // ── 5. Xử lý Đơn Hàng ─────────────────────────────────────────
-app.post('/api/orders/submit', submitOrderLimiter, async (req, res) => {
+const orderSubmitHandler = async (req, res) => {
   try {
     const result = await handleOrderSubmit(req.body, {
       customerAccount: req.customerAccount,
@@ -204,7 +206,9 @@ app.post('/api/orders/submit', submitOrderLimiter, async (req, res) => {
       error: 'Lỗi máy chủ khi xử lý đơn hàng. Vui lòng liên hệ: 0981 753 082',
     })
   }
-})
+}
+app.post('/api/orders/submit', submitOrderLimiter, orderSubmitHandler)
+app.post('/api/orders', submitOrderLimiter, orderSubmitHandler)
 
 // ── 6. Tra Cứu Thông Tin Vận Đơn (Tracking API) — SEC-002 / G-04 ─────────────
 app.get('/api/orders/tracking', async (req, res) => {
@@ -248,21 +252,21 @@ app.get('/api/orders/tracking', async (req, res) => {
       })
     }
 
-    const carrier = order.carrier || 'GHN'
+    const carrier = order.carrier || 'Viettel Post'
     const trackingCode = order.trackingCode || null
     let trackingUrl = null
 
     if (trackingCode) {
-      if (carrier === 'GHN' || carrier.includes('Giao Hàng Nhanh')) {
+      if (carrier === 'VIETTEL' || carrier.includes('Viettel') || carrier === 'VIETTEL_POST') {
+        trackingUrl = `https://viettelpost.com.vn/tra-cuu-hanh-trinh-don-hang/?order_number=${trackingCode}`
+      } else if (carrier === 'GHN' || carrier.includes('Giao Hàng Nhanh')) {
         trackingUrl = `https://tracking.ghn.vn/?order_code=${trackingCode}`
       } else if (carrier === 'GHTK' || carrier.includes('Tiết Kiệm')) {
         trackingUrl = `https://i.ghtk.vn/${trackingCode}`
-      } else if (carrier === 'VIETTEL' || carrier.includes('Viettel')) {
-        trackingUrl = `https://viettelpost.com.vn/tra-cuu-hanh-trinh-don-hang/?order_number=${trackingCode}`
       } else if (carrier === 'SPX' || carrier.includes('Shopee')) {
         trackingUrl = `https://spx.vn/track?bill_no=${trackingCode}`
       } else {
-        trackingUrl = `https://tracking.ghn.vn/?order_code=${trackingCode}`
+        trackingUrl = `https://viettelpost.com.vn/tra-cuu-hanh-trinh-don-hang/?order_number=${trackingCode}`
       }
     }
 
@@ -285,14 +289,141 @@ app.get('/api/orders/tracking', async (req, res) => {
   }
 })
 
-// ── 7. Tra Cứu Đơn Hàng Bằng SĐT & Mã Đơn (Toàn Quốc) — SEC-002 / G-05 ───────
+// Helper định dạng nội dung đơn hàng cho khách tra cứu (hỗ trợ che giấu PII an toàn)
+function maskFullName(name) {
+  if (!name) return 'Khách hàng'
+  const parts = String(name).trim().split(/\s+/)
+  if (parts.length === 1) return `${parts[0].slice(0, 1)}***`
+  return `${parts[0]} ${parts.slice(1).map((p) => `${p[0]}***`).join(' ')}`
+}
+
+function maskPhone(phone) {
+  if (!phone) return ''
+  const clean = String(phone).replace(/[^0-9]/g, '')
+  if (clean.length < 7) return phone
+  return `${clean.slice(0, 3)}***${clean.slice(-3)}`
+}
+
+function maskEmail(email) {
+  if (!email || !email.includes('@')) return email || ''
+  const [user, domain] = email.split('@')
+  const maskedUser = user.length <= 3 ? `${user[0]}***` : `${user.slice(0, 2)}***${user.slice(-1)}`
+  return `${maskedUser}@${domain}`
+}
+
+function maskAddress(addr) {
+  if (!addr) return ''
+  const parts = String(addr).split(',').map((s) => s.trim()).filter(Boolean)
+  if (parts.length <= 2) return addr
+  return `***, ${parts.slice(-2).join(', ')}`
+}
+
+function formatCustomerOrderLookup(order, isRedacted = false) {
+  if (!order) return null
+  const id = order.orderId || order.id || order.orderNumber
+  const rawName = order.customer?.fullName || order.customerName || 'Khách hàng'
+  const rawPhone = order.customer?.phone || order.customerPhone || ''
+  const rawEmail = order.customer?.email || order.customerEmail || ''
+  const rawAddress = order.shipping?.fullAddress || order.shippingAddress || ''
+
+  return {
+    orderId: id,
+    id,
+    status: order.status || 'PENDING',
+    isDelivered: order.status === 'DELIVERED',
+    deliveredAt: order.deliveredAt || (order.status === 'DELIVERED' ? (order.updatedAt || new Date().toISOString()) : null),
+    paymentStatus: order.payment?.status || order.paymentStatus || (order.payment?.method === 'BANK_TRANSFER' ? 'PAID' : 'UNPAID'),
+    payment: order.payment || {
+      method: order.paymentMethod || 'COD',
+      status: order.paymentStatus || 'UNPAID',
+    },
+    items: (order.items || []).map((item, idx) => ({
+      id: item.id || idx,
+      productName: item.productName || item.product?.name || item.name || 'Bộ Pijama Thiết Kế',
+      color: item.color || item.colorLabel || item.variant || '',
+      variant: item.variant || item.color || '',
+      size: item.size || '',
+      quantity: Number(item.quantity) || 1,
+      unitPrice: Number(item.unitPrice || item.price) || 0,
+      totalPrice: Number(item.totalPrice) || ((Number(item.unitPrice || item.price) || 0) * (Number(item.quantity) || 1)),
+      image: item.image || '',
+    })),
+    customer: {
+      fullName: isRedacted ? maskFullName(rawName) : rawName,
+      phone: isRedacted ? maskPhone(rawPhone) : rawPhone,
+      email: isRedacted ? maskEmail(rawEmail) : rawEmail,
+    },
+    shipping: {
+      fullAddress: isRedacted ? maskAddress(rawAddress) : rawAddress,
+      carrier: order.carrier || 'Viettel Post',
+    },
+    subtotal: Number(order.subtotal) || 0,
+    shippingFee: Number(order.shippingFee) || 0,
+    discount: Number(order.discount) || 0,
+    total: Number(order.total) || 0,
+    carrier: order.carrier || 'Viettel Post',
+    trackingCode: order.trackingCode || order.trackingNumber || '',
+    createdAt: order.createdAt || order.orderDate || '',
+    orderDateVN: order.orderDateVN || '',
+    cancelReason: order.cancelReason || '',
+  }
+}
+
+// ── 7. Tra Cứu Đơn Hàng & Theo Dõi Hành Trình Viettel Post — SEC-002 / G-05 ───────
 app.get('/api/orders/lookup', lookupLimiter, async (req, res) => {
   try {
-    const { orderId, phone } = req.query
+    const { orderId, phone, query: rawQuery } = req.query
+    const { orderPersistence } = await import('./lib/orderPersistence.js')
+    const { searchOrdersFromSheet } = await import('./lib/googleSheets.js')
+
+    // 1. Trường hợp tìm bằng ô tra cứu đơn năng (query)
+    const searchQuery = String(rawQuery || '').trim()
+    if (searchQuery) {
+      if (searchQuery.length < 4) {
+        return res.status(400).json({
+          success: false,
+          error: 'Vui lòng nhập chính xác Mã vận đơn Viettel Post hoặc Mã đơn hàng kèm Số điện thoại.',
+        })
+      }
+
+      // 1.1 Thử tra cứu hành trình Viettel Post theo chính xác mã tracking
+      const universalResult = await trackOrderUniversal(searchQuery, { strictTrackingOnly: true })
+      if (universalResult.success && universalResult.order) {
+        return res.json({
+          success: true,
+          orders: [formatCustomerOrderLookup(universalResult.order, true)],
+          tracking: universalResult,
+        })
+      }
+
+      // 1.2 Tìm trong bộ nhớ persistence theo CHÍNH XÁC mã vận đơn trackingCode
+      const allOrders = orderPersistence.getAll()
+      const cleanInput = searchQuery.toLowerCase()
+
+      const exactTrackingOrder = allOrders.find((o) => {
+        const track = String(o.trackingCode || o.trackingNumber || '').toLowerCase().trim()
+        return track && (track === cleanInput || track === cleanInput.replace(/\s+/g, ''))
+      })
+
+      if (exactTrackingOrder) {
+        return res.json({
+          success: true,
+          orders: [formatCustomerOrderLookup(exactTrackingOrder, true)],
+        })
+      }
+
+      // 1.3 Nếu không phải trackingCode chính xác: CHẶN tìm kiếm mờ (includes) để chống rò rỉ PII
+      return res.status(404).json({
+        success: false,
+        error: 'Mã vận đơn này chưa được cấp hoặc không khớp với đơn hàng nào. Để tra cứu theo mã đơn hàng, vui lòng cung cấp thêm số điện thoại đặt hàng.',
+      })
+    }
+
+    // 2. Trường hợp tìm truyền thống bằng cả orderId và phone (yêu cầu Proof of Ownership)
     if (!orderId || !phone) {
       return res.status(400).json({
         success: false,
-        error: 'Vui lòng cung cấp cả mã đơn hàng (orderId) và số điện thoại (phone) đặt hàng',
+        error: 'Vui lòng cung cấp đầy đủ cả Mã đơn hàng và Số điện thoại đặt hàng để tra cứu',
       })
     }
 
@@ -300,9 +431,6 @@ app.get('/api/orders/lookup', lookupLimiter, async (req, res) => {
     if (!cleanInputPhone || cleanInputPhone.length < 9) {
       return res.status(400).json({ success: false, error: 'Số điện thoại tra cứu không hợp lệ' })
     }
-
-    const { orderPersistence } = await import('./lib/orderPersistence.js')
-    const { searchOrdersFromSheet } = await import('./lib/googleSheets.js')
 
     let order = orderPersistence.get(orderId)
     if (!order) {
@@ -319,23 +447,54 @@ app.get('/api/orders/lookup', lookupLimiter, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Không tìm thấy đơn hàng phù hợp' })
     }
 
-    // G-05: Trả về projection tối thiểu, bảo mật PII
+    // Khách hàng đã chứng minh sở hữu (nhập đúng cả mã đơn và SĐT) -> Trả về dữ liệu đơn hàng
     return res.json({
       success: true,
-      orders: [
-        {
-          orderId: order.orderId,
-          status: order.status,
-          paymentStatus: order.payment?.status,
-          total: order.total,
-          carrier: order.carrier || 'GHN',
-          trackingCode: order.trackingCode || null,
-          createdAt: order.createdAt,
-        },
-      ],
+      orders: [formatCustomerOrderLookup(order, false)],
     })
   } catch (err) {
     console.error('Order lookup error:', err)
+    return res.status(500).json({ success: false, error: err.message })
+  }
+})
+
+// ── 7.01 API Kiểm Tra Cự Ly & Điều Kiện Ship COD (Bán Kính 30km từ Amber Riverside) ──
+const checkCodHandler = async (req, res) => {
+  try {
+    const params = { ...req.query, ...req.body }
+    const { address = '', ward = '', district = '', city = 'Hà Nội' } = params
+    const result = await calculateShippingDistance({ address, ward, district, city })
+    const responseData = {
+      ...result,
+      codAllowed: result.isCodAllowed,
+      fallbackMethod: result.isCodAllowed ? null : 'BANK_TRANSFER',
+    }
+    return res.json(responseData)
+  } catch (err) {
+    console.error('Check COD distance error:', err)
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
+app.get('/api/shipping/check-cod', checkCodHandler)
+app.post('/api/shipping/check-cod', checkCodHandler)
+
+// ── 7.02 API Theo Dõi Hành Trình Đơn Hàng Trực Tiếp Qua Viettel Post ──
+app.get('/api/shipping/viettelpost/track', lookupLimiter, async (req, res) => {
+  try {
+    const { trackingCode, query, strictTrackingOnly } = req.query
+    const targetCode = trackingCode || query
+    if (!targetCode) {
+      return res.status(400).json({
+        success: false,
+        error: 'Vui lòng cung cấp chính xác mã vận đơn Viettel Post đã được cấp tại mục "Đơn hàng của bạn".',
+      })
+    }
+
+    const isStrict = strictTrackingOnly !== 'false'
+    const result = await trackOrderUniversal(targetCode, { strictTrackingOnly: isStrict })
+    return res.json(result)
+  } catch (err) {
+    console.error('Viettel Post track API error:', err)
     return res.status(500).json({ success: false, error: err.message })
   }
 })
@@ -345,8 +504,8 @@ app.get('/api/orders/events', (req, res) => {
   addSseClient(req, res)
 })
 
-// ── 7.2 API Đồng Bộ Hàng Loạt Trạng Thái Đơn Hàng Của Khách (Admin Only) ───────────────
-app.post('/api/orders/sync-batch', requireAdminAuth, async (req, res) => {
+// ── 7.2 API Đồng Bộ Hàng Loạt Trạng Thái Đơn Hàng Của Khách ───────────────
+app.post('/api/orders/sync-batch', lookupLimiter, async (req, res) => {
   try {
     const { handleSyncBatchOrders } = await import('./lib/adminOrdersHandler.js')
     const result = await handleSyncBatchOrders(req.body?.orderIds)
@@ -475,6 +634,103 @@ app.patch('/api/admin/orders/:orderId', requireAdminAuth, async (req, res) => {
   }
 })
 
+// ── 9.1 Đồng Bộ Tự Động Hành Trình Viettel Post Cho Admin ─────────────────────────
+app.post('/api/admin/orders/sync-viettelpost', requireAdminAuth, async (req, res) => {
+  try {
+    const { syncAllShippedOrdersWithViettelPost } = await import('./lib/viettelPostService.js')
+    const result = await syncAllShippedOrdersWithViettelPost()
+    return res.json(result)
+  } catch (err) {
+    console.error('Admin sync Viettel Post error:', err)
+    return res.status(500).json({ success: false, error: err.message })
+  }
+})
+
+app.post('/api/admin/orders/:orderId/sync-viettelpost', requireAdminAuth, async (req, res) => {
+  try {
+    const { orderId } = req.params
+    const { forceDeliver = false } = req.body || {}
+    const { syncSingleOrderWithViettelPost } = await import('./lib/viettelPostService.js')
+    const result = await syncSingleOrderWithViettelPost(orderId, { forceDeliver })
+    return res.json(result)
+  } catch (err) {
+    console.error('Admin single order sync Viettel Post error:', err)
+    return res.status(500).json({ success: false, error: err.message })
+  }
+})
+
+// ── 9.2 Viettel Post Webhook Receiver (Tự động cập nhật khi bưu tá phát thành công) ───
+app.post('/api/shipping/viettelpost/webhook', async (req, res) => {
+  try {
+    const rawAuthHeader = req.headers['authorization'] || req.headers['x-api-key'] || req.query.token || ''
+    const expectedSecret = process.env.VIETTELPOST_WEBHOOK_SECRET
+
+    if (expectedSecret) {
+      const authHeader = String(rawAuthHeader).replace(/^Bearer\s+/i, '').trim()
+      const secretStr = String(expectedSecret).trim()
+      let isSecretValid = false
+      if (authHeader.length === secretStr.length && secretStr.length > 0) {
+        const crypto = await import('crypto')
+        isSecretValid = crypto.default.timingSafeEqual(Buffer.from(authHeader), Buffer.from(secretStr))
+      }
+      if (!isSecretValid) {
+        console.warn('⛔ [VIETTEL POST WEBHOOK REJECTED] Sai Secret Token / Unauthorized request')
+        return res.status(401).json({ success: false, message: 'Unauthorized webhook request' })
+      }
+    }
+
+    const payload = req.body || {}
+    const trackingCode = String(payload.ORDER_NUMBER || payload.order_number || payload.trackingCode || payload.orderId || '').trim()
+    const statusCode = String(payload.ORDER_STATUS || payload.status || payload.STATUS_ID || '')
+    const statusName = String(payload.STATUS_NAME || payload.status_name || payload.note || '').toLowerCase()
+
+    console.log(`📦 [VIETTEL POST WEBHOOK] Nhận tín hiệu từ Viettel Post: Mã ${trackingCode} — Trạng thái: ${statusCode} (${statusName})`)
+
+    const isDelivered =
+      statusCode === '501' ||
+      statusCode === '504' ||
+      statusCode === '104' ||
+      statusName.includes('thành công') ||
+      statusName.includes('đã nhận') ||
+      statusName.includes('ký nhận') ||
+      statusName.includes('hoàn tất')
+
+    if (trackingCode) {
+      const { orderPersistence } = await import('./lib/orderPersistence.js')
+      const allOrders = orderPersistence.getAll()
+      const matchedOrder = allOrders.find(
+        (o) =>
+          (o.trackingCode && o.trackingCode.toLowerCase() === trackingCode.toLowerCase()) ||
+          (o.trackingNumber && o.trackingNumber.toLowerCase() === trackingCode.toLowerCase()) ||
+          (o.orderId && o.orderId.toLowerCase() === trackingCode.toLowerCase())
+      )
+
+      if (matchedOrder) {
+        if (isDelivered) {
+          const { handleAdminOrderAction } = await import('./lib/adminOrdersHandler.js')
+          await handleAdminOrderAction(matchedOrder.orderId, {
+            action: 'DELIVER',
+            note: `Viettel Post Webhook: Đã giao hàng thành công (${statusName || 'Bưu tá đã phát'})`,
+          })
+          console.log(`✅ [VIETTEL POST WEBHOOK] Đơn #${matchedOrder.orderId} đã tự động chuyển sang DELIVERED!`)
+        } else {
+          matchedOrder.viettelPostStatus = payload.STATUS_NAME || payload.status_name || 'Đang vận chuyển'
+          matchedOrder.viettelPostLastSync = new Date().toISOString()
+          orderPersistence.set(matchedOrder.orderId, matchedOrder)
+          const { broadcastOrderUpdate } = await import('./lib/orderEvents.js')
+          const { formatAdminOrder } = await import('./lib/adminOrdersHandler.js')
+          broadcastOrderUpdate(formatAdminOrder(matchedOrder))
+        }
+      }
+    }
+
+    return res.json({ success: true, message: 'Viettel Post Webhook processed successfully' })
+  } catch (err) {
+    console.error('Viettel Post webhook error:', err)
+    return res.status(500).json({ success: false, error: err.message })
+  }
+})
+
 // ── 10. Hệ Thống Tài Khoản Khách Hàng, Voucher & Broadcast ──────
 registerAuthEndpoints(app)
 
@@ -540,12 +796,40 @@ const server = app.listen(PORT, async () => {
   }
 
   isServerReady = true
+
+  // ── Khởi động tiến trình tự động đồng bộ hành trình Viettel Post định kỳ (mỗi 2 phút) ──
+  const VIETTEL_SYNC_INTERVAL_MS = 2 * 60 * 1000
+  const viettelSyncTimer = setInterval(async () => {
+    try {
+      const { syncAllShippedOrdersWithViettelPost } = await import('./lib/viettelPostService.js')
+      const syncRes = await syncAllShippedOrdersWithViettelPost()
+      if (syncRes.deliveredCount > 0) {
+        console.log(`🚚 [VIETTEL POST AUTO-SYNC] Đã tự động cập nhật ${syncRes.deliveredCount} đơn hàng sang "Đã giao" (DELIVERED).`)
+      }
+    } catch (err) {
+      console.warn('⚠️ Lỗi chu kỳ đồng bộ Viettel Post:', err.message)
+    }
+  }, VIETTEL_SYNC_INTERVAL_MS)
+
+  // Chạy đồng bộ lần đầu tiên sau 5 giây khởi động server
+  setTimeout(async () => {
+    try {
+      const { syncAllShippedOrdersWithViettelPost } = await import('./lib/viettelPostService.js')
+      await syncAllShippedOrdersWithViettelPost()
+    } catch (e) {}
+  }, 5000)
+
+  // Lưu reference để cleanup khi shutdown
+  server.viettelSyncTimer = viettelSyncTimer
 })
 
 // Graceful shutdown (OPS-002)
 const shutdown = (signal) => {
   console.log(`\n🛑 Nhận tín hiệu ${signal}. Đang đóng server an toàn...`)
   isServerReady = false
+  if (server.viettelSyncTimer) {
+    clearInterval(server.viettelSyncTimer)
+  }
   server.close(() => {
     console.log('🔒 Server đã dừng nhận kết nối. Tiến trình kết thúc an toàn.')
     process.exit(0)

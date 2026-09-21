@@ -22,9 +22,20 @@ export async function submitOrder(orderPayload) {
     // Persist to local storage for instant customer history view
     try {
       const storedOrders = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
-      const filtered = storedOrders.filter((o) => o.orderId !== orderPayload.orderId)
+      const filtered = storedOrders.filter((o) => (o.orderId || o.id) !== orderPayload.orderId)
       filtered.unshift(orderPayload)
-      localStorage.setItem('pijama_orders', JSON.stringify(filtered.slice(0, 50)))
+      localStorage.setItem('pijama_orders', JSON.stringify(filtered))
+
+      // Bảo vệ vĩnh viễn trong kho lưu trữ archive
+      try {
+        const archive = JSON.parse(localStorage.getItem('pijama_orders_archive') || '[]')
+        const filteredArchive = archive.filter((o) => (o.orderId || o.id) !== orderPayload.orderId)
+        filteredArchive.unshift(orderPayload)
+        localStorage.setItem('pijama_orders_archive', JSON.stringify(filteredArchive))
+      } catch (archErr) {
+        console.warn('Lỗi lưu kho vĩnh viễn:', archErr)
+      }
+
       sessionStorage.setItem(`last_order_${orderPayload.orderId}`, JSON.stringify(orderPayload))
       sessionStorage.setItem('latest_order', JSON.stringify(orderPayload))
       if (typeof window !== 'undefined') {

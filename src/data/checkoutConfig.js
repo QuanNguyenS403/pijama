@@ -42,11 +42,34 @@ export const ORDER_STATUSES = {
   CANCELLED: { label: "Đã hủy đơn", color: "rose", step: -1 },
 }
 
+export const DEFAULT_CARRIER = "Viettel Post"
+
+export const CARRIERS = [
+  { id: "Viettel Post", name: "Viettel Post (Mặc định)", trackingUrl: (code) => `https://viettelpost.com.vn/tra-cuu-hanh-trinh-don-hang/?order_number=${code}` },
+  { id: "Giao Hàng Tiết Kiệm", name: "Giao Hàng Tiết Kiệm (GHTK)", trackingUrl: (code) => `https://i.ghtk.vn/${code}` },
+  { id: "Giao Hàng Nhanh", name: "Giao Hàng Nhanh (GHN)", trackingUrl: (code) => `https://tracking.ghn.vn/?order_code=${code}` },
+  { id: "SPX Express", name: "SPX Express", trackingUrl: (code) => `https://spx.vn/track?bill_no=${code}` },
+]
+
 export const CARRIER_TRACKING_URLS = {
-  GHN: (code) => `https://tracking.ghn.vn/?order_code=${code}`,
-  GHTK: (code) => `https://i.ghtk.vn/${code}`,
   VIETTEL_POST: (code) => `https://viettelpost.com.vn/tra-cuu-hanh-trinh-don-hang/?order_number=${code}`,
+  VIETTEL: (code) => `https://viettelpost.com.vn/tra-cuu-hanh-trinh-don-hang/?order_number=${code}`,
+  "Viettel Post": (code) => `https://viettelpost.com.vn/tra-cuu-hanh-trinh-don-hang/?order_number=${code}`,
+  GHN: (code) => `https://tracking.ghn.vn/?order_code=${code}`,
+  "Giao Hàng Nhanh": (code) => `https://tracking.ghn.vn/?order_code=${code}`,
+  GHTK: (code) => `https://i.ghtk.vn/${code}`,
+  "Giao Hàng Tiết Kiệm": (code) => `https://i.ghtk.vn/${code}`,
   SPX: (code) => `https://spx.vn/track?bill_no=${code}`,
+  "SPX Express": (code) => `https://spx.vn/track?bill_no=${code}`,
+}
+
+export const getCarrierTrackingUrl = (carrier, trackingCode) => {
+  if (!trackingCode) return null
+  const c = String(carrier || '').toUpperCase()
+  if (c.includes('GHTK') || c.includes('TIẾT KIỆM')) return CARRIER_TRACKING_URLS.GHTK(trackingCode)
+  if (c.includes('GHN') || c.includes('NHANH')) return CARRIER_TRACKING_URLS.GHN(trackingCode)
+  if (c.includes('SPX') || c.includes('SHOPEE')) return CARRIER_TRACKING_URLS.SPX(trackingCode)
+  return CARRIER_TRACKING_URLS.VIETTEL_POST(trackingCode)
 }
 
 export const validators = {
@@ -160,6 +183,9 @@ export const createOrderPayload = (formData, cartItems, cartSummary) => {
       status: formData.paymentMethod === "COD" ? "UNPAID" : "PENDING_VERIFICATION",
       paidAt: null,
     },
+
+    // ── VẬN CHUYỂN ──────────────────────────────────────
+    carrier: DEFAULT_CARRIER,
 
     // ── GHI CHÚ ──────────────────────────────────────────
     note: formData.note ? formData.note.trim() : "",

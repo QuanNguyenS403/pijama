@@ -112,7 +112,7 @@ test('Pha 2 — DATA-002 & G-21: Atomic Order Persistence Write', () => {
   assert.equal(retrieved.orderId, testId)
 
   // Đọc trực tiếp từ file disk để chứng minh đã ghi đĩa an toàn
-  const diskStore = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../server/data/orders_store.json'), 'utf-8'))
+  const diskStore = JSON.parse(fs.readFileSync(orderPersistence.getStoreFilePath(), 'utf-8'))
   const foundOnDisk = diskStore.find((o) => o.orderId === testId)
   assert.ok(foundOnDisk, 'Đơn hàng phải tồn tại trên disk sau atomic write')
 })

@@ -38,40 +38,22 @@ async function runApiTests() {
 
     // 2b. Test Google Auth Mock
     process.env.AUTH_TEST_MODE = 'true'
+    const dynamicSub = `sub-test-${Date.now()}`
+    const dynamicEmail = `test-${Date.now()}@example.com`
     console.log('\n2b. Testing POST /api/auth/google...')
     const googleRes = await fetch(`${baseUrl}/api/auth/google`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ credential: 'mock-google-token:sub-test-1:test@example.com' }),
+      body: JSON.stringify({ credential: `mock-google-token:${dynamicSub}:${dynamicEmail}` }),
     })
     const googleData = await googleRes.json()
     console.log('Google Auth response:', googleData)
-    if (!googleData.success) throw new Error('Google auth failed')
+    if (!googleData.success || !googleData.authenticated) throw new Error('Google auth failed')
 
-    const mockCode = googleData.mockCode || '123456'
-    console.log(`Using verification code: ${mockCode}`)
+    const welcomeCode = googleData.voucher?.code
+    console.log(`✅ Welcome Voucher Issued directly via Google Auth: ${welcomeCode}`)
 
-    // 3. Test Verify OTP
-    console.log('\n3. Testing POST /api/auth/verify...')
-    const verifyRes = await fetch(`${baseUrl}/api/auth/verify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        target: googleData.rawTarget,
-        code: mockCode,
-        provider: 'google',
-        providerSub: googleData.providerSub,
-        fullName: googleData.fullName,
-      }),
-    })
-    const verifyData = await verifyRes.json()
-    console.log('Verify response:', verifyData)
-    if (!verifyData.success || !verifyData.voucher?.code) throw new Error('Verify code failed')
-
-    const welcomeCode = verifyData.voucher.code
-    console.log(`✅ Welcome Voucher Issued: ${welcomeCode}`)
-
-    const cookie = verifyRes.headers.get('set-cookie')
+    const cookie = googleRes.headers.get('set-cookie')
 
     // 4. Test Voucher Validation API
     console.log(`\n4. Testing GET /api/vouchers/validate?code=${welcomeCode}...`)
@@ -96,7 +78,7 @@ async function runApiTests() {
         fullName: 'Nguyễn Đức Quân',
         phone: '0981753082',
         email: 'ducquan16102006@gmail.com',
-        accountId: verifyData.account.id,
+        accountId: googleData.account.id,
       },
       shipping: {
         address: '622 Minh Khai',

@@ -177,6 +177,17 @@ export const sendConfirmedEmail = async (order) => {
 // EMAIL 2: ĐÃ GIAO SHIPPER — kèm tracking number
 // ════════════════════════════════════════════════════
 export const sendShippedEmail = async (order, { trackingNumber } = {}) => {
+  const carrierName = order.carrier || 'Viettel Post'
+  let trackingUrl = `https://viettelpost.com.vn/tra-cuu-hanh-trinh-don-hang/?order_number=${trackingNumber}`
+  const cUpper = String(carrierName).toUpperCase()
+  if (cUpper.includes('GHN') || cUpper.includes('NHANH')) {
+    trackingUrl = `https://tracking.ghn.vn/?order_code=${trackingNumber}`
+  } else if (cUpper.includes('GHTK') || cUpper.includes('TIẾT KIỆM')) {
+    trackingUrl = `https://i.ghtk.vn/${trackingNumber}`
+  } else if (cUpper.includes('SPX') || cUpper.includes('SHOPEE')) {
+    trackingUrl = `https://spx.vn/track?bill_no=${trackingNumber}`
+  }
+
   const html = `
 <!DOCTYPE html><html lang="vi">
 <head><meta charset="UTF-8">${baseStyles}</head>
@@ -190,7 +201,7 @@ export const sendShippedEmail = async (order, { trackingNumber } = {}) => {
       Đơn hàng đang trên đường đến!
     </div>
     <div style="font-size:13px;color:#555;margin-top:5px">
-      Hàng đã được bàn giao cho đơn vị vận chuyển.
+      Hàng đã được bàn giao cho đơn vị vận chuyển ${carrierName}.
     </div>
     <div style="
       display:inline-block;background:#E65100;color:#fff;
@@ -203,7 +214,7 @@ export const sendShippedEmail = async (order, { trackingNumber } = {}) => {
     <p class="greeting">Xin chào ${order.customer.fullName},</p>
     <p class="intro">
       Tin vui! Đơn hàng <strong style="color:#7B2D3E">#${order.orderId}</strong>
-      đã được bàn giao cho đơn vị vận chuyển và đang trên đường đến với bạn.
+      đã được bàn giao cho đơn vị vận chuyển <strong>${carrierName}</strong> và đang trên đường đến với bạn.
       Vui lòng để ý điện thoại — shipper sẽ gọi trước khi giao.
     </p>
 
@@ -215,14 +226,20 @@ export const sendShippedEmail = async (order, { trackingNumber } = {}) => {
     ">
       <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;
                   color:rgba(245,240,232,.7);margin-bottom:8px">
-        Mã vận đơn
+        Mã vận đơn · ${carrierName}
       </div>
       <div style="font-family:Georgia,serif;font-size:24px;font-weight:bold;
                   letter-spacing:3px">
         ${trackingNumber}
       </div>
-      <div style="font-size:11px;color:rgba(245,240,232,.6);margin-top:6px">
-        Dùng mã này để tra cứu đơn hàng trên website shipper
+      <div style="margin-top:12px">
+        <a href="${trackingUrl}" target="_blank"
+           style="display:inline-block;background:#F5F0E8;color:#7B2D3E;font-size:12px;font-weight:bold;padding:9px 20px;text-decoration:none;border-radius:2px">
+          🔍 Tra cứu hành trình trên ${carrierName} →
+        </a>
+      </div>
+      <div style="font-size:11px;color:rgba(245,240,232,.6);margin-top:8px">
+        Nhấn nút trên để theo dõi trực tiếp hành trình đơn hàng
       </div>
     </div>` : ''}
 

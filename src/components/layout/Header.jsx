@@ -5,6 +5,7 @@ import { Menu, X, ShoppingBag, Heart, Package, User } from 'lucide-react'
 import { useCart } from '../../hooks/useCart'
 import WishlistDrawer from '../ui/WishlistDrawer'
 import OrdersHistoryDrawer from '../ui/OrdersHistoryDrawer'
+import { getSavedOrders } from '../../lib/orderSync'
 
 export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) {
   const [scrolled, setScrolled] = useState(false)
@@ -32,7 +33,7 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
 
   const updateOrdersCount = () => {
     try {
-      const saved = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
+      const saved = getSavedOrders()
       setOrdersCount(Array.isArray(saved) ? saved.length : 0)
     } catch {
       setOrdersCount(0)

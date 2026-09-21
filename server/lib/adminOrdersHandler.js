@@ -46,7 +46,9 @@ export function formatAdminOrder(order) {
     items: (order.items || []).map((item, idx) => ({
       id: item.id || idx,
       productName: item.productName || item.product?.name || item.name || 'Bộ Pijama Thiết Kế',
+      color: item.color || item.colorLabel || item.variant || '',
       colorLabel: item.color || item.colorLabel || item.variant || '',
+      variant: item.variant || item.colorLabel || item.color || '',
       size: item.size || '',
       quantity: Number(item.quantity) || 1,
       unitPrice: Number(item.unitPrice || item.price) || 0,
@@ -60,9 +62,14 @@ export function formatAdminOrder(order) {
     paymentMethod,
     paymentStatus,
     status: order.status || 'PENDING',
+    isDelivered: order.status === 'DELIVERED',
+    deliveredAt: order.deliveredAt || (order.status === 'DELIVERED' ? (order.updatedAt || new Date().toISOString()) : null),
     trackingNumber: order.trackingCode || order.trackingNumber || '',
     trackingCode: order.trackingCode || order.trackingNumber || '',
-    carrier: order.carrier || 'GHN',
+    carrier: order.carrier || 'Viettel Post',
+    viettelPostStatus: order.viettelPostStatus || '',
+    viettelPostLocation: order.viettelPostLocation || '',
+    viettelPostLastSync: order.viettelPostLastSync || '',
     note: order.note || '',
     cancelReason: order.cancelReason || '',
     cancelledAt: order.cancelledAt || null,
@@ -263,7 +270,7 @@ export async function handleAdminOrderAction(orderId, payload = {}) {
     return { status: 404, data: { success: false, error: 'Không tìm thấy đơn hàng trong hệ thống' } }
   }
 
-  const { action, note, trackingNumber, carrier = 'GHN', reason } = payload
+  const { action, note, trackingNumber, carrier = 'Viettel Post', reason } = payload
 
   // 1. Action NOTE
   if (action === 'NOTE') {
@@ -349,13 +356,15 @@ export async function handleAdminOrderAction(orderId, payload = {}) {
   if (action === 'SHIP') {
     order.trackingCode = trackingNumber || ''
     order.trackingNumber = trackingNumber || ''
-    order.carrier = carrier || 'GHN'
+    order.carrier = carrier || 'Viettel Post'
   }
 
   if (action === 'DELIVER') {
     if (!order.payment) order.payment = {}
     order.payment.status = 'PAID'
     order.paymentStatus = 'PAID'
+    order.deliveredAt = new Date().toISOString()
+    order.isDelivered = true
   }
 
   if (action === 'CANCEL') {

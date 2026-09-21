@@ -22,6 +22,7 @@ import Header from '../components/layout/Header'
 import Section12Footer from '../components/sections/Section12Footer'
 import CartDrawer from '../components/cart/CartDrawer'
 import { formatVND } from '../data/checkoutConfig'
+import { applyOrderUpdateLocally, getSavedOrders } from '../lib/orderSync'
 
 export default function BankTransferPaymentPage() {
   const [searchParams] = useSearchParams()
@@ -43,8 +44,8 @@ export default function BankTransferPaymentPage() {
     try {
       const saved = sessionStorage.getItem(`last_order_${orderId}`)
       if (saved) return JSON.parse(saved)
-      const allOrders = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
-      return allOrders.find((o) => o.orderId === orderId) || null
+      const allOrders = getSavedOrders()
+      return allOrders.find((o) => (o.orderId || o.id) === orderId) || null
     } catch (e) {
       console.error(e)
       return null
@@ -136,17 +137,8 @@ export default function BankTransferPaymentPage() {
         }
       }
 
-      // 2. Lưu vào storage client
-      sessionStorage.setItem('latest_order', JSON.stringify(updatedOrder))
-      sessionStorage.setItem(`last_order_${orderId}`, JSON.stringify(updatedOrder))
-
-      const storedOrders = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
-      const updatedList = storedOrders.map((o) => (o.orderId === orderId ? updatedOrder : o))
-      if (!updatedList.some((o) => o.orderId === orderId)) {
-        updatedList.unshift(updatedOrder)
-      }
-      localStorage.setItem('pijama_orders', JSON.stringify(updatedList.slice(0, 50)))
-      window.dispatchEvent(new Event('orders_updated'))
+      // 2. Lưu an toàn vào storage client & kho lưu trữ vĩnh viễn
+      applyOrderUpdateLocally(updatedOrder)
 
       setVerifySuccess(true)
       setTimeout(() => {
