@@ -78,7 +78,7 @@ function VisualProofSection() {
             <span className="font-serif text-4xl sm:text-5xl font-bold text-[#631521] leading-none mb-2">
               50+
             </span>
-            <span className="font-sans text-xs sm:text-sm text-[#4A3F38] font-light">
+            <span className="font-sans text-xs sm:text-sm text-[#4A3F38] font-normal">
               lần giặt — màu sắc vẫn như mới
             </span>
           </div>
@@ -87,7 +87,7 @@ function VisualProofSection() {
             <span className="font-serif text-4xl sm:text-5xl font-bold text-[#631521] leading-none mb-2">
               127
             </span>
-            <span className="font-sans text-xs sm:text-sm text-[#4A3F38] font-light">
+            <span className="font-sans text-xs sm:text-sm text-[#4A3F38] font-normal">
               khách đã quay lại mua thêm
             </span>
           </div>
@@ -99,7 +99,7 @@ function VisualProofSection() {
               </span>
               <span className="text-3xl text-[#D4AF37]">★</span>
             </div>
-            <span className="font-sans text-xs sm:text-sm text-[#4A3F38] font-light">
+            <span className="font-sans text-xs sm:text-sm text-[#4A3F38] font-normal">
               điểm đánh giá trung bình
             </span>
           </div>
@@ -298,11 +298,11 @@ export default function ProductDetailPage() {
               </span>
               <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-[1.1] mb-6">
                 Mềm hơn mỗi
-                <span className="block text-[#D4AF37] italic font-light mt-1">
+                <span className="block text-[#D4AF37] italic font-normal mt-1">
                   ngày trôi qua
                 </span>
               </h2>
-              <p className="font-sans text-base sm:text-lg text-white/90 font-light leading-relaxed mb-8">
+              <p className="font-sans text-base sm:text-lg text-white/90 font-normal leading-relaxed mb-8">
                 Chúng tôi không nói nhiều về chất vải — chúng tôi để cảm giác trên da bạn nói thay. Được làm từ sợi tự nhiên qua quy trình kiểm định kỹ lưỡng, mỗi bộ QuanNguyenS được thiết kế để trở nên tốt hơn theo thời gian — mềm hơn, quen tay hơn, và gắn bó hơn với cuộc sống của bạn.
               </p>
               <div className="space-y-3 pt-2">
@@ -315,7 +315,7 @@ export default function ProductDetailPage() {
                     <span className="text-[#D4AF37] font-serif text-xl shrink-0 mt-0.5">{item.arrow}</span>
                     <div>
                       <span className="font-serif text-base font-bold text-[#D4AF37] block">{item.title}</span>
-                      <span className="font-sans text-xs sm:text-sm text-white/80 font-light">{item.desc}</span>
+                      <span className="font-sans text-xs sm:text-sm text-white/80 font-normal">{item.desc}</span>
                     </div>
                   </div>
                 ))}

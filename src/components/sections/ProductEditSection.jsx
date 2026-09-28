@@ -145,7 +145,7 @@ export default function ProductEditSection({ onOpenSizeGuide, onSelectProductFor
                     {product.name}
                   </h3>
 
-                  <p className="text-xs text-[#475569] font-light line-clamp-2 leading-relaxed mb-4">
+                  <p className="text-xs text-[#475569] font-normal line-clamp-2 leading-relaxed mb-4">
                     {product.description}
                   </p>
                 </div>
@@ -237,7 +237,7 @@ export default function ProductEditSection({ onOpenSizeGuide, onSelectProductFor
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-[#475569] font-light leading-relaxed mb-4">
+                    <p className="text-xs text-[#475569] font-normal leading-relaxed mb-4">
                       {quickViewProduct.description}
                     </p>
                   </div>

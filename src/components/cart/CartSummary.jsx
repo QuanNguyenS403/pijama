@@ -66,12 +66,12 @@ export default function CartSummary({
         </span>
 
         <div className="flex justify-between items-center font-sans text-sm text-[#4A3F38]">
-          <span className="font-light">Tạm tính</span>
+          <span className="font-normal">Tạm tính</span>
           <span className="font-bold text-[#1A1614]">{formatPrice(subtotal)}</span>
         </div>
 
         <div className="flex justify-between items-center font-sans text-sm text-[#4A3F38]">
-          <span className="font-light">Phí vận chuyển</span>
+          <span className="font-normal">Phí vận chuyển</span>
           <span className={effectiveShippingFee === 0 ? 'text-[#631521] font-bold' : 'font-bold text-[#1A1614]'}>
             {effectiveShippingFee === 0 ? 'Miễn phí' : formatPrice(effectiveShippingFee)}
           </span>
@@ -79,7 +79,7 @@ export default function CartSummary({
 
         {effectiveDiscount > 0 && (
           <div className="flex justify-between items-center font-sans text-sm text-[#4A3F38]">
-            <span className="font-light">Giảm giá ưu đãi {appliedVoucher ? `(${appliedVoucher.code})` : ''}</span>
+            <span className="font-normal">Giảm giá ưu đãi {appliedVoucher ? `(${appliedVoucher.code})` : ''}</span>
             <span className="text-[#631521] font-bold">−{formatPrice(effectiveDiscount)}</span>
           </div>
         )}

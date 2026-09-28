@@ -46,7 +46,7 @@ export default function FinalCtaFooter() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="text-sm sm:text-base text-[#E8DFD5]/90 font-light max-w-xl mx-auto mb-8 leading-relaxed"
+            className="text-sm sm:text-base text-[#E8DFD5]/90 font-normal max-w-xl mx-auto mb-8 leading-relaxed"
           >
             Trao cho bản thân và người thân yêu món quà của sự êm ái và giấc ngủ trọn vẹn nhất mỗi đêm cùng bộ pijama cao cấp.
           </motion.p>
@@ -74,7 +74,7 @@ export default function FinalCtaFooter() {
               <a href="#hero" className="inline-block mb-4">
                 <BrandLogo variant="horizontal" color="white" />
               </a>
-              <p className="text-xs text-[#94A3B8] font-light max-w-sm leading-relaxed mb-6">
+              <p className="text-xs text-[#94A3B8] font-normal max-w-sm leading-relaxed mb-6">
                 Thương hiệu thời trang đồ ngủ cao cấp <strong className="text-[#FAF8F5] font-normal">QuanNguyenS</strong>. Tôn vinh nghệ thuật sống thảnh thơi, tự nhiên và chăm sóc trọn vẹn sức khỏe giấc ngủ người Việt.
               </p>
             </div>
@@ -93,7 +93,7 @@ export default function FinalCtaFooter() {
           </div>
 
           {/* Quick Navigation (8 cols) */}
-          <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-3 gap-6 text-xs font-light">
+          <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-3 gap-6 text-xs font-normal">
             {/* Column 1: Navigation */}
             <div>
               <h4 className="font-bold tracking-[0.18em] uppercase text-[#FAF8F5] mb-4 text-[11px] border-b border-[#1E293B] pb-2">

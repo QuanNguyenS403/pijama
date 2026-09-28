@@ -51,30 +51,7 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
-  const [customerAccount, setCustomerAccount] = useState(null)
   const [appliedVoucher, setAppliedVoucher] = useState(null)
-
-  // Revalidate session từ server và tự động điền thông tin nếu khách đã đăng nhập
-  useEffect(() => {
-    fetch('/api/auth/me', { credentials: 'include' })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.authenticated && data.account) {
-          setCustomerAccount(data.account)
-          setFormData((prev) => ({
-            ...prev,
-            fullName: prev.fullName || data.account.fullName || '',
-            phone: prev.phone || data.account.phone || '',
-            email: prev.email || data.account.email || '',
-          }))
-        } else {
-          setCustomerAccount(null)
-          // Xóa untrusted localStorage cache nếu server không xác nhận session
-          localStorage.removeItem('qns_customer_account')
-        }
-      })
-      .catch(() => setCustomerAccount(null))
-  }, [])
 
   // ── KIỂM TRA BÁN KÍNH 30KM ĐỐI VỚI SHIP COD (AMBER RIVERSIDE, 622 MINH KHAI) ──
   const [codStatus, setCodStatus] = useState(() =>
@@ -240,9 +217,6 @@ export default function CheckoutPage() {
           total,
         }
       )
-      if (customerAccount?.id) {
-        orderPayload.customer.accountId = customerAccount.id
-      }
 
       // 2. Gửi đơn hàng lên hệ thống (Google Sheets + Gmail)
       const result = await submitOrder(orderPayload)
@@ -346,7 +320,7 @@ export default function CheckoutPage() {
             <h2 className="font-serif text-2xl font-bold text-[#1A1614] mb-3">
               Giỏ hàng của bạn đang trống
             </h2>
-            <p className="text-sm font-light text-[#4A3F38] mb-6">
+            <p className="text-sm font-normal text-[#4A3F38] mb-6">
               Vui lòng chọn sản phẩm vào giỏ hàng trước khi tiến hành thanh toán.
             </p>
             <Link
@@ -582,24 +556,13 @@ export default function CheckoutPage() {
 
                 {/* SECTION 3: PHƯƠNG THỨC THANH TOÁN */}
                 <div className="bg-white p-6 sm:p-8 rounded-[4px] border border-[#E8DFD5] shadow-xs">
-                  <div className="flex items-center gap-3 pb-3 border-b border-[#E8DFD5]">
+                  <div className="flex items-center gap-3 pb-3 border-b border-[#E8DFD5] mb-4">
                     <span className="w-6 h-6 rounded-full bg-[#631521] text-[#FAF8F5] flex items-center justify-center font-serif text-xs font-bold">
                       3
                     </span>
                     <h2 className="font-serif text-lg font-bold text-[#1A1614] tracking-wide">
                       Phương Thức Thanh Toán
                     </h2>
-                  </div>
-
-                  {/* Trust Badge Row */}
-                  <div className="bg-[#FAF5F0] border border-[#D4AF37]/40 rounded-[3px] p-3 flex items-center justify-between flex-wrap gap-2 text-xs text-[#631521] mb-4">
-                    <span className="flex items-center gap-1.5 font-semibold">
-                      <ShieldCheck className="w-4 h-4 text-[#631521]" />
-                      Xác thực VietQR / Napas 24/7 · Vietcombank
-                    </span>
-                    <span className="text-[11px] text-[#8C7E74] font-sans">
-                      Mã hóa SSL chuẩn ngân hàng
-                    </span>
                   </div>
 
                   {/* Thông báo nếu vượt quá bán kính 30km COD */}
@@ -682,7 +645,7 @@ export default function CheckoutPage() {
                                 </div>
                               </div>
 
-                              <p className="font-sans text-xs text-[#4A3F38] mt-1 font-light leading-relaxed">
+                              <p className="font-sans text-xs text-[#4A3F38] mt-1 font-normal leading-relaxed">
                                 {isCodDisabled
                                   ? `Chỉ áp dụng trong bán kính 30km từ Amber Riverside (622 Minh Khai, Hà Nội). Khoảng cách hiện tại là ~${codStatus.distanceKm}km.`
                                   : method.description}
@@ -785,7 +748,6 @@ export default function CheckoutPage() {
                     <VoucherInput
                       onApply={(v) => setAppliedVoucher(v)}
                       currentSubtotal={subtotal}
-                      accountId={customerAccount?.id}
                     />
                   </div>
 

@@ -25,7 +25,7 @@ export default function CartItemRow({ item, onUpdateQuantity, onRemove, compact 
               {item.name}
             </p>
           </Link>
-          <p className="font-sans text-[0.8rem] font-light text-[#8C7E74] mt-0.5">
+          <p className="font-sans text-[0.8rem] font-normal text-[#8C7E74] mt-0.5">
             {item.color?.name || (typeof item.color === 'string' ? item.color : '')} | Size <span className="font-medium text-[#1A1614]">{item.size}</span>
           </p>
           {(item.preOrder?.enabled || item.isPreOrder || item.slug === 'the-classic-set' || item.productId === 'the-classic-set') && (

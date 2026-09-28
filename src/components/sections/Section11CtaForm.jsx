@@ -52,7 +52,7 @@ export default function Section11CtaForm() {
           
           <div className="w-16 h-[2px] bg-[#D4AF37] mx-auto my-4" />
           
-          <p className="font-sans text-sm sm:text-base text-white/85 font-light leading-relaxed max-w-lg mx-auto">
+          <p className="font-sans text-sm sm:text-base text-white/85 font-normal leading-relaxed max-w-lg mx-auto">
             Điền thông tin và chúng tôi sẽ liên hệ lại trong vòng 24 giờ để thảo luận về cơ hội hợp tác.
           </p>
         </div>

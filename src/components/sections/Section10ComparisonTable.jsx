@@ -38,7 +38,7 @@ export default function Section10ComparisonTable({ onSelectTier }) {
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight">
             Trở thành đối tác
-            <span className="block text-[#D4AF37] italic font-light mt-1 text-2xl sm:text-3xl">
+            <span className="block text-[#D4AF37] italic font-normal mt-1 text-2xl sm:text-3xl">
               cùng QuanNguyenS
             </span>
           </h2>

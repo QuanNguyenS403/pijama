@@ -14,7 +14,7 @@ export default function Button({ variant = 'primary', children, className = '', 
     'ghost-dark':
       'bg-transparent border border-[#D4AF37] text-[#D4AF37] px-8 py-[12px] hover:bg-[#D4AF37] hover:text-[#2C201A] focus:ring-[#D4AF37]',
     icon:
-      'bg-transparent text-[#8C7E74] px-3 py-2 hover:text-[#631521] text-xs font-light normal-case tracking-normal',
+      'bg-transparent text-[#8C7E74] px-3 py-2 hover:text-[#631521] text-xs font-normal normal-case tracking-normal',
   }
 
   return (

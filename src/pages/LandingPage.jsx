@@ -4,6 +4,7 @@ import Section2Hero from '../components/sections/Section2Hero'
 import CraftsmanshipStrip from '../components/sections/CraftsmanshipStrip'
 import Section3FeaturedProducts from '../components/sections/Section3FeaturedProducts'
 import Section4FeatureGrid from '../components/sections/Section4FeatureGrid'
+import SocialProofScreenshots from '../components/sections/SocialProofScreenshots'
 import Section5DarkContrast from '../components/sections/Section5DarkContrast'
 import Section6ReversedLayout from '../components/sections/Section6ReversedLayout'
 import Section7CustomerStory from '../components/sections/Section7CustomerStory'
@@ -49,6 +50,7 @@ export default function LandingPage() {
         <Section2Hero />
         <CraftsmanshipStrip />
         <Section3FeaturedProducts />
+        <SocialProofScreenshots />
         <Section4FeatureGrid />
         <Section5DarkContrast />
         <Section6ReversedLayout />

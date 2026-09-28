@@ -63,7 +63,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                   Giỏ Hàng Của Bạn
                 </h2>
                 <div className="flex items-center gap-3 mt-0.5">
-                  <p className="font-sans text-xs font-light text-[#8C7E74]">
+                  <p className="font-sans text-xs font-normal text-[#8C7E74]">
                     ({totalItems} sản phẩm)
                   </p>
                   {totalItems > 0 && (
@@ -94,7 +94,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                 </div>
                 <div>
                   <p className="font-serif text-2xl font-bold text-[#1A1614]">Giỏ hàng đang trống</p>
-                  <p className="font-sans text-sm font-light text-[#8C7E74] mt-1 max-w-xs">
+                  <p className="font-sans text-sm font-normal text-[#8C7E74] mt-1 max-w-xs">
                     Hãy khám phá những bộ pijama tự nhiên cao cấp phong cách châu Âu
                   </p>
                 </div>

@@ -63,7 +63,7 @@ export default function ViettelPostTracker({ trackingData, onRefresh }) {
             <h3 className="font-serif text-base sm:text-lg font-bold text-white tracking-wide">
               {currentStatus}
             </h3>
-            <p className="text-white/80 text-[11px] mt-0.5 font-light">
+            <p className="text-white/80 text-[11px] mt-0.5 font-normal">
               {carrierName}
             </p>
           </div>

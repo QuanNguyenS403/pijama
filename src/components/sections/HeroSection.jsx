@@ -43,7 +43,7 @@ export default function HeroSection() {
             </h1>
 
             {/* Lead Narrative Subtitle */}
-            <p className="text-base sm:text-lg text-[#475569] font-light leading-relaxed mb-8 max-w-xl">
+            <p className="text-base sm:text-lg text-[#475569] font-normal leading-relaxed mb-8 max-w-xl">
               Set pijama tự nhiên QuanNguyenS phong cách European Casual Luxury mang lại cảm giác mềm mại, thoáng mát suốt đêm dài — thoải mái dạo phố, thanh lịch đón khách ngay tại nhà.
             </p>
 
@@ -71,15 +71,15 @@ export default function HeroSection() {
             <div className="pt-6 border-t border-[#E8DFD5] grid grid-cols-3 gap-3 text-center sm:text-left">
               <div>
                 <span className="font-serif text-xl sm:text-2xl font-bold text-[#1A1614] block">4.9★</span>
-                <span className="text-[11px] text-[#64748B] font-light">Từ 1.200+ đánh giá</span>
+                <span className="text-[11px] text-[#64748B] font-normal">Từ 1.200+ đánh giá</span>
               </div>
               <div className="border-x border-[#E8DFD5] px-2">
                 <span className="font-serif text-xl sm:text-2xl font-bold text-[#1A1614] block">30 Ngày</span>
-                <span className="text-[11px] text-[#64748B] font-light">Đổi trả tại nhà</span>
+                <span className="text-[11px] text-[#64748B] font-normal">Đổi trả tại nhà</span>
               </div>
               <div>
                 <span className="font-serif text-xl sm:text-2xl font-bold text-[#1A1614] block">100%</span>
-                <span className="text-[11px] text-[#64748B] font-light">Sợi tự nhiên cao cấp</span>
+                <span className="text-[11px] text-[#64748B] font-normal">Sợi tự nhiên cao cấp</span>
               </div>
             </div>
           </motion.div>
@@ -121,7 +121,7 @@ export default function HeroSection() {
                     <span className="text-[11px] font-bold text-[#1A1614] block leading-tight">
                       100% Sợi Tự Nhiên
                     </span>
-                    <span className="text-[10px] text-[#64748B] font-light block mt-0.5">
+                    <span className="text-[10px] text-[#64748B] font-normal block mt-0.5">
                       Xử lý vi sinh xoa mềm
                     </span>
                   </div>

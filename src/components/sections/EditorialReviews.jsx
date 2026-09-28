@@ -79,7 +79,7 @@ export default function EditorialReviews() {
                   </span>
                 </div>
 
-                <p className="text-sm text-[#4A423C] font-light italic leading-relaxed mb-6">
+                <p className="text-sm text-[#4A423C] font-normal italic leading-relaxed mb-6">
                   {rev.quote}
                 </p>
               </div>

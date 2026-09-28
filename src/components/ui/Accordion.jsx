@@ -35,7 +35,7 @@ export default function Accordion({ items }) {
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
                 className="overflow-hidden"
               >
-                <div className="pb-5 text-sm font-light leading-relaxed text-[#4A3F38]">
+                <div className="pb-5 text-sm font-normal leading-relaxed text-[#4A3F38]">
                   {item.content}
                 </div>
               </motion.div>

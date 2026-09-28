@@ -29,20 +29,20 @@ export default function Section5DarkContrast() {
             
             <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-[1.12] mb-6">
               NGHỆ THUẬT & TÂY
-              <span className="block text-[#D4AF37] italic font-light mt-1">
+              <span className="block text-[#D4AF37] italic font-normal mt-1">
                 MÀ VẪN LÀ MÌNH
               </span>
             </h2>
 
-            <p className="font-sans text-base sm:text-lg text-white/90 font-light leading-relaxed mb-4">
+            <p className="font-sans text-base sm:text-lg text-white/90 font-normal leading-relaxed mb-4">
               QuanNguyenS bắt đầu từ một câu hỏi đơn giản: Tại sao mình phải chọn giữa thoải mái và trông đẹp?
             </p>
 
-            <p className="font-sans text-sm sm:text-base text-white/75 font-light leading-relaxed mb-4">
+            <p className="font-sans text-sm sm:text-base text-white/75 font-normal leading-relaxed mb-4">
               Ở Paris, ở Milan, ở Copenhagen — người ta mặc set đồ nhẹ tênh ra phố mua bánh mì buổi sáng và không ai nhìn. Ở Hà Nội, mặc pijama ra ngoài vẫn còn là chủ đề bàn tán
             </p>
 
-            <p className="font-sans text-sm sm:text-base text-white/75 font-light leading-relaxed mb-8">
+            <p className="font-sans text-sm sm:text-base text-white/75 font-normal leading-relaxed mb-8">
               Với chất vải tự nhiên được tuyển chọn kỹ lưỡng, đường may tinh tế, và thiết kế lấy cảm hứng từ phong cách châu Âu — QuanNguyenS tạo ra những bộ pijama đủ đẹp để mặc ra ngoài, đủ thoải mái để ngủ trong đó
             </p>
 

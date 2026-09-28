@@ -100,12 +100,12 @@ export default function Section2Hero() {
               loading="eager"
             />
 
-            {/* Directional gradient overlay matching negative space alignment */}
+            {/* Directional gradient overlay matching negative space alignment — thu gọn bề ngang */}
             <div
-              className={`absolute inset-0 transition-opacity duration-700 ${
+              className={`absolute inset-y-0 transition-opacity duration-700 pointer-events-none ${
                 isRightAligned
-                  ? 'bg-gradient-to-l from-[#0F0A08]/85 via-[#0F0A08]/40 sm:via-[#0F0A08]/20 to-transparent'
-                  : 'bg-gradient-to-r from-[#0F0A08]/85 via-[#0F0A08]/40 sm:via-[#0F0A08]/20 to-transparent'
+                  ? 'right-0 w-full sm:w-[50%] lg:w-[36%] xl:w-[32%] bg-gradient-to-l from-[#0F0A08]/90 via-[#0F0A08]/40 to-transparent'
+                  : 'left-0 w-full sm:w-[50%] lg:w-[36%] xl:w-[32%] bg-gradient-to-r from-[#0F0A08]/90 via-[#0F0A08]/40 to-transparent'
               }`}
             />
           </motion.div>
@@ -119,7 +119,7 @@ export default function Section2Hero() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: isRightAligned ? -20 : 20 }}
             transition={{ duration: 0.65, delay: 0.15, ease: [0.4, 0, 0.2, 1] }}
-            className={`absolute inset-y-0 flex flex-col justify-center px-6 sm:px-10 lg:px-16 max-w-[540px] lg:max-w-[46%] z-10 ${
+            className={`absolute inset-y-0 flex flex-col justify-center px-6 sm:px-8 lg:px-12 max-w-[420px] sm:max-w-[460px] lg:max-w-[34%] xl:max-w-[30%] z-10 ${
               isRightAligned ? 'right-0 items-start text-left' : 'left-0 items-start text-left'
             }`}
           >
@@ -134,7 +134,7 @@ export default function Section2Hero() {
             </h1>
 
             {/* Sub-headline */}
-            <p className="font-sans text-xs sm:text-sm lg:text-base text-white/80 font-light leading-relaxed mb-5 sm:mb-7 max-w-sm sm:max-w-md drop-shadow-sm">
+            <p className="font-sans text-xs sm:text-sm lg:text-base text-white/80 font-normal leading-relaxed mb-5 sm:mb-7 max-w-sm sm:max-w-md drop-shadow-sm">
               {currentSlide.sub}
             </p>
 
@@ -161,7 +161,7 @@ export default function Section2Hero() {
         </AnimatePresence>
 
         {/* Slide Counter & Dots */}
-        <div className="absolute bottom-4 sm:bottom-6 left-6 sm:left-10 lg:left-16 flex items-center gap-2 z-20">
+        <div className="absolute bottom-4 sm:bottom-6 left-6 sm:left-8 lg:left-12 flex items-center gap-2 z-20">
           {slides.map((_, i) => (
             <button
               key={i}

@@ -50,7 +50,7 @@ export default function BrandManifesto() {
               “Giấc ngủ đẹp cũng là một cách <br />
               <span className="font-serif-italic text-[#8C7E74]">yêu thương chính mình.</span>”
             </h2>
-            <p className="text-sm sm:text-base text-[#475569] font-light leading-relaxed">
+            <p className="text-sm sm:text-base text-[#475569] font-normal leading-relaxed">
               Thương hiệu <strong className="font-semibold text-[#1A1614]">QuanNguyenS</strong> kiến tạo dòng sản phẩm 10PM Pijama từ tình yêu sâu sắc với chất liệu tự nhiên thuần khiết. Mỗi bộ đồ ngủ là một lời vỗ về dịu dàng cho cơ thể sau ngày dài bận rộn.
             </p>
           </motion.div>
@@ -75,7 +75,7 @@ export default function BrandManifesto() {
                   <h3 className="text-sm font-bold text-[#1A1614] mb-1.5 leading-snug">
                     {item.title}
                   </h3>
-                  <p className="text-xs text-[#475569] font-light leading-relaxed">
+                  <p className="text-xs text-[#475569] font-normal leading-relaxed">
                     {item.desc}
                   </p>
                 </div>

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600;1,700&family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Inter:ital,opsz,wght@0,14..32,400..800;1,14..32,400..800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -98,8 +98,49 @@
     transform-origin: bottom left;
   }
 
+  /* Luxury Infinite Marquee Ticker */
+  @keyframes luxury-marquee {
+    0% {
+      transform: translate3d(0, 0, 0);
+    }
+    100% {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+
+  .animate-luxury-marquee {
+    display: flex;
+    width: max-content;
+    animation: luxury-marquee 58s linear infinite;
+    will-change: transform;
+  }
+
+  .animate-luxury-marquee:hover {
+    animation-play-state: paused;
+  }
+
+  /* Facebook Reviews Infinite Marquee (Right to Left) */
+  @keyframes reviews-marquee-rtl {
+    0% {
+      transform: translate3d(0, 0, 0);
+    }
+    100% {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+
+  .animate-reviews-marquee {
+    display: flex;
+    width: max-content;
+    animation: reviews-marquee-rtl 42s linear infinite;
+    will-change: transform;
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
+    .animate-luxury-marquee {
+      animation-play-state: paused !important;
+    }
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
@@ -131,9 +172,12 @@
     inset: 0;
     background: linear-gradient(
       to top right,
-      transparent calc(50% - 0.5px),
-      #8C7E74,
       transparent calc(50% + 0.5px)
     );
+  }
+
+  /* Ensure any font-light class is rendered slightly bolder (400) for clear customer legibility */
+  .font-light {
+    font-weight: 400 !important;
   }
 }

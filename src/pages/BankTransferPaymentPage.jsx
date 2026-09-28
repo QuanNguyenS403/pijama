@@ -274,7 +274,7 @@ export default function BankTransferPaymentPage() {
             </motion.div>
 
             <span className="font-serif text-xs font-semibold tracking-[0.3em] text-[#D4AF37] uppercase block mb-1.5 relative z-10">
-              CỔNG THANH TOÁN VIETQR 1 LẦN
+              CỔNG THANH TOÁN VIETQR NAPAS 24/7
             </span>
             <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide relative z-10">
               Quét Mã Để Hoàn Tất Đơn Hàng
@@ -308,7 +308,7 @@ export default function BankTransferPaymentPage() {
                 <h2 className="font-serif text-xl font-bold text-[#1A1614]">
                   Không tìm thấy dữ liệu đơn hàng
                 </h2>
-                <p className="text-xs sm:text-sm font-light text-[#4A3F38] max-w-md mx-auto leading-relaxed">
+                <p className="text-xs sm:text-sm font-normal text-[#4A3F38] max-w-md mx-auto leading-relaxed">
                   Không tìm thấy thông tin thanh toán cho mã đơn này trên thiết bị. Vui lòng kiểm tra lại trong mục <strong>Đơn Hàng Đã Đặt</strong> hoặc liên hệ hotline <strong>0981 753 082</strong> để được hỗ trợ kiểm tra trực tiếp.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2 max-w-md mx-auto">
@@ -334,7 +334,7 @@ export default function BankTransferPaymentPage() {
                   <p className="font-serif text-lg font-bold text-[#1A1614]">
                     Cảm ơn {customerName} đã lựa chọn QuanNguyenS
                   </p>
-                  <p className="text-xs sm:text-sm font-light text-[#4A3F38] leading-relaxed">
+                  <p className="text-xs sm:text-sm font-normal text-[#4A3F38] leading-relaxed">
                     Đơn hàng đã được khởi tạo. Vui lòng hoàn tất chuyển khoản theo mã QR 1 lần bên dưới. 
                     Khi tiền vào tài khoản, hệ thống sẽ <strong>tự động vô hiệu hóa mã QR</strong> và <strong>gửi email xác nhận đặt hàng</strong> tới địa chỉ <strong className="text-[#631521] font-semibold">{customerEmail || 'email của bạn'}</strong>.
                   </p>
@@ -548,7 +548,7 @@ export default function BankTransferPaymentPage() {
                   <Truck className="w-5 h-5 text-[#631521] shrink-0 mt-0.5" />
                   <div>
                     <p className="font-bold text-[#1A1614] mb-0.5">Thời gian giao hàng dự kiến:</p>
-                    <p className="font-light leading-relaxed">
+                    <p className="font-normal leading-relaxed">
                       Từ <strong>2–4 ngày làm việc</strong>. Bộ phận vận hành sẽ liên hệ qua điện thoại trước khi giao hàng.
                     </p>
                   </div>

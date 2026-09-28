@@ -348,7 +348,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                       </span>
                     )}
                   </h2>
-                  <p className="text-[11px] text-white/70 font-light">
+                  <p className="text-[11px] text-white/70 font-normal">
                     Theo dõi hành trình bưu phẩm Viettel Post & hóa đơn
                   </p>
                 </div>
@@ -486,7 +486,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                       <h3 className="font-serif text-lg font-bold text-[#1A1614] mb-1.5">
                         Chưa có đơn hàng nào trong danh sách
                       </h3>
-                      <p className="text-xs text-[#8C7E74] max-w-xs mb-6 font-light leading-relaxed">
+                      <p className="text-xs text-[#8C7E74] max-w-xs mb-6 font-normal leading-relaxed">
                         Bạn có thể chuyển sang mục <strong>"Theo dõi đơn hàng"</strong> để theo dõi lộ trình vận chuyển bưu phẩm Viettel Post hoặc tìm lại đơn đã đặt.
                       </p>
                       <button
@@ -530,7 +530,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                     </h3>
                   </div>
 
-                  <p className="text-xs text-[#4A3F38] font-light leading-relaxed">
+                  <p className="text-xs text-[#4A3F38] font-normal leading-relaxed">
                     Mục này chỉ dành để tra cứu chính xác <strong>Mã vận đơn (Tracking code)</strong> đã được cấp tại mục <strong>Đơn hàng của bạn</strong> để theo dõi trực tiếp hành trình đơn hàng trên website:
                   </p>
 

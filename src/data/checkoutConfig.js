@@ -9,11 +9,11 @@ export const PAYMENT_METHODS = [
   },
   {
     value: "BANK_TRANSFER",
-    label: "Chuyển khoản ngân hàng (VietQR)",
+    label: "Chuyển khoản VietQR / Napas 247",
     icon: "🏦",
     discountPercent: 10,
     badge: "Giảm 10% trực tiếp",
-    description: "Quét mã VietQR tiện lợi — Nhận ngay ưu đãi GIẢM 10% trên tổng giá trị đơn hàng",
+    description: "Quét mã VietQR chuẩn Napas 24/7 tiện lợi — Nhận ngay ưu đãi GIẢM 10% trên tổng giá trị đơn hàng",
     bankInfo: {
       bankName: "Vietcombank (Ngân hàng TMCP Ngoại thương Việt Nam)",
       bankCode: "VCB",
@@ -29,7 +29,7 @@ export const PAYMENT_METHODS = [
 
 export const PAYMENT_LABELS = {
   COD: "Thanh toán khi nhận hàng (COD)",
-  BANK_TRANSFER: "Chuyển khoản VietQR (Giảm 10%)",
+  BANK_TRANSFER: "Chuyển khoản VietQR (Napas 24/7 - Giảm 10%)",
 }
 
 export const ORDER_STATUSES = {

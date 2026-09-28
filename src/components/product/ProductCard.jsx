@@ -85,12 +85,12 @@ export default function ProductCard({ product, onQuickView, onAddToCart }) {
               {product.name}
             </h3>
           </Link>
-          <p className="font-sans text-[0.8rem] font-light text-[#8C7E74]">{product.subtitle}</p>
+          <p className="font-sans text-[0.8rem] font-normal text-[#8C7E74]">{product.subtitle}</p>
 
           <div className="flex items-baseline gap-2 mt-1.5">
             <span className="font-serif text-[1.15rem] font-bold text-[#631521]">{formatPrice(product.price)}</span>
             {product.originalPrice && (
-              <span className="font-sans text-xs text-[#8C7E74] line-through font-light">{formatPrice(product.originalPrice)}</span>
+              <span className="font-sans text-xs text-[#8C7E74] line-through font-normal">{formatPrice(product.originalPrice)}</span>
             )}
           </div>
         </div>

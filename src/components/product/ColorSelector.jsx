@@ -79,7 +79,7 @@ export default function ColorSelector({ colors = [], selected, onChange }) {
                   }}
                 />
                 <span
-                  className={`font-sans text-[0.7rem] text-center transition-colors font-light ${
+                  className={`font-sans text-[0.7rem] text-center transition-colors font-normal ${
                     isSelected ? 'text-[#631521] font-medium' : 'text-[#8C7E74]'
                   }`}
                 >
@@ -109,7 +109,7 @@ export default function ColorSelector({ colors = [], selected, onChange }) {
                     : '0 0 0 1px #E8DFD5',
                 }}
               />
-              <span className="font-sans text-[0.65rem] text-[#8C7E74] font-light">
+              <span className="font-sans text-[0.65rem] text-[#8C7E74] font-normal">
                 {color.label || color.name}
               </span>
             </div>

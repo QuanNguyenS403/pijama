@@ -67,7 +67,7 @@ export default function CartPage() {
               <ShoppingBag className="w-9 h-9" />
             </div>
             <p className="font-serif text-2xl font-bold text-[#1A1614] mb-2">Chưa có sản phẩm nào</p>
-            <p className="font-sans text-sm font-light text-[#8C7E74] mb-6 max-w-xs">
+            <p className="font-sans text-sm font-normal text-[#8C7E74] mb-6 max-w-xs">
               Hãy khám phá những bộ pijama tự nhiên cao cấp phong cách châu Âu
             </p>
             <Link
@@ -133,7 +133,7 @@ export default function CartPage() {
                           <Link to={`/san-pham/${item.slug}`}>
                             <p className="font-serif font-bold text-base text-[#1A1614] hover:text-[#631521] transition-colors leading-snug">{item.name}</p>
                           </Link>
-                          <p className="font-sans text-xs font-light text-[#8C7E74] mt-0.5">{item.subtitle}</p>
+                          <p className="font-sans text-xs font-normal text-[#8C7E74] mt-0.5">{item.subtitle}</p>
                           {(item.preOrder?.enabled || item.isPreOrder || item.slug === 'the-classic-set' || item.productId === 'the-classic-set') && (
                             <span className="inline-flex items-center gap-1 font-sans text-[0.7rem] font-bold text-[#631521] bg-[#FAF5F0] border border-[#D4AF37]/60 px-1.5 py-0.5 rounded-[2px] mt-1.5">
                               ⏱ Đặt trước — giao trong 7-10 ngày

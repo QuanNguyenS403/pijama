@@ -54,6 +54,13 @@ export default {
           'sans-serif',
         ],
       },
+      fontWeight: {
+        light: '400',
+        normal: '400',
+        medium: '500',
+        semibold: '600',
+        bold: '700',
+      },
       fontSize: {
         'display-xl':     ['68px', { lineHeight: '0.98', letterSpacing: '-0.03em' }],
         'display-lg':     ['54px', { lineHeight: '1.05', letterSpacing: '-0.02em' }],

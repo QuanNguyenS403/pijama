@@ -74,7 +74,7 @@ export default function ProductAccordion({ product }) {
                           Ưu Điểm 0{idx + 1}
                         </span>
                       </div>
-                      <p className="font-sans text-xs text-[#4A3F38] font-light leading-relaxed">
+                      <p className="font-sans text-xs text-[#4A3F38] font-normal leading-relaxed">
                         {hl}
                       </p>
                     </div>
@@ -85,7 +85,7 @@ export default function ProductAccordion({ product }) {
           )}
 
           {/* Detailed Description Paragraphs */}
-          <div className="font-sans font-light text-sm text-[#4A3F38] leading-relaxed space-y-3 pt-2 border-t border-[#F0EAE1]">
+          <div className="font-sans font-normal text-sm text-[#4A3F38] leading-relaxed space-y-3 pt-2 border-t border-[#F0EAE1]">
             {detailedText ? (
               detailedText.split('\n\n').map((paragraph, i) => (
                 <p key={i} className="leading-relaxed">{paragraph}</p>
@@ -105,7 +105,7 @@ export default function ProductAccordion({ product }) {
       label: 'Hướng Dẫn Chọn Size',
       content: (
         <div className="space-y-4 text-sm text-[#4A3F38]">
-          <p className="font-light text-xs sm:text-sm leading-relaxed">
+          <p className="font-normal text-xs sm:text-sm leading-relaxed">
             Đối với phom dáng pijama suông cổ điển châu Âu của QuanNguyenS, bạn có thể dễ dàng đối chiếu số đo cơ thể theo bảng quy chuẩn bên dưới. Nếu nằm giữa 2 size, chúng tôi khuyên bạn nên chọn <strong>size lớn hơn</strong> để có trải nghiệm mặc thư thái nhất.
           </p>
 
@@ -164,7 +164,7 @@ export default function ProductAccordion({ product }) {
             <p className="font-serif font-bold text-[#631521] uppercase text-xs tracking-wider mb-1.5">
               TIÊU CHUẨN CHẤT LIỆU CAO CẤP
             </p>
-            <p className="font-light leading-relaxed mb-3">
+            <p className="font-normal leading-relaxed mb-3">
               {product.fabric || 'QuanNguyenS sử dụng chất liệu sợi tự nhiên cao cấp được tuyển chọn kỹ lưỡng.'}{' '}
               {product.fabricDetail || ''}
             </p>
@@ -239,7 +239,7 @@ export default function ProductAccordion({ product }) {
                 <p className="font-serif font-bold text-xs uppercase tracking-wider text-[#631521] mb-0.5">
                   LƯU Ý ĐẶT TRƯỚC (PRE-ORDER)
                 </p>
-                <p className="font-light text-[#4A3F38] leading-relaxed">
+                <p className="font-normal text-[#4A3F38] leading-relaxed">
                   {product.name} là phiên bản giới hạn được chuẩn bị theo đơn riêng. Thời gian hoàn thiện và giao hàng dự kiến trong <strong>7–10 ngày làm việc</strong>. Toàn bộ quyền lợi đổi trả miễn phí trong 30 ngày vẫn có hiệu lực đầy đủ kể từ ngày bạn nhận hàng.
                 </p>
               </div>
@@ -262,7 +262,7 @@ export default function ProductAccordion({ product }) {
                     Liên Hệ Trong 30 Ngày
                   </span>
                 </div>
-                <p className="font-sans text-xs text-[#4A3F38] font-light leading-relaxed">
+                <p className="font-sans text-xs text-[#4A3F38] font-normal leading-relaxed">
                   Sản phẩm còn nguyên tem mác, chưa giặt tẩy. Gọi hotline hoặc nhắn tin thông báo nhu cầu đổi size/màu.
                 </p>
               </div>
@@ -281,7 +281,7 @@ export default function ProductAccordion({ product }) {
                     Đổi Trả Tận Nhà Miễn Phí
                   </span>
                 </div>
-                <p className="font-sans text-xs text-[#4A3F38] font-light leading-relaxed">
+                <p className="font-sans text-xs text-[#4A3F38] font-normal leading-relaxed">
                   Bưu tá sẽ đến tận địa chỉ của bạn để giao bộ mới và nhận lại bộ cũ. Bạn không cần ra bưu cục gửi hàng.
                 </p>
               </div>
@@ -300,7 +300,7 @@ export default function ProductAccordion({ product }) {
                     Hoàn Tiền / Đổi Mới
                   </span>
                 </div>
-                <p className="font-sans text-xs text-[#4A3F38] font-light leading-relaxed">
+                <p className="font-sans text-xs text-[#4A3F38] font-normal leading-relaxed">
                   Đổi sang mẫu mới ngay lập tức hoặc hoàn tiền 100% trong vòng 24–48 giờ làm việc nếu không hài lòng.
                 </p>
               </div>

@@ -77,7 +77,7 @@ export default function PricingSection({ onAddToCart }) {
             Chọn Gói Trải Nghiệm <br />
             <span className="font-serif-italic text-[#8C7E74]">Cho Giấc Ngủ Hoàn Hảo</span>
           </h2>
-          <p className="text-sm sm:text-base text-[#4A423C] font-light max-w-xl mx-auto">
+          <p className="text-sm sm:text-base text-[#4A423C] font-normal max-w-xl mx-auto">
             Hỗ trợ đổi size tận nhà trong 30 ngày — Tặng kèm hộp quà sang trọng và phụ kiện thêu tay cao cấp cho mọi combo.
           </p>
         </div>
@@ -112,7 +112,7 @@ export default function PricingSection({ onAddToCart }) {
                     <h3 className="font-serif text-2xl font-normal mb-2">
                       {tier.title}
                     </h3>
-                    <p className={`text-xs font-light ${isHighlighted ? 'text-[#E8DFD5]/80' : 'text-[#8C7E74]'}`}>
+                    <p className={`text-xs font-normal ${isHighlighted ? 'text-[#E8DFD5]/80' : 'text-[#8C7E74]'}`}>
                       {tier.description}
                     </p>
                   </div>
@@ -124,7 +124,7 @@ export default function PricingSection({ onAddToCart }) {
                         {tier.price}
                       </span>
                       {tier.originalPrice && (
-                        <span className="text-sm line-through text-[#8C7E74] font-light">
+                        <span className="text-sm line-through text-[#8C7E74] font-normal">
                           {tier.originalPrice}
                         </span>
                       )}
@@ -147,7 +147,7 @@ export default function PricingSection({ onAddToCart }) {
                   )}
 
                   {/* Feature Checklist */}
-                  <ul className="space-y-3 mb-8 text-xs sm:text-sm font-light">
+                  <ul className="space-y-3 mb-8 text-xs sm:text-sm font-normal">
                     {tier.perks.map((perk, i) => (
                       <li key={i} className="flex items-start gap-2.5">
                         <Check className="w-4 h-4 text-[#C5A059] shrink-0 mt-0.5" />
@@ -185,7 +185,7 @@ export default function PricingSection({ onAddToCart }) {
                 <h4 className="font-bold text-xs uppercase tracking-wider text-[#1A1614] mb-1">
                   {tp.title}
                 </h4>
-                <p className="text-[11px] text-[#8C7E74] font-light leading-snug">
+                <p className="text-[11px] text-[#8C7E74] font-normal leading-snug">
                   {tp.sub}
                 </p>
               </div>

@@ -116,7 +116,7 @@ export default function QuickViewModal({ product, onClose, onAddToCart }) {
                   BST {product.collection?.toUpperCase()}
                 </p>
                 <h2 className="font-serif text-2xl md:text-3xl font-bold text-[#1A1614]">{product.name}</h2>
-                <p className="font-sans text-sm font-light italic text-[#8C7E74]">{product.subtitle}</p>
+                <p className="font-sans text-sm font-normal italic text-[#8C7E74]">{product.subtitle}</p>
 
                 {/* Price */}
                 <div className="flex items-baseline gap-3">
@@ -124,7 +124,7 @@ export default function QuickViewModal({ product, onClose, onAddToCart }) {
                     {formatPrice(product.price)}
                   </span>
                   {product.originalPrice && (
-                    <span className="font-sans text-sm text-[#8C7E74] line-through font-light">
+                    <span className="font-sans text-sm text-[#8C7E74] line-through font-normal">
                       {formatPrice(product.originalPrice)}
                     </span>
                   )}

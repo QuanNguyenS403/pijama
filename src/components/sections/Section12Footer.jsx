@@ -152,11 +152,11 @@ export default function Section12Footer() {
                 Theo Dõi QuanNguyenS
               </h3>
               <p className="font-sans text-xs text-white/75 leading-relaxed mb-4">
-                Follow <span className="text-[#D4AF37] font-semibold">@QuanNguyenS</span> để xem phong cách phối đồ hàng ngày ↗
+                Follow <span className="text-[#D4AF37] font-semibold">@qns.style</span> để xem phong cách phối đồ hàng ngày ↗
               </p>
               <div className="flex gap-3 mb-6">
                 <a
-                  href="https://instagram.com/quannguyens"
+                  href="https://www.instagram.com/qns.style"
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Instagram QuanNguyenS"
@@ -165,7 +165,7 @@ export default function Section12Footer() {
                   <InstagramIcon className="w-4 h-4" />
                 </a>
                 <a
-                  href="https://facebook.com/quannguyens"
+                  href="https://www.facebook.com/qns.style"
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Facebook QuanNguyenS"

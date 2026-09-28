@@ -67,7 +67,7 @@ export default function CareFaqSection() {
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3 }}
-                      className="px-6 pb-6 pt-0 text-xs sm:text-sm text-[#4A423C] font-light leading-relaxed border-t border-[#F5F0EB]"
+                      className="px-6 pb-6 pt-0 text-xs sm:text-sm text-[#4A423C] font-normal leading-relaxed border-t border-[#F5F0EB]"
                     >
                       <p className="pt-4">{faq.a}</p>
                     </motion.div>

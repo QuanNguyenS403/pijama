@@ -77,7 +77,7 @@ export default function NightRitualSection() {
               <span className="font-serif-italic text-[#8C7E74]">Trọn Vẹn Bình Yên</span>
             </h2>
 
-            <p className="text-base text-[#4A423C] font-light leading-relaxed mb-10">
+            <p className="text-base text-[#4A423C] font-normal leading-relaxed mb-10">
               Trút bỏ âu lo, khoác lên bộ pijama mát lạnh, đốt ngọn nến thơm và để cơ thể được vỗ về dịu êm.
             </p>
 
@@ -97,7 +97,7 @@ export default function NightRitualSection() {
                       <h4 className="font-serif text-base font-bold text-[#1A1614] mb-1">
                         {step.title}
                       </h4>
-                      <p className="text-xs sm:text-sm text-[#4A423C] font-light leading-relaxed">
+                      <p className="text-xs sm:text-sm text-[#4A423C] font-normal leading-relaxed">
                         {step.desc}
                       </p>
                     </div>

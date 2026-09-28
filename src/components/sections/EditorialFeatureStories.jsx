@@ -58,7 +58,7 @@ export default function EditorialFeatureStories() {
                 <span className="font-serif-italic text-[#8C7E74]">Cả Đêm Dài</span>
               </h2>
 
-              <p className="text-base text-[#4A423C] font-light leading-relaxed mb-8">
+              <p className="text-base text-[#4A423C] font-normal leading-relaxed mb-8">
                 Chất liệu sợi tự nhiên có cấu trúc vi xốp đặc biệt, tự động hút ẩm lên đến 20% trọng lượng cơ thể — giải phóng hơi nóng dư thừa cho giấc ngủ luôn mát lành sâu thẳm.
               </p>
 
@@ -119,7 +119,7 @@ export default function EditorialFeatureStories() {
                 <span className="font-serif-italic text-[#E8DFD5]">Theo Thời Gian</span>
               </h2>
 
-              <p className="text-sm sm:text-base text-[#E8DFD5]/90 font-light leading-relaxed mb-6">
+              <p className="text-sm sm:text-base text-[#E8DFD5]/90 font-normal leading-relaxed mb-6">
                 Khác với các loại vải thông thường thô ráp theo năm tháng, chất liệu tự nhiên 10PM đã qua xử lý giặt xả vi sinh lành tính — càng giặt càng trở nên mềm mịn và êm ái xoa dịu làn da.
               </p>
 
@@ -174,18 +174,18 @@ export default function EditorialFeatureStories() {
                 <span className="font-serif-italic text-[#8C7E74]">Mỗi Đêm Nghỉ Nơi</span>
               </h2>
 
-              <p className="text-base text-[#4A423C] font-light leading-relaxed mb-6">
+              <p className="text-base text-[#4A423C] font-normal leading-relaxed mb-6">
                 Hơn cả một bộ đồ ngủ, Pijama 10PM đại diện cho một phong cách sống chỉn chu. Đường may giấu tinh tế (French seams), cúc mộc dừa thủ công mộc mạc mà sang trọng — mặc ở nhà hay dạo phố sớm đều tràn đầy tự tin.
               </p>
 
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#E8DFD5] mb-8 text-xs text-[#26201C]">
                 <div>
                   <span className="font-bold block mb-1">Cúc Mộc Dừa</span>
-                  <span className="text-[#8C7E74] font-light">Chất liệu tự nhiên thân thiện môi trường</span>
+                  <span className="text-[#8C7E74] font-normal">Chất liệu tự nhiên thân thiện môi trường</span>
                 </div>
                 <div>
                   <span className="font-bold block mb-1">Đường May Ẩn</span>
-                  <span className="text-[#8C7E74] font-light">Không cọ xát gây ngứa làn da</span>
+                  <span className="text-[#8C7E74] font-normal">Không cọ xát gây ngứa làn da</span>
                 </div>
               </div>
 

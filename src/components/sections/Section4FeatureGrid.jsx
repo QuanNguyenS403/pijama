@@ -47,7 +47,7 @@ export default function Section4FeatureGrid() {
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#1A1614] tracking-tight">
             Không phải may mặc thông thường
-            <span className="block text-[#631521] italic font-light mt-1 text-2xl sm:text-3xl md:text-4xl">
+            <span className="block text-[#631521] italic font-normal mt-1 text-2xl sm:text-3xl md:text-4xl">
               Đây là lý do chất liệu của chúng tôi thay đổi mọi thứ
             </span>
           </h2>

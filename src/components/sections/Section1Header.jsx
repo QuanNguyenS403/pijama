@@ -60,7 +60,7 @@ export default function Section1Header({ onOpenCta }) {
             <span className="font-serif text-lg sm:text-xl font-bold tracking-[0.18em] text-[#FAF8F5] uppercase group-hover:text-[#D4AF37] transition-colors">
               QuanNguyenS
             </span>
-            <span className="text-[9px] tracking-[0.25em] text-[#D4AF37] uppercase font-light -mt-1">
+            <span className="text-[9px] tracking-[0.25em] text-[#D4AF37] uppercase font-normal -mt-1">
               European Casual Luxury
             </span>
           </div>

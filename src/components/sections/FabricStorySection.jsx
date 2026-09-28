@@ -75,7 +75,7 @@ export default function FabricStorySection() {
             </h2>
           </div>
 
-          <p className="text-xs sm:text-sm text-[#94A3B8] font-light max-w-md leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#94A3B8] font-normal max-w-md leading-relaxed">
             Chất liệu tự nhiên không đơn thuần là một sản phẩm may mặc — đó là hơi thở của sự tinh tế được QuanNguyenS dệt thành sự êm ái cho riêng giấc ngủ của bạn.
           </p>
         </div>
@@ -133,7 +133,7 @@ export default function FabricStorySection() {
               {fabricAttributes[activeTab].heading}
             </h3>
 
-            <p className="text-sm text-[#CBD5E1] font-light leading-relaxed mb-6 max-w-xl">
+            <p className="text-sm text-[#CBD5E1] font-normal leading-relaxed mb-6 max-w-xl">
               {fabricAttributes[activeTab].desc}
             </p>
 
@@ -147,7 +147,7 @@ export default function FabricStorySection() {
                 </span>
               </div>
               <div className="h-8 w-[1px] bg-[#334155]" />
-              <div className="text-xs text-[#94A3B8] font-light">
+              <div className="text-xs text-[#94A3B8] font-normal">
                 Đạt tiêu chuẩn an toàn sinh học dệt may tự nhiên.
               </div>
             </div>

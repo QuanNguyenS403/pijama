@@ -28,16 +28,16 @@ export default function Section7CustomerStory() {
 
             <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-[1.12] mb-6">
               Không mass production
-              <span className="block text-[#D4AF37] italic font-light mt-1 text-2xl sm:text-3xl">
+              <span className="block text-[#D4AF37] italic font-normal mt-1 text-2xl sm:text-3xl">
                 Mỗi đường may là một quyết định
               </span>
             </h2>
 
-            <p className="font-sans text-base sm:text-lg text-white/90 font-light leading-relaxed mb-4">
+            <p className="font-sans text-base sm:text-lg text-white/90 font-normal leading-relaxed mb-4">
               Chúng tôi không sản xuất hàng loạt để bán rẻ. Chúng tôi chọn từng mét vải, kiểm từng đường chỉ, và quyết định từng màu sắc — để mỗi bộ QuanNguyenS đến tay bạn đều xứng đáng được mặc nhiều lần hơn, không chỉ một lần
             </p>
 
-            <p className="font-sans text-sm sm:text-base text-white/75 font-light leading-relaxed mb-8">
+            <p className="font-sans text-sm sm:text-base text-white/75 font-normal leading-relaxed mb-8">
               Từng mét vải được chọn lọc thủ công. Thiết kế được kiểm duyệt nghiêm. Số lượng có giới hạn — vì chúng tôi muốn làm tốt, không chỉ làm nhiều
             </p>
 

@@ -66,10 +66,10 @@ export default function Section6ReversedLayout() {
             <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-[1.12] mb-2">
               QuanNguyenS
             </h2>
-            <h3 className="font-serif text-xl sm:text-2xl font-light text-[#D4AF37] italic mb-4">
+            <h3 className="font-serif text-xl sm:text-2xl font-normal text-[#D4AF37] italic mb-4">
               trong cuộc sống của bạn
             </h3>
-            <p className="font-sans text-sm sm:text-base text-white/75 font-light leading-relaxed mb-8">
+            <p className="font-sans text-sm sm:text-base text-white/75 font-normal leading-relaxed mb-8">
               Chất liệu đủ mềm để bạn không muốn thay ra — đủ đẹp để bạn không cần. Từ ban công buổi sáng đến quán cà phê buổi chiều — một bộ, trọn ngày
             </p>
 

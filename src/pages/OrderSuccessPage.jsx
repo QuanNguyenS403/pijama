@@ -203,7 +203,7 @@ export default function OrderSuccessPage() {
                 <h2 className="font-serif text-xl font-bold text-[#1A1614]">
                   Không tìm thấy dữ liệu đơn hàng
                 </h2>
-                <p className="text-xs sm:text-sm font-light text-[#4A3F38] max-w-md mx-auto leading-relaxed">
+                <p className="text-xs sm:text-sm font-normal text-[#4A3F38] max-w-md mx-auto leading-relaxed">
                   Không tìm thấy thông tin đơn hàng trên thiết bị này. Vui lòng kiểm tra lại trong mục <strong>Đơn Hàng Đã Đặt</strong> hoặc liên hệ hotline <strong>0981 753 082</strong> để được hỗ trợ kiểm tra trực tiếp.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2 max-w-md mx-auto">
@@ -247,7 +247,7 @@ export default function OrderSuccessPage() {
                       <p className="font-bold flex items-center gap-1.5 text-sm">
                         <span>🎉</span> Đơn hàng đã giao nhận thành công!
                       </p>
-                      <p className="text-[#1B5E20] font-light leading-relaxed">
+                      <p className="text-[#1B5E20] font-normal leading-relaxed">
                         Cảm ơn quý khách đã tin tưởng và đồng hành cùng QuanNguyenS. Toàn bộ nội dung đơn hàng, sản phẩm và hóa đơn bảo hành được lưu trữ trọn đời trên hệ thống và thiết bị của bạn.
                       </p>
                     </div>
@@ -267,12 +267,12 @@ export default function OrderSuccessPage() {
                       <p className="font-bold flex items-center gap-1.5">
                         <span>⏳</span> Đang đối soát giao dịch chuyển khoản với Vietcombank
                       </p>
-                      <p className="text-[#4A3F38] font-light leading-relaxed">
+                      <p className="text-[#4A3F38] font-normal leading-relaxed">
                         Hệ thống đang tự động kiểm tra biến động số dư. Sau khi giao dịch được xác thực, email hóa đơn chính thức sẽ được gửi ngay tới <strong>{customerEmail || 'email của bạn'}</strong>.
                       </p>
                     </div>
                   ) : (
-                    <p className="text-xs sm:text-sm font-light text-[#4A3F38] leading-relaxed">
+                    <p className="text-xs sm:text-sm font-normal text-[#4A3F38] leading-relaxed">
                       Hệ thống đã tự động gửi email xác nhận kèm hóa đơn chi tiết tới địa chỉ{' '}
                       <strong className="text-[#631521] font-semibold">{customerEmail || 'email của bạn'}</strong>. Vui lòng kiểm tra hộp thư (hoặc mục Spam/Quảng cáo).
                     </p>
@@ -448,7 +448,7 @@ export default function OrderSuccessPage() {
                             Đơn hàng có chứa sản phẩm <strong>Đặt Trước (THE DAYBREAK SET)</strong> — Thời gian may & giao hàng dự kiến trong <strong>7–10 ngày làm việc</strong>. Bộ phận vận hành sẽ liên hệ thông báo cụ thể trước khi giao hàng.
                           </p>
                         ) : (
-                          <p className="font-light leading-relaxed text-[#4A3F38]">
+                          <p className="font-normal leading-relaxed text-[#4A3F38]">
                             Từ <strong>2–4 ngày làm việc</strong>. Bộ phận vận hành sẽ liên hệ qua điện thoại trước khi giao hàng.
                           </p>
                         )}

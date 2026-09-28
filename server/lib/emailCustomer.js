@@ -13,12 +13,12 @@ export const sendCustomerEmail = async (order) => {
   let subject = `✅ QuanNguyenS — Xác nhận đơn hàng #${order.orderId}`
   let html = buildCODEmailHTML(order)
 
-  if (isBankTransfer) {
-    subject = `🏦 QuanNguyenS — Thông tin thanh toán VietQR đơn #${order.orderId}`
-    html = buildBankTransferEmailHTML(order)
-  } else if (!isCOD && order.payment?.status === 'PAID') {
+  if (order.payment?.status === 'PAID') {
     subject = `🎉 QuanNguyenS — Thanh toán thành công đơn #${order.orderId}`
     html = buildPaidEmailHTML(order)
+  } else if (isBankTransfer) {
+    subject = `🏦 QuanNguyenS — Thông tin thanh toán VietQR đơn #${order.orderId}`
+    html = buildBankTransferEmailHTML(order)
   }
 
   await transporter.sendMail({
@@ -624,7 +624,7 @@ export const buildCODEmailHTML = (order) => {
 }
 
 // ──────────────────────────────────────────────────────────
-// Template 2: ĐÃ THANH TOÁN (VNPAY / MoMo / Chuyển khoản xác nhận)
+// Template 2: ĐÃ THANH TOÁN (VietQR / Chuyển khoản xác nhận)
 // ──────────────────────────────────────────────────────────
 export const buildPaidEmailHTML = (order) => {
   const hasPreOrder = !!(

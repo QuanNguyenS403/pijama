@@ -56,7 +56,7 @@ export default function PolicyModal({ isOpen, onClose, initialPolicy = 'terms' }
                 <span className="font-serif text-base sm:text-lg font-bold tracking-wider text-[#FAF8F5] uppercase block">
                   Chính Sách & Quy Định QuanNguyenS
                 </span>
-                <span className="text-[10px] tracking-[0.2em] text-[#D4AF37] uppercase font-light -mt-0.5 block">
+                <span className="text-[10px] tracking-[0.2em] text-[#D4AF37] uppercase font-normal -mt-0.5 block">
                   European Casual Luxury
                 </span>
               </div>
@@ -101,7 +101,7 @@ export default function PolicyModal({ isOpen, onClose, initialPolicy = 'terms' }
               <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1A1614] tracking-tight">
                 {policy?.title}
               </h2>
-              <p className="font-sans text-sm font-light italic text-[#8C7E74] mt-1">
+              <p className="font-sans text-sm font-normal italic text-[#8C7E74] mt-1">
                 {policy?.subtitle}
               </p>
             </div>
@@ -115,7 +115,7 @@ export default function PolicyModal({ isOpen, onClose, initialPolicy = 'terms' }
                   </h3>
                   <ul className="space-y-2.5">
                     {section.content.map((line, lineIdx) => (
-                      <li key={lineIdx} className="flex items-start gap-2.5 font-sans text-xs sm:text-sm font-light text-[#4A3F38] leading-relaxed">
+                      <li key={lineIdx} className="flex items-start gap-2.5 font-sans text-xs sm:text-sm font-normal text-[#4A3F38] leading-relaxed">
                         <span className="text-[#D4AF37] font-bold mt-0.5 shrink-0">•</span>
                         <span>{line}</span>
                       </li>
@@ -156,7 +156,7 @@ export default function PolicyModal({ isOpen, onClose, initialPolicy = 'terms' }
 
           {/* Footer of Modal */}
           <div className="px-6 py-3.5 bg-[#FAF8F5] border-t border-[#E8DFD5] flex items-center justify-between shrink-0">
-            <span className="font-sans text-xs text-[#8C7E74] font-light">
+            <span className="font-sans text-xs text-[#8C7E74] font-normal">
               © 2026 QuanNguyenS — European Casual Luxury
             </span>
             <button

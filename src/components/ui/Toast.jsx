@@ -39,7 +39,7 @@ export function Toast({ toast, onDismiss }) {
             <p className="font-sans text-xs font-bold leading-snug text-[#FAF8F5] truncate">
               {toast.productName} đã thêm vào giỏ!
             </p>
-            <p className="font-sans text-[0.75rem] font-light text-[#D4AF37] mt-0.5">
+            <p className="font-sans text-[0.75rem] font-normal text-[#D4AF37] mt-0.5">
               {toast.variant} —{' '}
               {new Intl.NumberFormat('vi-VN').format(toast.price)}đ
             </p>

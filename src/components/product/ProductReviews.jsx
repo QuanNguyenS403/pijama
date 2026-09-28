@@ -104,7 +104,7 @@ export default function ProductReviews({ product }) {
                 <div className="my-1.5">
                   <StarRow rating={review.rating} />
                 </div>
-                <p className="font-sans text-sm font-light text-[#4A3F38] leading-relaxed mt-2">
+                <p className="font-sans text-sm font-normal text-[#4A3F38] leading-relaxed mt-2">
                   "{review.text}"
                 </p>
                 <p className="font-sans text-xs italic text-[#8C7E74] mt-2.5 pt-2 border-t border-[#F5F0EB]">

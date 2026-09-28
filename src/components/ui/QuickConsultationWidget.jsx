@@ -32,7 +32,7 @@ export default function QuickConsultationWidget() {
               </button>
             </div>
 
-            <p className="font-sans text-xs text-[#4A3F38] font-light leading-relaxed mb-3.5">
+            <p className="font-sans text-xs text-[#4A3F38] font-normal leading-relaxed mb-3.5">
               Bạn phân vân về size hoặc chất liệu? Đội ngũ chuyên viên QuanNguyenS sẵn sàng hỗ trợ bạn ngay tức thì.
             </p>
 

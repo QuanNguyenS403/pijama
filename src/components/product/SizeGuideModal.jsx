@@ -102,19 +102,19 @@ export default function SizeGuideModal({ isOpen, onClose, sizeGuide = {} }) {
                           <td className="py-3.5 px-3 sm:px-4 text-center font-sans font-medium text-xs sm:text-sm text-[#1A1614] whitespace-nowrap">
                             {data?.weight || '—'}
                           </td>
-                          <td className="py-3.5 px-3 sm:px-4 text-center font-sans font-light text-xs sm:text-sm text-[#1A1614] whitespace-nowrap">
+                          <td className="py-3.5 px-3 sm:px-4 text-center font-sans font-normal text-xs sm:text-sm text-[#1A1614] whitespace-nowrap">
                             {data?.height || '—'}
                           </td>
-                          <td className="py-3.5 px-3 sm:px-4 text-center font-sans font-light text-xs sm:text-sm text-[#1A1614] whitespace-nowrap">
+                          <td className="py-3.5 px-3 sm:px-4 text-center font-sans font-normal text-xs sm:text-sm text-[#1A1614] whitespace-nowrap">
                             {data?.chest ? `${data.chest} cm` : '—'}
                           </td>
-                          <td className="py-3.5 px-3 sm:px-4 text-center font-sans font-light text-xs sm:text-sm text-[#1A1614] whitespace-nowrap">
+                          <td className="py-3.5 px-3 sm:px-4 text-center font-sans font-normal text-xs sm:text-sm text-[#1A1614] whitespace-nowrap">
                             {data?.waist ? `${data.waist} cm` : '—'}
                           </td>
-                          <td className="py-3.5 px-3 sm:px-4 text-center font-sans font-light text-xs sm:text-sm text-[#1A1614] whitespace-nowrap">
+                          <td className="py-3.5 px-3 sm:px-4 text-center font-sans font-normal text-xs sm:text-sm text-[#1A1614] whitespace-nowrap">
                             {data?.trouserLength || '—'}
                           </td>
-                          <td className="py-3.5 px-3 sm:px-4 text-center font-sans font-light text-xs sm:text-sm text-[#1A1614] whitespace-nowrap">
+                          <td className="py-3.5 px-3 sm:px-4 text-center font-sans font-normal text-xs sm:text-sm text-[#1A1614] whitespace-nowrap">
                             {data?.sleeveLength || '—'}
                           </td>
                         </tr>
@@ -125,7 +125,7 @@ export default function SizeGuideModal({ isOpen, onClose, sizeGuide = {} }) {
               </div>
 
               {/* Footer Note */}
-              <p className="font-sans font-light italic text-[0.8rem] text-[#8C7E74] text-center mt-5 leading-relaxed">
+              <p className="font-sans font-normal italic text-[0.8rem] text-[#8C7E74] text-center mt-5 leading-relaxed">
                 * Bảng size mang tính tham khảo. Nếu bạn đang ở giữa 2 size, chọn size lớn hơn.
               </p>
 

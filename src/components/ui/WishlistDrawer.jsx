@@ -155,7 +155,7 @@ export default function WishlistDrawer({ isOpen, onClose, onAddToCart }) {
                   <p className="font-serif text-xl font-bold text-[#1A1614] mb-1">
                     Chưa có mục nào được lưu
                   </p>
-                  <p className="font-sans text-xs text-[#8C7E74] font-light max-w-xs mb-5">
+                  <p className="font-sans text-xs text-[#8C7E74] font-normal max-w-xs mb-5">
                     Hãy bấm biểu tượng trái tim ở các bộ pijama bạn yêu thích để xem lại sau
                   </p>
                   <button

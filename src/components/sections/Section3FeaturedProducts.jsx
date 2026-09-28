@@ -81,7 +81,7 @@ export default function Section3FeaturedProducts() {
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#1A1614] tracking-tight">
             Mỗi bộ là một mood
-            <span className="block text-[#631521] italic font-light mt-1 text-2xl sm:text-3xl">
+            <span className="block text-[#631521] italic font-normal mt-1 text-2xl sm:text-3xl">
               Bạn chọn ngày hôm nay là gì?
             </span>
           </h2>

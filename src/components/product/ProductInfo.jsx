@@ -149,18 +149,18 @@ export default function ProductInfo({
           <h1 className="font-serif text-3xl sm:text-4xl md:text-[42px] font-bold leading-[1.12] text-[#1A1614] tracking-tight">
             {product.name}
           </h1>
-          <p className="font-sans text-base font-light italic text-[#8C7E74] mt-1.5">
+          <p className="font-sans text-base font-normal italic text-[#8C7E74] mt-1.5">
             {product.subtitle}
           </p>
           {product.tagline && (
-            <p className="font-sans text-sm font-light italic text-[#4A3F38] mt-2 leading-relaxed bg-[#FAF5F0] p-2.5 border-l-2 border-[#631521]">
+            <p className="font-sans text-sm font-normal italic text-[#4A3F38] mt-2 leading-relaxed bg-[#FAF5F0] p-2.5 border-l-2 border-[#631521]">
               "{product.tagline}"
             </p>
           )}
         </div>
 
         {/* Material Philosophy Badge */}
-        <div className="inline-block border border-[#E8DFD5] px-4 py-2 bg-[#FAF8F5] text-[0.75rem] font-sans font-light uppercase tracking-[0.15em] text-[#631521] w-fit">
+        <div className="inline-block border border-[#E8DFD5] px-4 py-2 bg-[#FAF8F5] text-[0.75rem] font-sans font-normal uppercase tracking-[0.15em] text-[#631521] w-fit">
           ✦ CHẤT LIỆU ĐƯỢC TUYỂN CHỌN & KIỂM ĐỊNH ✦
         </div>
 
@@ -184,7 +184,7 @@ export default function ProductInfo({
             {formatPrice(product.price)}
           </span>
           {product.originalPrice && (
-            <span className="font-sans text-base text-[#8C7E74] line-through font-light">
+            <span className="font-sans text-base text-[#8C7E74] line-through font-normal">
               {formatPrice(product.originalPrice)}
             </span>
           )}
@@ -203,7 +203,7 @@ export default function ProductInfo({
               <p className="font-serif font-bold text-xs sm:text-sm text-[#631521] uppercase tracking-wider mb-0.5">
                 Sản Phẩm Đặt Trước (Pre-Order)
               </p>
-              <p className="font-light text-[#4A3F38] leading-relaxed">
+              <p className="font-normal text-[#4A3F38] leading-relaxed">
                 {product.preOrder.message || 'Hàng đặt trước — Giao hàng dự kiến trong 7-10 ngày làm việc'}
               </p>
             </div>
@@ -278,7 +278,7 @@ export default function ProductInfo({
                   Hợp mệnh {product.fengShui.goodFor.join(' & ')}
                 </span>
               </div>
-              <p className="font-light leading-relaxed text-[#4A3F38]">
+              <p className="font-normal leading-relaxed text-[#4A3F38]">
                 {product.fengShui.energyNote}
               </p>
             </div>
@@ -290,7 +290,7 @@ export default function ProductInfo({
           <span className="font-sans font-semibold text-[11px] uppercase tracking-[0.15em] text-[#631521] block mb-1">
             CẢM NHẬN KHÁC BIỆT
           </span>
-          <p className="font-sans font-light italic text-sm text-[#4A3F38] leading-relaxed">
+          <p className="font-sans font-normal italic text-sm text-[#4A3F38] leading-relaxed">
             "Chất vải của chúng tôi không cần một cái tên để chứng minh. Chỉ cần một lần chạm."
           </p>
         </div>
@@ -375,7 +375,7 @@ export default function ProductInfo({
             <div key={t.label} className="flex flex-col items-center gap-1">
               <span className="text-[#631521]">{t.icon}</span>
               <span className="font-sans text-[0.75rem] font-bold text-[#1A1614] leading-tight">{t.label}</span>
-              <span className="font-sans text-[0.7rem] font-light text-[#8C7E74]">{t.sub}</span>
+              <span className="font-sans text-[0.7rem] font-normal text-[#8C7E74]">{t.sub}</span>
             </div>
           ))}
         </div>

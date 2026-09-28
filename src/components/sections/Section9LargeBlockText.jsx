@@ -31,7 +31,7 @@ export default function Section9LargeBlockText() {
           <div className="w-24 h-[2px] bg-[#D4AF37] mx-auto mb-10" />
 
           {/* Manifesto body */}
-          <div className="space-y-6 text-base sm:text-lg md:text-xl font-sans text-white/90 font-light leading-relaxed text-balance">
+          <div className="space-y-6 text-base sm:text-lg md:text-xl font-sans text-white/90 font-normal leading-relaxed text-balance">
             <p>
               Có những ngày bạn không muốn mặc gì quá phức tạp — Không muốn chọn lựa giữa thoải mái và trông đẹp — Không muốn thay đồ chỉ để bước ra ngoài mua cà phê
             </p>

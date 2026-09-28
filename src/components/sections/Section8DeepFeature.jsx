@@ -106,7 +106,7 @@ function EnergyCard({ tier, idx }) {
         {/* The question — main hook */}
         <div className="mb-4">
           <motion.p
-            className="font-serif font-light leading-snug"
+            className="font-serif font-normal leading-snug"
             style={{
               color: 'rgba(250, 248, 245, 0.5)',
               fontSize: '0.78rem',
@@ -126,7 +126,7 @@ function EnergyCard({ tier, idx }) {
             {tier.name}
           </motion.h3>
           <p
-            className="font-serif italic font-light mt-1.5"
+            className="font-serif italic font-normal mt-1.5"
             style={{ color: 'rgba(212, 175, 55, 0.7)', fontSize: '0.72rem', letterSpacing: '0.06em' }}
           >
             {tier.sub}
@@ -239,7 +239,7 @@ export default function Section8DeepFeature() {
           >
             Tối nay bạn cần
             <span
-              className="block italic font-light mt-1"
+              className="block italic font-normal mt-1"
               style={{ color: '#D4AF37' }}
             >
               năng lượng gì?
