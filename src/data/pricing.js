@@ -14,7 +14,7 @@ export const pricingTiers = [
     gift: 'Miễn phí đóng gói hộp quà Luxury 10PM',
     perks: [
       'Chất liệu tự nhiên cao cấp, thoáng khí',
-      'Đổi màu/size tận nhà trong 30 ngày',
+      'Chính sách đổi trả minh bạch 30 ngày',
       'Đóng gói chỉn chu cao cấp'
     ]
   },
@@ -55,14 +55,14 @@ export const pricingTiers = [
       'Miễn phí giao hàng hỏa tốc',
       'Đầy đủ quà tặng cao cấp',
       'Chiết khấu cao nhất 32%',
-      'Hỗ trợ đổi size trọn đời'
+      'Chăm sóc hậu mãi chu đáo'
     ]
   },
 ]
 
 export const trustPoints = [
   { icon: 'Truck',       title: 'Miễn Phí Giao Hàng', sub: 'Cho đơn từ 2 bộ hoặc chuyển khoản' },
-  { icon: 'RefreshCw',   title: 'Đổi Trả 30 Ngày', sub: 'Hỗ trợ thử size tận nhà chu đáo' },
+  { icon: 'RefreshCw',   title: 'Đổi Trả 30 Ngày', sub: 'Cam kết chất lượng & hài lòng' },
   { icon: 'ShieldCheck', title: 'Thanh Toán An Toàn', sub: 'Kiểm tra hàng trước khi thanh toán' },
   { icon: 'Leaf',        title: '100% Sợi Tự Nhiên', sub: 'Xử lý giặt xả vi sinh an toàn làn da' },
 ]

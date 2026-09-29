@@ -35,7 +35,7 @@ function formatPrice(n) {
 
 const trustItems = [
   { icon: <Truck className="w-5 h-5" />, label: 'Giao hàng miễn phí', sub: 'Đơn từ 500K' },
-  { icon: <RotateCcw className="w-5 h-5" />, label: 'Đổi trả 30 ngày', sub: 'Miễn phí tận nhà' },
+  { icon: <RotateCcw className="w-5 h-5" />, label: 'Đổi trả 30 ngày', sub: 'Cam kết chất lượng' },
   { icon: <CheckCircle className="w-5 h-5" />, label: 'Chất liệu tự nhiên', sub: 'Thuần khiết cao cấp' },
   { icon: <Lock className="w-5 h-5" />, label: 'Thanh toán an toàn', sub: 'Mã hoá SSL' },
 ]

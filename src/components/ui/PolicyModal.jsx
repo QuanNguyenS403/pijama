@@ -1,19 +1,26 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ShieldCheck, FileText, RotateCcw, Phone, Mail } from 'lucide-react'
+import { X, ShieldCheck, FileText, RotateCcw, Truck, Phone, Mail } from 'lucide-react'
 import { policiesData } from '../../data/policies'
 
 export default function PolicyModal({ isOpen, onClose, initialPolicy = 'terms' }) {
   const [activeTab, setActiveTab] = useState(initialPolicy)
+
+  useEffect(() => {
+    if (initialPolicy && policiesData[initialPolicy]) {
+      setActiveTab(initialPolicy)
+    }
+  }, [initialPolicy, isOpen])
 
   // Ensure current active tab aligns if initialPolicy changes on open
   const currentKey = policiesData[activeTab] ? activeTab : 'terms'
   const policy = policiesData[currentKey]
 
   const tabs = [
-    { key: 'terms', label: 'Điều Khoản & Điều Kiện', icon: FileText },
+    { key: 'terms', label: 'Điều Khoản Dịch Vụ', icon: FileText },
     { key: 'privacy', label: 'Chính Sách Bảo Mật', icon: ShieldCheck },
-    { key: 'return', label: 'Chính Sách Đổi Trả', icon: RotateCcw },
+    { key: 'return', label: 'Chính Sách Đổi Trả Hàng', icon: RotateCcw },
+    { key: 'shipping', label: 'Chính Sách Giao Hàng', icon: Truck },
   ]
 
   if (!isOpen) return null

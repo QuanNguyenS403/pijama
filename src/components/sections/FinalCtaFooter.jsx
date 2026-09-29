@@ -87,7 +87,7 @@ export default function FinalCtaFooter() {
               </div>
               <div className="flex items-center gap-2">
                 <RefreshCw className="w-4 h-4 text-[#C5A059]" />
-                <span>Hỗ trợ đổi size tận nhà trong 30 ngày</span>
+                <span>Cam kết hài lòng 30 ngày — Đổi trả minh bạch</span>
               </div>
             </div>
           </div>
@@ -115,7 +115,7 @@ export default function FinalCtaFooter() {
               </h4>
               <ul className="space-y-2.5 text-[#94A3B8]">
                 <li><a href="#pricing-section" className="hover:text-[#FAF8F5] transition-colors">Hướng Dẫn Chọn Size</a></li>
-                <li><a href="#pricing-section" className="hover:text-[#FAF8F5] transition-colors">Chính Sách Đổi Trả 30 Ngày</a></li>
+                <li><a href="#section-footer" className="hover:text-[#FAF8F5] transition-colors">Chính Sách Đổi Trả Hàng</a></li>
                 <li><a href="#faq-section" className="hover:text-[#FAF8F5] transition-colors">Cách Giặt & Bảo Quản</a></li>
                 <li><a href="#pricing-section" className="hover:text-[#FAF8F5] transition-colors">Tra Cứu Đơn Hàng</a></li>
               </ul>

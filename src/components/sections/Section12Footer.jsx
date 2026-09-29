@@ -48,9 +48,10 @@ export default function Section12Footer() {
   const footerNavLinks = [
     { label: 'Bộ sưu tập', href: '#section-products' },
     { label: 'Về chúng tôi', href: '#section-dark-contrast' },
-    { label: 'Chính sách đổi trả 30 ngày', policy: 'return' },
+    { label: 'Chính sách đổi trả hàng', policy: 'return' },
+    { label: 'Chính sách giao hàng', policy: 'shipping' },
     { label: 'Chính sách bảo mật', policy: 'privacy' },
-    { label: 'Điều khoản & Điều kiện', policy: 'terms' },
+    { label: 'Điều khoản dịch vụ', policy: 'terms' },
   ]
 
   const handleNavClick = (e, href) => {
@@ -233,7 +234,14 @@ export default function Section12Footer() {
                 onClick={(e) => openPolicy(e, 'return')}
                 className="hover:text-[#D4AF37] transition-colors"
               >
-                Chính sách đổi trả
+                Chính sách đổi trả hàng
+              </button>
+              <span className="text-white/20">•</span>
+              <button
+                onClick={(e) => openPolicy(e, 'shipping')}
+                className="hover:text-[#D4AF37] transition-colors"
+              >
+                Chính sách giao hàng
               </button>
             </div>
 

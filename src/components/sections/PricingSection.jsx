@@ -78,7 +78,7 @@ export default function PricingSection({ onAddToCart }) {
             <span className="font-serif-italic text-[#8C7E74]">Cho Giấc Ngủ Hoàn Hảo</span>
           </h2>
           <p className="text-sm sm:text-base text-[#4A423C] font-normal max-w-xl mx-auto">
-            Hỗ trợ đổi size tận nhà trong 30 ngày — Tặng kèm hộp quà sang trọng và phụ kiện thêu tay cao cấp cho mọi combo.
+            Cam kết hài lòng 30 ngày — Tặng kèm hộp quà sang trọng và phụ kiện thêu tay cao cấp cho mọi combo.
           </p>
         </div>
 

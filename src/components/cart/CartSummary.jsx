@@ -129,7 +129,7 @@ export default function CartSummary({
           ) : (
             <p className="flex items-center gap-1.5">📦 Giao hàng toàn quốc 2–4 ngày làm việc</p>
           )}
-          <p className="flex items-center gap-1.5">🔄 Đổi trả miễn phí trong 30 ngày tận nhà</p>
+          <p className="flex items-center gap-1.5">🔄 Hỗ trợ đổi trả trong 30 ngày theo chính sách</p>
         </div>
       </div>
     </div>

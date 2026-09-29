@@ -11,8 +11,8 @@ export default function CareFaqSection() {
       a: 'Chất vải sợi tự nhiên cao cấp sở hữu độ nhăn gợn tự nhiên rất sang trọng đặc trưng. Sản phẩm 10PM đã qua công nghệ giặt xả vi sinh co giặt trước, giúp tỷ lệ rút vải gần như bằng 0. Khi giặt xong, bạn chỉ cần giũ nhẹ phơi gió bóng râm là vải sẽ tự phẳng êm ái mà không cần ủi phức tạp.'
     },
     {
-      q: 'Nếu mặc không vừa size thì 10PM xử lý đổi hàng thế nào?',
-      a: '10PM cam kết chính sách "Đổi Size Tận Nhà 30 Ngày". Quý khách chỉ cần nhắn tin cho 10PM, shipper sẽ mang size mới tới tận nơi và lấy lại bộ cũ hoàn toàn miễn phí ship 1 chiều.'
+      q: 'Nếu có sai sót trong đơn hàng hoặc tôi muốn đổi trả sản phẩm thì xử lý thế nào?',
+      a: 'Nếu bạn mắc lỗi khi thanh toán (sai địa chỉ, sai mẫu mã hoặc mã giảm giá), vui lòng liên hệ ngay với QuanNguyenS trong vòng 1 giờ kể từ khi đặt để được chỉnh sửa kịp thời trước khi xử lý đơn. Nếu nhận được kiện hàng bị hư hỏng hoặc thiếu, quý khách vui lòng báo lại trong vòng 24 giờ kèm ảnh chụp chứng minh để được gửi lại ngay lập tức bằng chuyển phát nhanh. Với các yêu cầu không hài lòng trong vòng 30 ngày, quý khách được hỗ trợ theo chính sách đổi trả minh bạch của chúng tôi.'
     },
     {
       q: 'Nên giặt máy hay giặt tay để pijama bền đẹp nhất?',

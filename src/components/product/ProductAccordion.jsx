@@ -17,6 +17,8 @@ import {
   PhoneCall,
   PackageCheck,
   CalendarClock,
+  Clock,
+  AlertCircle,
 } from 'lucide-react'
 
 export default function ProductAccordion({ product }) {
@@ -226,7 +228,7 @@ export default function ProductAccordion({ product }) {
       ),
     },
 
-    // ─── MỤC 4: CHÍNH SÁCH ĐỔI TRẢ ─────────────────────────────────────────
+    // ─── MỤC 4: CHÍNH SÁCH ĐỔI TRẢ & GIAO HÀNG ────────────────────────────
     {
       label: 'Chính Sách Đổi Trả & Giao Hàng',
       content: (
@@ -240,72 +242,95 @@ export default function ProductAccordion({ product }) {
                   LƯU Ý ĐẶT TRƯỚC (PRE-ORDER)
                 </p>
                 <p className="font-normal text-[#4A3F38] leading-relaxed">
-                  {product.name} là phiên bản giới hạn được chuẩn bị theo đơn riêng. Thời gian hoàn thiện và giao hàng dự kiến trong <strong>7–10 ngày làm việc</strong>. Toàn bộ quyền lợi đổi trả miễn phí trong 30 ngày vẫn có hiệu lực đầy đủ kể từ ngày bạn nhận hàng.
+                  {product.name} là phiên bản giới hạn được chuẩn bị theo đơn riêng. Thời gian hoàn thiện và giao hàng dự kiến trong <strong>7–10 ngày làm việc</strong>. Toàn bộ quyền lợi đổi trả theo quy định vẫn có hiệu lực đầy đủ kể từ ngày bạn nhận hàng.
                 </p>
               </div>
             </div>
           )}
 
           <p className="font-serif font-bold text-[#631521] uppercase text-xs tracking-wider mb-2">
-            QUY TRÌNH ĐỔI SIZE / ĐỔI MẪU 3 BƯỚC TẬN NHÀ (MIỄN PHÍ)
+            CHÍNH SÁCH ĐỔI TRẢ HÀNG & XỬ LÝ ĐƠN HÀNG
           </p>
 
-          {/* 3 Step Visual Workflow */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* 4 Cards Policy Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {/* 1. Thay đổi & Hủy đơn hàng trong 1 giờ */}
             <div className="bg-[#FAF5F0] border border-[#E8DFD5] p-4 rounded-[3px] flex flex-col justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="w-6 h-6 rounded-full bg-[#631521] text-white text-xs font-bold font-mono flex items-center justify-center shrink-0">
-                    1
+                    1h
                   </span>
                   <span className="font-serif font-bold text-xs text-[#1A1614] uppercase">
-                    Liên Hệ Trong 30 Ngày
+                    Thay Đổi & Hủy Đơn Hàng
                   </span>
                 </div>
                 <p className="font-sans text-xs text-[#4A3F38] font-normal leading-relaxed">
-                  Sản phẩm còn nguyên tem mác, chưa giặt tẩy. Gọi hotline hoặc nhắn tin thông báo nhu cầu đổi size/màu.
+                  Nếu bạn mắc lỗi trong quá trình thanh toán (sai địa chỉ, sai mặt hàng hoặc mã giảm giá không được áp dụng), vui lòng liên hệ trong vòng <strong>1 giờ</strong> kể từ khi đặt hàng để chúng tôi chỉnh sửa trước khi xử lý đơn. Vui lòng không đặt thêm đơn thứ hai để sửa lỗi.
                 </p>
               </div>
               <div className="pt-2 mt-2 border-t border-[#E8DFD5]/60 flex items-center gap-1 text-[11px] text-[#631521] font-medium">
-                <PhoneCall className="w-3.5 h-3.5" /> Hotline 0981 753 082
+                <Clock className="w-3.5 h-3.5" /> Chỉnh sửa trong vòng 1 giờ
               </div>
             </div>
 
+            {/* 2. Hàng hóa bị hư hỏng hoặc thiếu */}
             <div className="bg-[#FAF5F0] border border-[#E8DFD5] p-4 rounded-[3px] flex flex-col justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="w-6 h-6 rounded-full bg-[#631521] text-white text-xs font-bold font-mono flex items-center justify-center shrink-0">
-                    2
+                    24h
                   </span>
                   <span className="font-serif font-bold text-xs text-[#1A1614] uppercase">
-                    Đổi Trả Tận Nhà Miễn Phí
+                    Hàng Bị Hư Hỏng Hoặc Thiếu?
                   </span>
                 </div>
                 <p className="font-sans text-xs text-[#4A3F38] font-normal leading-relaxed">
-                  Bưu tá sẽ đến tận địa chỉ của bạn để giao bộ mới và nhận lại bộ cũ. Bạn không cần ra bưu cục gửi hàng.
+                  Bạn nhận được hàng bị hư hỏng hoặc thiếu? Vui lòng liên hệ với chúng tôi trong vòng <strong>24 giờ</strong> kể từ khi nhận hàng kèm theo hình ảnh chứng minh. Sau khi xác minh, chúng tôi sẽ gửi lại hàng ngay lập tức bằng dịch vụ chuyển phát nhanh.
                 </p>
               </div>
               <div className="pt-2 mt-2 border-t border-[#E8DFD5]/60 flex items-center gap-1 text-[11px] text-[#2E7D32] font-medium">
-                <Truck className="w-3.5 h-3.5" /> 100% Miễn phí vận chuyển
+                <Truck className="w-3.5 h-3.5" /> Gửi lại bằng chuyển phát nhanh
               </div>
             </div>
 
+            {/* 3. Cam kết hài lòng 30 ngày */}
             <div className="bg-[#FAF5F0] border border-[#E8DFD5] p-4 rounded-[3px] flex flex-col justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="w-6 h-6 rounded-full bg-[#631521] text-white text-xs font-bold font-mono flex items-center justify-center shrink-0">
-                    3
+                    30d
                   </span>
                   <span className="font-serif font-bold text-xs text-[#1A1614] uppercase">
-                    Hoàn Tiền / Đổi Mới
+                    Cam Kết Hài Lòng 30 Ngày
                   </span>
                 </div>
                 <p className="font-sans text-xs text-[#4A3F38] font-normal leading-relaxed">
-                  Đổi sang mẫu mới ngay lập tức hoặc hoàn tiền 100% trong vòng 24–48 giờ làm việc nếu không hài lòng.
+                  Chúng tôi cam kết về chất lượng mọi sản phẩm mình sản xuất. Nếu bạn không hài lòng với kết quả trong vòng 30 ngày, hãy liên hệ đội ngũ hỗ trợ để cùng giải quyết. Khoản hoàn tiền chấp thuận sẽ chịu phí xử lý môi trường 15%, phí ship ban đầu không hoàn lại và khách hàng chịu phí ship hàng trả.
                 </p>
               </div>
               <div className="pt-2 mt-2 border-t border-[#E8DFD5]/60 flex items-center gap-1 text-[11px] text-[#631521] font-medium">
-                <PackageCheck className="w-3.5 h-3.5" /> An tâm tuyệt đối
+                <ShieldCheck className="w-3.5 h-3.5" /> Cam kết chất lượng xưởng
+              </div>
+            </div>
+
+            {/* 4. Xin lưu ý điều kiện bảo hành */}
+            <div className="bg-[#FAF5F0] border border-[#E8DFD5] p-4 rounded-[3px] flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-6 h-6 rounded-full bg-[#8C7E74] text-white text-xs font-bold font-mono flex items-center justify-center shrink-0">
+                    !
+                  </span>
+                  <span className="font-serif font-bold text-xs text-[#1A1614] uppercase">
+                    Xin Lưu Ý Về Điều Kiện
+                  </span>
+                </div>
+                <p className="font-sans text-xs text-[#4A3F38] font-normal leading-relaxed">
+                  Chính sách bảo hành của chúng tôi chỉ áp dụng cho kết quả đạt được, không bao gồm trường hợp thay đổi sở thích hoặc sản phẩm không được sử dụng đúng hướng dẫn. Chúng tôi đề nghị quý khách dùng thử sản phẩm trước khi yêu cầu hoàn tiền.
+                </p>
+              </div>
+              <div className="pt-2 mt-2 border-t border-[#E8DFD5]/60 flex items-center gap-1 text-[11px] text-[#8C7E74] font-medium">
+                <AlertCircle className="w-3.5 h-3.5" /> Dùng thử trước khi yêu cầu
               </div>
             </div>
           </div>

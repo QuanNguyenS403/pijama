@@ -75,7 +75,7 @@ export default function HeroSection() {
               </div>
               <div className="border-x border-[#E8DFD5] px-2">
                 <span className="font-serif text-xl sm:text-2xl font-bold text-[#1A1614] block">30 Ngày</span>
-                <span className="text-[11px] text-[#64748B] font-normal">Đổi trả tại nhà</span>
+                <span className="text-[11px] text-[#64748B] font-normal">Cam kết hài lòng</span>
               </div>
               <div>
                 <span className="font-serif text-xl sm:text-2xl font-bold text-[#1A1614] block">100%</span>

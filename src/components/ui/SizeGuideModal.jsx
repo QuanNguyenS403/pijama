@@ -71,7 +71,7 @@ export default function SizeGuideModal({ isOpen, onClose }) {
           <div className="bg-[#F4ECE1]/60 p-4 rounded-[2px] border border-[#E2D8CC] flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-[#C5A059] shrink-0 mt-0.5" />
             <div className="text-xs text-[#4A423C] leading-relaxed">
-              <span className="font-bold text-[#1A1614]">Đổi Size Tận Nhà 30 Ngày:</span> Nếu không vừa vặn, 10PM hỗ trợ đổi màu & đổi size tận nơi miễn phí phí ship 1 chiều cho quý khách.
+              <span className="font-bold text-[#1A1614]">Cam Kết Hài Lòng 30 Ngày:</span> Nếu có sai sót về kích cỡ khi đặt hàng, quý khách có thể liên hệ chỉnh sửa trong 1 giờ đầu hoặc liên hệ đội ngũ QuanNguyenS để được giải quyết theo chính sách đổi trả.
             </div>
           </div>
 

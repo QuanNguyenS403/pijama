@@ -115,10 +115,6 @@
     will-change: transform;
   }
 
-  .animate-luxury-marquee:hover {
-    animation-play-state: paused;
-  }
-
   /* Facebook Reviews Infinite Marquee (Right to Left) */
   @keyframes reviews-marquee-rtl {
     0% {

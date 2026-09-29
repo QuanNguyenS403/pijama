@@ -846,7 +846,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <RotateCcw className="w-5 h-5 text-[#631521] shrink-0" />
-                    <span>Đổi trả miễn phí trong <strong>30 ngày</strong> nếu chưa qua sử dụng</span>
+                    <span>Hỗ trợ đổi trả trong <strong>30 ngày</strong> — Cam kết chất lượng</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <ShieldCheck className="w-5 h-5 text-[#631521] shrink-0" />
