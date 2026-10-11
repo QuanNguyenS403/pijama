@@ -390,7 +390,7 @@ export const sendCancelledEmail = async (order, { reason } = {}) => {
       <div style="font-size:13px;color:#7A6E6E;margin-bottom:14px">
         Kho hàng của chúng tôi luôn được cập nhật. Đặt lại bất cứ lúc nào!
       </div>
-      <a href="${process.env.NEXTAUTH_URL || 'https://quannguyen-s.vercel.app'}/bo-suu-tap"
+      <a href="${process.env.APP_URL || process.env.NEXTAUTH_URL || 'https://quannguyens.com'}/bo-suu-tap"
          style="
            display:inline-block;
            background:#7B2D3E;color:#F5F0E8;

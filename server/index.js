@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import helmet from 'helmet'
 import dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -38,6 +39,8 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
       'http://localhost:5173',
       'http://127.0.0.1:3000',
       'http://127.0.0.1:5173',
+      'https://quannguyens.com',
+      'https://www.quannguyens.com',
       'https://quannguyens.vn',
       'https://www.quannguyens.vn',
     ]
@@ -53,6 +56,32 @@ app.use(
       return callback(new Error('Chặn bởi chính sách bảo mật CORS của QuanNguyenS'))
     },
     credentials: true,
+  })
+)
+
+// ── BƯỚC 8: Gia cố an ninh toàn diện với Helmet ───────────────────
+app.use(
+  helmet({
+    contentSecurityPolicy:
+      process.env.NODE_ENV === 'production'
+        ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: ["'self'", "'unsafe-inline'", 'https://accounts.google.com', 'https://challenges.cloudflare.com'],
+              frameSrc: ["'self'", 'https://accounts.google.com', 'https://challenges.cloudflare.com'],
+              connectSrc: [
+                "'self'",
+                'https://accounts.google.com',
+                'https://challenges.cloudflare.com',
+                'https://graph.facebook.com',
+              ],
+              imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+              styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+              fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'],
+            },
+          }
+        : false,
+    crossOriginEmbedderPolicy: false,
   })
 )
 
@@ -193,6 +222,13 @@ app.get('/api/orders/status', (req, res) => {
 
 // ── 4. API Xác Nhận Thanh Toán & Kích Hoạt Gmail (Admin Only - G-13) ─────────────
 app.post('/api/payment/confirm', requireAdminAuth, submitOrderLimiter, async (req, res) => {
+  const { confirmOrderPaymentManually } = await import('./lib/paymentWebhook.js')
+  const result = await confirmOrderPaymentManually(req.body)
+  return res.status(result.status).json(result.data)
+})
+
+// ── 4b. API Khách Hàng Báo Đã Chuyển Khoản (Client Payment Claim - Kịch bản 1) ────
+app.post('/api/payment/claim', submitOrderLimiter, async (req, res) => {
   const { confirmOrderPaymentManually } = await import('./lib/paymentWebhook.js')
   const result = await confirmOrderPaymentManually(req.body)
   return res.status(result.status).json(result.data)

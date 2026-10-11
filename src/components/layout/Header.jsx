@@ -213,9 +213,12 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
                 )}
               </button>
 
-              {/* Customer Account Button (Option A) */}
+              {/* Customer Account Button (Enterprise Auth UX) */}
               <Link
                 to="/tai-khoan"
+                onMouseEnter={() => {
+                  fetch('/api/auth/me', { credentials: 'include' }).catch(() => {})
+                }}
                 aria-label="Tài khoản & Đặc quyền thành viên"
                 className="relative text-white/80 hover:text-[#D4AF37] transition-colors p-1 cursor-pointer flex items-center justify-center"
                 title="Tài khoản & Ưu đãi thành viên"

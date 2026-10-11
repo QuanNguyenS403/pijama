@@ -160,12 +160,12 @@ test('Provider OAuth: Google ID token từ chối khi không hợp lệ', async 
 })
 
 test('Provider OAuth: Google test double kiểm tra claim sub và email_verified', async () => {
-  const mockToken = 'mock-google-token:google-sub-999:user@quannguyens.vn'
+  const mockToken = 'mock-google-token:google-sub-999:user@quannguyens.com'
   const res = await verifyGoogleIdToken(mockToken)
 
   assert.equal(res.provider, 'google')
   assert.equal(res.sub, 'google-sub-999')
-  assert.equal(res.email, 'user@quannguyens.vn')
+  assert.equal(res.email, 'user@quannguyens.com')
   assert.equal(res.emailVerified, true)
 })
 
@@ -366,7 +366,7 @@ test('Marketing Consent: Opt-in mặc định là false, độc lập với xác
 })
 
 test('Marketing Unsubscribe: Token ký HMAC-SHA256 và cơ chế hủy nhận 1-click', () => {
-  const email = 'user-consent@quannguyens.vn'
+  const email = 'user-consent@quannguyens.com'
   const accountId = 'acc_test_123'
 
   // Sinh token ký

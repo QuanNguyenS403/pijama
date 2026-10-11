@@ -9,7 +9,7 @@ try {
   const acc = createAccount({
     method: 'google',
     google_id: 'test_google_123',
-    email: 'test@quannguyens.vn',
+    email: 'test@quannguyens.com',
     full_name: 'Quân Test',
   })
   console.log('Created account:', acc.id, acc.email)

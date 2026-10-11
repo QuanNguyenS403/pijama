@@ -43,7 +43,7 @@ Chúng tôi rất hân hạnh được giới thiệu đến bạn Bộ sưu t�
 
 Tất cả sản phẩm đều được dệt may từ chất liệu lụa satin tự nhiên cao cấp, mang lại cảm giác mềm mại, thoáng mát tuyệt đối trên làn da.
 
-Hãy ghé thăm website quannguyens.vn ngay hôm nay để khám phá và chọn cho mình bộ Pyjama hoàn hảo nhất!
+Hãy ghé thăm website quannguyens.com ngay hôm nay để khám phá và chọn cho mình bộ Pyjama hoàn hảo nhất!
 
 Nếu bạn có bất kỳ câu hỏi nào về bảng size hoặc chất liệu, đừng ngần ngại liên hệ hotline 0981 753 082 để được tư vấn tận tâm.`
   )

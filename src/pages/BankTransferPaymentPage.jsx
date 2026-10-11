@@ -118,7 +118,7 @@ export default function BankTransferPaymentPage() {
       // 1. Nếu là do khách chủ động bấm xác nhận (manual claim) -> Gửi yêu cầu lên server
       if (isManualClaim) {
         try {
-          const res = await fetch('/api/payment/confirm', {
+          const res = await fetch('/api/payment/claim', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ orderId: currentOrder.orderId }),
@@ -128,7 +128,7 @@ export default function BankTransferPaymentPage() {
             throw new Error(data.error || 'Máy chủ không thể ghi nhận yêu cầu. Vui lòng liên hệ hotline 0981 753 082.')
           }
         } catch (apiErr) {
-          console.error('Lỗi gọi /api/payment/confirm:', apiErr)
+          console.error('Lỗi gọi /api/payment/claim:', apiErr)
           alert(`Không thể gửi yêu cầu xác nhận: ${apiErr.message || 'Lỗi mạng'}. Vui lòng liên hệ hotline 0981 753 082 để được kiểm tra trực tiếp.`)
           setIsVerifying(false)
           return

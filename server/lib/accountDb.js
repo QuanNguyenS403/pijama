@@ -4,6 +4,7 @@ import fs from 'fs'
 import crypto from 'crypto'
 import { fileURLToPath } from 'url'
 import { hashOtpCode, generateSalt, verifyOtpCode, hashSessionToken, hashClientMetadata } from './authCrypto.js'
+import { runEnterpriseMigrations } from './schemaMigration.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -28,6 +29,7 @@ export function getDb() {
     db.pragma('journal_mode = WAL')
     initSchema(db)
     migrateSchema(db)
+    runEnterpriseMigrations(db)
   }
   return db
 }

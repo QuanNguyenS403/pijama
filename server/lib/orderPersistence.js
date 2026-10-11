@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { getSupabase } from './supabaseClient.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -10,6 +11,35 @@ const isTestEnv =
   process.env.NODE_ENV === 'test' ||
   Boolean(process.env.ORDER_STORE_FILE) ||
   process.argv.some((arg) => typeof arg === 'string' && (arg.includes('node:test') || arg.includes('tests/') || arg.includes('verify-all')))
+
+function syncOrderToSupabase(order) {
+  if (isTestEnv || !order) return
+  try {
+    const client = getSupabase()
+    if (!client) return
+    const id = order.orderId || order.id
+    if (!id) return
+    client.from('orders').upsert({
+      id,
+      order_id: id,
+      customer_name: order.customer?.fullName || order.customerName || 'Khách hàng',
+      customer_phone: order.customer?.phone || order.customerPhone || '',
+      customer_email: order.customer?.email || order.customerEmail || null,
+      shipping_address: typeof order.shippingAddress === 'string' ? order.shippingAddress : JSON.stringify(order.shippingAddress || {}),
+      items: order.items || [],
+      subtotal: order.subtotal || order.total || 0,
+      discount_amount: order.discountAmount || 0,
+      shipping_fee: order.shippingFee || 0,
+      total: order.total || 0,
+      payment_method: order.paymentMethod || 'COD',
+      payment_status: order.paymentStatus || 'PENDING',
+      order_status: order.status || 'PENDING',
+      tracking_code: order.trackingCode || null,
+      notes: order.notes || '',
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'id' }).catch(() => {})
+  } catch {}
+}
 
 const STORE_FILE =
   process.env.ORDER_STORE_FILE ||
@@ -134,6 +164,7 @@ export const orderPersistence = {
     }
     ordersMap.set(orderId, order)
     saveToDisk()
+    syncOrderToSupabase(order)
   },
 
   setBatch(orders) {
@@ -154,6 +185,7 @@ export const orderPersistence = {
           }
         }
         ordersMap.set(id, order)
+        syncOrderToSupabase(order)
         changed = true
       }
     })

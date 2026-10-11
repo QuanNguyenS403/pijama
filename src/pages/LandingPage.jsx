@@ -30,9 +30,9 @@ export default function LandingPage() {
       <meta name="description" content="Thương hiệu pijama thiết kế cao cấp QuanNguyenS. Chất liệu tự nhiên, sợi dệt chuẩn xuất khẩu châu Âu, phom dáng suông phóng khoáng từ nhà ra phố." />
       <meta property="og:title" content="QuanNguyenS — European Casual Luxury" />
       <meta property="og:description" content="Thương hiệu pijama thiết kế cao cấp QuanNguyenS. Chất liệu tự nhiên, sợi dệt chuẩn xuất khẩu châu Âu, phom dáng suông phóng khoáng từ nhà ra phố." />
-      <meta property="og:url" content="https://quannguyens.vn/" />
+      <meta property="og:url" content="https://quannguyens.com/" />
       <meta property="og:type" content="website" />
-      <link rel="canonical" href="https://quannguyens.vn/" />
+      <link rel="canonical" href="https://quannguyens.com/" />
 
       {/* Toast Notification */}
       <Toast toast={toast} onDismiss={() => setToast(null)} />

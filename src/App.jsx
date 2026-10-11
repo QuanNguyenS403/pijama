@@ -1,7 +1,8 @@
-import { useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import ScrollToTop from './components/ui/ScrollToTop'
 import LandingPage from './pages/LandingPage'
+import AuthModal from './components/auth/AuthModal'
 import { initOrderSync } from './lib/orderSync'
 
 const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage'))
@@ -24,14 +25,28 @@ function PageFallback() {
 }
 
 export default function App() {
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+
   useEffect(() => {
     // Khởi tạo kênh đồng bộ realtime (SSE + BroadcastChannel)
     initOrderSync()
+
+    const handleOpenAuth = () => setIsAuthModalOpen(true)
+    window.addEventListener('open_auth_modal', handleOpenAuth)
+    return () => window.removeEventListener('open_auth_modal', handleOpenAuth)
   }, [])
 
   return (
     <>
       <ScrollToTop />
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onAuthSuccess={() => {
+          setIsAuthModalOpen(false)
+          window.location.href = '/tai-khoan'
+        }}
+      />
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />

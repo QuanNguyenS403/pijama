@@ -42,6 +42,17 @@ import {
   COOKIE_NAME,
   HOST_COOKIE_NAME,
 } from './customerSessionMiddleware.js'
+import {
+  createSessionAndTokens,
+  setRefreshTokenCookie,
+  verifyAccessToken,
+  revokeSessionByToken,
+  clearRefreshTokenCookie,
+  REFRESH_COOKIE_NAME,
+} from './tokenService.js'
+import { registerEnterpriseAuthEndpoints } from './enterpriseAuthEndpoints.js'
+import { logSecurityAudit } from './auditLogger.js'
+import { getDb } from './accountDb.js'
 
 // Rate limiter cho gửi OTP xác minh (chống spam SMS/Email)
 const otpRateLimiter = createRateLimiter({
@@ -85,6 +96,9 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
  * Đăng ký toàn bộ API endpoints cho Auth, Verification, Session, Voucher & Broadcast
  */
 export function registerAuthEndpoints(app) {
+  // ── Đăng ký các API Core Enterprise (Register, Login, Refresh Token Rotation, OTP) ──
+  registerEnterpriseAuthEndpoints(app)
+
   // ── 1. Kiểm tra trạng thái cấu hình của hệ thống xác thực ────────
   app.get('/api/auth/config', (req, res) => {
     const googleClientId = (process.env.GOOGLE_CLIENT_ID || '').trim()
@@ -224,9 +238,44 @@ export function registerAuthEndpoints(app) {
 
       setCustomerSessionCookie(res, sessionToken)
 
+      // ── ĐỒNG BỘ ENTERPRISE USERS & CẤP TOKEN ROTATION (BƯỚC 4 & BƯỚC 5) ──
+      const db = getDb()
+      const now = new Date().toISOString()
+      try {
+        db.prepare(`
+          INSERT INTO users (id, email, full_name, avatar_url, phone, role, status, verified, verified_at, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, 'customer', 'active', 1, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET full_name = excluded.full_name, avatar_url = coalesce(excluded.avatar_url, avatar_url), updated_at = excluded.updated_at
+        `).run(account.id, account.email, account.full_name, account.avatar_url, account.phone, now, account.created_at, now)
+
+        db.prepare(`
+          INSERT OR IGNORE INTO enterprise_accounts (id, user_id, provider, provider_account_id, email, created_at, updated_at)
+          VALUES (?, ?, 'google', ?, ?, ?, ?)
+        `).run(`eacc_${Date.now()}_${googleSub.slice(-6)}`, account.id, googleSub, account.email, now, now)
+      } catch (syncErr) {
+        console.warn('⚠️ Lỗi sync enterprise user:', syncErr.message)
+      }
+
+      const userTokens = await createSessionAndTokens(
+        { id: account.id, email: account.email, full_name: account.full_name, role: 'customer', avatar_url: account.avatar_url },
+        { ip: req.ip, userAgent: req.headers['user-agent'] || '' }
+      )
+      setRefreshTokenCookie(res, userTokens.refreshToken)
+
+      logSecurityAudit({
+        userId: account.id,
+        action: 'LOGIN_GOOGLE_SUCCESS',
+        status: 'SUCCESS',
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] || '',
+        details: { email: account.email, googleSub },
+      })
+
       return res.json({
         success: true,
         authenticated: true,
+        accessToken: userTokens.accessToken,
+        expiresIn: userTokens.expiresIn,
         account: {
           id: account.id,
           fullName: account.full_name,
@@ -638,30 +687,67 @@ export function registerAuthEndpoints(app) {
   })
 
   // ── 7. Khôi phục phiên làm việc (Session Hydration) ─────────────
-  app.get('/api/auth/me', (req, res) => {
-    if (!req.customerAccount) {
+  app.get('/api/auth/me', async (req, res) => {
+    let account = req.customerAccount
+
+    // Kiểm tra Bearer Access Token nếu không có session cookie
+    const authHeader = req.headers.authorization
+    if (!account && authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.slice(7).trim()
+      const payload = await verifyAccessToken(token)
+      if (payload && payload.sub) {
+        account = findAccountById(payload.sub)
+        if (!account) {
+          const user = getDb().prepare('SELECT * FROM users WHERE id = ?').get(payload.sub)
+          if (user) {
+            account = {
+              id: user.id,
+              full_name: user.full_name,
+              avatar_url: user.avatar_url,
+              email: user.email,
+              phone: user.phone,
+              verified: user.verified,
+              marketing_email_opt_in: user.marketing_email_opt_in,
+              created_at: user.created_at,
+            }
+          }
+        }
+      }
+    }
+
+    if (!account) {
       return res.json({
         success: true,
         authenticated: false,
         account: null,
+        user: null,
         voucher: null,
       })
     }
 
-    const voucher = getVoucherByAccountId(req.customerAccount.id)
+    const voucher = getVoucherByAccountId(account.id)
 
     return res.json({
       success: true,
       authenticated: true,
       account: {
-        id: req.customerAccount.id,
-        fullName: req.customerAccount.full_name || req.customerAccount.fullName || '',
-        avatarUrl: req.customerAccount.avatar_url || req.customerAccount.avatarUrl || '',
-        email: req.customerAccount.email,
-        phone: req.customerAccount.phone,
-        verified: Boolean(req.customerAccount.verified),
-        marketingEmailOptIn: Boolean(req.customerAccount.marketing_email_opt_in),
-        createdAt: req.customerAccount.created_at || req.customerAccount.createdAt,
+        id: account.id,
+        fullName: account.full_name || account.fullName || '',
+        avatarUrl: account.avatar_url || account.avatarUrl || '',
+        email: account.email,
+        phone: account.phone,
+        verified: Boolean(account.verified),
+        marketingEmailOptIn: Boolean(account.marketing_email_opt_in),
+        createdAt: account.created_at || account.createdAt,
+      },
+      user: {
+        id: account.id,
+        fullName: account.full_name || account.fullName || '',
+        avatarUrl: account.avatar_url || account.avatarUrl || '',
+        email: account.email,
+        phone: account.phone,
+        role: account.role || 'customer',
+        verified: Boolean(account.verified),
       },
       voucher: voucher || null,
     })
@@ -674,6 +760,11 @@ export function registerAuthEndpoints(app) {
     if (token) {
       revokeCustomerSession(token)
     }
+    const rawRefreshToken = cookies[REFRESH_COOKIE_NAME]
+    if (rawRefreshToken) {
+      revokeSessionByToken(rawRefreshToken)
+    }
+    clearRefreshTokenCookie(res)
     clearCustomerSessionCookie(res)
     return res.json({ success: true, message: 'Đăng xuất thành công' })
   })

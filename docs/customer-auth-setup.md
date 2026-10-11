@@ -26,7 +26,7 @@ Tài liệu này cung cấp hướng dẫn toàn diện về kiến trúc bảo 
 3. Tạo mới **OAuth 2.0 Client ID** (chọn loại ứng dụng: *Web application*).
 4. Cấu hình **Authorized JavaScript origins**:
    - `http://localhost:3000` (môi trường dev)
-   - `https://quannguyens.vn` (môi trường production)
+   - `https://quannguyens.com` (môi trường production)
 5. Lấy `Client ID` và `Client Secret`, điền vào file môi trường:
    ```env
    GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com
@@ -116,7 +116,7 @@ Xem file mẫu chi tiết tại [customer-auth.env.example](file:///d:/Pijima/pi
 | `ZALO_OA_TOKEN` | Có (nếu bật Phone) | Access Token Zalo Official Account |
 | `ZALO_OTP_TEMPLATE_ID` | Có (nếu bật Phone) | Mã mẫu tin nhắn ZNS chứa OTP |
 | `CUSTOMER_AUTH_SECRET` | Có | Khóa bí mật dùng để ký HMAC token hủy đăng ký |
-| `APP_URL` | Có | Domain chính thức của ứng dụng (ví dụ: `https://quannguyens.vn`) |
+| `APP_URL` | Có | Domain chính thức của ứng dụng (ví dụ: `https://quannguyens.com`) |
 
 ---
 

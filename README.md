@@ -40,7 +40,7 @@ Tạo file `.env` hoặc `.env.local` ở thư mục gốc (tham khảo mẫu t�
 PORT=3001
 
 # ── CORS Whitelist (Phân tách bằng dấu phẩy) ──
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,https://quannguyens.vn
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,https://quannguyens.com,https://www.quannguyens.com
 
 # ── Google Sheets API (Lưu trữ đơn hàng) ──
 GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account@project.iam.gserviceaccount.com

@@ -39,7 +39,19 @@ export function setCustomerSessionCookie(res, token) {
     flags.push('Secure')
   }
 
-  res.setHeader('Set-Cookie', flags.join('; '))
+  const cookieStr = flags.join('; ')
+  if (typeof res.append === 'function') {
+    res.append('Set-Cookie', cookieStr)
+  } else {
+    const existing = res.getHeader('Set-Cookie')
+    if (!existing) {
+      res.setHeader('Set-Cookie', [cookieStr])
+    } else if (Array.isArray(existing)) {
+      res.setHeader('Set-Cookie', [...existing, cookieStr])
+    } else {
+      res.setHeader('Set-Cookie', [existing, cookieStr])
+    }
+  }
 }
 
 export function clearCustomerSessionCookie(res) {
@@ -54,7 +66,19 @@ export function clearCustomerSessionCookie(res) {
   ]
   if (isProduction) flags.push('Secure')
 
-  res.setHeader('Set-Cookie', flags.join('; '))
+  const cookieStr = flags.join('; ')
+  if (typeof res.append === 'function') {
+    res.append('Set-Cookie', cookieStr)
+  } else {
+    const existing = res.getHeader('Set-Cookie')
+    if (!existing) {
+      res.setHeader('Set-Cookie', [cookieStr])
+    } else if (Array.isArray(existing)) {
+      res.setHeader('Set-Cookie', [...existing, cookieStr])
+    } else {
+      res.setHeader('Set-Cookie', [existing, cookieStr])
+    }
+  }
 }
 
 /**
@@ -103,7 +127,16 @@ export function verifyCsrfOrigin(req, res, next) {
   const origin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null)
   const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim())
-    : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:5173']
+    : [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:5173',
+        'https://quannguyens.com',
+        'https://www.quannguyens.com',
+        'https://quannguyens.vn',
+        'https://www.quannguyens.vn',
+      ]
 
   if (process.env.NODE_ENV === 'production') {
     if (!origin || !allowedOrigins.includes(origin)) {

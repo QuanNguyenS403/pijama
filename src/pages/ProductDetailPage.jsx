@@ -183,8 +183,8 @@ export default function ProductDetailPage() {
     : (Array.isArray(product.images) ? product.images[0] : '')
   const fullImageUrl = metaImage && typeof metaImage === 'string' && metaImage.startsWith('http')
     ? metaImage
-    : `https://quannguyens.vn${metaImage || ''}`
-  const pageUrl = `https://quannguyens.vn/san-pham/${product.slug}`
+    : `https://quannguyens.com${metaImage || ''}`
+  const pageUrl = `https://quannguyens.com/san-pham/${product.slug}`
   const pageTitle = `${product.name} — ${product.subtitle} | QuanNguyenS Pijama`
   const pageDesc = product.description || `${product.name} — Thiết kế pijama cao cấp, chất liệu tự nhiên thoáng khí chuẩn phong cách châu Âu.`
 
