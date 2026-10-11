@@ -8,11 +8,10 @@ import {
   Copy,
   Check,
   Gift,
-  ExternalLink,
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Section12Footer from '../components/sections/Section12Footer'
-import { formatVND, getCarrierTrackingUrl } from '../data/checkoutConfig'
+import { formatVND } from '../data/checkoutConfig'
 import { getSavedOrders } from '../lib/orderSync'
 import ViettelPostTracker from '../components/shipping/ViettelPostTracker'
 

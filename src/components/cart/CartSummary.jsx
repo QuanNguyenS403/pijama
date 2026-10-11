@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import FreeShippingBar from './FreeShippingBar'
 import VoucherInput from './VoucherInput'
 import { useCart } from '../../hooks/useCart'

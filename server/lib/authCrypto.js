@@ -1,6 +1,10 @@
 import crypto from 'crypto'
 
-const HMAC_SECRET = process.env.CUSTOMER_AUTH_SECRET || process.env.PAYMENT_WEBHOOK_SECRET || 'qns-customer-auth-internal-secret-salt-2026'
+const isProd = process.env.NODE_ENV === 'production'
+const HMAC_SECRET = process.env.CUSTOMER_AUTH_SECRET || process.env.PAYMENT_WEBHOOK_SECRET || (isProd ? null : 'qns-customer-auth-internal-secret-salt-2026')
+if (!HMAC_SECRET && isProd) {
+  console.error('⛔ [CRITICAL SECURITY] CUSTOMER_AUTH_SECRET chưa được cấu hình trong môi trường production!')
+}
 
 /**
  * Sinh mã OTP 6 chữ số ngẫu nhiên bằng CSPRNG (crypto.randomInt)

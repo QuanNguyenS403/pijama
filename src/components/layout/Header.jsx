@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, ShoppingBag, Heart, Package } from 'lucide-react'
+import { Menu, X, ShoppingBag, Heart, Package, User } from 'lucide-react'
 import { useCart } from '../../hooks/useCart'
 import WishlistDrawer from '../ui/WishlistDrawer'
 import OrdersHistoryDrawer from '../ui/OrdersHistoryDrawer'
@@ -48,6 +48,7 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
       updateOrdersCount()
     }
     const handleOrdersUpdated = () => updateOrdersCount()
+    const handleWishlistUpdated = () => updateWishlistCount()
     const handleOpenOrdersEvent = () => setOrdersDrawerOpen(true)
     const interval = setInterval(() => {
       updateWishlistCount()
@@ -56,11 +57,13 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
 
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener('wishlist_updated', handleWishlistUpdated)
 
     return () => {
       clearInterval(interval)
       window.removeEventListener('storage', handleStorage)
       window.removeEventListener('orders_updated', handleOrdersUpdated)
+      window.removeEventListener('wishlist_updated', handleWishlistUpdated)
       window.removeEventListener('open_orders_drawer', handleOpenOrdersEvent)
       window.removeEventListener('scroll', handleScroll)
     }
@@ -210,6 +213,16 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
                 )}
               </button>
 
+              {/* Customer Account Button (Option A) */}
+              <Link
+                to="/tai-khoan"
+                aria-label="Tài khoản & Đặc quyền thành viên"
+                className="relative text-white/80 hover:text-[#D4AF37] transition-colors p-1 cursor-pointer flex items-center justify-center"
+                title="Tài khoản & Ưu đãi thành viên"
+              >
+                <User className="w-5 h-5" />
+              </Link>
+
               {/* Cart icon */}
               <button
                 onClick={onCartOpen}
@@ -283,6 +296,16 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
                     </span>
                   )}
                 </button>
+
+                {/* Mobile Account Link */}
+                <Link
+                  to="/tai-khoan"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 text-white/90 hover:text-[#D4AF37] py-2 border-b border-white/10 text-sm font-sans font-medium uppercase tracking-wider"
+                >
+                  <User className="w-4 h-4 text-[#D4AF37]" />
+                  <span>Tài khoản & Ưu đãi CLB</span>
+                </Link>
               </div>
             </motion.div>
           )}

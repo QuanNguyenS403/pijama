@@ -13,6 +13,7 @@ const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage'))
 const AdminBroadcastPage = lazy(() => import('./pages/admin/AdminBroadcastPage'))
 const AdminLoginGate = lazy(() => import('./pages/admin/AdminLoginGate'))
 const UnsubscribePage = lazy(() => import('./pages/UnsubscribePage'))
+const AccountPage = lazy(() => import('./pages/AccountPage'))
 
 function PageFallback() {
   return (
@@ -43,7 +44,7 @@ export default function App() {
           <Route path="/admin/login" element={<Navigate to="/admin/orders" replace />} />
           <Route path="/admin/orders" element={<AdminLoginGate><AdminOrdersPage /></AdminLoginGate>} />
           <Route path="/admin/broadcast" element={<AdminLoginGate><AdminBroadcastPage /></AdminLoginGate>} />
-          <Route path="/tai-khoan" element={<Navigate to="/" replace />} />
+          <Route path="/tai-khoan" element={<AccountPage />} />
           <Route path="/huy-dang-ky" element={<UnsubscribePage />} />
           {/* Fallback */}
           <Route path="*" element={<LandingPage />} />

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, Navigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Home, ChevronRight, Star } from 'lucide-react'
+import { Home, ChevronRight } from 'lucide-react'
 import Header from '../components/layout/Header'
 import ProductImageGallery from '../components/product/ProductImageGallery'
 import ProductInfo from '../components/product/ProductInfo'

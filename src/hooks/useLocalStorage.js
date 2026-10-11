@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { products } from '../data/products'
 
 export function useLocalStorage(key, initialValue) {

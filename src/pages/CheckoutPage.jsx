@@ -6,7 +6,6 @@ import {
   ShieldCheck,
   Truck,
   RotateCcw,
-  Sparkles,
   AlertCircle,
   Loader2,
   Check,
@@ -26,7 +25,7 @@ import {
   createOrderPayload,
 } from '../data/checkoutConfig'
 import { submitOrder } from '../lib/orderService'
-import { evaluateCodEligibility, SHOP_ORIGIN } from '../lib/distanceUtils'
+import { evaluateCodEligibility } from '../lib/distanceUtils'
 
 export default function CheckoutPage() {
   const navigate = useNavigate()

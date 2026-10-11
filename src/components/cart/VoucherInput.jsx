@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Check, Loader2, Gift, Sparkles } from 'lucide-react'
+import { Check, Loader2, Sparkles } from 'lucide-react'
 
 export default function VoucherInput({ onApply, currentSubtotal = 0, accountId = null }) {
   const [code, setCode] = useState('')

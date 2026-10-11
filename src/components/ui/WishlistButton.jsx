@@ -42,6 +42,9 @@ export default function WishlistButton({
       }
       localStorage.setItem('qns_wishlist', JSON.stringify(updated))
       setIsWishlisted(!isWishlisted)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('wishlist_updated'))
+      }
     } catch (err) {
       console.error('Wishlist error', err)
       setIsWishlisted(!isWishlisted)

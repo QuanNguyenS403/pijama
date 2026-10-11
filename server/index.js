@@ -33,7 +33,14 @@ const PORT = process.env.PORT || 3001
 // ── P0-5: Cấu hình CORS chặt chẽ ───────────────────────────────
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim())
-  : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:5173']
+  : [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:5173',
+      'https://quannguyens.vn',
+      'https://www.quannguyens.vn',
+    ]
 
 app.use(
   cors({
@@ -240,7 +247,7 @@ app.get('/api/orders/tracking', async (req, res) => {
     let isAuthorized = false
     if (token && verifyTrackingToken(orderId, customerPhone, String(token))) {
       isAuthorized = true
-    } else if (cleanInputPhone && (cleanInputPhone === cleanCustomerPhone || cleanCustomerPhone.endsWith(cleanInputPhone))) {
+    } else if (cleanInputPhone && cleanCustomerPhone && cleanInputPhone.length >= 9 && (cleanInputPhone === cleanCustomerPhone || cleanCustomerPhone.endsWith(cleanInputPhone))) {
       isAuthorized = true
     }
 
@@ -539,7 +546,7 @@ app.post('/api/orders/cancel-request', async (req, res) => {
     let isAuthorized = false
     if (token && verifyTrackingToken(orderId, customerPhone, String(token))) {
       isAuthorized = true
-    } else if (cleanInputPhone && (cleanInputPhone === cleanCustomerPhone || cleanCustomerPhone.endsWith(cleanInputPhone))) {
+    } else if (cleanInputPhone && cleanCustomerPhone && cleanInputPhone.length >= 9 && (cleanInputPhone === cleanCustomerPhone || cleanCustomerPhone.endsWith(cleanInputPhone))) {
       isAuthorized = true
     }
 
@@ -759,6 +766,18 @@ if (process.env.NODE_ENV === 'production') {
   })
 }
 
+// ── Centralized Error Handling Middleware (API-01) ─────────────
+app.use((err, req, res, next) => {
+  console.error('🚨 [SERVER ERROR]:', err)
+  if (res.headersSent) return next(err)
+  const status = typeof err.status === 'number' ? err.status : 500
+  const isProd = process.env.NODE_ENV === 'production'
+  return res.status(status).json({
+    success: false,
+    error: isProd ? 'Đã có lỗi xảy ra trên hệ thống. Vui lòng liên hệ hotline: 0981 753 082' : (err.message || 'Lỗi máy chủ'),
+  })
+})
+
 // Khởi chạy server
 const server = app.listen(PORT, async () => {
   console.log(`\n======================================================`)
@@ -821,6 +840,14 @@ const server = app.listen(PORT, async () => {
 
   // Lưu reference để cleanup khi shutdown
   server.viettelSyncTimer = viettelSyncTimer
+  // Khởi động sao lưu dự phòng định kỳ (DATA-01)
+  import('./lib/backupService.js').then(({ performDatabaseBackup }) => {
+    performDatabaseBackup().catch((e) => console.warn('Backup error on start:', e.message))
+    const dailyBackupTimer = setInterval(() => {
+      performDatabaseBackup().catch((e) => console.warn('Daily backup error:', e.message))
+    }, 24 * 60 * 60 * 1000)
+    server.dailyBackupTimer = dailyBackupTimer
+  }).catch(() => {})
 })
 
 // Graceful shutdown (OPS-002)
@@ -829,6 +856,9 @@ const shutdown = (signal) => {
   isServerReady = false
   if (server.viettelSyncTimer) {
     clearInterval(server.viettelSyncTimer)
+  }
+  if (server.dailyBackupTimer) {
+    clearInterval(server.dailyBackupTimer)
   }
   server.close(() => {
     console.log('🔒 Server đã dừng nhận kết nối. Tiến trình kết thúc an toàn.')

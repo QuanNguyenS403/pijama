@@ -710,6 +710,48 @@ export function registerAuthEndpoints(app) {
     }
   })
 
+  // ── 10.1 Lấy danh sách đơn hàng của tài khoản hiện tại ─────────
+  app.get('/api/auth/my-orders', requireCustomerAuth, async (req, res) => {
+    try {
+      const { orderPersistence } = await import('./orderPersistence.js')
+      const allOrders = orderPersistence.getAll()
+      const accountId = req.customerAccount.id
+      const accountEmail = (req.customerAccount.email || '').toLowerCase().trim()
+      const accountPhone = req.customerAccount.phone ? String(req.customerAccount.phone).trim() : ''
+
+      const userOrders = allOrders.filter((o) => {
+        if (o.customer?.accountId && o.customer.accountId === accountId) return true
+        if (accountEmail && o.customer?.email && o.customer.email.toLowerCase().trim() === accountEmail) return true
+        if (accountPhone && o.customer?.phone && o.customer.phone.trim() === accountPhone) return true
+        return false
+      })
+
+      userOrders.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+
+      return res.json({
+        success: true,
+        orders: userOrders.map((o) => ({
+          orderId: o.orderId,
+          createdAt: o.createdAt,
+          status: o.status,
+          total: o.total,
+          subtotal: o.subtotal,
+          shippingFee: o.shippingFee,
+          discount: o.discount,
+          paymentMethod: o.payment?.method || o.paymentMethod,
+          paymentStatus: o.payment?.status || o.paymentStatus,
+          items: o.items || [],
+          trackingCode: o.trackingCode || null,
+          carrier: o.carrier || 'Viettel Post',
+          shippingAddress: o.shippingAddress || o.shipping?.fullAddress || '',
+        })),
+      })
+    } catch (err) {
+      console.error('Get my orders error:', err)
+      return res.status(500).json({ success: false, error: 'Không thể tải danh sách đơn hàng' })
+    }
+  })
+
   // ── 11. Cập nhật Tùy Chọn Email Marketing (Preferences) ─────────
   app.patch('/api/auth/preferences', requireCustomerAuth, verifyCsrfOrigin, (req, res) => {
     try {

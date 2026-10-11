@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Trash2, ShoppingBag, ArrowRight } from 'lucide-react'
+import { X, Trash2, ShoppingBag } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { products } from '../../data/products'
@@ -38,6 +38,9 @@ export default function WishlistDrawer({ isOpen, onClose, onAddToCart }) {
     const updated = wishlistKeys.filter((k) => k !== key)
     localStorage.setItem('qns_wishlist', JSON.stringify(updated))
     setWishlistKeys(updated)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('wishlist_updated'))
+    }
   }
 
   // Parse wishlist items into rich product data

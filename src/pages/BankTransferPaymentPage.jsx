@@ -1,11 +1,9 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   CheckCircle2,
   Package,
-  Phone,
-  Mail,
   Truck,
   ShieldCheck,
   QrCode,

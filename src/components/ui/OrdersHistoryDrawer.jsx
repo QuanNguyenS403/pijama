@@ -9,22 +9,15 @@ import {
   Copy,
   Check,
   Search,
-  ExternalLink,
   ChevronDown,
   ChevronUp,
   QrCode,
   Truck,
   ArrowRight,
-  ShieldCheck,
-  CreditCard,
-  Building,
   Ban,
   Loader2,
-  Globe,
-  HelpCircle,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
-import { formatVND, ORDER_STATUSES, CARRIER_TRACKING_URLS, getCarrierTrackingUrl } from '../../data/checkoutConfig'
+import { formatVND, getCarrierTrackingUrl } from '../../data/checkoutConfig'
 import { syncBatchOrders, getSavedOrders } from '../../lib/orderSync'
 import ViettelPostTracker from '../shipping/ViettelPostTracker'
 

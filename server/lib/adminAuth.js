@@ -13,7 +13,11 @@ export const adminLoginLimiter = createRateLimiter({
 })
 
 const revokedTokens = new Set()
-const ADMIN_SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || process.env.JWT_SECRET || 'qns-admin-session-secret-key-2026'
+const isProd = process.env.NODE_ENV === 'production'
+const ADMIN_SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || process.env.JWT_SECRET || (isProd ? null : 'qns-admin-session-secret-key-2026')
+if (!ADMIN_SESSION_SECRET && isProd) {
+  console.error('⛔ [CRITICAL SECURITY] ADMIN_SESSION_SECRET chưa được cấu hình trong môi trường production!')
+}
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000 // 8 giờ
 
 /**
@@ -113,7 +117,21 @@ export function verifyAdminLogin(password) {
 
   const inputPass = String(password || '').trim()
 
-  if (!inputPass || inputPass.length !== configuredPassword.length || !crypto.timingSafeEqual(Buffer.from(inputPass), Buffer.from(configuredPassword))) {
+  if (!inputPass) {
+    return {
+      status: 401,
+      data: {
+        success: false,
+        error: 'Vui lòng nhập mật khẩu quản trị',
+      },
+    }
+  }
+
+  // Hash cả hai mật khẩu bằng SHA-256 để so sánh hằng thời gian (constant-time) mà không làm rò rỉ độ dài
+  const hashInput = crypto.createHash('sha256').update(inputPass).digest()
+  const hashConfigured = crypto.createHash('sha256').update(configuredPassword).digest()
+
+  if (!crypto.timingSafeEqual(hashInput, hashConfigured)) {
     return {
       status: 401,
       data: {
