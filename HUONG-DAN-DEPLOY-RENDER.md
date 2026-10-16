@@ -47,7 +47,7 @@ git push origin main
    - **Branch:** `main`
    - **Root Directory:** *(Để trống)*
    - **Runtime:** `Node`
-   - **Build Command:** `npm install && npm run build`
+   - **Build Command:** `npm install --include=dev && npm run build`
    - **Start Command:** `npm start`
    - **Instance Type:** Chọn gói **Free** ($0/tháng).
 
