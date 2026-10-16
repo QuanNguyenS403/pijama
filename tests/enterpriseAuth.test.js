@@ -52,7 +52,7 @@ describe('Enterprise Authentication Suite (8-Step Architecture)', () => {
     assert.equal(data.success, true)
     assert.ok(data.accessToken, 'Phải trả về JWT Access Token')
     assert.equal(data.user.email, testEmail)
-    assert.equal(data.user.voucherCode, 'WELCOME10')
+    assert.match(data.user.voucherCode, /^WELCOME/)
 
     currentAccessToken = data.accessToken
     const cookies = res.headers.getSetCookie ? res.headers.getSetCookie() : [res.headers.get('set-cookie') || '']

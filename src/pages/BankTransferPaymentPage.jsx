@@ -61,10 +61,7 @@ export default function BankTransferPaymentPage() {
   const [isQrInvalidated, setIsQrInvalidated] = useState(false)
 
   const [aiQrDataUrl, setAiQrDataUrl] = useState(null)
-  const [aiInputText, setAiInputText] = useState('')
-  const [aiChecking, setAiChecking] = useState(false)
-  const [aiMessage, setAiMessage] = useState(null)
-  const [showAiBox, setShowAiBox] = useState(false)
+  const [bankDetails, setBankDetails] = useState(null)
 
   // Countdown timer 5 phút (300 seconds)
   const [timeLeft, setTimeLeft] = useState(() => {
@@ -142,6 +139,9 @@ export default function BankTransferPaymentPage() {
           if (res?.qrDataUrl) {
             setAiQrDataUrl(res.qrDataUrl)
           }
+          if (res?.paymentDetails) {
+            setBankDetails(res.paymentDetails)
+          }
         })
         .catch(() => {})
     }
@@ -161,41 +161,6 @@ export default function BankTransferPaymentPage() {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
-
-  // Xử lý xác thực tự động bằng AI (AI NAPAS 24/7 Matcher)
-  const handleAiVerify = async () => {
-    if (!aiInputText.trim() || aiChecking) return
-    setAiChecking(true)
-    setAiMessage(null)
-
-    try {
-      const res = await fetch('/api/payment/ai-verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          rawText: aiInputText.trim(),
-          orderId,
-        }),
-      })
-      const data = await res.json()
-
-      if (data?.success && data?.status === 'PAID') {
-        setAiMessage({ type: 'success', text: 'AI đã khớp giao dịch thành công 100%! Đang chuyển hướng...' })
-        setTimeout(() => {
-          completePaymentAndRedirect(null, false)
-        }, 1200)
-      } else {
-        setAiMessage({
-          type: 'warning',
-          text: data?.message || 'Chưa tìm thấy giao dịch trùng khớp. Vui lòng kiểm tra lại nội dung chuyển khoản.',
-        })
-      }
-    } catch (err) {
-      setAiMessage({ type: 'error', text: 'Không thể kết nối tới trợ lý AI: ' + err.message })
-    } finally {
-      setAiChecking(false)
-    }
   }
 
   // Complete Payment, Invalidate QR, and Navigate to Success Page
@@ -561,18 +526,18 @@ export default function BankTransferPaymentPage() {
                       {/* Bank info fields */}
                       <div className="space-y-2 flex-1 w-full text-xs font-sans">
                         <p className="font-serif font-bold text-[#631521] text-xs uppercase">
-                          Ngân hàng Ngoại Thương Việt Nam (Vietcombank)
+                          {bankDetails?.bankName || 'Ngân hàng Ngoại Thương Việt Nam (Vietcombank)'}
                         </p>
 
                         <div className="bg-white p-2.5 rounded-[2px] border border-[#E8DFD5] flex items-center justify-between">
                           <div>
                             <p className="text-[10px] text-[#8C7E74]">Số tài khoản:</p>
                             <p className="font-mono font-bold text-[#631521] text-base leading-tight">
-                              1050773506
+                              {bankDetails?.accountNumber || '1050773506'}
                             </p>
                           </div>
                           <button
-                            onClick={() => handleCopy('1050773506', 'bankStk')}
+                            onClick={() => handleCopy(bankDetails?.accountNumber || '1050773506', 'bankStk')}
                             className="flex items-center gap-1 text-[11px] font-bold text-[#631521] bg-[#FAF8F5] px-2.5 py-1 rounded border border-[#E8DFD5] hover:bg-[#FAF5F0] transition-colors cursor-pointer"
                           >
                             {copiedField === 'bankStk' ? (
@@ -589,7 +554,7 @@ export default function BankTransferPaymentPage() {
                           </button>
                         </div>
 
-                        <p className="text-[11px] text-[#4A3F38]"><strong>Chủ tài khoản:</strong> NGUYEN DUC QUAN</p>
+                        <p className="text-[11px] text-[#4A3F38]"><strong>Chủ tài khoản:</strong> {bankDetails?.accountName || 'NGUYEN DUC QUAN'}</p>
 
                         <div className="bg-white p-2.5 rounded-[2px] border border-[#E8DFD5] flex items-center justify-between">
                           <div>
@@ -719,69 +684,14 @@ export default function BankTransferPaymentPage() {
                     )}
                   </button>
 
-                  {/* AI SMART MATCHER ACCORDION (100% MIỄN PHÍ) */}
-                  <div className="bg-gradient-to-r from-[#FAF8F5] to-[#F5EFEB] border border-[#D4AF37]/50 rounded-[3px] p-4 text-xs font-sans space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-[#631521] text-[#FAF8F5] flex items-center justify-center shrink-0">
-                          <Bot className="w-3.5 h-3.5 text-[#D4AF37]" />
-                        </div>
-                        <span className="font-bold text-[#631521]">Xác thực nhanh bằng Trợ lý AI (Miễn phí 24/7)</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowAiBox(!showAiBox)}
-                        className="text-[11px] font-semibold text-[#631521] underline hover:text-[#4A0D17] cursor-pointer"
-                      >
-                        {showAiBox ? 'Thu gọn' : 'Dán SMS để duyệt tức thì'}
-                      </button>
-                    </div>
-
-                    {showAiBox && (
-                      <div className="pt-2 border-t border-[#E8DFD5] space-y-2">
-                        <p className="text-[11px] text-[#4A3F38]">
-                          Nếu bạn vừa chuyển tiền, dán tin nhắn SMS biến động số dư hoặc mã giao dịch Vietcombank vào đây. Trợ lý AI sẽ đối soát và duyệt đơn tức thì:
-                        </p>
-                        <textarea
-                          rows={2}
-                          value={aiInputText}
-                          onChange={(e) => setAiInputText(e.target.value)}
-                          placeholder="Ví dụ: VCB: +350,000VND vao TK 1050773506. ND: QNS 1729001234..."
-                          className="w-full p-2.5 text-xs bg-white border border-[#D4AF37]/50 rounded-[2px] focus:outline-none focus:border-[#631521]"
-                        />
-
-                        {aiMessage && (
-                          <div className={`p-2.5 rounded text-[11px] font-medium ${
-                            aiMessage.type === 'success'
-                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                              : aiMessage.type === 'error'
-                              ? 'bg-rose-50 text-rose-800 border border-rose-200'
-                              : 'bg-amber-50 text-amber-800 border border-amber-200'
-                          }`}>
-                            {aiMessage.text}
-                          </div>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={handleAiVerify}
-                          disabled={aiChecking || !aiInputText.trim()}
-                          className="w-full bg-[#1A1614] hover:bg-[#2D2421] text-[#FAF8F5] font-bold text-xs py-2.5 rounded-[2px] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                        >
-                          {aiChecking ? (
-                            <>
-                              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#D4AF37]" />
-                              <span>AI ĐANG ĐỐI SOÁT GIAO DỊCH...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
-                              <span>KIỂM TRA & DUYỆT TỰ ĐỘNG BẰNG AI</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    )}
+                  {/* HỆ THỐNG ĐỐI SOÁT TỰ ĐỘNG CHUẨN NAPAS 24/7 */}
+                  <div className="bg-[#FAF8F5] border border-[#E8DFD5] rounded-[3px] p-4 text-xs font-sans space-y-2 text-center">
+                    <p className="font-bold text-[#631521] uppercase tracking-wider text-[11px]">
+                      Hệ thống đối soát thanh toán tự động 24/7
+                    </p>
+                    <p className="text-[11px] text-[#4A3F38] leading-relaxed max-w-md mx-auto">
+                      Sau khi quý khách hoàn tất chuyển khoản trên ứng dụng ngân hàng, hệ thống sẽ tự động cập nhật trạng thái đơn hàng. Quý khách cũng có thể nhấn nút <strong>"TÔI ĐÃ CHUYỂN KHOẢN THÀNH CÔNG"</strong> ở trên để thông báo xác nhận ngay cho bộ phận đóng gói.
+                    </p>
                   </div>
 
                   <button

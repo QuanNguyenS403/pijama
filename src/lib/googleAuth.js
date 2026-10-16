@@ -80,7 +80,7 @@ export async function loginWithGoogle({ onSuccess, onError, onFallbackNeeded } =
               if (userInfo?.email) {
                 if (onSuccess) {
                   await onSuccess({
-                    credential: `mock-google-token:${userInfo.sub || 'google_' + Date.now()}:${userInfo.email}:${encodeURIComponent(userInfo.name || 'Quý khách Google')}`,
+                    credential: tokenResponse.access_token,
                     accessToken: tokenResponse.access_token,
                     email: userInfo.email,
                     fullName: userInfo.name || 'Quý khách Google',

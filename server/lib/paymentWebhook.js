@@ -337,53 +337,38 @@ export async function markOrderPaidByAI({ orderId, amount, refNumber, rawText })
 
     const paidAmount = Number(amount) || order.total
 
-    // Cập nhật trạng thái đơn
-    order.status = 'CONFIRMED'
+    // P0 / L-2: Tuyệt đối không tự ý đổi trạng thái sang PAID hoặc CONFIRMED từ SMS người dùng nhập
+    // Chỉ ghi nhận trạng thái CUSTOMER_CLAIMED_PAID để chủ shop đối soát thực tế
     order.payment = {
       ...(order.payment || {}),
-      method: 'BANK_TRANSFER',
-      methodLabel: 'Chuyển khoản Napas 24/7 (AI đối soát tự động)',
-      status: 'PAID',
-      paidAmount,
-      paidAt: new Date().toISOString(),
-      gateway: 'Napas247_Vietcombank',
-      referenceCode: txId,
-      isQrInvalidated: true,
-      qrInvalidatedReason: 'AI_VERIFICATION_MATCHED',
-      qrInvalidatedAt: new Date().toISOString(),
+      status: 'CUSTOMER_CLAIMED_PAID',
+      claimedPaidAmount: paidAmount,
+      claimedAt: new Date().toISOString(),
+      claimedGateway: 'Napas247_SMS_Claim',
+      claimedReferenceCode: txId,
+      claimedRawText: rawText || '',
     }
 
     orderPaymentStore.set(orderId, order)
     processedTransactionIds.add(txId)
 
-    console.log(`\n🤖 [AI NAPAS 24/7 MATCH] Đơn hàng ${orderId} đã được AI tự động đối soát thành công! Số tiền: ${paidAmount}đ`)
+    console.log(`\nℹ️ [PAYMENT CLAIM RECEIVED] Đơn hàng ${orderId}: Khách gửi thông tin SMS đối soát (${paidAmount}đ). Chờ đối soát ngân hàng thật.`)
 
-    // Kích hoạt gửi Gmail khách hàng
-    if (order.customer?.email) {
-      sendCustomerEmail(order).then(() => {
-        console.log(`📧 [GMAIL] Đã gửi xác nhận đơn hàng tới khách hàng: ${order.customer.email}`)
-      }).catch((err) => console.error('Lỗi gửi email khách:', err.message))
-    }
-
-    // Kích hoạt gửi Gmail chủ shop
-    sendOwnerEmail(order).then(() => {
-      console.log(`📧 [GMAIL] Đã gửi thông báo đơn đã thanh toán tới Chủ Shop`)
-    }).catch((err) => console.error('Lỗi gửi email chủ shop:', err.message))
-
-    // Cập nhật Google Sheets
-    appendOrderToSheet({
+    // Gửi thông báo nội bộ cho chủ shop kiểm tra sao kê số dư thật
+    sendOwnerEmail({
       ...order,
-      status: 'ĐÃ THANH TOÁN (NAPAS 24/7 AI)',
-    }).catch((err) => console.warn('Lỗi ghi Sheets:', err.message))
+      notes: `[KHÁCH GỬI SMS ĐỐI SOÁT] Khách vừa gửi thông tin chuyển khoản cho đơn ${orderId} (Số tiền: ${paidAmount}đ, Mã GD: ${txId}). Vui lòng kiểm tra sao kê tài khoản ngân hàng trước khi xác nhận.`,
+    }).catch((err) => console.warn('Lỗi gửi email báo chủ shop:', err.message))
 
     return {
       status: 200,
       data: {
         success: true,
-        message: 'AI đối soát tự động thành công qua NAPAS 247. Đơn hàng đã chuyển sang trạng thái ĐÃ THANH TOÁN.',
+        message: 'Đã tiếp nhận thông tin chuyển khoản. Đơn hàng đang được đưa vào danh sách chờ đối soát tài khoản ngân hàng.',
         orderId,
         paidAmount,
-        status: 'PAID',
+        status: 'CUSTOMER_CLAIMED_PAID',
+        verified: false,
       },
     }
   } catch (err) {

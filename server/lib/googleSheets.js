@@ -214,12 +214,22 @@ export const appendOrderToSheet = async (order) => {
     order.carrier || '', // Z: Đơn Vị Vận Chuyển
   ]
 
+  // Chống Formula Injection (CSV/Spreadsheet Formula Injection)
+  const sanitizeSheetValue = (val) => {
+    if (typeof val !== 'string') return val
+    const trimmed = val.trim()
+    if (/^[=+@\-\t\r]/.test(trimmed)) {
+      return `'${val}`
+    }
+    return val
+  }
+
   // Ghi vào sheet ORDERS
   await sheets.spreadsheets.values.append({
     spreadsheetId,
     range: `${SHEET_TABS.ORDERS}!A:Z`,
     valueInputOption: 'USER_ENTERED',
-    requestBody: { values: [orderRow] },
+    requestBody: { values: [orderRow.map(sanitizeSheetValue)] },
   })
 
   // ── Dòng cho sheet PRODUCTS (1 SP = 1 dòng riêng) ────
@@ -241,7 +251,7 @@ export const appendOrderToSheet = async (order) => {
       spreadsheetId,
       range: `${SHEET_TABS.PRODUCTS}!A:I`,
       valueInputOption: 'USER_ENTERED',
-      requestBody: { values: productRows },
+      requestBody: { values: productRows.map((r) => r.map(sanitizeSheetValue)) },
     })
   }
 

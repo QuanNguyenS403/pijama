@@ -135,32 +135,33 @@ export function registerAuthEndpoints(app) {
         req.body.avatarUrl ||
         req.body.picture?.data?.url ||
         (typeof req.body.picture === 'string' ? req.body.picture : null)
-      let credential = req.body.credential
+      const credentialInput = req.body.credential
       const marketingOptIn = req.body.marketingOptIn
+      const isTestMode = process.env.AUTH_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production'
 
-      // Nếu không có credential nhưng có email hoặc sub, tự động tạo credential hợp lệ
-      if (!credential && (bodyEmail || bodySub)) {
-        credential = `mock-google-token:${bodySub || 'google_' + Date.now()}:${bodyEmail || 'quannguyens403@gmail.com'}:${encodeURIComponent(bodyFullName || 'Quý khách QuanNguyenS')}`
-      }
-
-      if (!credential) {
-        credential = `mock-google-token:google_${Date.now()}:quannguyens403@gmail.com:${encodeURIComponent('Quý khách QuanNguyenS')}`
+      let credential = credentialInput
+      // P0 / SEC-02 / L-1: Bắt buộc phải có Google ID token (credential).
+      // Chỉ cho phép mock fallback trong môi trường test chuyên biệt khi có cờ AUTH_TEST_MODE='true' và không phải production.
+      if (!credential || typeof credential !== 'string' || !credential.trim()) {
+        if (isTestMode && (bodyEmail || bodySub)) {
+          credential = `mock-google-token:${bodySub || 'google_' + Date.now()}:${bodyEmail}:${encodeURIComponent(bodyFullName || 'Google Test User')}`
+        } else {
+          return res.status(400).json({
+            success: false,
+            error: 'Thiếu Google ID token (credential) hợp lệ',
+          })
+        }
       }
 
       let googleUser = null
       try {
         googleUser = await verifyGoogleIdToken(credential)
       } catch (tokenErr) {
-        console.warn('⚠️ Google token verify warning, falling back to body data:', tokenErr.message)
-        const fallbackSub = bodySub || `google_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-        googleUser = {
-          provider: 'google',
-          sub: fallbackSub,
-          email: (bodyEmail || 'quannguyens403@gmail.com').toLowerCase().trim(),
-          name: bodyFullName || 'Quý khách QuanNguyenS',
-          picture: bodyAvatarUrl || null,
-          emailVerified: true,
-        }
+        console.warn('⛔ [GOOGLE AUTH REJECTED] Xác thực Google token thất bại:', tokenErr.message)
+        return res.status(401).json({
+          success: false,
+          error: 'Xác thực Google ID token không thành công: ' + tokenErr.message,
+        })
       }
 
       const email = googleUser.email?.toLowerCase().trim() || null

@@ -184,13 +184,23 @@ app.get('/api/health/email', async (req, res) => {
 // ── 1. API Tạo Mã QR Thanh Toán Động (Napas 247 AI / VietQR / SePay) ──────────
 app.post('/api/payment/generate-qr', generateQrLimiter, async (req, res) => {
   try {
-    const { amount, description, bankCode, accountNumber, accountName, orderId, provider = 'NAPAS_247' } = req.body
+    const { amount, description, orderId, provider = 'NAPAS_247' } = req.body
     if (!amount) {
       return res.status(400).json({ success: false, error: 'Thiếu số tiền thanh toán (amount)' })
     }
 
+    // P0 / T-4: Khóa cứng số tài khoản nhận tiền từ biến môi trường máy chủ
+    const canonicalBankCode = process.env.BANK_CODE || 'VCB'
+    const canonicalAccountNumber = process.env.BANK_ACCOUNT_NUMBER || '1050773506'
+    const canonicalAccountName = process.env.BANK_ACCOUNT_NAME || 'NGUYEN DUC QUAN'
+
     if (provider === 'SePay') {
-      const result = generateSePayQR({ amount, description, accountNumber, bankName: bankCode || 'Vietcombank' })
+      const result = generateSePayQR({
+        amount,
+        description,
+        accountNumber: canonicalAccountNumber,
+        bankName: canonicalBankCode,
+      })
       return res.json(result)
     }
 
@@ -199,14 +209,15 @@ app.post('/api/payment/generate-qr', generateQrLimiter, async (req, res) => {
       amount,
       description,
       orderId,
-      bankCode: bankCode || process.env.BANK_CODE || 'VCB',
-      accountNumber: accountNumber || process.env.BANK_ACCOUNT_NUMBER || '1050773506',
-      accountName: accountName || process.env.BANK_ACCOUNT_NAME || 'NGUYEN DUC QUAN',
+      bankCode: canonicalBankCode,
+      accountNumber: canonicalAccountNumber,
+      accountName: canonicalAccountName,
     })
     return res.json(result)
   } catch (err) {
     console.error('Error generating QR:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    const errorMsg = process.env.NODE_ENV === 'production' ? 'Đã có lỗi xảy ra khi tạo mã QR thanh toán.' : err.message
+    return res.status(500).json({ success: false, error: errorMsg })
   }
 })
 
@@ -236,12 +247,12 @@ app.get('/api/payment/napas-qr', async (req, res) => {
   }
 })
 
-// ── 1c. API Tự Động Đối Soát Giao Dịch Bằng AI (AI NAPAS 24/7 Smart Matcher) ──
+// ── 1c. API Tiếp Nhận Thông Tin Đối Soát Giao Dịch Bằng AI (AI NAPAS 24/7 Matcher) ──
 app.post('/api/payment/ai-verify', submitOrderLimiter, async (req, res) => {
   try {
     const { rawText, orderId } = req.body
     if (!rawText) {
-      return res.status(400).json({ success: false, error: 'Thiếu nội dung tin nhắn giao dịch ngân hàng để AI phân tích' })
+      return res.status(400).json({ success: false, error: 'Thiếu nội dung tin nhắn giao dịch ngân hàng để đối soát' })
     }
 
     const { orderPaymentStore } = await import('./lib/paymentWebhook.js')
@@ -249,12 +260,12 @@ app.post('/api/payment/ai-verify', submitOrderLimiter, async (req, res) => {
 
     const matchResult = parseAndMatchTransactionAI(rawText, order)
     
-    // Nếu AI nhận diện khớp 100% với đơn hàng -> Tự động duyệt đơn và gửi email
-    if (matchResult.verification?.isMatched && orderId) {
+    // P0 / L-2: Chỉ ghi nhận yêu cầu đối soát CUSTOMER_CLAIMED_PAID, không tự động duyệt PAID
+    if (orderId) {
       const confirmResult = await markOrderPaidByAI({
         orderId,
-        amount: matchResult.parsed.extractedAmount,
-        refNumber: matchResult.parsed.refNumber,
+        amount: matchResult.parsed?.extractedAmount,
+        refNumber: matchResult.parsed?.refNumber,
         rawText,
       })
 
@@ -264,12 +275,11 @@ app.post('/api/payment/ai-verify', submitOrderLimiter, async (req, res) => {
       })
     }
 
-    // Nếu nhận diện được nhưng chưa chắc chắn hoặc thiếu orderId
     return res.json({
       success: true,
       verified: false,
       aiAnalysis: matchResult,
-      message: matchResult.verification?.reason || 'Đã phân tích giao dịch nhưng chưa đủ điều kiện tự động khớp đơn',
+      message: matchResult.verification?.reason || 'Đã phân tích giao dịch nhưng thiếu mã đơn hàng để đối soát',
     })
   } catch (err) {
     console.error('Lỗi ai-verify:', err)
@@ -608,7 +618,8 @@ app.get('/api/shipping/viettelpost/track', lookupLimiter, async (req, res) => {
     return res.json(result)
   } catch (err) {
     console.error('Viettel Post track API error:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    const errorMsg = process.env.NODE_ENV === 'production' ? 'Đã có lỗi xảy ra khi tra cứu vận đơn.' : err.message
+    return res.status(500).json({ success: false, error: errorMsg })
   }
 })
 
@@ -625,7 +636,8 @@ app.post('/api/orders/sync-batch', lookupLimiter, async (req, res) => {
     return res.json(result)
   } catch (err) {
     console.error('Sync batch error:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    const errorMsg = process.env.NODE_ENV === 'production' ? 'Đã có lỗi xảy ra khi đồng bộ đơn hàng.' : err.message
+    return res.status(500).json({ success: false, error: errorMsg })
   }
 })
 
@@ -652,7 +664,7 @@ app.post('/api/orders/cancel-request', async (req, res) => {
     let isAuthorized = false
     if (token && verifyTrackingToken(orderId, customerPhone, String(token))) {
       isAuthorized = true
-    } else if (cleanInputPhone && cleanCustomerPhone && cleanInputPhone.length >= 9 && (cleanInputPhone === cleanCustomerPhone || cleanCustomerPhone.endsWith(cleanInputPhone))) {
+    } else if (cleanInputPhone && cleanCustomerPhone && cleanInputPhone === cleanCustomerPhone) {
       isAuthorized = true
     }
 
@@ -778,7 +790,12 @@ app.post('/api/shipping/viettelpost/webhook', async (req, res) => {
     const rawAuthHeader = req.headers['authorization'] || req.headers['x-api-key'] || req.query.token || ''
     const expectedSecret = process.env.VIETTELPOST_WEBHOOK_SECRET
 
-    if (expectedSecret) {
+    if (!expectedSecret) {
+      if (process.env.NODE_ENV === 'production') {
+        console.warn('⛔ [VIETTEL POST WEBHOOK REJECTED] VIETTELPOST_WEBHOOK_SECRET chưa được cấu hình ở production')
+        return res.status(503).json({ success: false, message: 'Webhook endpoint is disabled until configured' })
+      }
+    } else {
       const authHeader = String(rawAuthHeader).replace(/^Bearer\s+/i, '').trim()
       const secretStr = String(expectedSecret).trim()
       let isSecretValid = false
