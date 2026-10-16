@@ -15,12 +15,16 @@ import {
   Clock,
   Lock,
   AlertTriangle,
+  Sparkles,
+  Bot,
+  ShoppingBag,
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Section12Footer from '../components/sections/Section12Footer'
 import CartDrawer from '../components/cart/CartDrawer'
 import { formatVND } from '../data/checkoutConfig'
 import { applyOrderUpdateLocally, getSavedOrders } from '../lib/orderSync'
+import useCartStore from '../store/cartStore'
 
 export default function BankTransferPaymentPage() {
   const [searchParams] = useSearchParams()
@@ -50,13 +54,63 @@ export default function BankTransferPaymentPage() {
     }
   })
 
+  const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
   const [copiedField, setCopiedField] = useState(null)
   const [isVerifying, setIsVerifying] = useState(false)
   const [verifySuccess, setVerifySuccess] = useState(false)
   const [isQrInvalidated, setIsQrInvalidated] = useState(false)
 
-  // Countdown timer 15 minutes (900 seconds)
-  const [timeLeft, setTimeLeft] = useState(900)
+  const [aiQrDataUrl, setAiQrDataUrl] = useState(null)
+  const [aiInputText, setAiInputText] = useState('')
+  const [aiChecking, setAiChecking] = useState(false)
+  const [aiMessage, setAiMessage] = useState(null)
+  const [showAiBox, setShowAiBox] = useState(false)
+
+  // Countdown timer 5 phút (300 seconds)
+  const [timeLeft, setTimeLeft] = useState(() => {
+    if (order?.payment?.qrExpiresAt) {
+      const remaining = Math.round((new Date(order.payment.qrExpiresAt).getTime() - Date.now()) / 1000)
+      return Math.max(0, Math.min(300, remaining))
+    }
+    return 300
+  })
+
+  // Tự động ghi nhận đơn quá hạn khi hết 5 phút mà chưa thanh toán (bảo toàn dữ liệu sản phẩm)
+  useEffect(() => {
+    if (timeLeft <= 0 && !isQrInvalidated && order && order.status !== 'CANCELLED') {
+      const updated = {
+        ...order,
+        status: 'CANCELLED',
+        cancelReason: 'Hết hạn thanh toán 5 phút (Mã QR hết hiệu lực)',
+        payment: {
+          ...(order.payment || {}),
+          status: 'EXPIRED_TIMEOUT',
+          isQrInvalidated: true,
+        },
+      }
+      applyOrderUpdateLocally(updated)
+      setOrder(updated)
+    }
+  }, [timeLeft, isQrInvalidated, order])
+
+  // Khôi phục toàn bộ sản phẩm vào giỏ hàng để khách đặt lại nhanh chóng
+  const handleRestoreCartAndReorder = () => {
+    if (order?.items && order.items.length > 0) {
+      const addItem = useCartStore.getState().addItem
+      order.items.forEach((item) => {
+        addItem({
+          id: item.id || item.productId || item.slug,
+          name: item.productName || item.name,
+          price: item.unitPrice || item.price,
+          quantity: item.quantity || 1,
+          variant: item.variant,
+          image: item.image || item.productImage || '',
+          slug: item.slug || item.productId,
+        })
+      })
+    }
+    navigate('/checkout')
+  }
 
   // Customer & Payment Data
   const customerName = order?.customer?.fullName || 'Quý khách'
@@ -66,9 +120,32 @@ export default function BankTransferPaymentPage() {
   const discount = order?.discount || 0
   // PAY-004: Nội dung chuyển khoản chuẩn hóa chứa mã đơn để webhook đối soát
   const transferContent = `QNS ${orderId}`
-  const qrUrl = total > 0
+  const qrUrl = aiQrDataUrl || (total > 0
     ? `https://img.vietqr.io/image/vietcombank-1050773506-compact2.png?amount=${total}&addInfo=${encodeURIComponent('QNS ' + orderId)}&accountName=NGUYEN%20DUC%20QUAN`
-    : ''
+    : '')
+
+  // Tự động tạo mã QR độ nét cao theo chuẩn NAPAS 24/7 nội bộ (100% miễn phí vĩnh viễn)
+  useEffect(() => {
+    if (total > 0 && orderId) {
+      fetch('/api/payment/generate-qr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: total,
+          orderId,
+          description: `QNS ${orderId}`,
+          provider: 'NAPAS_247',
+        }),
+      })
+        .then((r) => r.json())
+        .then((res) => {
+          if (res?.qrDataUrl) {
+            setAiQrDataUrl(res.qrDataUrl)
+          }
+        })
+        .catch(() => {})
+    }
+  }, [total, orderId])
 
   // Countdown effect
   useEffect(() => {
@@ -84,6 +161,41 @@ export default function BankTransferPaymentPage() {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+
+  // Xử lý xác thực tự động bằng AI (AI NAPAS 24/7 Matcher)
+  const handleAiVerify = async () => {
+    if (!aiInputText.trim() || aiChecking) return
+    setAiChecking(true)
+    setAiMessage(null)
+
+    try {
+      const res = await fetch('/api/payment/ai-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rawText: aiInputText.trim(),
+          orderId,
+        }),
+      })
+      const data = await res.json()
+
+      if (data?.success && data?.status === 'PAID') {
+        setAiMessage({ type: 'success', text: 'AI đã khớp giao dịch thành công 100%! Đang chuyển hướng...' })
+        setTimeout(() => {
+          completePaymentAndRedirect(null, false)
+        }, 1200)
+      } else {
+        setAiMessage({
+          type: 'warning',
+          text: data?.message || 'Chưa tìm thấy giao dịch trùng khớp. Vui lòng kiểm tra lại nội dung chuyển khoản.',
+        })
+      }
+    } catch (err) {
+      setAiMessage({ type: 'error', text: 'Không thể kết nối tới trợ lý AI: ' + err.message })
+    } finally {
+      setAiChecking(false)
+    }
   }
 
   // Complete Payment, Invalidate QR, and Navigate to Success Page
@@ -333,17 +445,34 @@ export default function BankTransferPaymentPage() {
                     Cảm ơn {customerName} đã lựa chọn QuanNguyenS
                   </p>
                   <p className="text-xs sm:text-sm font-normal text-[#4A3F38] leading-relaxed">
-                    Đơn hàng đã được khởi tạo. Vui lòng hoàn tất chuyển khoản theo mã QR 1 lần bên dưới. 
-                    Khi tiền vào tài khoản, hệ thống sẽ <strong>tự động vô hiệu hóa mã QR</strong> và <strong>gửi email xác nhận đặt hàng</strong> tới địa chỉ <strong className="text-[#631521] font-semibold">{customerEmail || 'email của bạn'}</strong>.
+                    Đơn hàng đã được khởi tạo thành công. Vui lòng thanh toán theo mã QR bên dưới trong vòng <strong>5 phút</strong>. 
+                    Sau khi chuyển tiền, bạn bấm nút xác nhận để nhận email hóa đơn chính thức.
                   </p>
                 </div>
 
-                {/* Auto-checking Trust Banner */}
-                <div className="bg-[#E8F5E9] border border-[#A5D6A7] p-3.5 rounded-[3px] flex items-center gap-3 text-xs font-sans text-[#2E7D32]">
-                  <ShieldCheck className="w-5 h-5 text-[#2E7D32] shrink-0" />
-                  <p className="leading-snug">
-                    <strong>Xác nhận tự động 24/7:</strong> Hệ thống tự động kiểm tra giao dịch mỗi vài giây — bạn không cần làm gì thêm sau khi chuyển khoản.
-                  </p>
+                {/* Hướng dẫn 2 bước hoàn tất thanh toán (Rõ ràng & Minh bạch) */}
+                <div className="bg-[#FAF5F0] border border-[#D4AF37]/60 p-4 rounded-[4px] space-y-2.5 text-xs font-sans text-[#4A3F38] shadow-xs">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="font-bold text-[#631521] uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-[#D4AF37]" />
+                      HƯỚNG DẪN HOÀN TẤT ĐƠN HÀNG (HẠN THANH TOÁN 5 PHÚT)
+                    </span>
+                    <span className="text-[11px] font-mono text-[#8C7E74]">Mã đơn: #{orderId}</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-0.5">
+                    <div className="bg-white p-3 rounded-[3px] border border-[#E8DFD5] flex items-start gap-2.5">
+                      <span className="w-5 h-5 rounded-full bg-[#631521] text-[#FAF8F5] flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">1</span>
+                      <p className="leading-snug">
+                        Mở app ngân hàng, quét mã QR và hoàn tất chuyển tiền (Nội dung: <strong>{transferContent}</strong>).
+                      </p>
+                    </div>
+                    <div className="bg-white p-3 rounded-[3px] border border-[#E8DFD5] flex items-start gap-2.5">
+                      <span className="w-5 h-5 rounded-full bg-[#631521] text-[#FAF8F5] flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">2</span>
+                      <p className="leading-snug">
+                        Sau khi chuyển tiền, bấm nút <strong>"TÔI ĐÃ CHUYỂN KHOẢN THÀNH CÔNG"</strong> bên dưới để hoàn tất đơn hàng.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* BOX 1: HƯỚNG DẪN CHUYỂN KHOẢN VIETQR (1 LẦN) */}
@@ -355,18 +484,18 @@ export default function BankTransferPaymentPage() {
                   <div className="flex items-center justify-between border-b border-[#E8DFD5] pb-3 flex-wrap gap-2">
                     <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#631521] flex items-center gap-1.5">
                       <QrCode className="w-4 h-4 text-[#631521]" />
-                      Mã QR chuyển khoản một lần (Giảm 10%)
+                      Mã QR Napas 24/7 AI (Miễn Phí 100% - Giảm 10%)
                     </span>
                     
                     {/* Countdown Timer Badge */}
                     <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded border ${
-                        timeLeft > 180 
+                      <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded border ${
+                        timeLeft > 60 
                           ? 'bg-[#E8F5E9] text-[#2E7D32] border-[#C8E6C9]' 
                           : 'bg-[#FFEBEE] text-[#C62828] border-[#FFCDD2] animate-pulse'
                       }`}>
-                        <Clock className="w-3 h-3" />
-                        Hiệu lực: {formatTimer(timeLeft)}
+                        <Clock className="w-3.5 h-3.5" />
+                        Thời hạn thanh toán: {formatTimer(timeLeft)}
                       </span>
                     </div>
                   </div>
@@ -385,31 +514,48 @@ export default function BankTransferPaymentPage() {
                       </p>
                     </div>
                   ) : timeLeft <= 0 ? (
-                    /* Trạng thái mã QR hết hạn 15 phút */
-                    <div className="p-6 bg-white border border-[#EF9A9A] rounded-[3px] text-center space-y-3">
+                    /* Trạng thái mã QR hết hạn 5 phút */
+                    <div className="p-6 bg-white border border-[#EF9A9A] rounded-[4px] text-center space-y-3.5 shadow-xs">
                       <AlertTriangle className="w-10 h-10 text-[#C62828] mx-auto" />
                       <h4 className="font-serif text-base font-bold text-[#C62828]">
-                        Mã QR đã hết hạn hiệu lực
+                        Đơn hàng chưa thanh toán — Mã QR đã hết hạn hiệu lực (5 phút)
                       </h4>
-                      <p className="text-xs text-[#4A3F38]">
-                        Mã thanh toán 1 lần đã quá thời hạn 15 phút. Vui lòng tải lại trang hoặc liên hệ hotline để được hỗ trợ.
+                      <p className="text-xs text-[#4A3F38] max-w-md mx-auto leading-relaxed">
+                        Thời hạn thanh toán 5 phút cho mã QR này đã kết thúc. Lần đặt hàng này được ghi nhận là không thành công. 
+                        <strong> Toàn bộ thông tin sản phẩm của bạn vẫn được lưu trữ an toàn</strong>, bạn có thể bấm nút bên dưới để khôi phục lại giỏ hàng và đặt lại ngay.
                       </p>
-                      <button
-                        onClick={() => window.location.reload()}
-                        className="bg-[#631521] text-white text-xs font-bold uppercase tracking-wider px-5 py-2 rounded"
-                      >
-                        Tạo lại mã thanh toán
-                      </button>
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={handleRestoreCartAndReorder}
+                          className="w-full sm:w-auto bg-[#631521] text-white text-xs font-bold uppercase tracking-wider px-6 py-3 rounded-[2px] hover:bg-[#4A0D17] transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
+                        >
+                          <ShoppingBag className="w-4 h-4 text-[#D4AF37]" />
+                          <span>Khôi phục sản phẩm & Đặt lại đơn</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => navigate('/tai-khoan')}
+                          className="w-full sm:w-auto bg-white border border-[#E8DFD5] text-[#4A3F38] text-xs font-semibold px-5 py-3 rounded-[2px] hover:bg-[#FAF8F5] transition-all cursor-pointer"
+                        >
+                          Xem lịch sử đơn hàng
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="flex flex-col md:flex-row items-center gap-5">
                       {/* QR Image */}
-                      <div className="w-40 h-40 bg-white p-2 rounded border border-[#E8DFD5] shadow-xs shrink-0 flex items-center justify-center relative">
-                        <img
-                          src={qrUrl}
-                          alt="VietQR Vietcombank"
-                          className="w-full h-full object-contain"
-                        />
+                      <div className="flex flex-col items-center shrink-0">
+                        <div className="w-40 h-40 bg-white p-2 rounded border border-[#E8DFD5] shadow-xs flex items-center justify-center relative">
+                          <img
+                            src={qrUrl}
+                            alt="Mã QR Napas 24/7 Vietcombank"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-semibold mt-1.5 inline-flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-emerald-600" /> Chuẩn NAPAS 24/7 • 0đ Phí
+                        </span>
                       </div>
 
                       {/* Bank info fields */}
@@ -573,6 +719,71 @@ export default function BankTransferPaymentPage() {
                     )}
                   </button>
 
+                  {/* AI SMART MATCHER ACCORDION (100% MIỄN PHÍ) */}
+                  <div className="bg-gradient-to-r from-[#FAF8F5] to-[#F5EFEB] border border-[#D4AF37]/50 rounded-[3px] p-4 text-xs font-sans space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-[#631521] text-[#FAF8F5] flex items-center justify-center shrink-0">
+                          <Bot className="w-3.5 h-3.5 text-[#D4AF37]" />
+                        </div>
+                        <span className="font-bold text-[#631521]">Xác thực nhanh bằng Trợ lý AI (Miễn phí 24/7)</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowAiBox(!showAiBox)}
+                        className="text-[11px] font-semibold text-[#631521] underline hover:text-[#4A0D17] cursor-pointer"
+                      >
+                        {showAiBox ? 'Thu gọn' : 'Dán SMS để duyệt tức thì'}
+                      </button>
+                    </div>
+
+                    {showAiBox && (
+                      <div className="pt-2 border-t border-[#E8DFD5] space-y-2">
+                        <p className="text-[11px] text-[#4A3F38]">
+                          Nếu bạn vừa chuyển tiền, dán tin nhắn SMS biến động số dư hoặc mã giao dịch Vietcombank vào đây. Trợ lý AI sẽ đối soát và duyệt đơn tức thì:
+                        </p>
+                        <textarea
+                          rows={2}
+                          value={aiInputText}
+                          onChange={(e) => setAiInputText(e.target.value)}
+                          placeholder="Ví dụ: VCB: +350,000VND vao TK 1050773506. ND: QNS 1729001234..."
+                          className="w-full p-2.5 text-xs bg-white border border-[#D4AF37]/50 rounded-[2px] focus:outline-none focus:border-[#631521]"
+                        />
+
+                        {aiMessage && (
+                          <div className={`p-2.5 rounded text-[11px] font-medium ${
+                            aiMessage.type === 'success'
+                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                              : aiMessage.type === 'error'
+                              ? 'bg-rose-50 text-rose-800 border border-rose-200'
+                              : 'bg-amber-50 text-amber-800 border border-amber-200'
+                          }`}>
+                            {aiMessage.text}
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={handleAiVerify}
+                          disabled={aiChecking || !aiInputText.trim()}
+                          className="w-full bg-[#1A1614] hover:bg-[#2D2421] text-[#FAF8F5] font-bold text-xs py-2.5 rounded-[2px] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                          {aiChecking ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#D4AF37]" />
+                              <span>AI ĐANG ĐỐI SOÁT GIAO DỊCH...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
+                              <span>KIỂM TRA & DUYỆT TỰ ĐỘNG BẰNG AI</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => window.location.reload()}
@@ -582,8 +793,8 @@ export default function BankTransferPaymentPage() {
                     <span>Kiểm tra lại trạng thái thanh toán</span>
                   </button>
 
-                  <p className="text-[0.75rem] text-[#8C7E74] text-center italic">
-                    * Sau khi quét mã QR và chuyển khoản thành công, hệ thống sẽ tự động xác thực và gửi email xác nhận đặt hàng.
+                  <p className="text-[0.75rem] text-[#631521] text-center font-medium">
+                    * Quý khách sau khi chuyển khoản vui lòng bấm nút xác nhận màu đỏ ở trên để hệ thống ghi nhận đơn và chuyển bạn tới trang hóa đơn.
                   </p>
                 </div>
               </>
@@ -594,7 +805,7 @@ export default function BankTransferPaymentPage() {
               <p>Cần hỗ trợ chỉnh sửa đơn hàng hoặc đổi địa chỉ? Vui lòng liên hệ:</p>
               <p className="font-medium text-[#4A3F38]">
                 Hotline: <a href="tel:0981753082" className="text-[#631521] hover:underline">0981 753 082</a> · Email:{' '}
-                <a href="mailto:ducquan16102006@gmail.com" className="text-[#631521] hover:underline">ducquan16102006@gmail.com</a>
+                <a href="mailto:quannguyens403@gmail.com" className="text-[#631521] hover:underline">quannguyens403@gmail.com</a>
               </p>
             </div>
           </div>

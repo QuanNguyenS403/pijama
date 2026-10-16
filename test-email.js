@@ -1,6 +1,5 @@
-import dotenv from 'dotenv'
-dotenv.config({ path: '.env.local' })
-dotenv.config()
+import { loadEnvironment } from './server/lib/envCheck.js'
+loadEnvironment()
 
 import { getTransporter } from './server/lib/emailConfig.js'
 
@@ -49,9 +48,9 @@ async function runTestEmail() {
     console.log('1. Vào https://myaccount.google.com/security → Đảm bảo "Xác minh 2 bước" (2FA) đang BẬT.')
     console.log('2. Tạo App Password mới (16 ký tự) tại https://myaccount.google.com/apppasswords')
     console.log('3. Mở file .env.local (hoặc .env) và cập nhật:')
-    console.log('   GMAIL_USER=ducquan16102006@gmail.com')
+    console.log('   GMAIL_USER=quannguyens403@gmail.com')
     console.log('   GMAIL_APP_PASSWORD=xxxxxxxxxxxxxxxx (16 ký tự viết liền không dấu cách)')
-    console.log('   OWNER_EMAIL=ducquan16102006@gmail.com')
+    console.log('   OWNER_EMAIL=quannguyens403@gmail.com')
     console.log('4. Chạy lại: node test-email.js\n')
   }
 }

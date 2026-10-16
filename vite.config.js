@@ -26,6 +26,18 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    watch: {
+      ignored: [
+        '**/server/data/**',
+        '**/.git/**',
+        '**/dist/**',
+        '**/qns-backups/**',
+        /server[\\/]data/,
+        /server[\\/]data[\\/]backups/,
+        /\.git/,
+        /qns-backups/,
+      ],
+    },
     proxy: {
       '/api': {
         target: process.env.VITE_BACKEND_URL || 'http://127.0.0.1:3001',

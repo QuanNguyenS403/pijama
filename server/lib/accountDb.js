@@ -358,7 +358,30 @@ export function findAccountById(id) {
   if (!id) return null
   const database = getDb()
   const row = database.prepare('SELECT * FROM accounts WHERE id = ?').get(id)
-  return formatAccountRow(row)
+  if (row) return formatAccountRow(row)
+
+  try {
+    const userRow = database.prepare('SELECT * FROM users WHERE id = ?').get(id)
+    if (userRow) {
+      return {
+        id: userRow.id,
+        email: userRow.email,
+        full_name: userRow.full_name,
+        fullName: userRow.full_name || '',
+        avatar_url: userRow.avatar_url || '',
+        avatarUrl: userRow.avatar_url || '',
+        phone: userRow.phone || '',
+        role: userRow.role || 'customer',
+        status: userRow.status || 'active',
+        verified: Boolean(userRow.verified),
+        marketing_email_opt_in: Boolean(userRow.marketing_email_opt_in),
+        suppressed: false,
+        created_at: userRow.created_at || '',
+        updated_at: userRow.updated_at || '',
+      }
+    }
+  } catch {}
+  return null
 }
 
 export function findAccountByGoogleId(google_id) {
@@ -392,7 +415,30 @@ export function findAccountByEmail(email) {
   if (!email) return null
   const database = getDb()
   const row = database.prepare('SELECT * FROM accounts WHERE LOWER(email) = LOWER(?)').get(email)
-  return formatAccountRow(row)
+  if (row) return formatAccountRow(row)
+
+  try {
+    const userRow = database.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(email)
+    if (userRow) {
+      return {
+        id: userRow.id,
+        email: userRow.email,
+        full_name: userRow.full_name,
+        fullName: userRow.full_name || '',
+        avatar_url: userRow.avatar_url || '',
+        avatarUrl: userRow.avatar_url || '',
+        phone: userRow.phone || '',
+        role: userRow.role || 'customer',
+        status: userRow.status || 'active',
+        verified: Boolean(userRow.verified),
+        marketing_email_opt_in: Boolean(userRow.marketing_email_opt_in),
+        suppressed: false,
+        created_at: userRow.created_at || '',
+        updated_at: userRow.updated_at || '',
+      }
+    }
+  } catch {}
+  return null
 }
 
 export function markAccountVerified(id, { marketingOptIn = null } = {}) {

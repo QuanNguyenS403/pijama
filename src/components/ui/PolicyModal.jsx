@@ -151,7 +151,7 @@ export default function PolicyModal({ isOpen, onClose, initialPolicy = 'terms' }
                   <span>0981 753 082</span>
                 </a>
                 <a
-                  href="mailto:ducquan16102006@gmail.com"
+                  href="mailto:quannguyens403@gmail.com"
                   className="inline-flex items-center gap-1.5 bg-white text-[#1A1614] border border-[#E8DFD5] hover:border-[#631521] px-4 py-2 rounded-[2px] font-sans text-xs font-medium transition-all"
                 >
                   <Mail className="w-3.5 h-3.5 text-[#631521]" />

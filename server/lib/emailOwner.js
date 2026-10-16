@@ -13,7 +13,7 @@ export const sendOwnerEmail = async (order) => {
       ? '💰'
       : '⏳'
 
-  const ownerEmail = process.env.OWNER_EMAIL || 'ducquan16102006@gmail.com'
+  const ownerEmail = process.env.OWNER_EMAIL || 'quannguyens403@gmail.com'
 
   const subject = `${paymentEmoji} ĐƠN MỚI [${order.orderId}] — ${order.customer?.fullName} — ${formatVND(order.total)}`
 

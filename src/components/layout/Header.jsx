@@ -124,11 +124,34 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
-            ? 'bg-[#631521]/95 backdrop-blur-md py-3.5 border-b border-[#D4AF37]/30 shadow-luxury'
-            : 'bg-[#631521] py-4 md:py-5 border-b border-white/10'
+            ? 'bg-[#631521]/95 backdrop-blur-md border-b border-[#D4AF37]/30 shadow-luxury'
+            : 'bg-[#631521] border-b border-white/10'
         }`}
       >
-        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 flex items-center justify-between">
+        {/* Top Announcement Bar: Vàng Gold, chữ trắng, vệt trắng chạy 1s lặp lại 3s/lần (Chỉ hiển thị trên Trang Chủ, tự động trôi đi/thu lại khi cuộn trang) */}
+        {isLanding && (
+          <div
+            className={`transition-all duration-300 ease-in-out overflow-hidden ${
+              scrolled
+                ? 'max-h-0 opacity-0 pointer-events-none'
+                : 'max-h-16 opacity-100'
+            }`}
+          >
+            <div className="relative overflow-hidden bg-gradient-to-r from-[#B8860B] via-[#D4AF37] to-[#B8860B] border-b border-[#F5E1A4]/40 py-2.5 sm:py-3 min-h-[38px] sm:min-h-[42px] px-4 flex items-center justify-center text-center select-none shadow-xs">
+              {/* Vệt sáng trắng chạy từ trái qua phải trong 1s, lặp lại 3s/lần */}
+              <div
+                className="absolute inset-y-0 w-1/4 sm:w-1/5 bg-gradient-to-r from-transparent via-white/85 to-transparent pointer-events-none animate-gold-shimmer"
+              />
+              <div className="relative z-10 flex items-center justify-center gap-2 text-white font-serif tracking-[0.16em] sm:tracking-[0.22em] uppercase text-xs sm:text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">
+                <span>Freeship với đơn hàng trên 500k</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className={`max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 flex items-center justify-between transition-all duration-300 ${
+          scrolled ? 'py-3' : 'py-3.5 md:py-4'
+        }`}>
           {/* Logo */}
           <Link
             to="/"
@@ -171,27 +194,6 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
             {/* Icon row */}
             <div className="flex items-center gap-2.5 sm:gap-3.5">
 
-              {/* Placed Orders Button */}
-              <button
-                onClick={() => setOrdersDrawerOpen(true)}
-                aria-label={`Đơn đã đặt — ${ordersCount} đơn`}
-                className="flex items-center gap-1.5 text-white/85 hover:text-[#D4AF37] px-2.5 py-1 rounded-[2px] border border-white/20 hover:border-[#D4AF37]/50 bg-white/5 text-[11px] font-sans font-medium tracking-wider uppercase transition-colors cursor-pointer"
-                title="Xem đơn hàng đã đặt"
-              >
-                <Package className="w-4 h-4 text-[#D4AF37]" />
-                <span className="hidden sm:inline">Đơn đã đặt</span>
-                {ordersCount > 0 && (
-                  <motion.span
-                    key={ordersCount}
-                    initial={{ scale: 1.3 }}
-                    animate={{ scale: 1 }}
-                    className="bg-[#D4AF37] text-[#2C201A] text-[9.5px] font-sans font-bold px-1.5 py-0.2 rounded-full flex items-center justify-center shadow-xs"
-                  >
-                    {ordersCount > 9 ? '9+' : ordersCount}
-                  </motion.span>
-                )}
-              </button>
-
               {/* Wishlist Button */}
               <button
                 onClick={() => setWishlistOpen(true)}
@@ -226,12 +228,12 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
                 <User className="w-5 h-5" />
               </Link>
 
-              {/* Cart icon */}
+              {/* Cart Button (Biểu tượng giỏ hàng — Bỏ chữ) */}
               <button
                 onClick={onCartOpen}
                 aria-label={`Giỏ hàng — ${totalItems} sản phẩm`}
-                className="relative text-white/80 hover:text-[#D4AF37] transition-colors p-1 cursor-pointer"
-                title="Giỏ hàng"
+                className="relative text-white/85 hover:text-[#D4AF37] transition-colors p-1 cursor-pointer flex items-center justify-center"
+                title="Giỏ hàng của bạn"
               >
                 <ShoppingBag className="w-5 h-5" />
                 {totalItems > 0 && (
@@ -240,9 +242,30 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
                     initial={{ scale: 1.4 }}
                     animate={{ scale: 1 }}
                     transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-                    className="absolute -top-1.5 -right-1.5 bg-[#7B2D3E] text-white text-[9.5px] font-sans font-bold w-[17px] h-[17px] rounded-full flex items-center justify-center shadow-sm"
+                    className="absolute -top-1.5 -right-1.5 bg-[#D4AF37] text-[#2C201A] text-[9.5px] font-sans font-bold w-[17px] h-[17px] rounded-full flex items-center justify-center shadow-sm"
                   >
                     {totalItems > 9 ? '9+' : totalItems}
+                  </motion.span>
+                )}
+              </button>
+
+              {/* Order Tracking & Tracking Code Input Button (Bằng kích thước icon giỏ hàng, mở drawer khi click) */}
+              <button
+                onClick={() => setOrdersDrawerOpen(true)}
+                aria-label={`Theo dõi đơn hàng & Nhập mã tracking — ${ordersCount} đơn`}
+                className="relative text-white/85 hover:text-[#D4AF37] transition-colors p-1 cursor-pointer flex items-center justify-center"
+                title="Theo dõi đơn hàng & Nhập mã tracking"
+              >
+                <Package className="w-5 h-5" />
+                {ordersCount > 0 && (
+                  <motion.span
+                    key={ordersCount}
+                    initial={{ scale: 1.4 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+                    className="absolute -top-1.5 -right-1.5 bg-[#D4AF37] text-[#2C201A] text-[9.5px] font-sans font-bold w-[17px] h-[17px] rounded-full flex items-center justify-center shadow-sm"
+                  >
+                    {ordersCount > 9 ? '9+' : ordersCount}
                   </motion.span>
                 )}
               </button>

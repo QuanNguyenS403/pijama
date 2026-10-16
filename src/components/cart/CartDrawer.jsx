@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ShoppingBag } from 'lucide-react'
+import { X, ShoppingBag, Package } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../../hooks/useCart'
 import CartItemRow from './CartItemRow'
@@ -59,9 +59,22 @@ export default function CartDrawer({ isOpen, onClose }) {
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4.5 border-b border-[#E8DFD5] bg-[#FAF8F5] shrink-0">
               <div>
-                <h2 className="font-serif text-2xl font-bold text-[#631521]">
-                  Giỏ Hàng Của Bạn
-                </h2>
+                <div className="flex items-center gap-2.5">
+                  <h2 className="font-serif text-2xl font-bold text-[#631521]">
+                    Giỏ Hàng Của Bạn
+                  </h2>
+                  <button
+                    onClick={() => {
+                      onClose()
+                      window.dispatchEvent(new CustomEvent('open_orders_drawer'))
+                    }}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-sans font-medium text-[#631521] bg-[#631521]/10 hover:bg-[#631521]/15 hover:text-[#8B2635] rounded-full transition-colors border border-[#631521]/20 cursor-pointer"
+                    title="Theo dõi đơn hàng & Nhập mã vận đơn (Tracking Code)"
+                  >
+                    <Package className="w-3.5 h-3.5 text-[#631521]" />
+                    <span>Theo dõi đơn</span>
+                  </button>
+                </div>
                 <div className="flex items-center gap-3 mt-0.5">
                   <p className="font-sans text-xs font-normal text-[#8C7E74]">
                     ({totalItems} sản phẩm)

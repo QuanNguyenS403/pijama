@@ -16,7 +16,7 @@ import { verifyTurnstileToken } from './turnstileService.js'
 import { logSecurityAudit } from './auditLogger.js'
 import { parseCookies, setCustomerSessionCookie, clearCustomerSessionCookie } from './customerSessionMiddleware.js'
 import { sendVerificationCodeEmail, sendWelcomeVoucherEmail } from './emailAccount.js'
-import { createWelcomeVoucher } from './accountDb.js'
+import { createWelcomeVoucher, createCustomerSession } from './accountDb.js'
 
 /**
  * Đăng ký bộ API Xác thực Chuẩn Doanh nghiệp (Enterprise Auth Endpoints)
@@ -99,6 +99,28 @@ export function registerEnterpriseAuthEndpoints(app) {
         VALUES (?, ?, 'local', ?, ?, ?, ?)
       `).run(entAccountId, userId, userId, email, now, now)
 
+      // Đồng bộ sang bảng accounts để bảo đảm tính toàn vẹn Foreign Key và Session nhất quán
+      db.prepare(`
+        INSERT INTO accounts (
+          id, method, email, phone, full_name, verified, marketing_email_opt_in, marketing_opt_in_at, status, created_at, updated_at
+        ) VALUES (?, 'local', ?, ?, ?, 0, ?, ?, 'active', ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          email = excluded.email,
+          full_name = excluded.full_name,
+          phone = excluded.phone,
+          marketing_email_opt_in = excluded.marketing_email_opt_in,
+          updated_at = excluded.updated_at
+      `).run(
+        userId,
+        email,
+        phone || null,
+        fullName,
+        marketingOptIn ? 1 : 0,
+        marketingOptIn ? now : null,
+        now,
+        now
+      )
+
       // F. Tự động cấp Voucher chào mừng WELCOME10
       let voucherCode = 'WELCOME10'
       try {
@@ -114,6 +136,14 @@ export function registerEnterpriseAuthEndpoints(app) {
 
       setRefreshTokenCookie(res, tokens.refreshToken)
       setCustomerSessionCookie(res, tokens.refreshToken) // Tương thích backward
+
+      // Khởi tạo phiên đồng thời trong customer_sessions
+      createCustomerSession({
+        accountId: userId,
+        token: tokens.refreshToken,
+        ip,
+        userAgent,
+      })
 
       logSecurityAudit({
         userId,
@@ -217,6 +247,33 @@ export function registerEnterpriseAuthEndpoints(app) {
       const tokens = await createSessionAndTokens(user, { ip, userAgent })
       setRefreshTokenCookie(res, tokens.refreshToken)
       setCustomerSessionCookie(res, tokens.refreshToken)
+
+      // Đồng bộ sang accounts và customer_sessions
+      db.prepare(`
+        INSERT INTO accounts (
+          id, method, email, phone, full_name, verified, marketing_email_opt_in, status, created_at, updated_at
+        ) VALUES (?, 'local', ?, ?, ?, ?, 0, 'active', ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          email = excluded.email,
+          full_name = excluded.full_name,
+          phone = coalesce(excluded.phone, phone),
+          updated_at = excluded.updated_at
+      `).run(
+        user.id,
+        user.email,
+        user.phone || null,
+        user.full_name,
+        user.verified || 0,
+        new Date().toISOString(),
+        new Date().toISOString()
+      )
+
+      createCustomerSession({
+        accountId: user.id,
+        token: tokens.refreshToken,
+        ip,
+        userAgent,
+      })
 
       logSecurityAudit({ userId: user.id, action: 'LOGIN_SUCCESS', status: 'SUCCESS', ip, userAgent })
 

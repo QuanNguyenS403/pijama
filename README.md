@@ -48,9 +48,9 @@ GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\
 GOOGLE_SHEET_ID=your_google_sheet_id
 
 # ── Gmail SMTP (Gửi email tự động) ──
-GMAIL_USER=quannguyens.store@gmail.com
+GMAIL_USER=quannguyens403@gmail.com
 GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
-OWNER_EMAIL=ducquan16102006@gmail.com
+OWNER_EMAIL=quannguyens403@gmail.com
 
 # ── Webhook Bảo Mật Thanh Toán (BẮT BUỘC để kích hoạt Webhook) ──
 SEPAY_WEBHOOK_API_KEY=your_sepay_webhook_secret_key_here
@@ -118,3 +118,26 @@ Hệ thống có sẵn bộ test tự động kiểm tra logic tính giá, chi�
 ```bash
 npm test
 ```
+
+---
+
+## 🛡️ Khôi Phục Sau Sự Cố & Quản Trị Cấu Hình (Disaster Recovery)
+
+Khi triển khai môi trường mới hoặc cần khôi phục lại dữ liệu runtime và biến môi trường:
+
+1. **Sổ tay biến môi trường**: Xem chi tiết nguồn cấp, phân loại và hướng dẫn từng biến tại [`docs/env-reference.md`](docs/env-reference.md).
+2. **Kiểm tra tính toàn vẹn cấu hình**:
+   ```bash
+   npm run check-env
+   ```
+   Lệnh này tự động rà soát file `.env.local` / `.env`, đối chiếu định dạng, độ dài và các điều kiện ràng buộc mà không bao giờ để lộ giá trị bí mật.
+3. **Tái tạo cache đơn hàng từ Google Sheets (Chỉ đọc)**:
+   ```bash
+   npm run rebuild-orders
+   ```
+   Đọc toàn bộ tab `Đơn Hàng` và `Chi Tiết SP` trên Google Sheet để tái tạo an toàn file `server/data/orders_store.json`.
+4. **Sao lưu dữ liệu định kỳ ra ngoài dự án**:
+   ```bash
+   npm run backup-data
+   ```
+   Tự động sao lưu an toàn `accounts.db` (qua SQLite Online Backup API) và các file dữ liệu sang thư mục độc lập ngoài repo (`../qns-backups/`).

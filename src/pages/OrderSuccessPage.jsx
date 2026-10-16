@@ -262,12 +262,12 @@ export default function OrderSuccessPage() {
                       )}
                     </div>
                   ) : order.payment?.status === 'CUSTOMER_CLAIMED_PAID' ? (
-                    <div className="bg-[#FAF5F0] border border-[#D4AF37]/50 p-3.5 rounded-[3px] text-xs text-[#631521] space-y-1 text-left">
-                      <p className="font-bold flex items-center gap-1.5">
-                        <span>⏳</span> Đang đối soát giao dịch chuyển khoản với Vietcombank
+                    <div className="bg-[#FAF5F0] border border-[#D4AF37]/60 p-4 rounded-[4px] text-xs text-[#631521] space-y-1.5 text-left shadow-xs">
+                      <p className="font-bold flex items-center gap-1.5 text-sm">
+                        <span>✅</span> QuanNguyenS đã tiếp nhận xác nhận chuyển khoản của bạn!
                       </p>
                       <p className="text-[#4A3F38] font-normal leading-relaxed">
-                        Hệ thống đang tự động kiểm tra biến động số dư. Sau khi giao dịch được xác thực, email hóa đơn chính thức sẽ được gửi ngay tới <strong>{customerEmail || 'email của bạn'}</strong>.
+                        Đơn hàng <strong>#{order.orderId}</strong> đã được ghi nhận thành công. Bộ phận vận hành sẽ đối soát tài khoản Vietcombank và chuẩn bị đóng gói gửi hàng sớm nhất qua <strong>{order.carrier || 'Viettel Post'}</strong> cho quý khách.
                       </p>
                     </div>
                   ) : (
@@ -481,7 +481,7 @@ export default function OrderSuccessPage() {
               <p>Cần hỗ trợ chỉnh sửa đơn hàng hoặc đổi địa chỉ? Vui lòng liên hệ:</p>
               <p className="font-medium text-[#4A3F38]">
                 Hotline: <a href="tel:0981753082" className="text-[#631521] hover:underline">0981 753 082</a> · Email:{' '}
-                <a href="mailto:ducquan16102006@gmail.com" className="text-[#631521] hover:underline">ducquan16102006@gmail.com</a>
+                <a href="mailto:quannguyens403@gmail.com" className="text-[#631521] hover:underline">quannguyens403@gmail.com</a>
               </p>
             </div>
           </div>

@@ -10,9 +10,30 @@ let broadcastChannelInstance = null
 let isInitialized = false
 
 /**
- * Lấy toàn bộ danh sách đơn hàng đã lưu với cơ chế tự phục hồi từ kho lưu trữ vĩnh viễn
+ * Xóa sạch danh sách đơn hàng đã lưu trong localStorage và sessionStorage trên thiết bị
+ * Được gọi khi đăng xuất tài khoản để bảo mật tuyệt đối thông tin cá nhân và đơn hàng
  */
-export function getSavedOrders() {
+export function clearLocalOrders() {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.removeItem(ACTIVE_ORDERS_KEY)
+    localStorage.removeItem(PERMANENT_ORDERS_KEY)
+    sessionStorage.removeItem('latest_order')
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('orders_updated', { detail: null }))
+    }
+  } catch (e) {
+    console.warn('Lỗi khi dọn dẹp đơn hàng cục bộ:', e)
+  }
+}
+
+/**
+ * Lấy toàn bộ danh sách đơn hàng đã lưu với cơ chế tự phục hồi từ kho lưu trữ vĩnh viễn
+ * @param {object} [options]
+ * @param {string} [options.filterAccountId] - Nếu truyền, chỉ lấy các đơn của accountId này
+ * @param {boolean} [options.excludeAccountOrders] - Nếu true, chỉ lấy đơn khách ẩn danh (không có accountId)
+ */
+export function getSavedOrders({ filterAccountId = null, excludeAccountOrders = false } = {}) {
   if (typeof window === 'undefined') return []
   try {
     const active = JSON.parse(localStorage.getItem(ACTIVE_ORDERS_KEY) || '[]')
@@ -47,7 +68,16 @@ export function getSavedOrders() {
       })
     }
 
-    const mergedList = Array.from(map.values())
+    let mergedList = Array.from(map.values())
+
+    // 3. Phân chia dữ liệu theo tài khoản để tránh nhảy đơn chéo giữa các tài khoản
+    if (filterAccountId) {
+      mergedList = mergedList.filter((o) => o?.customer?.accountId === filterAccountId)
+    } else if (excludeAccountOrders) {
+      // Chỉ giữ đơn khách ẩn danh (không có accountId), không làm rò rỉ đơn của tài khoản đã đăng nhập
+      mergedList = mergedList.filter((o) => !o?.customer?.accountId)
+    }
+
     // Sắp xếp đơn mới nhất lên đầu
     mergedList.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
     return mergedList

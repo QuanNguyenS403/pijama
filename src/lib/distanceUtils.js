@@ -81,8 +81,34 @@ export function haversineDistanceKm(lat1, lon1, lat2, lon2) {
   return Math.round(R * c * 1.28 * 10) / 10
 }
 
+export const CLIENT_LANDMARKS = {
+  'amber riverside': 0.1,
+  'times city': 0.8,
+  'park hill': 1.0,
+  'hòa bình green': 0.6,
+  'imperia sky garden': 0.7,
+  'ecopark': 13.5,
+  'ocean park': 12.0,
+  'vinhomes ocean park': 12.0,
+  'ocean park 2': 19.5,
+  'ocean park 3': 22.0,
+  'vinhomes riverside': 7.5,
+  'vinhomes smart city': 14.5,
+  'linh đàm': 6.5,
+  'gamuda': 4.5,
+  'ngoại giao đoàn': 12.5,
+  'ciputra': 13.5,
+  'royal city': 6.8,
+  'keangnam': 11.0,
+  'lotte liễu giai': 8.2,
+  'hồ gươm': 4.5,
+  'phố cổ': 4.8,
+  'bách khoa': 2.8,
+  'nội bài': 33.5,
+}
+
 /**
- * Phân tích địa chỉ và tính toán khoảng cách so với Amber Riverside
+ * Phân tích địa chỉ và tính toán khoảng cách so với Amber Riverside bằng AI Multi-Agent Logic
  * @param {Object} param0 { address, ward, district, city }
  * @returns {Object} { distanceKm, isCodAllowed, message, provider }
  */
@@ -92,6 +118,24 @@ export function evaluateCodEligibility({ address = '', ward = '', district = '',
   const normWard = String(ward || '').trim().toLowerCase()
   const normAddress = String(address || '').trim().toLowerCase()
   const fullText = `${normAddress} ${normWard} ${normDistrict} ${normCity}`
+
+  // 0. Nhận diện khu đô thị và Landmark nổi tiếng
+  for (const [lmKey, lmDist] of Object.entries(CLIENT_LANDMARKS)) {
+    if (fullText.includes(lmKey)) {
+      const isAllowed = lmDist <= SHOP_ORIGIN.maxCodRadiusKm
+      return {
+        distanceKm: lmDist,
+        isCodAllowed: isAllowed,
+        maxCodRadiusKm: SHOP_ORIGIN.maxCodRadiusKm,
+        origin: SHOP_ORIGIN.address,
+        destination: `${address ? address + ', ' : ''}${ward ? ward + ', ' : ''}${district ? district + ', ' : ''}${city}`,
+        message: isAllowed
+          ? `Địa chỉ cách Amber Riverside ~${lmDist}km (Đủ điều kiện Ship COD).`
+          : `Địa chỉ cách kho hàng ~${lmDist}km (vượt quá bán kính 30km hỗ trợ Ship COD). Vui lòng thanh toán qua VietQR.`,
+        method: 'ai_landmark_geo',
+      }
+    }
+  }
 
   // 1. Nhận diện các địa danh xa > 30km kể cả khi chưa chọn dropdown city
   const isFarProvince =

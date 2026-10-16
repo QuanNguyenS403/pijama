@@ -176,4 +176,32 @@
   .font-light {
     font-weight: 400 !important;
   }
+
+  /* Shimmer sweep animation: vệt trắng chạy từ trái qua phải trong 1s, lặp lại 3s/lần (chu kỳ 4s) */
+  @keyframes gold-bar-shimmer {
+    0% {
+      transform: translateX(-150%) skewX(-20deg);
+      opacity: 0;
+    }
+    2% {
+      opacity: 0.9;
+    }
+    25% {
+      transform: translateX(450%) skewX(-20deg);
+      opacity: 0.9;
+    }
+    26% {
+      opacity: 0;
+      transform: translateX(450%) skewX(-20deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(450%) skewX(-20deg);
+    }
+  }
+
+  .animate-gold-shimmer {
+    animation: gold-bar-shimmer 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    will-change: transform, opacity;
+  }
 }

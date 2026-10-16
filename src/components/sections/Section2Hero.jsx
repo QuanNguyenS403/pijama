@@ -76,12 +76,12 @@ export default function Section2Hero() {
     <section
       id="section-hero"
       aria-label="Hero Slideshow"
-      className="relative w-full overflow-hidden bg-[#1A1614] pt-[64px] sm:pt-[70px] md:pt-[76px]"
+      className="relative w-full overflow-hidden bg-[#1A1614] pt-[104px] sm:pt-[112px] md:pt-[118px]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* Hero Frame: exact 16:9 aspect ratio matching the 16:9 images without cropping */}
-      <div className="relative w-full aspect-[16/9] min-h-[460px] sm:min-h-[520px] md:min-h-0 overflow-hidden bg-[#151210]">
+      {/* Hero Frame: slightly refined aspect ratio to be subtly shorter */}
+      <div className="relative w-full aspect-[16/8.3] min-h-[430px] sm:min-h-[480px] md:min-h-0 overflow-hidden bg-[#151210]">
         
         {/* Slide Images */}
         <AnimatePresence mode="wait">

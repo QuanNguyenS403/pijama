@@ -4,11 +4,13 @@ import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { isSupabaseConfigured, getSupabase } from '../server/lib/supabaseClient.js'
 import { getDb } from '../server/lib/accountDb.js'
+import { loadEnvironment } from '../server/lib/envCheck.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-dotenv.config({ path: path.resolve(__dirname, '../.env') })
+// Nạp toàn bộ môi trường từ .env, .env.development, .env.local
+loadEnvironment(path.resolve(__dirname, '..'))
 
 async function migrateData() {
   console.log('===========================================================')
@@ -88,7 +90,9 @@ async function migrateData() {
   // 3. Đồng bộ Đơn hàng (Orders)
   console.log('\n📦 3. Đang đồng bộ Đơn hàng từ orders_store.json...')
   try {
-    const ordersFilePath = path.resolve(__dirname, '../server/data/orders_store.json')
+    // ⚠️ Chú ý: orderPersistence.js coi sự hiện diện của ORDER_STORE_FILE là môi trường test và sẽ tắt đồng bộ Supabase.
+    // Ở script này, chúng ta chỉ đọc file để đồng bộ thủ công.
+    const ordersFilePath = process.env.ORDER_STORE_FILE || path.resolve(__dirname, '../server/data/orders_store.json')
     if (fs.existsSync(ordersFilePath)) {
       const rawOrders = JSON.parse(fs.readFileSync(ordersFilePath, 'utf-8') || '[]')
       console.log(`   Tìm thấy ${rawOrders.length} đơn hàng trong disk.`)

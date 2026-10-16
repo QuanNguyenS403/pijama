@@ -1,4 +1,5 @@
-import { findCustomerSessionByToken } from './accountDb.js'
+import { findCustomerSessionByToken, findAccountById, getDb } from './accountDb.js'
+import { hashRefreshToken, verifyAccessToken } from './tokenService.js'
 
 export const COOKIE_NAME = 'qns_session'
 export const HOST_COOKIE_NAME = '__Host-qns_session'
@@ -84,23 +85,64 @@ export function clearCustomerSessionCookie(res) {
 /**
  * Middleware phân tích phiên đăng nhập khách hàng từ HttpOnly Cookie
  */
-export function customerSessionMiddleware(req, res, next) {
+export async function customerSessionMiddleware(req, res, next) {
   req.customerAccount = null
   req.customerSession = null
 
-  const cookieHeader = req.headers.cookie
-  if (!cookieHeader) return next()
-
-  const cookies = parseCookies(cookieHeader)
-  const token = cookies[HOST_COOKIE_NAME] || cookies[COOKIE_NAME]
-
-  if (!token) return next()
-
   try {
-    const sessionData = findCustomerSessionByToken(token)
-    if (sessionData && sessionData.account && sessionData.account.status === 'active') {
-      req.customerAccount = sessionData.account
-      req.customerSession = sessionData.session
+    const cookieHeader = req.headers.cookie
+    const cookies = cookieHeader ? parseCookies(cookieHeader) : {}
+    const token = cookies[HOST_COOKIE_NAME] || cookies[COOKIE_NAME] || cookies['qns_session'] || cookies['qns_refresh_token']
+
+    // 1. Kiểm tra bảng customer_sessions
+    if (token) {
+      const sessionData = findCustomerSessionByToken(token)
+      if (sessionData && sessionData.account && sessionData.account.status === 'active') {
+        req.customerAccount = sessionData.account
+        req.customerSession = sessionData.session
+      }
+    }
+
+    // 2. Kiểm tra bảng enterprise_sessions nếu chưa có session
+    if (!req.customerAccount && token) {
+      const db = getDb()
+      const tokenHash = hashRefreshToken(token)
+      const entSession = db.prepare(`
+        SELECT s.*, u.id as u_id, u.email as u_email, u.full_name, u.role, u.avatar_url, u.status as u_status, u.verified, u.marketing_email_opt_in, u.phone as u_phone
+        FROM enterprise_sessions s
+        JOIN users u ON s.user_id = u.id
+        WHERE s.refresh_token_hash = ? AND s.is_revoked = 0 AND s.expires_at > ?
+      `).get(tokenHash, Date.now())
+
+      if (entSession && entSession.u_status === 'active') {
+        req.customerAccount = {
+          id: entSession.u_id,
+          email: entSession.u_email,
+          fullName: entSession.full_name,
+          full_name: entSession.full_name,
+          role: entSession.role,
+          avatarUrl: entSession.avatar_url,
+          avatar_url: entSession.avatar_url,
+          phone: entSession.u_phone || '',
+          status: entSession.u_status,
+          verified: Boolean(entSession.verified),
+          marketing_email_opt_in: Boolean(entSession.marketing_email_opt_in),
+        }
+        req.customerSession = entSession
+      }
+    }
+
+    // 3. Kiểm tra Header Authorization: Bearer <accessToken>
+    const authHeader = req.headers.authorization
+    if (!req.customerAccount && authHeader && authHeader.startsWith('Bearer ')) {
+      const bearerToken = authHeader.slice(7).trim()
+      const payload = await verifyAccessToken(bearerToken)
+      if (payload && payload.sub) {
+        const acc = findAccountById(payload.sub)
+        if (acc && (acc.status === 'active' || !acc.status)) {
+          req.customerAccount = acc
+        }
+      }
     }
   } catch (err) {
     console.warn('Session middleware check warning:', err.message)

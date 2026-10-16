@@ -44,9 +44,9 @@ TOÀN BỘ EMAIL XÁC NHẬN ĐƠN HÀNG SẼ KHÔNG GỬI ĐƯỢC CHO ĐẾN K
 1. Vào https://myaccount.google.com/security → Xác nhận 'Xác minh 2 bước' (2FA) đang BẬT.
 2. Tạo App Password mới (16 ký tự) tại https://myaccount.google.com/apppasswords
 3. Điền vào file .env.local (hoặc .env) ở thư mục gốc dự án:
-   GMAIL_USER=${user || 'ducquan16102006@gmail.com'}
+   GMAIL_USER=${user || 'quannguyens403@gmail.com'}
    GMAIL_APP_PASSWORD=xxxxxxxxxxxxxxxx (16 ký tự viết liền không dấu cách)
-   OWNER_EMAIL=${process.env.OWNER_EMAIL || user || 'ducquan16102006@gmail.com'}
+   OWNER_EMAIL=${process.env.OWNER_EMAIL || user || 'quannguyens403@gmail.com'}
 
 👉 Kiểm tra kết nối độc lập bằng lệnh: node test-email.js
 ================================================================================

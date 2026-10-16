@@ -133,14 +133,27 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
   const [cardTrackingData, setCardTrackingData] = useState({})
   const [loadingTrackingOrderId, setLoadingTrackingOrderId] = useState(null)
 
-  // Load orders from resilient permanent store
-  const loadOrders = () => {
+  // Load orders with account-level isolation:
+  // If user is authenticated, load their official orders from server (/api/auth/my-orders).
+  // If user is guest, only load local guest orders (exclude any orders that belong to accounts).
+  const loadOrders = async () => {
     try {
-      const stored = getSavedOrders()
+      // 1. Kiểm tra nếu có phiên đăng nhập của tài khoản
+      const authRes = await fetch('/api/auth/my-orders', { credentials: 'include' }).catch(() => null)
+      if (authRes && authRes.ok) {
+        const authData = await authRes.json()
+        if (authData.success && Array.isArray(authData.orders)) {
+          setOrders(authData.orders)
+          return
+        }
+      }
+      // 2. Với khách vãng lai (Guest): chỉ hiển thị đơn không gắn accountId của tài khoản khác
+      const stored = getSavedOrders({ excludeAccountOrders: true })
       setOrders(Array.isArray(stored) ? stored : [])
     } catch (e) {
       console.error('Error loading orders:', e)
-      setOrders([])
+      const stored = getSavedOrders({ excludeAccountOrders: true })
+      setOrders(Array.isArray(stored) ? stored : [])
     }
   }
 
@@ -151,7 +164,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
 
       // Tự động kiểm tra trạng thái mới nhất từ server khi mở Drawer
       try {
-        const stored = getSavedOrders()
+        const stored = getSavedOrders({ excludeAccountOrders: true })
         const ids = stored.map((o) => o.orderId || o.id).filter(Boolean)
         if (ids.length > 0) {
           syncBatchOrders(ids).then(() => {

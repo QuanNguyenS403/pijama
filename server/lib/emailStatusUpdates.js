@@ -75,7 +75,7 @@ const renderFooter = () => `
     <div class="footer-tag">Dressed for Life. Even at Home.</div>
     <div class="footer-info">
       Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội<br>
-      0981 753 082 · ducquan16102006@gmail.com
+      0981 753 082 · quannguyens403@gmail.com
     </div>
   </div>
 `
@@ -157,7 +157,7 @@ export const sendConfirmedEmail = async (order) => {
     <div class="contact">
       <p>Câu hỏi về đơn hàng? Liên hệ ngay:</p>
       <a href="tel:0981753082">📞 0981 753 082</a>
-      <a href="mailto:ducquan16102006@gmail.com">✉️ Email</a>
+      <a href="mailto:quannguyens403@gmail.com">✉️ Email</a>
     </div>
   </div>
   ${renderFooter()}
@@ -289,7 +289,7 @@ export const sendShippedEmail = async (order, { trackingNumber } = {}) => {
     <div class="contact">
       <p>Cần hỗ trợ về đơn hàng đang giao?</p>
       <a href="tel:0981753082">📞 0981 753 082</a>
-      <a href="mailto:ducquan16102006@gmail.com">✉️ Email</a>
+      <a href="mailto:quannguyens403@gmail.com">✉️ Email</a>
     </div>
   </div>
   ${renderFooter()}
@@ -405,7 +405,7 @@ export const sendCancelledEmail = async (order, { reason } = {}) => {
     <div class="contact">
       <p>Thắc mắc về việc hủy đơn? Liên hệ chúng tôi:</p>
       <a href="tel:0981753082">📞 0981 753 082</a>
-      <a href="mailto:ducquan16102006@gmail.com">✉️ Email</a>
+      <a href="mailto:quannguyens403@gmail.com">✉️ Email</a>
     </div>
   </div>
   ${renderFooter()}

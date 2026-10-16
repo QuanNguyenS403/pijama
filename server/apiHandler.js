@@ -133,7 +133,7 @@ export async function handleOrderSubmit(order, context = {}) {
       method: isBankTransfer ? 'BANK_TRANSFER' : 'COD',
       status: isBankTransfer ? 'AWAITING_PAYMENT' : 'UNPAID', // PAY-001: Ban đầu là AWAITING_PAYMENT
       qrGeneratedAt: now,
-      qrExpiresAt: now + 15 * 60 * 1000, // 15 phút hiệu lực
+      qrExpiresAt: now + 5 * 60 * 1000, // 5 phút hiệu lực
       isQrInvalidated: false,
     },
     createdAt: createdDate,

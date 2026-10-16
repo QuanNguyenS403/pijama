@@ -246,7 +246,7 @@ export function getOrderPaymentStatus(orderId) {
       success: true,
       status: 'AWAITING_PAYMENT',
       isQrValid: true,
-      expiresInSeconds: 900,
+      expiresInSeconds: 300,
     }
   }
 
@@ -262,18 +262,30 @@ export function getOrderPaymentStatus(orderId) {
     }
   }
 
-  // Kiểm tra thời gian hết hạn (15 phút)
+  // Kiểm tra thời gian hết hạn (5 phút)
   const now = Date.now()
-  const qrExpiresAt = record.payment?.qrExpiresAt || (now + 900000)
+  const qrExpiresAt = record.payment?.qrExpiresAt || (now + 300000)
   const remainingSeconds = Math.max(0, Math.round((qrExpiresAt - now) / 1000))
 
   if (remainingSeconds <= 0) {
+    // Tự động cập nhật trạng thái đơn thành CANCELLED khi hết hạn 5 phút mà chưa thanh toán
+    if (record.status === 'AWAITING_PAYMENT' || record.payment?.status === 'AWAITING_PAYMENT') {
+      record.status = 'CANCELLED'
+      record.cancelReason = 'Hết hạn thanh toán 5 phút (Mã QR hết hiệu lực)'
+      record.payment = {
+        ...(record.payment || {}),
+        status: 'EXPIRED_TIMEOUT',
+        isQrInvalidated: true,
+      }
+      orderPaymentStore.set(orderId, record)
+    }
+
     return {
       success: true,
       status: 'QR_EXPIRED',
       isQrValid: false,
       qrStatus: 'EXPIRED_TIMEOUT',
-      message: 'Mã QR đã hết hạn hiệu lực 15 phút',
+      message: 'Mã QR đã hết hạn hiệu lực 5 phút',
     }
   }
 
@@ -283,5 +295,99 @@ export function getOrderPaymentStatus(orderId) {
     isQrValid: true,
     qrStatus: 'ACTIVE',
     expiresInSeconds: remainingSeconds,
+  }
+}
+
+/**
+ * ==============================================================================
+ * 4. TỰ ĐỘNG XÁC NHẬN THANH TOÁN BẰNG AI (AI NAPAS 24/7 AUTO-VERIFY)
+ * ==============================================================================
+ */
+export async function markOrderPaidByAI({ orderId, amount, refNumber, rawText }) {
+  try {
+    if (!orderId) {
+      return { status: 400, data: { success: false, error: 'Thiếu mã đơn hàng' } }
+    }
+
+    const order = orderPaymentStore.get(orderId)
+    if (!order) {
+      return { status: 404, data: { success: false, error: `Không tìm thấy đơn hàng ${orderId}` } }
+    }
+
+    if (order.payment?.status === 'PAID') {
+      return {
+        status: 200,
+        data: {
+          success: true,
+          message: `Đơn hàng ${orderId} đã được xác nhận thanh toán trước đó`,
+          orderId,
+          alreadyPaid: true,
+        },
+      }
+    }
+
+    if (order.status === 'CANCELLED') {
+      return { status: 400, data: { success: false, error: `Đơn hàng ${orderId} đã bị hủy trước đó` } }
+    }
+
+    const txId = refNumber || `NAPAS_AI_${Date.now()}`
+    if (processedTransactionIds.has(txId)) {
+      return { status: 200, data: { success: true, message: 'Giao dịch đã được ghi nhận trước đó', orderId } }
+    }
+
+    const paidAmount = Number(amount) || order.total
+
+    // Cập nhật trạng thái đơn
+    order.status = 'CONFIRMED'
+    order.payment = {
+      ...(order.payment || {}),
+      method: 'BANK_TRANSFER',
+      methodLabel: 'Chuyển khoản Napas 24/7 (AI đối soát tự động)',
+      status: 'PAID',
+      paidAmount,
+      paidAt: new Date().toISOString(),
+      gateway: 'Napas247_Vietcombank',
+      referenceCode: txId,
+      isQrInvalidated: true,
+      qrInvalidatedReason: 'AI_VERIFICATION_MATCHED',
+      qrInvalidatedAt: new Date().toISOString(),
+    }
+
+    orderPaymentStore.set(orderId, order)
+    processedTransactionIds.add(txId)
+
+    console.log(`\n🤖 [AI NAPAS 24/7 MATCH] Đơn hàng ${orderId} đã được AI tự động đối soát thành công! Số tiền: ${paidAmount}đ`)
+
+    // Kích hoạt gửi Gmail khách hàng
+    if (order.customer?.email) {
+      sendCustomerEmail(order).then(() => {
+        console.log(`📧 [GMAIL] Đã gửi xác nhận đơn hàng tới khách hàng: ${order.customer.email}`)
+      }).catch((err) => console.error('Lỗi gửi email khách:', err.message))
+    }
+
+    // Kích hoạt gửi Gmail chủ shop
+    sendOwnerEmail(order).then(() => {
+      console.log(`📧 [GMAIL] Đã gửi thông báo đơn đã thanh toán tới Chủ Shop`)
+    }).catch((err) => console.error('Lỗi gửi email chủ shop:', err.message))
+
+    // Cập nhật Google Sheets
+    appendOrderToSheet({
+      ...order,
+      status: 'ĐÃ THANH TOÁN (NAPAS 24/7 AI)',
+    }).catch((err) => console.warn('Lỗi ghi Sheets:', err.message))
+
+    return {
+      status: 200,
+      data: {
+        success: true,
+        message: 'AI đối soát tự động thành công qua NAPAS 247. Đơn hàng đã chuyển sang trạng thái ĐÃ THANH TOÁN.',
+        orderId,
+        paidAmount,
+        status: 'PAID',
+      },
+    }
+  } catch (err) {
+    console.error('Lỗi markOrderPaidByAI:', err)
+    return { status: 500, data: { success: false, error: err.message } }
   }
 }

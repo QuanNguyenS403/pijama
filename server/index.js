@@ -9,7 +9,8 @@ import { handleOrderSubmit } from './apiHandler.js'
 import { initializeSheet } from './lib/googleSheets.js'
 import { verifyTransporter } from './lib/emailConfig.js'
 import { generateVietQRQuickLink, generateSePayQR } from './lib/paymentQrService.js'
-import { handlePaymentWebhook, getOrderPaymentStatus } from './lib/paymentWebhook.js'
+import { generateAiNapasQR, parseAndMatchTransactionAI } from './lib/aiNapasQrService.js'
+import { handlePaymentWebhook, getOrderPaymentStatus, markOrderPaidByAI } from './lib/paymentWebhook.js'
 import { createRateLimiter } from './lib/rateLimiter.js'
 import { addSseClient } from './lib/orderEvents.js'
 import { verifyAdminLogin, adminLoginLimiter, requireAdminAuth } from './lib/adminAuth.js'
@@ -20,10 +21,10 @@ import { customerSessionMiddleware } from './lib/customerSessionMiddleware.js'
 import { releaseVoucher } from './lib/voucherValidator.js'
 import { calculateShippingDistance } from './lib/distanceService.js'
 import { trackOrderUniversal, queryViettelPostTracking } from './lib/viettelPostService.js'
+import { validateEnvironment, printEnvReport, loadEnvironment } from './lib/envCheck.js'
 
-// Load environment variables from .env or .env.local
-dotenv.config({ path: '.env.local' })
-dotenv.config() // Fallback to .env
+// Nạp toàn bộ biến môi trường từ .env / .env.development / .env.local
+loadEnvironment()
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -180,10 +181,10 @@ app.get('/api/health/email', async (req, res) => {
   }
 })
 
-// ── 1. API Tạo Mã QR Thanh Toán Động (VietQR / SePay) ──────────
-app.post('/api/payment/generate-qr', generateQrLimiter, (req, res) => {
+// ── 1. API Tạo Mã QR Thanh Toán Động (Napas 247 AI / VietQR / SePay) ──────────
+app.post('/api/payment/generate-qr', generateQrLimiter, async (req, res) => {
   try {
-    const { amount, description, bankCode, accountNumber, accountName, provider = 'VietQR' } = req.body
+    const { amount, description, bankCode, accountNumber, accountName, orderId, provider = 'NAPAS_247' } = req.body
     if (!amount) {
       return res.status(400).json({ success: false, error: 'Thiếu số tiền thanh toán (amount)' })
     }
@@ -193,16 +194,85 @@ app.post('/api/payment/generate-qr', generateQrLimiter, (req, res) => {
       return res.json(result)
     }
 
-    const result = generateVietQRQuickLink({
+    // Mặc định: Tạo mã QR động tự động hóa qua NAPAS 247 (100% miễn phí vĩnh viễn)
+    const result = await generateAiNapasQR({
       amount,
       description,
-      bankCode: bankCode || 'VCB',
-      accountNumber: accountNumber || '1050773506',
-      accountName: accountName || 'NGUYEN DUC QUAN',
+      orderId,
+      bankCode: bankCode || process.env.BANK_CODE || 'VCB',
+      accountNumber: accountNumber || process.env.BANK_ACCOUNT_NUMBER || '1050773506',
+      accountName: accountName || process.env.BANK_ACCOUNT_NAME || 'NGUYEN DUC QUAN',
     })
     return res.json(result)
   } catch (err) {
     console.error('Error generating QR:', err)
+    return res.status(500).json({ success: false, error: err.message })
+  }
+})
+
+// ── 1b. API Trả Ảnh Trực Tiếp QR Napas 24/7 (Miễn phí, 0ms latency) ────────────
+app.get('/api/payment/napas-qr', async (req, res) => {
+  try {
+    const { amount = 0, orderId = '', description = '' } = req.query
+    const result = await generateAiNapasQR({
+      amount: Number(amount) || 0,
+      description: description || (orderId ? `QNS ${orderId}` : ''),
+      orderId,
+    })
+
+    if (result.qrDataUrl && result.qrDataUrl.startsWith('data:image/png;base64,')) {
+      const imgBuffer = Buffer.from(result.qrDataUrl.replace(/^data:image\/png;base64,/, ''), 'base64')
+      res.writeHead(200, {
+        'Content-Type': 'image/png',
+        'Content-Length': imgBuffer.length,
+        'Cache-Control': 'public, max-age=300',
+      })
+      return res.end(imgBuffer)
+    }
+
+    return res.redirect(result.vietQrUrl)
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message })
+  }
+})
+
+// ── 1c. API Tự Động Đối Soát Giao Dịch Bằng AI (AI NAPAS 24/7 Smart Matcher) ──
+app.post('/api/payment/ai-verify', submitOrderLimiter, async (req, res) => {
+  try {
+    const { rawText, orderId } = req.body
+    if (!rawText) {
+      return res.status(400).json({ success: false, error: 'Thiếu nội dung tin nhắn giao dịch ngân hàng để AI phân tích' })
+    }
+
+    const { orderPaymentStore } = await import('./lib/paymentWebhook.js')
+    const order = orderId ? orderPaymentStore.get(orderId) : null
+
+    const matchResult = parseAndMatchTransactionAI(rawText, order)
+    
+    // Nếu AI nhận diện khớp 100% với đơn hàng -> Tự động duyệt đơn và gửi email
+    if (matchResult.verification?.isMatched && orderId) {
+      const confirmResult = await markOrderPaidByAI({
+        orderId,
+        amount: matchResult.parsed.extractedAmount,
+        refNumber: matchResult.parsed.refNumber,
+        rawText,
+      })
+
+      return res.status(confirmResult.status).json({
+        ...confirmResult.data,
+        aiAnalysis: matchResult,
+      })
+    }
+
+    // Nếu nhận diện được nhưng chưa chắc chắn hoặc thiếu orderId
+    return res.json({
+      success: true,
+      verified: false,
+      aiAnalysis: matchResult,
+      message: matchResult.verification?.reason || 'Đã phân tích giao dịch nhưng chưa đủ điều kiện tự động khớp đơn',
+    })
+  } catch (err) {
+    console.error('Lỗi ai-verify:', err)
     return res.status(500).json({ success: false, error: err.message })
   }
 })
@@ -813,6 +883,16 @@ app.use((err, req, res, next) => {
     error: isProd ? 'Đã có lỗi xảy ra trên hệ thống. Vui lòng liên hệ hotline: 0981 753 082' : (err.message || 'Lỗi máy chủ'),
   })
 })
+
+// Kiểm tra toàn vẹn cấu hình môi trường (Fail-Closed)
+if (process.env.NODE_ENV !== 'test') {
+  const envResults = validateEnvironment(process.env)
+  printEnvReport(envResults)
+  if (envResults.hasFatalErrors) {
+    console.error('🛑 [CRITICAL ERROR] Thiếu biến môi trường bắt buộc ở chế độ Production. Dừng khởi động!')
+    process.exit(1)
+  }
+}
 
 // Khởi chạy server
 const server = app.listen(PORT, async () => {

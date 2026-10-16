@@ -192,7 +192,7 @@ export const buildBankTransferEmailHTML = (order) => {
       <p class="contact-text">Cần hỗ trợ thanh toán hoặc xác nhận đơn gấp?</p>
       <div class="contact-links">
         <a href="tel:0981753082">📞 Hotline: 0981 753 082</a>
-        <a href="mailto:ducquan16102006@gmail.com">✉️ Email hỗ trợ</a>
+        <a href="mailto:quannguyens403@gmail.com">✉️ Email hỗ trợ</a>
       </div>
     </div>
 
@@ -203,7 +203,7 @@ export const buildBankTransferEmailHTML = (order) => {
     <div class="footer-tagline">Dressed for Life. Even at Home.</div>
     <div class="footer-info">
       Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội<br>
-      0981 753 082 · ducquan16102006@gmail.com
+      0981 753 082 · quannguyens403@gmail.com
     </div>
   </div>
 
@@ -602,7 +602,7 @@ export const buildCODEmailHTML = (order) => {
       <p class="contact-text">Cần hỗ trợ? Chúng tôi luôn sẵn sàng giúp bạn.</p>
       <div class="contact-links">
         <a href="tel:0981753082">📞 0981 753 082</a>
-        <a href="mailto:ducquan16102006@gmail.com">✉️ Email hỗ trợ</a>
+        <a href="mailto:quannguyens403@gmail.com">✉️ Email hỗ trợ</a>
       </div>
     </div>
   </div>
@@ -613,7 +613,7 @@ export const buildCODEmailHTML = (order) => {
     <div class="footer-tagline">Dressed for Life. Even at Home.</div>
     <div class="footer-info">
       Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội<br>
-      0981 753 082 · ducquan16102006@gmail.com
+      0981 753 082 · quannguyens403@gmail.com
     </div>
   </div>
 
@@ -794,7 +794,7 @@ export const buildPaidEmailHTML = (order) => {
       <p class="contact-text">Cần hỗ trợ sau mua? Chúng tôi luôn sẵn sàng.</p>
       <div class="contact-links">
         <a href="tel:0981753082">📞 0981 753 082</a>
-        <a href="mailto:ducquan16102006@gmail.com">✉️ Email hỗ trợ</a>
+        <a href="mailto:quannguyens403@gmail.com">✉️ Email hỗ trợ</a>
       </div>
     </div>
   </div>
@@ -804,7 +804,7 @@ export const buildPaidEmailHTML = (order) => {
     <div class="footer-tagline">Dressed for Life. Even at Home.</div>
     <div class="footer-info">
       Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội<br>
-      0981 753 082 · ducquan16102006@gmail.com
+      0981 753 082 · quannguyens403@gmail.com
     </div>
   </div>
 

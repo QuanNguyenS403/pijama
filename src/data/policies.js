@@ -43,7 +43,7 @@ export const policiesData = {
         heading: '5. Xử lý Khiếu nại và Hỗ trợ Khách hàng',
         content: [
           'QuanNguyenS luôn đặt trải nghiệm và sự hài lòng của khách hàng lên hàng đầu.',
-          'Mọi thắc mắc, phản ánh về chất lượng sản phẩm hoặc dịch vụ được tiếp nhận và phản hồi nhanh chóng qua Hotline: 0981 753 082 hoặc Email: ducquan16102006@gmail.com.'
+          'Mọi thắc mắc, phản ánh về chất lượng sản phẩm hoặc dịch vụ được tiếp nhận và phản hồi nhanh chóng qua Hotline: 0981 753 082 hoặc Email: quannguyens403@gmail.com.'
         ]
       }
     ]
@@ -81,7 +81,7 @@ export const policiesData = {
         heading: '4. Quyền của Khách hàng đối với Dữ liệu Cá nhân',
         content: [
           'Quý khách có quyền yêu cầu kiểm tra, cập nhật, điều chỉnh hoặc hủy bỏ thông tin cá nhân của mình bất kỳ lúc nào.',
-          'Để thực hiện quyền này, quý khách chỉ cần gửi yêu cầu đến email: ducquan16102006@gmail.com hoặc gọi hotline: 0981 753 082.'
+          'Để thực hiện quyền này, quý khách chỉ cần gửi yêu cầu đến email: quannguyens403@gmail.com hoặc gọi hotline: 0981 753 082.'
         ]
       }
     ]

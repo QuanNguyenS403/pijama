@@ -140,8 +140,8 @@ export default function Section12Footer() {
                 </div>
                 <div className="flex items-center gap-2.5">
                   <Mail className="w-4 h-4 text-[#D4AF37] shrink-0" />
-                  <a href="mailto:ducquan16102006@gmail.com" className="hover:text-[#D4AF37] transition-colors">
-                    ducquan16102006@gmail.com
+                  <a href="mailto:quannguyens403@gmail.com" className="hover:text-[#D4AF37] transition-colors">
+                    quannguyens403@gmail.com
                   </a>
                 </div>
               </div>

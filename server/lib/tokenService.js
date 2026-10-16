@@ -55,7 +55,7 @@ export async function verifyAccessToken(token) {
 /**
  * Băm refresh token bằng SHA-256 để lưu an toàn trong database
  */
-function hashRefreshToken(token) {
+export function hashRefreshToken(token) {
   return crypto.createHash('sha256').update(String(token)).digest('hex')
 }
 

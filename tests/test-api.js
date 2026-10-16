@@ -77,7 +77,7 @@ async function runApiTests() {
       customer: {
         fullName: 'Nguyễn Đức Quân',
         phone: '0981753082',
-        email: 'ducquan16102006@gmail.com',
+        email: 'quannguyens403@gmail.com',
         accountId: googleData.account.id,
       },
       shipping: {
