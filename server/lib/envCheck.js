@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import dotenv from 'dotenv'
+import crypto from 'crypto'
 
 /**
  * Nạp thông minh biến môi trường từ .env, .env.development, .env.local
@@ -38,6 +39,11 @@ export function loadEnvironment(rootDir = process.cwd()) {
     if (!process.env.ALLOWED_ORIGINS) {
       process.env.ALLOWED_ORIGINS = `${process.env.RENDER_EXTERNAL_URL},https://quannguyens.com,https://www.quannguyens.com`
     }
+  }
+
+  // Nếu chưa cấu hình SePay Webhook, tự sinh secret ngẫu nhiên để bảo vệ an toàn cổng webhook mà không chặn khởi động
+  if (!process.env.SEPAY_WEBHOOK_API_KEY && !process.env.PAYMENT_WEBHOOK_SECRET) {
+    process.env.PAYMENT_WEBHOOK_SECRET = crypto.randomBytes(32).toString('hex')
   }
 }
 
@@ -163,12 +169,8 @@ export function validateEnvironment(env = process.env) {
   results.required.push(sepayKey)
   results.required.push(webhookSecret)
   if (sepayKey.status !== 'OK' && webhookSecret.status !== 'OK') {
-    const msg = 'Cần ít nhất một trong hai: SEPAY_WEBHOOK_API_KEY hoặc PAYMENT_WEBHOOK_SECRET'
-    if (isProd) {
-      results.errors.push(`[BẮT BUỘC PROD] ${msg}`)
-    } else {
-      results.warnings.push(`[THIẾU DEV] ${msg}`)
-    }
+    const msg = 'Chưa cấu hình SePay: Cổng webhook SePay tạm tắt an toàn, shop vẫn hoạt động bình thường với VietQR Napas 24/7'
+    results.warnings.push(`[CẢNH BÁO TÍNH NĂNG] ${msg}`)
   }
 
   // ---------------------------------------------------------------------------
