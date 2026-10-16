@@ -15,26 +15,28 @@ export async function verifyGoogleIdToken(idToken, { clientIdOverride = null } =
     throw new Error('Mã Google ID token không hợp lệ')
   }
 
-  // Chế độ test / local / dev token hoặc mock token
-  if (
-    idToken.startsWith('mock-google-token:') ||
-    idToken.startsWith('dev-google-token:') ||
-    process.env.AUTH_TEST_MODE === 'true' ||
-    process.env.NODE_ENV !== 'production'
-  ) {
-    if (idToken.startsWith('mock-google-token:') || idToken.startsWith('dev-google-token:')) {
-      const parts = idToken.split(':')
-      const sub = parts[1] || 'google-sub-mock-123'
-      const email = (parts[2] || 'quannguyens403@gmail.com').toLowerCase().trim()
-      const name = parts[3] ? decodeURIComponent(parts[3]) : 'Quý khách Google'
-      return {
-        provider: 'google',
-        sub,
-        email,
-        name,
-        picture: 'https://lh3.googleusercontent.com/a/default-user',
-        emailVerified: true,
-      }
+  // Chế độ test / local / dev token hoặc mock token (TUYỆT ĐỐI CẤM Ở PRODUCTION)
+  const isProduction = process.env.NODE_ENV === 'production'
+  const isMockToken = idToken.startsWith('mock-google-token:') || idToken.startsWith('dev-google-token:')
+
+  if (isMockToken) {
+    if (isProduction) {
+      throw new Error('Chế độ mock token Google bị cấm hoàn toàn trong môi trường Production')
+    }
+    const parts = idToken.split(':')
+    const sub = parts[1] || 'google-sub-mock-123'
+    const email = (parts[2] || '').toLowerCase().trim()
+    if (!email) {
+      throw new Error('Mock token thiếu địa chỉ email')
+    }
+    const name = parts[3] ? decodeURIComponent(parts[3]) : 'Google Test User'
+    return {
+      provider: 'google',
+      sub,
+      email,
+      name,
+      picture: 'https://lh3.googleusercontent.com/a/default-user',
+      emailVerified: true,
     }
   }
 
@@ -68,7 +70,7 @@ export async function verifyGoogleIdToken(idToken, { clientIdOverride = null } =
     }
   } catch (err) {
     // Nếu ở môi trường dev/local và Google API token check thất bại, thử decode payload trực tiếp
-    if (process.env.NODE_ENV !== 'production' || process.env.AUTH_TEST_MODE === 'true') {
+    if (!isProduction && process.env.AUTH_TEST_MODE === 'true') {
       try {
         const parts = idToken.split('.')
         if (parts.length === 3) {
