@@ -35,6 +35,9 @@ jobs:
       - name: Install All Dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
 
+      - name: Rebuild Native Addons (better-sqlite3)
+        run: npm rebuild better-sqlite3
+
       - name: Run Automated Test Suite (Security, Payment, Stock, Integrity)
         run: npm test
 
