@@ -5,6 +5,11 @@ import { getTransporter } from './emailConfig.js'
 // Helper format VND
 const formatVND = (amount) => Number(amount || 0).toLocaleString('vi-VN') + 'đ'
 
+export function escapeHtml(str) {
+  if (!str || typeof str !== 'string') return ''
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')
+}
+
 export const sendCustomerEmail = async (order) => {
   const transporter = getTransporter()
   const isCOD = order.payment?.method === 'COD'
@@ -37,7 +42,10 @@ export const sendCustomerEmail = async (order) => {
 // ──────────────────────────────────────────────────────────
 export const buildBankTransferEmailHTML = (order) => {
   const transferContent = `QNS ${order.orderId}`
-  const qrUrl = `https://img.vietqr.io/image/vietcombank-1050773506-compact2.png?amount=${order.total}&addInfo=${encodeURIComponent('QNS ' + order.orderId)}&accountName=NGUYEN%20DUC%20QUAN`
+  const bankAcc = process.env.BANK_ACCOUNT_NUMBER || '1050773506'
+  const bankName = process.env.BANK_ACCOUNT_NAME || 'NGUYEN DUC QUAN'
+  const bankCode = process.env.BANK_CODE || 'VCB'
+  const qrUrl = `https://img.vietqr.io/image/${bankCode}-${bankAcc}-compact2.png?amount=${order.total}&addInfo=${encodeURIComponent('QNS ' + order.orderId)}&accountName=${encodeURIComponent(bankName)}`
   const hasPreOrder = !!(
     order.hasPreOrder ||
     order.items?.some(
@@ -140,9 +148,9 @@ export const buildBankTransferEmailHTML = (order) => {
         <span class="bank-label">Ngân hàng</span>
         <span class="bank-value">Vietcombank (VCB)</span>
         <span class="bank-label">Số tài khoản</span>
-        <span class="bank-highlight">1050773506</span>
+        <span class="bank-highlight">${bankAcc}</span>
         <span class="bank-label">Chủ tài khoản</span>
-        <span class="bank-value">NGUYEN DUC QUAN</span>
+        <span class="bank-value">${bankName}</span>
         <span class="bank-label">Số tiền cần chuyển</span>
         <span class="bank-highlight">${formatVND(order.total)}</span>
         <span class="bank-label">Nội dung CK</span>

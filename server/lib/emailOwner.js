@@ -2,6 +2,11 @@
 // Chỉ chỉnh sửa khi có yêu cầu rõ ràng, cụ thể nhắm đúng vào nội dung file này.
 import { getTransporter } from './emailConfig.js'
 
+function escapeHtml(str) {
+  if (!str || typeof str !== 'string') return ''
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')
+}
+
 const formatVND = (amount) => Number(amount || 0).toLocaleString('vi-VN') + 'đ'
 
 export const sendOwnerEmail = async (order) => {
@@ -55,11 +60,11 @@ export const sendOwnerEmail = async (order) => {
         Thông tin khách hàng
       </h3>
       <div class="kv-grid">
-        <span class="kv-label">Họ tên</span>     <span class="kv-value">${order.customer?.fullName}</span>
-        <span class="kv-label">Điện thoại</span> <span class="kv-value"><a href="tel:${order.customer?.phone}" style="color:#631521;text-decoration:none">${order.customer?.phone}</a></span>
-        <span class="kv-label">Email</span>       <span class="kv-value">${order.customer?.email}</span>
-        <span class="kv-label">Địa chỉ</span>    <span class="kv-value">${order.shipping?.fullAddress}</span>
-        ${order.note ? `<span class="kv-label">Ghi chú</span><span class="kv-value" style="color:#631521">${order.note}</span>` : ''}
+        <span class="kv-label">Họ tên</span>     <span class="kv-value">${escapeHtml(order.customer?.fullName)}</span>
+        <span class="kv-label">Điện thoại</span> <span class="kv-value"><a href="tel:${escapeHtml(order.customer?.phone)}" style="color:#631521;text-decoration:none">${escapeHtml(order.customer?.phone)}</a></span>
+        <span class="kv-label">Email</span>       <span class="kv-value">${escapeHtml(order.customer?.email)}</span>
+        <span class="kv-label">Địa chỉ</span>    <span class="kv-value">${escapeHtml(order.shipping?.fullAddress)}</span>
+        ${order.note ? `<span class="kv-label">Ghi chú</span><span class="kv-value" style="color:#631521">${escapeHtml(order.note)}</span>` : ''}
       </div>
 
       <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#631521;border-bottom:1px solid #eee;padding-bottom:8px;margin-bottom:16px">

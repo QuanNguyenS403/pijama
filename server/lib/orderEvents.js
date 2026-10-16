@@ -39,6 +39,9 @@ export function addSseClient(req, res) {
 
   // Nếu không phải admin và có orderId, kiểm tra tracking token hoặc cho phép lắng nghe đúng orderId đó
   let scopedOrderId = orderId
+  if (!isAdmin && !scopedOrderId) {
+    return res.status(400).json({ success: false, error: 'Yêu cầu cung cấp orderId để lắng nghe trạng thái đơn hàng.' })
+  }
   if (!isAdmin && orderId && token) {
     const isOwner = verifyTrackingToken(orderId, phone, String(token))
     if (!isOwner && process.env.NODE_ENV === 'production') {
@@ -118,7 +121,7 @@ export function broadcastOrderUpdate(order) {
       // Chỉ gửi nếu là admin HOẶC client đang theo dõi đúng orderId này HOẶC chưa scope
       if (client.isAdmin) {
         client.res.write(`event: order_updated\ndata: ${adminPayload}\n\n`)
-      } else if (!client.orderId || client.orderId === currentOrderId) {
+      } else if (client.orderId && client.orderId === currentOrderId) {
         client.res.write(`event: order_updated\ndata: ${publicPayload}\n\n`)
       }
     } catch (err) {

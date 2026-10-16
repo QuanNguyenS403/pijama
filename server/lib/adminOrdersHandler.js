@@ -22,10 +22,10 @@ export function formatAdminOrder(order) {
   const id = order.orderId || order.id || order.orderNumber
   const paymentMethod = order.payment?.method || order.paymentMethod || 'COD'
 
-  // Default: BANK_TRANSFER -> PAID, COD -> UNPAID unless explicitly toggled
+  // Default: BANK_TRANSFER -> AWAITING_PAYMENT, COD -> UNPAID unless explicitly set
   let paymentStatus = order.payment?.status || order.paymentStatus
   if (!paymentStatus) {
-    paymentStatus = paymentMethod === 'BANK_TRANSFER' ? 'PAID' : 'UNPAID'
+    paymentStatus = paymentMethod === 'BANK_TRANSFER' ? 'AWAITING_PAYMENT' : 'UNPAID'
   }
 
   // Ensure fixed createdAt timestamp never jumps
