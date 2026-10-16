@@ -5,10 +5,8 @@ dist/
 .env
 .env.*
 !.env.example
-*.json
-!package.json
-!package-lock.json
-!tsconfig.json
+server/data/
+orders_store*.json
 _archive/
 *.db
 *.db-wal

@@ -36,17 +36,18 @@ export async function performDatabaseBackup() {
     }
   }
 
-  // 2. Sao lưu accounts.db (SQLite safe copy)
-  const accountsFile = path.resolve(DATA_DIR, 'accounts.db')
-  if (fs.existsSync(accountsFile)) {
-    try {
+  // 2. Sao lưu accounts.db (SQLite native online backup)
+  try {
+    const { getDb } = await import('./accountDb.js')
+    const db = getDb()
+    if (db && typeof db.backup === 'function') {
       const backupPath = path.resolve(BACKUP_DIR, `accounts_${timestamp}.db`)
-      fs.copyFileSync(accountsFile, backupPath)
+      await db.backup(backupPath)
       results.accountsDb = true
-      console.log(`💾 [BACKUP] Đã sao lưu accounts.db -> ${path.basename(backupPath)}`)
-    } catch (err) {
-      console.warn('⚠️ Lỗi sao lưu accounts.db:', err.message)
+      console.log(`💾 [BACKUP] Đã sao lưu accounts.db qua SQLite API -> ${path.basename(backupPath)}`)
     }
+  } catch (err) {
+    console.warn('⚠️ Lỗi sao lưu accounts.db:', err.message)
   }
 
   // 3. Dọn dẹp bản sao lưu cũ, chỉ giữ lại số lượng hợp lý
