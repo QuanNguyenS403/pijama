@@ -27,12 +27,14 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     setIsLoading(true)
     setErrorMsg('')
     try {
-      const body = typeof payload === 'string'
-        ? { credential: payload }
-        : {
-            credential: payload.credential || `mock-google-token:${payload.sub || 'google_' + Date.now()}:${payload.email || 'quannguyens403@gmail.com'}:${encodeURIComponent(payload.fullName || 'Quý khách Google')}`,
-            ...payload,
-          }
+      const cred = typeof payload === 'string' ? payload : payload?.credential
+      if (!cred) {
+        throw new Error('Không nhận được thông tin xác thực Google.')
+      }
+      const body = {
+        credential: cred,
+        ...(typeof payload === 'object' ? payload : {}),
+      }
       const res = await apiPost('/api/auth/google', body)
       const data = await res.json()
       if (!res.ok || !data.success) {

@@ -47,24 +47,22 @@ export default function AccountPage() {
   const [authError, setAuthError] = useState(null)
   const [authSubmitting, setAuthSubmitting] = useState(false)
 
-  // Quick fallback login form for demo / testing
-  const [loginEmail, setLoginEmail] = useState('')
-  const [loginName, setLoginName] = useState('')
-  const [devModalOpen, setDevModalOpen] = useState(false)
-
   const navigate = useNavigate()
 
   const handleGoogleCredential = async (credential) => {
     try {
       setAuthSubmitting(true)
       setAuthError(null)
-      const payload = typeof credential === 'string'
-        ? { credential, marketingOptIn: true }
-        : {
-            credential: credential.credential || `mock-google-token:${credential.sub || 'google_' + Date.now()}:${credential.email || 'quannguyens403@gmail.com'}:${encodeURIComponent(credential.fullName || 'Quý khách')}`,
-            ...credential,
-            marketingOptIn: true,
-          }
+      const credStr = typeof credential === 'string' ? credential : credential?.credential
+      if (!credStr) {
+        setAuthError('Không nhận được thông tin xác thực Google hợp lệ.')
+        setAuthSubmitting(false)
+        return
+      }
+      const payload = {
+        credential: credStr,
+        marketingOptIn: true,
+      }
       const res = await fetch('/api/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -99,53 +97,16 @@ export default function AccountPage() {
         onSuccess: handleGoogleCredential,
         onError: (err) => {
           setAuthSubmitting(false)
-          setDevModalOpen(true)
+          setAuthError(typeof err === 'string' ? err : 'Đăng nhập Google thất bại.')
         },
         onFallbackNeeded: () => {
           setAuthSubmitting(false)
-          setDevModalOpen(true)
+          setAuthError('Không thể mở cửa sổ đăng nhập Google. Vui lòng kiểm tra chặn popup trình duyệt.')
         },
       })
     } catch (err) {
       setAuthSubmitting(false)
-      setDevModalOpen(true)
-    }
-  }
-
-  const handleQuickLoginWithEmail = async (email, name) => {
-    try {
-      setAuthSubmitting(true)
-      setAuthError(null)
-      const cleanEmail = email.trim().toLowerCase()
-      const cleanName = name || 'Quý khách QuanNguyenS'
-      const res = await fetch('/api/auth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          credential: `mock-google-token:google_${Date.now()}:${cleanEmail}:${encodeURIComponent(cleanName)}`,
-          email: cleanEmail,
-          fullName: cleanName,
-          marketingOptIn: true,
-        }),
-      })
-      const data = await res.json()
-      if (data.success && data.account) {
-        if (data.accessToken) {
-          setAccessToken(data.accessToken)
-        }
-        setUser(data.account)
-        setVoucher(data.voucher)
-        setMarketingOptIn(true)
-        fetchUserOrders()
-        setToast({ productName: `Chào mừng ${data.account.fullName || 'bạn'} gia nhập CLB QuanNguyenS!`, id: Date.now() })
-      } else {
-        setAuthError(data.error || 'Không thể đăng nhập. Vui lòng thử lại.')
-      }
-    } catch (err) {
-      setAuthError('Lỗi kết nối máy chủ xác thực: ' + err.message)
-    } finally {
-      setAuthSubmitting(false)
+      setAuthError('Lỗi kết nối Google: ' + err.message)
     }
   }
 
@@ -229,53 +190,6 @@ export default function AccountPage() {
       console.error('Lỗi cập nhật cài đặt:', err)
     } finally {
       setUpdatingPrefs(false)
-    }
-  }
-
-  // 5. Xử lý đăng nhập / tạo tài khoản (Hỗ trợ Google One-Tap & Test Fallback)
-  const handleQuickLogin = async (e) => {
-    e.preventDefault()
-    if (!loginEmail.trim()) {
-      setAuthError('Vui lòng nhập email của bạn')
-      return
-    }
-    try {
-      setAuthSubmitting(true)
-      setAuthError(null)
-
-      const cleanEmail = loginEmail.trim().toLowerCase()
-      const cleanName = loginName.trim() || 'Quý khách QuanNguyenS'
-
-      // Gửi yêu cầu đăng nhập / xác thực
-      const res = await fetch('/api/auth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          credential: `mock-google-token:google_${Date.now()}:${cleanEmail}:${encodeURIComponent(cleanName)}`,
-          email: cleanEmail,
-          fullName: cleanName,
-          marketingOptIn: true,
-        }),
-      })
-
-      const data = await res.json()
-      if (data.success && data.account) {
-        if (data.accessToken) {
-          setAccessToken(data.accessToken)
-        }
-        setUser(data.account)
-        setVoucher(data.voucher)
-        setMarketingOptIn(true)
-        fetchUserOrders()
-        setToast({ productName: `Chào mừng ${data.account.fullName || 'bạn'} trở lại!`, id: Date.now() })
-      } else {
-        setAuthError(data.error || 'Không thể đăng nhập. Vui lòng thử lại.')
-      }
-    } catch (err) {
-      setAuthError('Lỗi kết nối máy chủ xác thực: ' + err.message)
-    } finally {
-      setAuthSubmitting(false)
     }
   }
 
@@ -389,54 +303,9 @@ export default function AccountPage() {
                     <div className="w-full border-t border-[#E8DFD5]" />
                   </div>
                   <span className="relative bg-white px-3 text-[11px] uppercase tracking-wider text-[#8C7E74]">
-                    Hoặc nhập thông tin xác thực
+                    Hoặc đăng nhập bằng Email & Mật khẩu
                   </span>
                 </div>
-
-                {/* Email Form */}
-                <form onSubmit={handleQuickLogin} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[#4A3F38] mb-1.5">
-                      Họ và Tên
-                    </label>
-                    <input
-                      type="text"
-                      value={loginName}
-                      onChange={(e) => setLoginName(e.target.value)}
-                      placeholder="Ví dụ: Nguyễn Phương Linh"
-                      className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-[#E8DFD5] text-sm rounded-[2px] focus:bg-white focus:outline-none focus:border-[#631521] transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[#4A3F38] mb-1.5">
-                      Email của bạn *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      placeholder="name@example.com"
-                      className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-[#E8DFD5] text-sm rounded-[2px] focus:bg-white focus:outline-none focus:border-[#631521] transition-colors"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={authSubmitting}
-                    className="w-full mt-2 bg-[#631521] text-[#FAF8F5] font-sans font-bold text-xs uppercase tracking-[0.2em] py-3.5 rounded-[2px] hover:bg-[#4A0D17] border border-[#D4AF37]/30 shadow-luxury transition-all duration-200 cursor-pointer disabled:opacity-75 flex items-center justify-center gap-2"
-                  >
-                    {authSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin text-[#D4AF37]" />
-                        <span>ĐANG KẾT NỐI...</span>
-                      </>
-                    ) : (
-                      <span>TRUY CẬP TÀI KHOẢN CLB</span>
-                    )}
-                  </button>
-                </form>
 
                 <div className="pt-4 border-t border-[#E8DFD5] text-center">
                   <p className="text-xs text-[#8C7E74] mb-2.5">
@@ -802,95 +671,6 @@ export default function AccountPage() {
           </div>
         )}
       </main>
-
-      {/* Quick Local / Google Auth Modal */}
-      {devModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-2xl border border-[#D4AF37]/30">
-            <div className="flex items-center justify-between pb-3 border-b border-[#E8DFD5]">
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                </svg>
-                <h3 className="font-serif font-bold text-lg text-[#631521]">Xác thực tài khoản Google</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setDevModalOpen(false)}
-                className="text-neutral-400 hover:text-neutral-700 p-1 rounded-full"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-[#8C7E74] my-3 leading-relaxed">
-              Chọn nhanh tài khoản để trải nghiệm ngay đặc quyền Thành viên CLB (Voucher chào mừng 10%, Lịch sử đơn hàng, Miễn phí vận chuyển):
-            </p>
-
-            <div className="space-y-2 mb-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setDevModalOpen(false)
-                  handleQuickLoginWithEmail('quannguyens403@gmail.com', 'QuanNguyenS Store Owner')
-                }}
-                className="w-full text-left p-3 border border-[#E8DFD5] hover:border-[#D4AF37] hover:bg-[#FAF8F5] rounded flex items-center justify-between transition-all group cursor-pointer"
-              >
-                <div>
-                  <div className="text-xs font-bold text-[#1A1614] group-hover:text-[#631521]">quannguyens403@gmail.com</div>
-                  <div className="text-[11px] text-[#8C7E74]">Chủ shop / Quản trị viên QuanNguyenS</div>
-                </div>
-                <span className="text-[10px] font-bold text-white bg-[#631521] px-2 py-0.5 rounded">SHOP OWNER</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setDevModalOpen(false)
-                  handleQuickLoginWithEmail('khachhang.vip@gmail.com', 'Quý Khách VIP')
-                }}
-                className="w-full text-left p-3 border border-[#E8DFD5] hover:border-[#D4AF37] hover:bg-[#FAF8F5] rounded flex items-center justify-between transition-all group cursor-pointer"
-              >
-                <div>
-                  <div className="text-xs font-bold text-[#1A1614] group-hover:text-[#631521]">khachhang.vip@gmail.com</div>
-                  <div className="text-[11px] text-[#8C7E74]">Khách hàng thân thiết VIP Club</div>
-                </div>
-                <span className="text-[10px] font-bold text-[#631521] bg-[#F5E1A4] px-2 py-0.5 rounded">VIP CLUB</span>
-              </button>
-            </div>
-
-            <div className="pt-3 border-t border-[#E8DFD5]">
-              <label className="block text-xs font-bold text-[#4A3F38] mb-1.5">Hoặc nhập email Google bất kỳ:</label>
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  placeholder="your-email@gmail.com"
-                  defaultValue={loginEmail}
-                  id="custom-google-email-input"
-                  className="flex-1 px-3 py-2 text-xs border border-[#E8DFD5] rounded focus:outline-none focus:border-[#631521]"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const input = document.getElementById('custom-google-email-input')
-                    const val = input ? input.value.trim() : ''
-                    if (val && val.includes('@')) {
-                      setDevModalOpen(false)
-                      handleQuickLoginWithEmail(val, loginName.trim() || 'Quý khách Google')
-                    }
-                  }}
-                  className="bg-[#631521] text-white text-xs font-bold px-4 py-2 rounded hover:bg-[#4A0D17] transition-colors cursor-pointer"
-                >
-                  ĐĂNG NHẬP
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Footer */}
       <Section12Footer />

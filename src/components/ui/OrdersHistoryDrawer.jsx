@@ -17,7 +17,7 @@ import {
   Ban,
   Loader2,
 } from 'lucide-react'
-import { formatVND, getCarrierTrackingUrl } from '../../data/checkoutConfig'
+import { formatVND, getCarrierTrackingUrl, PAYMENT_METHODS } from '../../data/checkoutConfig'
 import { syncBatchOrders, getSavedOrders } from '../../lib/orderSync'
 import ViettelPostTracker from '../shipping/ViettelPostTracker'
 
@@ -602,9 +602,13 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
   // Render individual Order Card
   function renderOrderCard(order) {
     const isVietQR = order.payment?.method === 'BANK_TRANSFER'
-    const isExpandedQr = expandedQrOrderId === order.orderId
-    const transferContent = `${order.customer?.fullName || 'Khach Hang'} ${order.customer?.phone || ''}`.trim()
-    const qrUrl = `https://img.vietqr.io/image/vietcombank-1050773506-compact2.png?amount=${order.total}&accountName=NGUYEN%20DUC%20QUAN`
+    const bankInfo = PAYMENT_METHODS.find((m) => m.value === 'BANK_TRANSFER')?.bankInfo || {
+      bankCode: 'VCB',
+      accountNumber: '1050773506',
+      accountName: 'NGUYEN DUC QUAN',
+      bankName: 'Vietcombank',
+    }
+    const qrUrl = `https://img.vietqr.io/image/${bankInfo.bankCode}-${bankInfo.accountNumber}-compact2.png?amount=${order.total}&accountName=${encodeURIComponent(bankInfo.accountName)}`
     const carrierUrl = getCarrierTrackingUrl(order.carrier, order.trackingCode)
 
     return (
@@ -806,18 +810,18 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                     {/* Bank info */}
                     <div className="space-y-1.5 text-xs text-[#1A1614] flex-1 w-full">
                       <p className="font-serif font-bold text-[#631521] uppercase text-[11px]">
-                        Ngân hàng Vietcombank (VCB)
+                        {bankInfo.bankName}
                       </p>
                       <div className="flex items-center justify-between bg-[#FAF8F5] px-2.5 py-1 rounded border border-[#E8DFD5]">
-                        <span>Số TK: <strong className="font-mono text-sm text-[#631521]">1050773506</strong></span>
+                        <span>Số TK: <strong className="font-mono text-sm text-[#631521]">{bankInfo.accountNumber}</strong></span>
                         <button
-                          onClick={() => handleCopy('1050773506', `stk-${order.orderId}`)}
+                          onClick={() => handleCopy(bankInfo.accountNumber, `stk-${order.orderId}`)}
                           className="text-[#631521] text-[11px] font-bold hover:underline flex items-center gap-1"
                         >
                           {copiedKey === `stk-${order.orderId}` ? 'Đã sao chép' : 'Sao chép'}
                         </button>
                       </div>
-                      <p className="text-[11px]"><strong>Chủ TK:</strong> NGUYEN DUC QUAN</p>
+                      <p className="text-[11px]"><strong>Chủ TK:</strong> {bankInfo.accountName}</p>
                       <div className="flex items-center justify-between bg-[#FAF8F5] px-2.5 py-1 rounded border border-[#E8DFD5]">
                         <span className="text-[11px]">Nội dung CK: <strong className="font-mono text-[#631521]">{transferContent}</strong></span>
                         <button
