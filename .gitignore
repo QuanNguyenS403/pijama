@@ -12,3 +12,5 @@ _archive/
 *.db-wal
 *.db-shm
 *.db-journal
+bin/
+*.exe
