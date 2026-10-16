@@ -49,6 +49,14 @@ services:
         sync: false
       - key: GOOGLE_PRIVATE_KEY
         sync: false
+      - key: GOOGLE_CLIENT_ID
+        value: 745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com
+      - key: VITE_GOOGLE_CLIENT_ID
+        value: 745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com
+      - key: TURNSTILE_SECRET_KEY
+        sync: false
+      - key: VITE_TURNSTILE_SITE_KEY
+        value: 0x4AAAAAAFXbURX5lj6_klfx
       - key: SEPAY_WEBHOOK_API_KEY
         sync: false
       - key: PAYMENT_WEBHOOK_SECRET

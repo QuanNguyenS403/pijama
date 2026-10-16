@@ -78,6 +78,10 @@ Tại trang cấu hình Web Service trên Render, cuộn xuống mục **Environ
 | `GOOGLE_SHEET_ID` | `[ID Google Sheets của bạn]` | Bảng tính lưu trữ đơn hàng |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | `[Email service account]` | Google Cloud Service Account |
 | `GOOGLE_PRIVATE_KEY` | `-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n` | Private Key của Google Service Account |
+| `GOOGLE_CLIENT_ID` | `745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com` | Google One-Tap Đăng nhập |
+| `VITE_GOOGLE_CLIENT_ID` | `745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com` | Client ID cho Frontend |
+| `TURNSTILE_SECRET_KEY` | `0x4AAAAAAFXbUZTWy-tGC4zUAtfGxzU07q4` | Chống bot spam đặt hàng Cloudflare |
+| `VITE_TURNSTILE_SITE_KEY` | `0x4AAAAAAFXbURX5lj6_klfx` | Site key hiển thị CAPTCHA vô hình |
 | `SEPAY_WEBHOOK_API_KEY` | `[Mã API SePay của bạn]` | Key xác thực biến động số dư SePay |
 
 > 💡 **Mẹo:** Bạn có thể mở file `.env.local` trên máy tính của bạn, copy chính xác các giá trị bạn đang dùng và dán vào Render.
