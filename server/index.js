@@ -32,6 +32,9 @@ const __dirname = path.dirname(__filename)
 const app = express()
 const PORT = process.env.PORT || 3001
 
+// Hỗ trợ nhận diện đúng IP và giao thức HTTPS phía sau Nginx Reverse Proxy
+app.set('trust proxy', 1)
+
 // ── P0-5: Cấu hình CORS chặt chẽ ───────────────────────────────
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim())
