@@ -1,0 +1,55 @@
+services:
+  - type: web
+    name: qns-clothes
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /livez
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 22.14.0
+      - key: NODE_ENV
+        value: production
+      - key: SHOP_NAME
+        value: QuanNguyenS
+      - key: SHOP_PHONE
+        value: "0981753082"
+      - key: SHOP_ADDRESS
+        value: "Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội"
+      - key: SHOP_SLOGAN
+        value: "Dressed for Life. Even at Home."
+      - key: BANK_CODE
+        value: VCB
+      - key: BANK_ACCOUNT_NUMBER
+        value: "1050773506"
+      - key: BANK_ACCOUNT_NAME
+        value: "NGUYEN DUC QUAN"
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_SESSION_SECRET
+        generateValue: true
+      - key: ORDER_TOKEN_SECRET
+        generateValue: true
+      - key: CUSTOMER_AUTH_SECRET
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GMAIL_USER
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: OWNER_EMAIL
+        sync: false
+      - key: GOOGLE_SHEET_ID
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_EMAIL
+        sync: false
+      - key: GOOGLE_PRIVATE_KEY
+        sync: false
+      - key: SEPAY_WEBHOOK_API_KEY
+        sync: false
+      - key: PAYMENT_WEBHOOK_SECRET
+        sync: false

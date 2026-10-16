@@ -49,12 +49,20 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
       'https://www.quannguyens.vn',
     ]
 
+if (process.env.RENDER_EXTERNAL_URL && !allowedOrigins.includes(process.env.RENDER_EXTERNAL_URL)) {
+  allowedOrigins.push(process.env.RENDER_EXTERNAL_URL)
+}
+
 app.use(
   cors({
     origin: (origin, callback) => {
       // Cho phép requests không có origin (ví dụ mobile app, curl, server-to-server webhook)
       if (!origin) return callback(null, true)
-      if (allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.onrender.com') ||
+        process.env.NODE_ENV !== 'production'
+      ) {
         return callback(null, true)
       }
       return callback(new Error('Chặn bởi chính sách bảo mật CORS của QuanNguyenS'))

@@ -29,6 +29,16 @@ export function loadEnvironment(rootDir = process.cwd()) {
       }
     }
   }
+
+  // Tự động nhận diện môi trường Render.com
+  if (process.env.RENDER_EXTERNAL_URL) {
+    if (!process.env.APP_URL) {
+      process.env.APP_URL = process.env.RENDER_EXTERNAL_URL
+    }
+    if (!process.env.ALLOWED_ORIGINS) {
+      process.env.ALLOWED_ORIGINS = `${process.env.RENDER_EXTERNAL_URL},https://quannguyens.com,https://www.quannguyens.com`
+    }
+  }
 }
 
 
