@@ -164,7 +164,10 @@ export default function PolicyModal({ isOpen, onClose, initialPolicy = 'terms' }
           {/* Footer of Modal */}
           <div className="px-6 py-3.5 bg-[#FAF8F5] border-t border-[#E8DFD5] flex items-center justify-between shrink-0">
             <span className="font-sans text-xs text-[#8C7E74] font-normal">
-              © 2026 QuanNguyenS — European Casual Luxury
+              © 2026 QuanNguyenS — European Casual Luxury ·{' '}
+              <a href="/chinh-sach" onClick={onClose} className="text-[#631521] underline hover:text-[#D4AF37] font-medium">
+                Mở trang chính sách đầy đủ ↗
+              </a>
             </span>
             <button
               onClick={onClose}

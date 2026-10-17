@@ -24,26 +24,26 @@ export default function Section5DarkContrast() {
             className="lg:col-span-6 flex flex-col justify-center"
           >
             <span className="text-[11px] font-sans font-bold tracking-[0.25em] text-[#D4AF37] uppercase block mb-3">
-              CÂU CHUYỆN PHÍA SAU
+              CÂU CHUYỆN THƯƠNG HIỆU
             </span>
             
             <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-[1.12] mb-6">
-              NGHỆ THUẬT & TÂY
+              THỜI TRANG
               <span className="block text-[#D4AF37] italic font-normal mt-1">
-                MÀ VẪN LÀ MÌNH
+                MÀ VẪN LÀ CHÍNH MÌNH
               </span>
             </h2>
 
             <p className="font-sans text-base sm:text-lg text-white/90 font-normal leading-relaxed mb-4">
-              QuanNguyenS bắt đầu từ một câu hỏi đơn giản: Tại sao mình phải chọn giữa thoải mái và trông đẹp?
+              QuanNguyenS bắt đầu từ một câu hỏi đơn giản: Liệu sự thoải mái có thể song hành cùng cái đẹp?
             </p>
 
             <p className="font-sans text-sm sm:text-base text-white/75 font-normal leading-relaxed mb-4">
-              Ở Paris, ở Milan, ở Copenhagen — người ta mặc set đồ nhẹ tênh ra phố mua bánh mì buổi sáng và không ai nhìn. Ở Hà Nội, mặc pijama ra ngoài vẫn còn là chủ đề bàn tán
+              Giữa lòng Paris, ở Milan hay Copenhagen — người ta tìm thấy vẻ đẹp trong chính sự ngẫu hứng đầy thanh lịch: mặc set đồ nhẹ tênh ra phố mua bánh mì buổi sáng và không ai nhìn. Ở Hà Nội, mặc pijama ra ngoài vẫn còn là chủ đề bàn tán
             </p>
 
             <p className="font-sans text-sm sm:text-base text-white/75 font-normal leading-relaxed mb-8">
-              Với chất vải tự nhiên được tuyển chọn kỹ lưỡng, đường may tinh tế, và thiết kế lấy cảm hứng từ phong cách châu Âu — QuanNguyenS tạo ra những bộ pijama đủ đẹp để mặc ra ngoài, đủ thoải mái để ngủ trong đó
+              Mang nguồn cảm hứng thẩm mỹ đương đại từ Châu Âu cùng ngôn ngữ thiết kế tinh tế, QuanNguyenS định nghĩa lại chuẩn mực mặc đẹp thường thấy. Chúng tôi tạo ra những thiết kế đủ thời thượng để tôn vinh bản sắc riêng khi đi dạo phố, và đủ tự nhiên để bạn luôn là chính mình trong mọi khoảnh khắc.
             </p>
 
             <div className="flex items-center gap-8 pt-4 border-t border-white/10">

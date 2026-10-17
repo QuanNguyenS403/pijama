@@ -74,12 +74,14 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
         { label: 'Trang Chủ', href: '/' },
         { label: 'Bộ Sưu Tập', href: '#section-products', scroll: true },
         { label: 'Về Chúng Tôi', href: '#section-dark-contrast', scroll: true },
+        { label: 'Chính Sách', href: '/chinh-sach' },
         { label: 'Liên Hệ', href: '#section-footer', scroll: true },
       ]
     : [
         { label: 'Trang Chủ', href: '/' },
         { label: 'Bộ Sưu Tập', href: '/' },
         { label: 'Về Chúng Tôi', href: '/' },
+        { label: 'Chính Sách', href: '/chinh-sach' },
         { label: 'Liên Hệ', href: '/' },
       ]
 

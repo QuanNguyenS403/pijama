@@ -5,17 +5,17 @@ export default function Section4FeatureGrid() {
   const features = [
     {
       icon: Wind,
-      title: 'Thoáng khí tự nhiên',
-      englishSubtitle: 'Naturally Breathable',
+      title: 'Cam kết chất lượng',
+      englishSubtitle: 'SẢN PHẨM MAY THỦ CÔNG TỈ MỈ',
       description:
         'Chất vải được dệt thưa tự nhiên — thoáng theo từng nhịp thở mà không mỏng manh. Bạn sẽ mát về mùa hè, ấm vừa đủ về mùa thu. Cơ thể tự điều chỉnh, bạn không cần lo',
     },
     {
       icon: Droplets,
-      title: 'Mềm hơn theo thời gian',
-      englishSubtitle: 'Gets Better with Wear',
+      title: 'Miễn phí vận chuyển',
+      englishSubtitle: 'NHẬN HÀNG TRONG 1-3 NGÀY',
       description:
-        'Khác với chất liệu thông thường, vải tự nhiên càng giặt càng mềm. Một bộ QuanNguyenS sẽ trở thành người bạn thân nhất của bạn sau 3 tháng mặc',
+        'Miễn phí vận chuyển toàn quốc với đơn hàng từ 500.000VNĐ',
     },
     {
       icon: Sparkles,

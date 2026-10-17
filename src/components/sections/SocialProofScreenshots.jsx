@@ -301,15 +301,14 @@ export default function SocialProofScreenshots() {
         <div className="w-full text-left pr-0 lg:pr-4">
           {/* Headline */}
           <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-[40px] font-bold text-[#FAF8F5] tracking-tight leading-[1.18] mb-4">
-            Đây Là Những Gì<br />
-            Diễn Ra Trong Năm Nay
+            Customer's Feedback
           </h2>
 
           <div className="w-16 h-[2px] bg-[#D4AF37] mb-4" />
 
           {/* Subtitle nhấn mạnh màu vàng chuẩn tone website với kích thước lớn */}
           <p className="font-serif-italic text-2xl sm:text-3xl lg:text-[34px] font-medium text-[#D4AF37] leading-tight tracking-wide">
-            Nghe có vẻ như...
+            chiều lòng cả những vị khách khó tính nhất.
           </p>
         </div>
 

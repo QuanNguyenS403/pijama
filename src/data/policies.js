@@ -50,38 +50,91 @@ export const policiesData = {
   },
   privacy: {
     id: 'privacy',
-    title: 'Chính Sách Bảo Mật',
-    subtitle: 'Cam kết bảo vệ tuyệt đối dữ liệu và thông tin cá nhân khách hàng',
-    lastUpdated: 'Tuân thủ Nghị định 13/2023/NĐ-CP',
+    title: 'Chính Sách Bảo Mật Quyền Riêng Tư (Privacy Policy)',
+    subtitle: 'Minh bạch thu thập, bảo vệ thông tin và cam kết tuân thủ chính sách dữ liệu người dùng Google API',
+    lastUpdated: 'Cập nhật tháng 10 năm 2026 (Tuân thủ Nghị định 13/2023/NĐ-CP & Google API Services User Data Policy)',
     sections: [
       {
-        heading: '1. Mục đích Thu thập Thông tin',
+        heading: '1. Giới thiệu và Định danh Ứng dụng',
         content: [
-          'QuanNguyenS thu thập thông tin cơ bản gồm: Họ tên, số điện thoại, địa chỉ nhận hàng và email.',
-          'Mục đích thu thập: Xử lý và giao hàng tận nơi, thông báo trạng thái đơn hàng, thực hiện bảo hành, đổi trả và chăm sóc hậu mãi chu đáo.',
-          'Gửi thông tin ưu đãi dành riêng cho khách hàng thân thiết khi được sự đồng ý của quý khách.'
+          'Chào mừng bạn đến với QuanNguyenS (website chính thức: https://quannguyens.com) — thương hiệu thời trang pijama cao cấp phong cách European Casual Luxury.',
+          'Chính sách Bảo mật này mô tả chi tiết cách QuanNguyenS thu thập, sử dụng, lưu trữ, bảo vệ và xử lý thông tin cá nhân của người dùng khi truy cập website, mua sắm hoặc sử dụng tính năng Đăng nhập bằng tài khoản Google (Google Sign-In).',
+          'Đơn vị chủ quản: Thương hiệu thời trang QuanNguyenS. Địa chỉ: Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hai Bà Trưng, Hà Nội. Hotline: 0981 753 082. Email liên hệ bảo mật: quannguyens403@gmail.com.',
+          'Toàn bộ nội dung sản phẩm, giá bán, lookbook và thông tin tại trang chủ https://quannguyens.com được mở công khai cho mọi người dùng truy cập tự do mà KHÔNG BẮT BUỘC phải đăng nhập hay tạo tài khoản.'
         ]
       },
       {
-        heading: '2. Phạm vi và Cam kết Bảo mật Dữ liệu',
+        heading: '2. Thông tin Dữ liệu Người dùng Google Thu thập & Phạm vi (Scopes)',
         content: [
-          'Dữ liệu của quý khách chỉ được sử dụng nội bộ tại QuanNguyenS và chia sẻ có giới hạn cho đối tác vận chuyển để thực hiện giao phát hàng hóa.',
-          'Cam kết tuyệt đối không bán, không cho thuê, không chia sẻ thông tin cho bất kỳ bên thứ ba nào vì mục đích thương mại.',
-          'Hệ thống lưu trữ dữ liệu được bảo vệ an toàn với tường lửa và mã hóa cấp cao.'
+          'Khi khách hàng chủ động chọn "Đăng nhập nhanh với Google" (Google Sign-In), QuanNguyenS chỉ yêu cầu các phạm vi truy cập cơ bản (Basic Profile Scopes: openid, email, profile):',
+          '• Họ và tên (Full Name): Dùng để xưng hô, hiển thị trên giao diện bảng điều khiển thành viên và in thông tin người nhận trên phiếu giao hàng.',
+          '• Địa chỉ Email (Email Address): Dùng làm định danh tài khoản duy nhất, gửi hóa đơn điện tử, thông báo mã bưu vận Viettel Post và hỗ trợ khôi phục tài khoản.',
+          '• Ảnh đại diện (Profile Picture URL): Dùng để hiển thị hình đại diện cá nhân hóa trên góc tài khoản thành viên.',
+          '• Mã định danh tài khoản Google (Google Account ID - sub): Dùng để xác thực phiên đăng nhập an toàn mà không cần lưu trữ mật khẩu của người dùng trên máy chủ của chúng tôi.',
+          'CAM KẾT RÕ RÀNG: QuanNguyenS TUYỆT ĐỐI KHÔNG yêu cầu, không truy cập, không thu thập và không đọc bất kỳ dữ liệu nhạy cảm hay dữ liệu bị hạn chế nào khác từ tài khoản Google của bạn (không truy cập danh bạ, không đọc email Gmail, không truy cập Google Drive, không đọc lịch Google Calendar, không truy cập vị trí thời gian thực).'
         ]
       },
       {
-        heading: '3. Bảo mật Thông tin Thanh toán',
+        heading: '3. Mục đích Sử dụng Dữ liệu Người dùng Google (Transparency of Purpose)',
         content: [
-          'QuanNguyenS không lưu trữ thông tin thẻ ngân hàng hoặc tài khoản thanh toán của khách hàng trên hệ thống.',
-          'Mọi giao dịch thanh toán điện tử được thực hiện trực tiếp qua cổng thanh toán được cấp phép với chứng chỉ bảo mật quốc tế.'
+          'Mục đích thu thập và sử dụng dữ liệu từ Google hoàn toàn minh bạch và phục vụ trực tiếp cho trải nghiệm mua sắm của khách hàng:',
+          '1. Xác thực đăng nhập 1-chạm (Single Sign-On): Giúp khách hàng đăng nhập tức thì, an toàn tuyệt đối mà không cần ghi nhớ hay đặt mật khẩu riêng.',
+          '2. Quản lý lịch sử đơn hàng & Tra cứu vận chuyển: Tự động lưu trữ và đồng bộ hóa danh sách các đơn hàng đã mua để khách hàng dễ dàng theo dõi hành trình giao nhận bưu tá.',
+          '3. Áp dụng đặc quyền thành viên (QuanNguyenS Privileged Club): Tự động phát hành và lưu trữ mã Voucher chào mừng giảm 10% cùng chính sách miễn phí vận chuyển cho tài khoản thành viên.',
+          '4. Gửi thông báo giao dịch thiết yếu: Gửi thư điện tử xác nhận đơn hàng, hóa đơn mua sắm và thông báo cập nhật giao hàng thành công.',
+          '5. Hỗ trợ khách hàng: Giúp bộ phận CSKH nhanh chóng định danh và hỗ trợ giải quyết thắc mắc, yêu cầu đổi trả hoặc bảo hành của quý khách.'
         ]
       },
       {
-        heading: '4. Quyền của Khách hàng đối với Dữ liệu Cá nhân',
+        heading: '4. Cam kết Không Bán, Không Chuyển Giao và Không Sử Dụng Cho Quảng Cáo',
         content: [
-          'Quý khách có quyền yêu cầu kiểm tra, cập nhật, điều chỉnh hoặc hủy bỏ thông tin cá nhân của mình bất kỳ lúc nào.',
-          'Để thực hiện quyền này, quý khách chỉ cần gửi yêu cầu đến email: quannguyens403@gmail.com hoặc gọi hotline: 0981 753 082.'
+          'QuanNguyenS cam kết tuân thủ các nguyên tắc bảo mật nghiêm ngặt nhất đối với dữ liệu người dùng Google:',
+          '• KHÔNG BÁN HOẶC CHO THUÊ: QuanNguyenS TUYỆT ĐỐI KHÔNG bán, không cho thuê, không trao đổi hoặc thương mại hóa dữ liệu người dùng Google cho bất kỳ bên thứ ba, nhà môi giới dữ liệu (data broker) hay công ty quảng cáo nào.',
+          '• KHÔNG QUẢNG CÁO THEO DÕI: Dữ liệu người dùng Google TUYỆT ĐỐI KHÔNG được sử dụng để phân phát quảng cáo theo hành vi (retargeting ads), quảng cáo cá nhân hóa của bên thứ ba hoặc đánh giá tín dụng.',
+          '• KHÔNG ĐÀO TẠO MÔ HÌNH AI CHUNG: Dữ liệu người dùng Google không bao giờ được dùng để huấn luyện các mô hình học máy (ML) hoặc trí tuệ nhân tạo (AI) tổng quát ngoài hệ thống.',
+          '• Chia sẻ giới hạn duy nhất: Chỉ chia sẻ thông tin giao nhận (Tên người nhận, Số điện thoại và Địa chỉ giao hàng do khách hàng nhập khi thanh toán) cho đơn vị chuyển phát được ủy quyền (Viettel Post) để thực hiện giao phát kiện hàng tận nơi.'
+        ]
+      },
+      {
+        heading: '5. Tuân thủ Chính sách Dữ liệu Người dùng Google API (Google Limited Use Disclosure)',
+        content: [
+          'QuanNguyenS cam kết tuân thủ nghiêm ngặt Chính sách Dữ liệu Người dùng Dịch vụ Google API trong mọi hoạt động:',
+          'Tuyên bố tiếng Việt: "Việc ứng dụng QuanNguyenS sử dụng và chuyển giao thông tin nhận được từ Google APIs cho bất kỳ ứng dụng nào khác sẽ luôn tuân thủ Chính sách dữ liệu người dùng của Dịch vụ Google API (Google API Services User Data Policy), bao gồm cả các yêu cầu về Sử dụng Có giới hạn (Limited Use requirements)."',
+          'Official English Statement: "QuanNguyenS\'s use and transfer to any other app of information received from Google APIs will adhere to the Google API Services User Data Policy, including the Limited Use requirements."',
+          'Chi tiết văn bản chính sách người dùng của Google có thể tham khảo trực tiếp tại: https://developers.google.com/terms/api-services-user-data-policy'
+        ]
+      },
+      {
+        heading: '6. Lưu Trữ, Thời Gian Lưu Vết & Biện Pháp An Ninh Dữ Liệu',
+        content: [
+          '• Mã hóa toàn diện: Toàn bộ dữ liệu truyền tải giữa trình duyệt của người dùng và máy chủ được mã hóa bằng giao thức HTTPS/TLS 1.3 theo tiêu chuẩn ngành.',
+          '• Quản lý phiên làm việc: Token xác thực phiên đăng nhập được bảo vệ qua Cookie có gắn cờ HttpOnly, Secure và SameSite=Lax, ngăn chặn hoàn toàn nguy cơ rò rỉ qua tấn công XSS hoặc CSRF.',
+          '• Cơ sở dữ liệu độc lập: Dữ liệu khách hàng được lưu trữ trong cơ sở dữ liệu bảo mật trên máy chủ chuyên dụng, có thiết lập tường lửa phòng thủ và sao lưu tự động định kỳ.',
+          '• Thời gian lưu giữ (Retention Period): Thông tin tài khoản được lưu giữ trong suốt thời gian người dùng duy trì tài khoản tại QuanNguyenS. Dữ liệu lịch sử đơn hàng được lưu giữ theo thời hạn luật định về chứng từ kế toán - thuế (hoặc sẽ được xóa bỏ ngay khi khách hàng có yêu cầu hủy tài khoản).'
+        ]
+      },
+      {
+        heading: '7. Quyền của Khách Hàng, Rút Lại Quyền & Quy Trình Xóa Dữ Liệu (Data Deletion)',
+        content: [
+          'Khách hàng sở hữu toàn quyền đối với dữ liệu cá nhân của mình và có thể thực hiện các quyền sau bất kỳ lúc nào:',
+          '1. Quyền xem và chỉnh sửa: Bạn có thể đăng nhập vào trang Tài Khoản (https://quannguyens.com/tai-khoan) để xem, kiểm tra và cập nhật thông tin cá nhân bất cứ lúc nào.',
+          '2. Quyền yêu cầu xóa bỏ hoàn toàn dữ liệu (Data Deletion Request):',
+          '   • Cách 1: Gửi yêu cầu qua Email đến địa chỉ: quannguyens403@gmail.com với tiêu đề "Yêu Cầu Xóa Dữ Liệu Tài Khoản". Đội ngũ kỹ thuật của chúng tôi sẽ xử lý và xóa vĩnh viễn toàn bộ dữ liệu tài khoản, lịch sử liên kết Google khỏi hệ thống trong vòng 24 đến 48 giờ làm việc, đồng thời gửi email thông báo xác nhận hoàn tất.',
+          '   • Cách 2: Truy cập trang quản trị tài khoản tại https://quannguyens.com/tai-khoan và chọn mục "Cài đặt tài khoản" để gửi yêu cầu đóng tài khoản.',
+          '3. Quyền thu hồi quyền truy cập của Google:',
+          '   • Quý khách có thể thu hồi quyền đăng nhập của QuanNguyenS trên tài khoản Google của mình bất kỳ lúc nào tại Trung tâm Bảo mật Google: https://myaccount.google.com/permissions. Sau khi thu hồi, QuanNguyenS sẽ không còn quyền truy cập vào thông tin hồ sơ của bạn.'
+        ]
+      },
+      {
+        heading: '8. Thay Đổi Chính Sách & Thông Tin Liên Hệ',
+        content: [
+          'QuanNguyenS có thể định kỳ cập nhật Chính sách Bảo mật này để phản ánh các cải tiến về tính năng hoặc tuân thủ các quy định pháp luật mới nhất. Mọi thay đổi đều được đăng tải công khai tại đường dẫn https://quannguyens.com/chinh-sach kèm ngày cập nhật mới nhất.',
+          'Mọi câu hỏi, khiếu nại hoặc yêu cầu giải đáp về quyền riêng tư và bảo mật thông tin, xin vui lòng liên hệ trực tiếp với chúng tôi qua:',
+          '• Thương hiệu: QuanNguyenS (European Casual Luxury)',
+          '• Địa chỉ: Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hai Bà Trưng, Hà Nội',
+          '• Hotline hỗ trợ 24/7: 0981 753 082',
+          '• Email hỗ trợ bảo mật dữ liệu: quannguyens403@gmail.com',
+          '• Website chính thức: https://quannguyens.com'
         ]
       }
     ]

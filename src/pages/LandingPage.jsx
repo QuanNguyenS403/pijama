@@ -10,6 +10,7 @@ import Section6ReversedLayout from '../components/sections/Section6ReversedLayou
 import Section7CustomerStory from '../components/sections/Section7CustomerStory'
 import Section8DeepFeature from '../components/sections/Section8DeepFeature'
 import Section9LargeBlockText from '../components/sections/Section9LargeBlockText'
+import SectionAppPurpose from '../components/sections/SectionAppPurpose'
 import Section12Footer from '../components/sections/Section12Footer'
 import CartDrawer from '../components/cart/CartDrawer'
 import { Toast } from '../components/ui/Toast'
@@ -57,6 +58,7 @@ export default function LandingPage() {
         <Section7CustomerStory />
         <Section8DeepFeature />
         <Section9LargeBlockText />
+        <SectionAppPurpose />
       </main>
 
       {/* Floating 24/7 Consultation Widget */}

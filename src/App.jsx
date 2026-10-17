@@ -15,6 +15,7 @@ const AdminBroadcastPage = lazy(() => import('./pages/admin/AdminBroadcastPage')
 const AdminLoginGate = lazy(() => import('./pages/admin/AdminLoginGate'))
 const UnsubscribePage = lazy(() => import('./pages/UnsubscribePage'))
 const AccountPage = lazy(() => import('./pages/AccountPage'))
+const PolicyPage = lazy(() => import('./pages/PolicyPage'))
 
 function PageFallback() {
   return (
@@ -60,6 +61,11 @@ export default function App() {
           <Route path="/admin/orders" element={<AdminLoginGate><AdminOrdersPage /></AdminLoginGate>} />
           <Route path="/admin/broadcast" element={<AdminLoginGate><AdminBroadcastPage /></AdminLoginGate>} />
           <Route path="/tai-khoan" element={<AccountPage />} />
+          <Route path="/chinh-sach" element={<PolicyPage />} />
+          <Route path="/chinh-sach-bao-mat" element={<PolicyPage />} />
+          <Route path="/privacy-policy" element={<PolicyPage />} />
+          <Route path="/dieu-khoan" element={<PolicyPage />} />
+          <Route path="/terms" element={<PolicyPage />} />
           <Route path="/huy-dang-ky" element={<UnsubscribePage />} />
           {/* Fallback */}
           <Route path="*" element={<LandingPage />} />

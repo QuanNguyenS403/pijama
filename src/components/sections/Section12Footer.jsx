@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Mail, Phone, MapPin } from 'lucide-react'
 import PolicyModal from '../ui/PolicyModal'
 
@@ -46,12 +47,12 @@ export default function Section12Footer() {
   }
 
   const footerNavLinks = [
-    { label: 'Bộ sưu tập', href: '#section-products' },
-    { label: 'Về chúng tôi', href: '#section-dark-contrast' },
-    { label: 'Chính sách đổi trả hàng', policy: 'return' },
-    { label: 'Chính sách giao hàng', policy: 'shipping' },
-    { label: 'Chính sách bảo mật', policy: 'privacy' },
-    { label: 'Điều khoản dịch vụ', policy: 'terms' },
+    { label: 'Bộ sưu tập', href: '#section-products', isAnchor: true },
+    { label: 'Về chúng tôi', href: '#section-dark-contrast', isAnchor: true },
+    { label: 'Chính sách bảo mật', href: '/chinh-sach?tab=privacy' },
+    { label: 'Điều khoản dịch vụ', href: '/chinh-sach?tab=terms' },
+    { label: 'Chính sách đổi trả hàng', href: '/chinh-sach?tab=return' },
+    { label: 'Chính sách giao hàng', href: '/chinh-sach?tab=shipping' },
   ]
 
   const handleNavClick = (e, href) => {
@@ -101,14 +102,7 @@ export default function Section12Footer() {
               <ul className="space-y-2.5">
                 {footerNavLinks.map((link) => (
                   <li key={link.label}>
-                    {link.policy ? (
-                      <button
-                        onClick={(e) => openPolicy(e, link.policy)}
-                        className="font-sans text-sm text-white/80 hover:text-[#D4AF37] transition-colors link-underline text-left"
-                      >
-                        {link.label}
-                      </button>
-                    ) : (
+                    {link.isAnchor ? (
                       <a
                         href={link.href}
                         onClick={(e) => handleNavClick(e, link.href)}
@@ -116,6 +110,13 @@ export default function Section12Footer() {
                       >
                         {link.label}
                       </a>
+                    ) : (
+                      <Link
+                        to={link.href}
+                        className="font-sans text-sm text-white/80 hover:text-[#D4AF37] transition-colors link-underline text-left inline-block"
+                      >
+                        {link.label}
+                      </Link>
                     )}
                   </li>
                 ))}

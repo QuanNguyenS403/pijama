@@ -298,6 +298,18 @@ export default function AccountPage() {
                   </button>
                 </div>
 
+                {/* Transparency notice & link to privacy policy */}
+                <p className="text-[11px] text-[#8C7E74] text-center leading-relaxed mt-2 px-2">
+                  Đăng nhập tài khoản là <strong className="text-[#4A3F38]">hoàn toàn tùy chọn</strong> để nhận Voucher 10% và tra cứu đơn hàng. Bạn luôn có thể xem sản phẩm và mua hàng tự do tại{' '}
+                  <Link to="/" className="text-[#631521] underline font-semibold">Trang chủ</Link>{' '}
+                  mà không cần tài khoản.
+                  <br className="hidden sm:inline" />
+                  Xem chi tiết{' '}
+                  <Link to="/chinh-sach?tab=privacy" className="text-[#631521] underline font-medium">Chính sách bảo mật Google API</Link>{' '}
+                  và{' '}
+                  <Link to="/chinh-sach?tab=terms" className="text-[#631521] underline font-medium">Điều khoản dịch vụ</Link>.
+                </p>
+
                 <div className="relative my-6 text-center">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-[#E8DFD5]" />
