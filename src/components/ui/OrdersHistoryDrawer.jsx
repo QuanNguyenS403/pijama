@@ -422,7 +422,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Tìm theo Mã đơn (QNS-...) hoặc Số điện thoại..."
-                        className="w-full pl-9 pr-8 py-2 bg-[#FAF8F5] border border-[#E8DFD5] rounded-[3px] text-xs text-[#1A1614] placeholder-[#8C7E74] focus:outline-none focus:border-[#631521] focus:bg-white transition-colors"
+                        className="w-full pl-9 pr-8 py-2 bg-[#FAF8F5] border border-[#E8DFD5] rounded-[3px] text-base sm:text-xs text-[#1A1614] placeholder-[#8C7E74] focus:outline-none focus:border-[#631521] focus:bg-white transition-colors"
                       />
                       {searchQuery && (
                         <button
@@ -546,7 +546,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                       value={lookupQuery}
                       onChange={(e) => setLookupQuery(e.target.value)}
                       placeholder="Nhập chính xác Mã vận đơn đã được cấp (ví dụ: VT123456789)..."
-                      className="flex-1 px-3.5 py-2.5 bg-[#FAF8F5] border border-[#E8DFD5] rounded-[3px] text-xs text-[#1A1614] focus:outline-none focus:border-[#631521] focus:bg-white"
+                      className="flex-1 px-3.5 py-2.5 bg-[#FAF8F5] border border-[#E8DFD5] rounded-[3px] text-base sm:text-xs text-[#1A1614] focus:outline-none focus:border-[#631521] focus:bg-white"
                     />
                     <button
                       type="submit"

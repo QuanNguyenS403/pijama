@@ -118,7 +118,7 @@ export const createOrderPayload = (formData, cartItems, cartSummary) => {
   const orderId = generateOrderId()
   const now = new Date()
   const hasPreOrder = cartItems.some(
-    (item) => item.preOrder?.enabled || item.isPreOrder || item.slug === 'the-classic-set' || item.productId === 'the-classic-set'
+    (item) => item.preOrder?.enabled || item.isPreOrder || item.slug === 'the-classic-set' || item.productId === 'the-classic-set' || item.slug === 'the-evening-edit' || item.productId === 'the-evening-edit'
   )
 
   return {
@@ -151,7 +151,9 @@ export const createOrderPayload = (formData, cartItems, cartSummary) => {
         item.preOrder?.enabled ||
         item.isPreOrder ||
         item.slug === 'the-classic-set' ||
-        item.productId === 'the-classic-set'
+        item.productId === 'the-classic-set' ||
+        item.slug === 'the-evening-edit' ||
+        item.productId === 'the-evening-edit'
       )
       return {
         productId: item.productId || item.slug,

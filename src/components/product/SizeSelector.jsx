@@ -13,7 +13,7 @@ export default function SizeSelector({ sizes = [], selectedColor, selected, onCh
   }
 
   return (
-    <div>
+    <div id="size-selector-section" className="scroll-mt-24 transition-all duration-300">
       <div className="flex items-center justify-between mb-2.5">
         <p className="font-serif text-[0.8rem] uppercase tracking-[0.25em] font-semibold text-[#631521]">
           SIZE —{' '}

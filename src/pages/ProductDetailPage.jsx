@@ -141,9 +141,17 @@ export default function ProductDetailPage() {
 
   const handleStickyAddToCart = () => {
     if (!selectedSize) {
-      // Prompt user to pick a size
-      const sizeBtn = document.querySelector('button[aria-label*="Chọn size"]')
-      if (sizeBtn) sizeBtn.scrollIntoView({ behavior: 'smooth' })
+      // Dẫn dắt khách hàng cuộn lên phần chọn size và làm nổi bật khu vực chọn size
+      const sizeSection =
+        document.getElementById('size-selector-section') ||
+        document.querySelector('[role="radiogroup"][aria-label="Chọn size"]')
+      if (sizeSection) {
+        sizeSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        sizeSection.classList.add('ring-2', 'ring-[#631521]', 'p-2', 'rounded-[4px]')
+        setTimeout(() => {
+          sizeSection.classList.remove('ring-2', 'ring-[#631521]', 'p-2', 'rounded-[4px]')
+        }, 1500)
+      }
       return
     }
 
@@ -166,6 +174,7 @@ export default function ProductDetailPage() {
       originalPrice: product.originalPrice,
       image: img,
       slug: product.slug,
+      preOrder: product.preOrder || null,
     }
 
     addItem(cartItem)
@@ -372,8 +381,10 @@ export default function ProductDetailPage() {
         selectedSize={selectedSize}
         onAddToCart={handleStickyAddToCart}
         onOpenSizeGuide={() => {
-          const el = document.querySelector('button[aria-label*="Chọn size"]')
-          if (el) el.scrollIntoView({ behavior: 'smooth' })
+          const el =
+            document.getElementById('size-selector-section') ||
+            document.querySelector('[role="radiogroup"][aria-label="Chọn size"]')
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }}
       />
  

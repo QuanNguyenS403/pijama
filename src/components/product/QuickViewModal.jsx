@@ -57,6 +57,7 @@ export default function QuickViewModal({ product, onClose, onAddToCart }) {
       originalPrice: product.originalPrice,
       image: img,
       slug: product.slug,
+      preOrder: product.preOrder || null,
     }
     addItem(cartItem)
     onAddToCart?.({
@@ -144,11 +145,22 @@ export default function QuickViewModal({ product, onClose, onAddToCart }) {
                     onSizeGuide={() => {}}
                   />
                 )}
+                {/* Pre-Order Notice */}
+                {product.preOrder?.enabled && (
+                  <div className="bg-[#FAF5F0] border border-[#D4AF37] p-2.5 rounded-[2px] text-xs font-sans text-[#631521]">
+                    <p className="font-bold">⏱ Sản phẩm đặt trước (Pre-Order)</p>
+                    <p className="text-[11px] text-[#4A3F38] mt-0.5">
+                      {product.preOrder.message || 'Giao hàng dự kiến trong 7-10 ngày'}
+                    </p>
+                  </div>
+                )}
+
                 <QuantitySelector quantity={quantity} onChange={setQuantity} />
 
                 <div className="flex flex-col gap-2.5 mt-auto pt-2">
                   <Button variant="primary" onClick={handleAdd} disabled={!canAdd} className="w-full">
-                    <ShoppingBag className="w-4 h-4" /> Thêm Vào Giỏ Hàng
+                    <ShoppingBag className="w-4 h-4" />{' '}
+                    {product.preOrder?.enabled ? 'Đặt Trước Ngay (Pre-Order)' : 'Thêm Vào Giỏ Hàng'}
                   </Button>
                   <Link
                     to={`/san-pham/${product.slug}`}

@@ -169,10 +169,10 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
               />
             </div>
             <div className="flex flex-col">
-              <span className="font-serif text-lg sm:text-xl font-bold tracking-[0.18em] text-[#FAF8F5] uppercase group-hover:text-[#D4AF37] transition-colors">
+              <span className="font-serif text-base sm:text-xl font-bold tracking-[0.15em] sm:tracking-[0.18em] text-[#FAF8F5] uppercase group-hover:text-[#D4AF37] transition-colors whitespace-nowrap">
                 QuanNguyenS
               </span>
-              <span className="text-[9px] tracking-[0.25em] text-[#D4AF37] uppercase font-normal -mt-1">
+              <span className="text-[8.5px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.25em] text-[#D4AF37] uppercase font-normal -mt-0.5 sm:-mt-1 whitespace-nowrap">
                 European Casual Luxury
               </span>
             </div>
@@ -224,7 +224,7 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
                   fetch('/api/auth/me', { credentials: 'include' }).catch(() => {})
                 }}
                 aria-label="Tài khoản & Đặc quyền thành viên"
-                className="relative text-white/80 hover:text-[#D4AF37] transition-colors p-1 cursor-pointer flex items-center justify-center"
+                className="relative hidden sm:flex text-white/80 hover:text-[#D4AF37] transition-colors p-1 cursor-pointer items-center justify-center"
                 title="Tài khoản & Ưu đãi thành viên"
               >
                 <User className="w-5 h-5" />
@@ -251,11 +251,11 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
                 )}
               </button>
 
-              {/* Order Tracking & Tracking Code Input Button (Bằng kích thước icon giỏ hàng, mở drawer khi click) */}
+              {/* Order Tracking & Tracking Code Input Button */}
               <button
                 onClick={() => setOrdersDrawerOpen(true)}
                 aria-label={`Theo dõi đơn hàng & Nhập mã tracking — ${ordersCount} đơn`}
-                className="relative text-white/85 hover:text-[#D4AF37] transition-colors p-1 cursor-pointer flex items-center justify-center"
+                className="relative hidden sm:flex text-white/85 hover:text-[#D4AF37] transition-colors p-1 cursor-pointer items-center justify-center"
                 title="Theo dõi đơn hàng & Nhập mã tracking"
               >
                 <Package className="w-5 h-5" />
@@ -305,6 +305,25 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
                   </Link>
                 ))}
 
+
+                {/* Mobile Wishlist Link */}
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false)
+                    setWishlistOpen(true)
+                  }}
+                  className="flex items-center justify-between text-white/90 hover:text-[#D4AF37] py-2 border-b border-white/10 text-sm font-sans font-medium uppercase tracking-wider text-left"
+                >
+                  <span className="flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-[#D4AF37]" />
+                    <span>Mục yêu thích đã lưu</span>
+                  </span>
+                  {wishlistCount > 0 && (
+                    <span className="bg-[#D4AF37] text-[#2C201A] text-xs font-bold px-2 py-0.5 rounded-full">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </button>
 
                 {/* Mobile Orders History Link */}
                 <button

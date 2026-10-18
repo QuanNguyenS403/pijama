@@ -353,4 +353,18 @@ export function initOrderSync() {
       syncBatchOrders(ids, { force: false })
     }
   } catch (e) {}
+
+  // 4. Tự động phục hồi kết nối thời gian thực khi tab trở lại active trên điện thoại di động
+  try {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        connectSSE()
+        const currentOrders = getSavedOrders()
+        const ids = currentOrders.map((o) => o.orderId || o.id).filter(Boolean)
+        if (ids.length > 0) {
+          syncBatchOrders(ids, { force: true })
+        }
+      }
+    })
+  } catch (e) {}
 }

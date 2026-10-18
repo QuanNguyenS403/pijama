@@ -122,7 +122,7 @@ export default function HandoffCard({ handoff, recentConversation = '', onSubmit
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 maxLength={80}
-                className="w-full text-xs font-sans px-2.5 py-1.5 bg-white border border-[#E8DFD5] rounded-[2px] focus:outline-none focus:border-[#631521] text-[#2C201A]"
+                className="w-full text-base sm:text-xs font-sans px-2.5 py-1.5 bg-white border border-[#E8DFD5] rounded-[2px] focus:outline-none focus:border-[#631521] text-[#2C201A]"
               />
             </div>
 
@@ -134,7 +134,7 @@ export default function HandoffCard({ handoff, recentConversation = '', onSubmit
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 maxLength={15}
-                className="w-full text-xs font-sans px-2.5 py-1.5 bg-white border border-[#E8DFD5] rounded-[2px] focus:outline-none focus:border-[#631521] text-[#2C201A]"
+                className="w-full text-base sm:text-xs font-sans px-2.5 py-1.5 bg-white border border-[#E8DFD5] rounded-[2px] focus:outline-none focus:border-[#631521] text-[#2C201A]"
               />
             </div>
 
@@ -142,7 +142,7 @@ export default function HandoffCard({ handoff, recentConversation = '', onSubmit
               <select
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                className="text-[11px] font-sans px-2 py-1.5 bg-white border border-[#E8DFD5] rounded-[2px] focus:outline-none focus:border-[#631521] text-[#2C201A]"
+                className="text-base sm:text-[11px] font-sans px-2 py-1.5 bg-white border border-[#E8DFD5] rounded-[2px] focus:outline-none focus:border-[#631521] text-[#2C201A]"
               >
                 <option value="Tư vấn chọn size & mẫu">Tư vấn size & mẫu</option>
                 <option value="Hỏi tiến độ đơn hàng">Hỏi tiến độ đơn</option>
@@ -153,7 +153,7 @@ export default function HandoffCard({ handoff, recentConversation = '', onSubmit
               <select
                 value={preferredTime}
                 onChange={(e) => setPreferredTime(e.target.value)}
-                className="text-[11px] font-sans px-2 py-1.5 bg-white border border-[#E8DFD5] rounded-[2px] focus:outline-none focus:border-[#631521] text-[#2C201A]"
+                className="text-base sm:text-[11px] font-sans px-2 py-1.5 bg-white border border-[#E8DFD5] rounded-[2px] focus:outline-none focus:border-[#631521] text-[#2C201A]"
               >
                 <option value="Càng sớm càng tốt">Càng sớm càng tốt</option>
                 <option value="Trong giờ hành chính">Giờ hành chính</option>

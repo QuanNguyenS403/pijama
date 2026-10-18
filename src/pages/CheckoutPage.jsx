@@ -181,6 +181,18 @@ export default function CheckoutPage() {
     setTouched(
       fieldsToValidate.reduce((acc, f) => ({ ...acc, [f]: true }), {})
     )
+
+    if (!isValid) {
+      const firstErrField = fieldsToValidate.find((f) => newErrors[f])
+      const el = document.querySelector(`[name="${firstErrField}"]`)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setTimeout(() => el.focus(), 300)
+      } else {
+        window.scrollTo({ top: 100, behavior: 'smooth' })
+      }
+    }
+
     return isValid
   }
 
@@ -195,8 +207,6 @@ export default function CheckoutPage() {
     }
 
     if (!validateForm()) {
-      // Scroll to top of form
-      window.scrollTo({ top: 100, behavior: 'smooth' })
       return
     }
 
@@ -358,7 +368,7 @@ export default function CheckoutPage() {
                         onChange={(e) => handleInputChange('fullName', e.target.value)}
                         onBlur={() => handleBlur('fullName')}
                         placeholder="Ví dụ: Nguyễn Văn A"
-                        className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
+                        className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
                           errors.fullName && touched.fullName
                             ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
                             : 'border-[#E8DFD5] focus:border-[#631521]'
@@ -384,7 +394,7 @@ export default function CheckoutPage() {
                           onChange={(e) => handleInputChange('phone', e.target.value)}
                           onBlur={() => handleBlur('phone')}
                           placeholder="0981 753 082"
-                          className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
+                          className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
                             errors.phone && touched.phone
                               ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
                               : 'border-[#E8DFD5] focus:border-[#631521]'
@@ -408,7 +418,7 @@ export default function CheckoutPage() {
                           onChange={(e) => handleInputChange('email', e.target.value)}
                           onBlur={() => handleBlur('email')}
                           placeholder="name@gmail.com"
-                          className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
+                          className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
                             errors.email && touched.email
                               ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
                               : 'border-[#E8DFD5] focus:border-[#631521]'
@@ -450,7 +460,7 @@ export default function CheckoutPage() {
                         value={formData.city}
                         onChange={(e) => handleInputChange('city', e.target.value)}
                         onBlur={() => handleBlur('city')}
-                        className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-[#E8DFD5] text-sm rounded-[2px] focus:bg-white focus:outline-none focus:border-[#631521] transition-colors"
+                        className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-[#E8DFD5] text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none focus:border-[#631521] transition-colors"
                       >
                         {VIETNAM_PROVINCES.map((province) => (
                           <option key={province} value={province}>
@@ -473,7 +483,7 @@ export default function CheckoutPage() {
                           onChange={(e) => handleInputChange('district', e.target.value)}
                           onBlur={() => handleBlur('district')}
                           placeholder="Ví dụ: Quận Hai Bà Trưng"
-                          className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
+                          className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
                             errors.district && touched.district
                               ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
                               : 'border-[#E8DFD5] focus:border-[#631521]'
@@ -497,7 +507,7 @@ export default function CheckoutPage() {
                           onChange={(e) => handleInputChange('ward', e.target.value)}
                           onBlur={() => handleBlur('ward')}
                           placeholder="Ví dụ: Phường Vĩnh Tuy"
-                          className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
+                          className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
                             errors.ward && touched.ward
                               ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
                               : 'border-[#E8DFD5] focus:border-[#631521]'
@@ -523,7 +533,7 @@ export default function CheckoutPage() {
                         onChange={(e) => handleInputChange('address', e.target.value)}
                         onBlur={() => handleBlur('address')}
                         placeholder="Số nhà, toà nhà, tên đường, ngõ/ngách..."
-                        className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
+                        className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
                           errors.address && touched.address
                             ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
                             : 'border-[#E8DFD5] focus:border-[#631521]'
@@ -547,7 +557,7 @@ export default function CheckoutPage() {
                         value={formData.note}
                         onChange={(e) => handleInputChange('note', e.target.value)}
                         placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi giao, đóng gói kèm thiệp quà tặng..."
-                        className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-[#E8DFD5] text-sm rounded-[2px] focus:bg-white focus:outline-none focus:border-[#631521] transition-colors resize-none"
+                        className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-[#E8DFD5] text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none focus:border-[#631521] transition-colors resize-none"
                       />
                     </div>
                   </div>
@@ -671,16 +681,25 @@ export default function CheckoutPage() {
                   </div>
 
                   {/* Pre-Order Notice Banner */}
-                  {items.some((i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-classic-set' || i.productId === 'the-classic-set') && (
+                  {items.some((i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-classic-set' || i.productId === 'the-classic-set' || i.slug === 'the-evening-edit' || i.productId === 'the-evening-edit') && (
                     <div className="mb-5 p-3.5 bg-[#FAF5F0] border-2 border-[#D4AF37] rounded-[3px] flex items-start gap-2.5 text-xs text-[#631521] font-sans">
                       <span className="text-base shrink-0">⏱</span>
                       <div>
                         <p className="font-bold uppercase tracking-wider text-[11px] mb-0.5">
                           Lưu ý đơn hàng Đặt Trước (Pre-Order)
                         </p>
-                        <p className="text-[#4A3F38] leading-relaxed">
-                          Đơn hàng có chứa sản phẩm <strong>THE DAYBREAK SET (Sọc Hồng)</strong>. Toàn bộ đơn hàng sẽ được chuẩn bị và giao trong <strong>7–10 ngày làm việc</strong>.
-                        </p>
+                        {(() => {
+                          const preOrderNames = items
+                            .filter((i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-classic-set' || i.productId === 'the-classic-set' || i.slug === 'the-evening-edit' || i.productId === 'the-evening-edit')
+                            .map((i) => i.name || i.productName)
+                            .filter((val, idx, self) => self.indexOf(val) === idx)
+                          const displayNames = preOrderNames.length > 0 ? preOrderNames.join(' & ') : 'sản phẩm Đặt Trước'
+                          return (
+                            <p className="text-[#4A3F38] leading-relaxed">
+                              Đơn hàng có chứa sản phẩm <strong>{displayNames}</strong>. Toàn bộ đơn hàng sẽ được chuẩn bị và giao trong <strong>7–10 ngày làm việc</strong>.
+                            </p>
+                          )
+                        })()}
                       </div>
                     </div>
                   )}
@@ -692,7 +711,9 @@ export default function CheckoutPage() {
                         item.preOrder?.enabled ||
                         item.isPreOrder ||
                         item.slug === 'the-classic-set' ||
-                        item.productId === 'the-classic-set'
+                        item.productId === 'the-classic-set' ||
+                        item.slug === 'the-evening-edit' ||
+                        item.productId === 'the-evening-edit'
                       )
                       return (
                         <div key={`${item.id}-${item.color?.name || item.color}-${item.size}-${idx}`} className="flex gap-3.5 pb-4 border-b border-[#F0EAE1] last:border-b-0 last:pb-0">

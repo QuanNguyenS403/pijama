@@ -204,7 +204,7 @@ export default function ChatPanel({ isOpen, onClose }) {
       role="dialog"
       aria-modal="true"
       aria-label="Khung trò chuyện với trợ lý ảo QuanNguyenS"
-      className="fixed inset-0 sm:inset-auto sm:bottom-20 sm:right-5 z-50 w-full sm:w-[355px] h-full sm:h-[520px] bg-[#FAF8F5] sm:border sm:border-[#E8DFD5] sm:rounded-[6px] shadow-2xl flex flex-col overflow-hidden text-[#2C201A]"
+      className="w-full sm:w-[355px] h-[100dvh] sm:h-[520px] bg-[#FAF8F5] sm:border sm:border-[#E8DFD5] sm:rounded-[6px] shadow-2xl flex flex-col overflow-hidden text-[#2C201A]"
     >
       {/* ── HEADER ────────────────────────────────────────── */}
       <div className="bg-[#631521] text-[#FAF8F5] p-3 px-3.5 flex items-center justify-between border-b border-[#D4AF37]/40 shrink-0">
@@ -249,12 +249,6 @@ export default function ChatPanel({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* ── DISCLAIMER NHỎ ────────────────────────────────── */}
-      <div className="bg-[#FAF5F0] border-b border-[#E8DFD5] px-3 py-1 text-center shrink-0">
-        <span className="font-sans text-[10px] text-[#8C7E74]">
-          🔒 Trò chuyện cùng trợ lý ảo • Không nhập mật khẩu hoặc CCCD
-        </span>
-      </div>
 
       {/* ── DANH SÁCH TIN NHẮN ────────────────────────────── */}
       <MessageList
@@ -298,7 +292,7 @@ export default function ChatPanel({ isOpen, onClose }) {
             placeholder="Hỏi về size, chất liệu, voucher..."
             maxLength={500}
             disabled={isTyping}
-            className="flex-1 text-xs font-sans px-3.5 py-2 bg-[#FAF8F5] border border-[#E8DFD5] rounded-full focus:outline-none focus:border-[#631521] focus:bg-white text-[#2C201A] transition-colors disabled:opacity-50"
+            className="flex-1 text-base sm:text-xs font-sans px-3.5 py-2 bg-[#FAF8F5] border border-[#E8DFD5] rounded-full focus:outline-none focus:border-[#631521] focus:bg-white text-[#2C201A] transition-colors disabled:opacity-50"
             aria-label="Nhập câu hỏi cho trợ lý ảo"
           />
 

@@ -108,7 +108,7 @@ export default function VoucherInput({ onApply, currentSubtotal = 0, accountId =
           }}
           onKeyDown={(e) => e.key === 'Enter' && handleApply()}
           placeholder="Nhập mã ưu đãi (Thử: WELCOME-... hoặc QNS10)"
-          className="flex-1 px-3.5 py-2.5 font-sans text-xs bg-transparent text-[#1A1614] placeholder-[#8C7E74] focus:outline-none uppercase"
+          className="flex-1 px-3.5 py-2.5 font-sans text-base sm:text-xs bg-transparent text-[#1A1614] placeholder-[#8C7E74] focus:outline-none uppercase"
           aria-label="Mã giảm giá"
         />
         <button

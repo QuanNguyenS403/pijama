@@ -10,7 +10,7 @@ const slides = [
     id: 1,
     src: heroSlide01,
     alt: 'The Hearth Set — Set pijama sọc nâu ấm áp phong cách European Luxury',
-    eyebrow: 'THE HEARTH SET',
+    eyebrow: 'THE HEARTH SET — PRE-ORDER',
     headline: 'Ấm Áp Như\nBuổi Sáng Đầu Tiên',
     sub: 'Chất liệu sọc nâu, phom dáng suông phóng khoáng — từ giường ngủ đến hiên nhà.',
     align: 'left',

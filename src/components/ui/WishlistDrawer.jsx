@@ -97,6 +97,7 @@ export default function WishlistDrawer({ isOpen, onClose, onAddToCart }) {
       originalPrice: item.product?.originalPrice,
       image: item.image,
       slug: item.slug,
+      preOrder: item.product?.preOrder || null,
     }
     addItem(cartItem)
     onAddToCart?.({

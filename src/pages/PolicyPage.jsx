@@ -10,10 +10,6 @@ import {
   Mail,
   Phone,
   MapPin,
-  ExternalLink,
-  Lock,
-  CheckCircle2,
-  AlertTriangle,
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Section12Footer from '../components/sections/Section12Footer'
@@ -111,101 +107,6 @@ export default function PolicyPage() {
           })}
         </div>
 
-        {/* ── GOOGLE API USER DATA COMPLIANCE CALLOUT BOX (Luôn hiển thị nổi bật trên Tab Privacy) ── */}
-        {activeTab === 'privacy' && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-10 p-6 sm:p-8 bg-[#2C201A] text-white rounded-[4px] border-2 border-[#D4AF37]/50 shadow-xl relative overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-48 h-48 bg-[#D4AF37]/10 rounded-full blur-2xl pointer-events-none" />
-
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-[#631521] flex items-center justify-center border border-[#D4AF37] shrink-0">
-                <ShieldCheck className="w-5 h-5 text-[#D4AF37]" />
-              </div>
-              <div>
-                <span className="font-serif text-lg sm:text-xl font-bold text-[#D4AF37] block">
-                  Công Khai Tuân Thủ Chính Sách Dữ Liệu Người Dùng Google API
-                </span>
-                <span className="text-[11px] text-white/70 tracking-wider uppercase block">
-                  Google API Services User Data Policy Compliance & Limited Use Disclosure
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-3.5 text-xs sm:text-sm text-white/90 leading-relaxed font-light">
-              <p>
-                Ứng dụng <strong>QuanNguyenS</strong> (trực thuộc website chính thức{' '}
-                <a href="https://quannguyens.com" className="text-[#D4AF37] underline font-medium">
-                  https://quannguyens.com
-                </a>
-                ) cung cấp tính năng xác thực đăng nhập một chạm qua Google Identity Services nhằm mang lại trải nghiệm tiện lợi và an toàn cho khách hàng.
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4 p-4 bg-white/5 rounded-[3px] border border-white/10">
-                <div>
-                  <strong className="text-[#D4AF37] block mb-1">Dữ liệu yêu cầu qua Google OAuth:</strong>
-                  <ul className="list-disc list-inside space-y-1 text-white/80">
-                    <li>Họ và tên (Full Name)</li>
-                    <li>Địa chỉ Email (Email Address)</li>
-                    <li>Ảnh đại diện hồ sơ (Profile Picture)</li>
-                    <li>Mã định danh Google ID (sub)</li>
-                  </ul>
-                  <span className="text-[11px] text-[#D4AF37] block mt-1">
-                    ✓ Chỉ sử dụng basic scopes: openid, email, profile. Không yêu cầu bất kỳ quyền nhạy cảm nào khác.
-                  </span>
-                </div>
-
-                <div>
-                  <strong className="text-[#D4AF37] block mb-1">Mục đích sử dụng dữ liệu:</strong>
-                  <ul className="list-disc list-inside space-y-1 text-white/80">
-                    <li>Tạo và xác thực tài khoản tức thì (không cần mật khẩu)</li>
-                    <li>Tự động gắn mã ưu đãi giảm 10% đặc quyền thành viên</li>
-                    <li>Gửi hóa đơn điện tử và mã tra cứu vận chuyển đơn hàng</li>
-                    <li>Đồng bộ hóa lịch sử đơn hàng để bảo hành</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Limited Use Verbatim Clause */}
-              <div className="p-4 bg-[#631521]/60 rounded-[3px] border border-[#D4AF37]/40">
-                <strong className="text-[#D4AF37] block mb-1">Cam kết Sử dụng Có giới hạn (Limited Use Statement):</strong>
-                <p className="italic text-white/95 mb-2">
-                  "Việc ứng dụng QuanNguyenS sử dụng và chuyển giao thông tin nhận được từ Google APIs cho bất kỳ ứng dụng nào khác sẽ luôn tuân thủ{' '}
-                  <a
-                    href="https://developers.google.com/terms/api-services-user-data-policy"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[#D4AF37] underline inline-flex items-center gap-1"
-                  >
-                    Chính sách dữ liệu người dùng của Dịch vụ Google API
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                  , bao gồm cả các yêu cầu về Sử dụng Có giới hạn (Limited Use requirements)."
-                </p>
-                <p className="text-[11.5px] text-white/80 italic">
-                  English: "QuanNguyenS's use and transfer to any other app of information received from Google APIs will adhere to the Google API Services User Data Policy, including the Limited Use requirements."
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-2 border-t border-white/10 text-xs">
-                <span className="flex items-center gap-1.5 text-white/90">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#D4AF37]" />
-                  Không bán hoặc thương mại hóa dữ liệu
-                </span>
-                <span className="flex items-center gap-1.5 text-white/90">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#D4AF37]" />
-                  Không dùng cho quảng cáo bám đuổi
-                </span>
-                <span className="flex items-center gap-1.5 text-white/90">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#D4AF37]" />
-                  Không dùng đào tạo mô hình AI tổng quát
-                </span>
-              </div>
-            </div>
-          </motion.div>
-        )}
 
         {/* Policy Content Card */}
         <div className="bg-white p-6 sm:p-10 rounded-[4px] border border-[#E8DFD5] shadow-xs">

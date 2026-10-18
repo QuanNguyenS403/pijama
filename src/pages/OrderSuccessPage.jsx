@@ -359,10 +359,14 @@ export default function OrderSuccessPage() {
                     <div className="space-y-3">
                       {order.items.map((item, idx) => {
                         const isItemPreOrder = !!(
+                          item.preOrder?.enabled ||
                           item.isPreOrder ||
                           item.slug === 'the-classic-set' ||
                           item.productId === 'the-classic-set' ||
-                          item.productName?.includes('DAYBREAK')
+                          item.slug === 'the-evening-edit' ||
+                          item.productId === 'the-evening-edit' ||
+                          item.productName?.includes('DAYBREAK') ||
+                          item.productName?.includes('HEARTH')
                         )
                         return (
                           <div key={idx} className="flex justify-between items-start text-xs sm:text-sm">
@@ -425,10 +429,14 @@ export default function OrderSuccessPage() {
                     order.hasPreOrder ||
                     order.items?.some(
                       (i) =>
+                        i.preOrder?.enabled ||
                         i.isPreOrder ||
                         i.slug === 'the-classic-set' ||
                         i.productId === 'the-classic-set' ||
-                        i.productName?.includes('DAYBREAK')
+                        i.slug === 'the-evening-edit' ||
+                        i.productId === 'the-evening-edit' ||
+                        i.productName?.includes('DAYBREAK') ||
+                        i.productName?.includes('HEARTH')
                     )
                   )
                   return (

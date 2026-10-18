@@ -28,7 +28,7 @@ export default function CartSummary({
   })
 
   const hasPreOrder = items?.some(
-    (i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-classic-set' || i.productId === 'the-classic-set'
+    (i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-classic-set' || i.productId === 'the-classic-set' || i.slug === 'the-evening-edit' || i.productId === 'the-evening-edit'
   )
 
   const voucherDiscount = appliedVoucher

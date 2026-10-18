@@ -57,6 +57,7 @@ export default function Section3FeaturedProducts() {
       desc: 'Sọc Nâu mocha ấm áp — cảm giác "về nhà" nuôi dưỡng năng lượng.\nDáng wide-leg buông rủ thượng hạng.\nSang trọng tuyệt đối cho những buổi tối chill.',
       image: '/images/classic-set-brown-main.jpg',
       badge: 'PHIÊN BẢN GIỚI HẠN',
+      preOrderBadge: 'Pre-order',
       swatches: [
         {
           type: 'stripe',

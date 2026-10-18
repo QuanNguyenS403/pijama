@@ -83,6 +83,7 @@ export default function RelatedProducts({ products = [], onAddToCart }) {
                       originalPrice: p.originalPrice,
                       image: img,
                       slug: p.slug,
+                      preOrder: p.preOrder || null,
                     }
                     addItem(cartItem)
                     onAddToCart?.({
