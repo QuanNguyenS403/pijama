@@ -14,7 +14,6 @@ import SectionAppPurpose from '../components/sections/SectionAppPurpose'
 import Section12Footer from '../components/sections/Section12Footer'
 import CartDrawer from '../components/cart/CartDrawer'
 import { Toast } from '../components/ui/Toast'
-import QuickConsultationWidget from '../components/ui/QuickConsultationWidget'
 
 export default function LandingPage() {
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
@@ -60,9 +59,6 @@ export default function LandingPage() {
         <Section9LargeBlockText />
         <SectionAppPurpose />
       </main>
-
-      {/* Floating 24/7 Consultation Widget */}
-      <QuickConsultationWidget />
 
       <Section12Footer />
     </div>

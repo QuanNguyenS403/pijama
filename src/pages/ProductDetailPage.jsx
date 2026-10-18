@@ -110,7 +110,6 @@ function VisualProofSection() {
 }
 
 import StickyMobileAtc from '../components/product/StickyMobileAtc'
-import QuickConsultationWidget from '../components/ui/QuickConsultationWidget'
 import { useCart } from '../hooks/useCart'
 
 export default function ProductDetailPage() {
@@ -377,10 +376,7 @@ export default function ProductDetailPage() {
           if (el) el.scrollIntoView({ behavior: 'smooth' })
         }}
       />
-
-      {/* Quick Consultation Float Widget */}
-      <QuickConsultationWidget />
-
+ 
       {/* Footer */}
       <Section12Footer />
     </div>

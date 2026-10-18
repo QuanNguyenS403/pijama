@@ -875,6 +875,15 @@ app.post('/api/shipping/viettelpost/webhook', async (req, res) => {
 // ── 10. Hệ Thống Tài Khoản Khách Hàng, Voucher & Broadcast ──────
 registerAuthEndpoints(app)
 
+// ── 11. Hệ Thống Chatbot Trợ Lý Ảo QuanNguyenS (Chi phí 0đ) ────────
+try {
+  const { default: chatRouter } = await import('./lib/chat/chatRouter.js')
+  app.use('/api/chat', chatRouter)
+  console.log('🤖 [CHATBOT] Đã đăng ký các tuyến /api/chat và /api/chat/handoff.')
+} catch (chatInitErr) {
+  console.warn('⚠️ [CHATBOT WARNING] Không thể nạp chatRouter:', chatInitErr.message)
+}
+
 // ── P1-2: Phục vụ Frontend SPA trong môi trường Production ─────
 const distPath = path.resolve(__dirname, '../dist')
 if (process.env.NODE_ENV === 'production') {

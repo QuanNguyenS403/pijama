@@ -1,10 +1,11 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import ScrollToTop from './components/ui/ScrollToTop'
 import LandingPage from './pages/LandingPage'
 import AuthModal from './components/auth/AuthModal'
 import { initOrderSync } from './lib/orderSync'
 
+const ChatWidget = lazy(() => import('./components/chat/ChatWidget'))
 const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage'))
 const CartPage = lazy(() => import('./pages/CartPage'))
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'))
@@ -27,6 +28,8 @@ function PageFallback() {
 
 export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const location = useLocation()
+  const isAdminRoute = location.pathname.startsWith('/admin')
 
   useEffect(() => {
     // Khởi tạo kênh đồng bộ realtime (SSE + BroadcastChannel)
@@ -48,6 +51,11 @@ export default function App() {
           window.location.href = '/tai-khoan'
         }}
       />
+      {!isAdminRoute && (
+        <Suspense fallback={null}>
+          <ChatWidget />
+        </Suspense>
+      )}
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
