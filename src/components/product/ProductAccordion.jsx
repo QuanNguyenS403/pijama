@@ -31,10 +31,13 @@ export default function ProductAccordion({ product }) {
   const sizeEntries = product.sizeGuide ? Object.entries(product.sizeGuide) : []
   const hasWeight = sizeEntries.some(([, g]) => g.weight)
   const hasHeight = sizeEntries.some(([, g]) => g.height)
+  const hasShirtLength = sizeEntries.some(([, g]) => g.shirtLength)
   const hasChest = sizeEntries.some(([, g]) => g.chest)
-  const hasWaist = sizeEntries.some(([, g]) => g.waist)
-  const hasTrouser = sizeEntries.some(([, g]) => g.trouserLength)
   const hasSleeve = sizeEntries.some(([, g]) => g.sleeveLength)
+  const hasMaxWaist = sizeEntries.some(([, g]) => g.maxWaist)
+  const hasThigh = sizeEntries.some(([, g]) => g.thigh)
+  const hasWaist = sizeEntries.some(([, g]) => g.waist && !g.maxWaist)
+  const hasTrouser = sizeEntries.some(([, g]) => g.trouserLength)
 
   // ─── B3: Icon cho ký hiệu giặt ủi quốc tế ────────────────────────────────
   const getCareIcon = (text) => {
@@ -119,10 +122,13 @@ export default function ProductAccordion({ product }) {
                     <th className="py-2.5 px-3">Size</th>
                     {hasWeight && <th className="py-2.5 px-3">Cân Nặng</th>}
                     {hasHeight && <th className="py-2.5 px-3">Chiều Cao</th>}
+                    {hasShirtLength && <th className="py-2.5 px-3">Dài Áo</th>}
                     {hasChest && <th className="py-2.5 px-3">Vòng Ngực</th>}
+                    {hasSleeve && <th className="py-2.5 px-3">Dài Tay</th>}
+                    {hasMaxWaist && <th className="py-2.5 px-3">Max Eo</th>}
+                    {hasThigh && <th className="py-2.5 px-3">Đùi</th>}
                     {hasWaist && <th className="py-2.5 px-3">Vòng Eo</th>}
                     {hasTrouser && <th className="py-2.5 px-3">Dài Quần</th>}
-                    {hasSleeve && <th className="py-2.5 px-3">Dài Tay</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E8DFD5] font-sans">
@@ -131,10 +137,13 @@ export default function ProductAccordion({ product }) {
                       <td className="py-2.5 px-3 font-serif font-bold text-sm text-[#631521]">{sz}</td>
                       {hasWeight && <td className="py-2.5 px-3 font-medium text-[#1A1614]">{guide.weight || '—'}</td>}
                       {hasHeight && <td className="py-2.5 px-3 text-[#4A3F38]">{guide.height || '—'}</td>}
+                      {hasShirtLength && <td className="py-2.5 px-3 text-[#4A3F38]">{guide.shirtLength || '—'}</td>}
                       {hasChest && <td className="py-2.5 px-3 text-[#4A3F38]">{guide.chest || '—'}</td>}
+                      {hasSleeve && <td className="py-2.5 px-3 text-[#4A3F38]">{guide.sleeveLength || '—'}</td>}
+                      {hasMaxWaist && <td className="py-2.5 px-3 text-[#4A3F38]">{guide.maxWaist || '—'}</td>}
+                      {hasThigh && <td className="py-2.5 px-3 text-[#4A3F38]">{guide.thigh || '—'}</td>}
                       {hasWaist && <td className="py-2.5 px-3 text-[#4A3F38]">{guide.waist || '—'}</td>}
                       {hasTrouser && <td className="py-2.5 px-3 text-[#4A3F38]">{guide.trouserLength || '—'}</td>}
-                      {hasSleeve && <td className="py-2.5 px-3 text-[#4A3F38]">{guide.sleeveLength || '—'}</td>}
                     </tr>
                   ))}
                 </tbody>
@@ -147,11 +156,6 @@ export default function ProductAccordion({ product }) {
               <li>Vòng hông: đo ở điểm rộng nhất của hông</li>
             </ul>
           )}
-
-          <div className="bg-[#FAF5F0] p-3 rounded-[2px] border border-[#E8DFD5] text-xs text-[#631521] flex items-center gap-2">
-            <span>💡</span>
-            <span>Cần tư vấn size chuẩn xác theo vóc dáng riêng? Gọi ngay Hotline <a href="tel:0981753082" className="font-bold underline">0981 753 082</a> để được hỗ trợ 24/7.</span>
-          </div>
         </div>
       ),
     },

@@ -16,6 +16,7 @@ export default function CartSummary({
   onCheckout,
   showVoucher = true,
   onApplyVoucher,
+  isDrawer = false,
 }) {
   const { items } = useCart()
   const [appliedVoucher, setAppliedVoucher] = useState(() => {
@@ -26,10 +27,6 @@ export default function CartSummary({
       return null
     }
   })
-
-  const hasPreOrder = items?.some(
-    (i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-classic-set' || i.productId === 'the-classic-set' || i.slug === 'the-evening-edit' || i.productId === 'the-evening-edit'
-  )
 
   const voucherDiscount = appliedVoucher
     ? Math.round((subtotal * Number(appliedVoucher.discountPercent || 10)) / 100)
@@ -54,14 +51,14 @@ export default function CartSummary({
   }
 
   return (
-    <div className="bg-[#FAF8F5] border border-[#E8DFD5] rounded-[4px] overflow-hidden shadow-sm">
+    <div className={isDrawer ? 'bg-[#FAF8F5]' : 'bg-[#FAF8F5] border border-[#E8DFD5] rounded-[4px] overflow-hidden shadow-sm'}>
       <FreeShippingBar
         progress={freeShippingProgress}
         remaining={remainingForFreeShipping}
       />
 
-      <div className="p-5 sm:p-6 space-y-3.5">
-        <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-3">
+      <div className={isDrawer ? 'p-4 sm:p-5 space-y-2.5' : 'p-5 sm:p-6 space-y-3.5'}>
+        <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
           TỔNG ĐƠN HÀNG
         </span>
 
@@ -84,7 +81,7 @@ export default function CartSummary({
           </div>
         )}
 
-        <div className="border-t border-[#E8DFD5] pt-3.5 flex justify-between items-baseline">
+        <div className="border-t border-[#E8DFD5] pt-3 flex justify-between items-baseline">
           <span className="font-sans font-bold text-sm uppercase tracking-wider text-[#1A1614]">
             Tổng Cộng
           </span>
@@ -103,34 +100,11 @@ export default function CartSummary({
         {onCheckout && (
           <button
             onClick={onCheckout}
-            className="w-full mt-3 bg-[#631521] text-[#FAF8F5] font-sans font-bold text-xs uppercase tracking-[0.15em] py-4 rounded-[2px] hover:bg-[#4A0D17] border border-[#D4AF37]/30 shadow-luxury transition-all duration-200"
+            className="w-full mt-2.5 bg-[#631521] text-[#FAF8F5] font-sans font-bold text-xs uppercase tracking-[0.15em] py-3.5 sm:py-4 rounded-[2px] hover:bg-[#4A0D17] border border-[#D4AF37]/30 shadow-luxury transition-all duration-200 cursor-pointer"
           >
             Tiến Hành Thanh Toán
           </button>
         )}
-
-        {/* Payment icons */}
-        <div className="flex items-center justify-center gap-2 pt-3 flex-wrap border-t border-[#E8DFD5]">
-          {['COD', 'VietQR (-10%)'].map((pm) => (
-            <span
-              key={pm}
-              className="font-sans text-[0.65rem] font-bold tracking-wider text-[#4A3F38] border border-[#E8DFD5] bg-white px-2 py-1 rounded-[2px]"
-            >
-              {pm}
-            </span>
-          ))}
-        </div>
-
-        <div className="space-y-1.5 text-xs font-sans text-[#8C7E74] pt-1">
-          {hasPreOrder ? (
-            <p className="flex items-center gap-1.5 text-[#631521] font-semibold bg-[#FAF5F0] p-2 rounded-[2px] border border-[#D4AF37]/50">
-              ⏱ Đơn có SP Đặt Trước: Giao trong 7–10 ngày làm việc
-            </p>
-          ) : (
-            <p className="flex items-center gap-1.5">📦 Giao hàng toàn quốc 2–4 ngày làm việc</p>
-          )}
-          <p className="flex items-center gap-1.5">🔄 Hỗ trợ đổi trả trong 30 ngày theo chính sách</p>
-        </div>
       </div>
     </div>
   )

@@ -295,7 +295,7 @@ export default function SocialProofScreenshots() {
       />
 
       {/* ─── Tỷ lệ 35:65 (Trái 35% - Phải 65%): Trái = Tiêu đề, Phải = Dải ảnh chụp comment ─── */}
-      <div className="relative z-10 w-full max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12 grid grid-cols-1 lg:grid-cols-[35fr_65fr] items-center gap-8 lg:gap-10 xl:gap-12">
+      <div className="relative z-10 w-full max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 grid grid-cols-1 lg:grid-cols-[35fr_65fr] items-center gap-8 lg:gap-10">
 
         {/* ─── PHẦN BÊN TRÁI: Chiếm 35% - Tiêu Đề & Giới Thiệu ─── */}
         <div className="w-full text-left pr-0 lg:pr-4">

@@ -55,17 +55,15 @@ export default defineConfig({
         changeOrigin: true,
         configure: (proxy) => {
           proxy.on('error', (err, _req, res) => {
-            if (err.code === 'ECONNREFUSED' || err.message?.includes('ECONNREFUSED')) {
-              if (res && !res.headersSent && typeof res.writeHead === 'function') {
-                res.writeHead(503, { 'Content-Type': 'application/json' })
-                res.end(
-                  JSON.stringify({
-                    success: false,
-                    error: 'Backend API server (cổng 3001) chưa chạy. Khởi động bằng "npm run dev".',
-                    code: 'BACKEND_NOT_RUNNING',
-                  })
-                )
-              }
+            if (res && !res.headersSent && typeof res.writeHead === 'function') {
+              res.writeHead(503, { 'Content-Type': 'application/json' })
+              res.end(
+                JSON.stringify({
+                  success: false,
+                  error: 'Backend API server (cổng 3001) chưa chạy. Khởi động bằng "npm run dev".',
+                  code: err.code || 'BACKEND_NOT_RUNNING',
+                })
+              )
             }
           })
         },

@@ -562,7 +562,7 @@ export default function AdminOrdersPage() {
                     </td>
 
                     {/* Tổng tiền */}
-                    <td style={{ padding:'12px 14px', fontFamily:'Georgia,serif', color:'#631521', fontWeight:'bold', fontSize:'14px', whiteSpace:'nowrap' }}>
+                    <td style={{ padding:'12px 14px', fontFamily:'Inter, Arial, sans-serif', color:'#631521', fontWeight:'bold', fontSize:'14px', whiteSpace:'nowrap' }}>
                       {vnd(order.total)}
                     </td>
 

@@ -118,7 +118,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
       reply:
         'Dạ QuanNguyenS hiện có 3 bộ pijama thiết kế cao cấp trong Bộ Sưu Tập Thu Đông 2026 chuẩn phong cách European Casual Luxury ạ:\n\n' +
         '1. 🌸 **THE DAYBREAK SET (390.000đ)**: Họa tiết sọc hồng nắng sớm ấm áp (Hành Hỏa), viền tương phản sắc nét, cổ notch cổ điển, 100% sợi tự nhiên Cotton-Modal thoáng khí 4 mùa (Size S, M).\n\n' +
-        '2. 🌊 **THE STILLWATER SET (550.000đ)**: Họa tiết Caro Navy lịch lãm (Hành Thủy), thiết kế cổ V thanh thoát tôn dáng, chất liệu 95% Modal & 5% Spandex mướt mát chống nhăn tự nhiên (Size M, L).\n\n' +
+        '2. 🌊 **THE STILLWATER SET (550.000đ)**: Họa tiết Caro Navy lịch lãm (Hành Thủy), thiết kế cổ V thanh thoát tôn dáng, chất liệu 95% Modal & 5% Spandex mướt mát chống nhăn tự nhiên (Size S, L).\n\n' +
         '3. 🍂 **THE HEARTH SET (750.000đ)**: Họa tiết sọc nâu mocha quý phái (Hành Thổ), quần dáng wide-leg ống rộng buông rủ kiêu sa, chế tác từ 100% Tencel Lyocell thượng hạng (Size S, M).\n\n' +
         'Anh/chị đang tìm đồ mặc nhà thoáng mát hay đang muốn chọn một món quà tinh tế cho người thân ạ?',
       quickReplies: ['Mẫu Daybreak (Hồng)', 'Mẫu Stillwater (Navy)', 'Mẫu Hearth (Nâu)', 'Tư vấn chọn size'],
@@ -193,10 +193,10 @@ export function generateLocalAdvisorResponse(message, context = {}) {
         '• **Giá bán**: 550.000đ.\n' +
         '• **Màu sắc**: Họa tiết Caro Navy lịch lãm, chiều sâu tĩnh tại của hành Thủy mang lại cảm giác an yên, thư thái.\n' +
         '• **Chất liệu**: 95% sợi gỗ tự nhiên Modal & 5% Spandex cao cấp định lượng 180 GSM, sờ vào mềm mướt mát lạnh và chống nhăn tự nhiên.\n' +
-        '• **Kích cỡ**: Size M (50–57kg) và Size L (58–66kg).\n' +
+        '• **Kích cỡ**: Size S (Dài áo 66cm, Ngực 124cm - Dài quần 98cm, Max eo 80cm) và Size L (Dài áo 68cm, Ngực 132cm - Dài quần 102cm, Max eo 88cm).\n' +
         '• **Tình trạng**: Hàng có sẵn trong kho, đóng gói hộp quà và bàn giao vận chuyển trong 24h.\n\n' +
-        'Anh/chị đang muốn chọn Size M hay Size L ạ?',
-      quickReplies: ['Tư vấn size M', 'Tư vấn size L', 'Ưu đãi chuyển khoản VietQR'],
+        'Anh/chị đang muốn chọn Size S hay Size L ạ?',
+      quickReplies: ['Tư vấn size S', 'Tư vấn size L', 'Ưu đãi chuyển khoản VietQR'],
       product: {
         name: 'THE STILLWATER SET',
         subtitle: 'Pijama Cổ V Lịch Lãm · Caro Navy',

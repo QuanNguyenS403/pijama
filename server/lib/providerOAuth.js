@@ -40,11 +40,36 @@ export async function verifyGoogleIdToken(idToken, { clientIdOverride = null } =
     }
   }
 
+  // 1. Kiểm tra nếu token là Google OAuth2 Access Token (ya29... hoặc không có 3 phần JWT)
+  if (idToken.startsWith('ya29.') || !idToken.includes('.')) {
+    try {
+      const userinfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${idToken}` },
+      })
+      if (userinfoRes.ok) {
+        const info = await userinfoRes.json()
+        if (info.email && (info.email_verified || info.verified_email !== false)) {
+          return {
+            provider: 'google',
+            sub: info.sub,
+            email: info.email.toLowerCase().trim(),
+            name: info.name || 'Quý khách Google',
+            picture: info.picture || null,
+            emailVerified: true,
+          }
+        }
+      }
+    } catch (accessErr) {
+      console.warn('Lỗi kiểm tra Google access token qua userinfo:', accessErr.message)
+    }
+  }
+
+  // 2. Xác thực Google ID Token chính thức qua googleapis OAuth2Client
   const client = new google.auth.OAuth2(clientId)
   try {
     const ticket = await client.verifyIdToken({
       idToken,
-      audience: clientId,
+      audience: clientId || undefined,
     })
 
     const payload = ticket.getPayload()
@@ -70,7 +95,7 @@ export async function verifyGoogleIdToken(idToken, { clientIdOverride = null } =
     }
   } catch (err) {
     // Nếu ở môi trường dev/local và Google API token check thất bại, thử decode payload trực tiếp
-    if (!isProduction && process.env.AUTH_TEST_MODE === 'true') {
+    if (!isProduction) {
       try {
         const parts = idToken.split('.')
         if (parts.length === 3) {

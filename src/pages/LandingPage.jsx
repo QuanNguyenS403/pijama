@@ -6,11 +6,8 @@ import Section3FeaturedProducts from '../components/sections/Section3FeaturedPro
 import Section4FeatureGrid from '../components/sections/Section4FeatureGrid'
 import SocialProofScreenshots from '../components/sections/SocialProofScreenshots'
 import Section5DarkContrast from '../components/sections/Section5DarkContrast'
-import Section6ReversedLayout from '../components/sections/Section6ReversedLayout'
 import Section7CustomerStory from '../components/sections/Section7CustomerStory'
-import Section8DeepFeature from '../components/sections/Section8DeepFeature'
 import Section9LargeBlockText from '../components/sections/Section9LargeBlockText'
-import SectionAppPurpose from '../components/sections/SectionAppPurpose'
 import Section12Footer from '../components/sections/Section12Footer'
 import CartDrawer from '../components/cart/CartDrawer'
 import { Toast } from '../components/ui/Toast'
@@ -53,11 +50,8 @@ export default function LandingPage() {
         <SocialProofScreenshots />
         <Section4FeatureGrid />
         <Section5DarkContrast />
-        <Section6ReversedLayout />
         <Section7CustomerStory />
-        <Section8DeepFeature />
         <Section9LargeBlockText />
-        <SectionAppPurpose />
       </main>
 
       <Section12Footer />

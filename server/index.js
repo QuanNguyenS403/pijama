@@ -932,7 +932,7 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // Khởi chạy server
-const server = app.listen(PORT, async () => {
+const server = app.listen(PORT, '0.0.0.0', async () => {
   console.log(`\n======================================================`)
   console.log(`🚀 QuanNguyenS Order Server đang chạy tại: http://localhost:${PORT}`)
   console.log(`======================================================`)

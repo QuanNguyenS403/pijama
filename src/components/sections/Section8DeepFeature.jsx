@@ -217,11 +217,11 @@ export default function Section8DeepFeature() {
         style={{ background: 'radial-gradient(ellipse, rgba(212,175,55,0.05) 0%, transparent 70%)' }}
       />
 
-      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 relative z-10">
+      <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 relative z-10">
 
         {/* Header */}
         <motion.div
-          className="text-center max-w-2xl mx-auto mb-16"
+          className="text-center max-w-3xl mx-auto mb-16"
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}

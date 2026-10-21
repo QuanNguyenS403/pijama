@@ -9,9 +9,9 @@ export default function SectionAppPurpose() {
       aria-label="Về ứng dụng và mục đích dịch vụ QuanNguyenS"
       className="py-16 sm:py-20 md:py-24 bg-[#F5F0EB] text-[#2C201A] border-b border-[#E8DFD5] relative overflow-hidden"
     >
-      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 relative z-10">
+      <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 relative z-10">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-14">
+        <div className="text-center max-w-4xl mx-auto mb-14">
           <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
             VỀ ỨNG DỤNG & NỀN TẢNG THỜI TRANG QUANNGUYENS
           </span>

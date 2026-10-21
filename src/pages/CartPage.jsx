@@ -32,7 +32,7 @@ export default function CartPage() {
 
       {/* Breadcrumb */}
       <div className="bg-[#FAF8F5] border-b border-[#E8DFD5]">
-        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 py-3.5">
+        <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 py-3.5">
           <nav aria-label="Breadcrumb" className="flex items-center gap-2">
             <Link to="/" className="flex items-center gap-1 font-sans text-xs font-medium text-[#8C7E74] hover:text-[#631521] transition-colors">
               <Home className="w-3.5 h-3.5" /> Trang Chủ
@@ -44,7 +44,7 @@ export default function CartPage() {
       </div>
 
       {/* Page content */}
-      <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 py-10 md:py-14">
+      <main className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 py-10 md:py-14">
         {/* Heading */}
         <div className="mb-10">
           <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
@@ -78,11 +78,11 @@ export default function CartPage() {
             </Link>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-            {/* Left — items table (7/8 cols) */}
-            <div className="lg:col-span-7 xl:col-span-8 bg-white p-6 rounded-[4px] border border-[#E8DFD5] shadow-sm">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+            {/* Left — items table (8/12 cols — majority of page) */}
+            <div className="lg:col-span-8 xl:col-span-8 bg-white p-6 rounded-[4px] border border-[#E8DFD5] shadow-sm">
               {/* Table header */}
-              <div className="hidden md:grid grid-cols-[2.5fr_1.2fr_1fr_auto] gap-4 pb-4 border-b border-[#E8DFD5] mb-2">
+              <div className="hidden md:grid grid-cols-[3fr_1.2fr_1fr_auto] gap-4 pb-4 border-b border-[#E8DFD5] mb-2">
                 {['SẢN PHẨM', 'MÀU SẮC / SIZE', 'SỐ LƯỢNG', 'GIÁ'].map((h) => (
                   <span key={h} className="font-serif text-xs font-bold uppercase tracking-[0.15em] text-[#631521]">
                     {h}
@@ -97,7 +97,7 @@ export default function CartPage() {
                     {/* Mobile layout */}
                     <div className="flex md:hidden gap-3.5">
                       <Link to={`/san-pham/${item.slug}`}>
-                        <img src={item.image} alt={item.name} className="w-20 h-24 object-cover rounded-[2px] border border-[#E8DFD5] shrink-0" />
+                        <img src={item.image} alt={item.name} className="w-22 h-26 object-cover rounded-[2px] border border-[#E8DFD5] shrink-0 bg-white shadow-xs" />
                       </Link>
                       <div className="flex-1 min-w-0">
                         <Link to={`/san-pham/${item.slug}`}>
@@ -124,10 +124,10 @@ export default function CartPage() {
                     </div>
 
                     {/* Desktop layout */}
-                    <div className="hidden md:grid grid-cols-[2.5fr_1.2fr_1fr_auto] gap-4 items-center">
+                    <div className="hidden md:grid grid-cols-[3fr_1.2fr_1fr_auto] gap-4 items-center">
                       <div className="flex items-center gap-4">
                         <Link to={`/san-pham/${item.slug}`} className="shrink-0">
-                          <img src={item.image} alt={item.name} className="w-20 h-24 object-cover rounded-[2px] border border-[#E8DFD5]" />
+                          <img src={item.image} alt={item.name} className="w-24 h-28 object-cover rounded-[2px] border border-[#E8DFD5] bg-white shadow-xs" />
                         </Link>
                         <div>
                           <Link to={`/san-pham/${item.slug}`}>
@@ -155,7 +155,7 @@ export default function CartPage() {
 
                       <div className="flex flex-col items-end gap-2">
                         <span className="font-serif text-lg font-bold text-[#631521]">{formatPrice(item.price * item.quantity)}</span>
-                        <button onClick={() => removeItem(item.id)} aria-label="Xóa sản phẩm" className="text-[#8C7E74] hover:text-[#631521] transition-colors p-1">
+                        <button onClick={() => removeItem(item.id)} aria-label="Xóa sản phẩm" className="text-[#8C7E74] hover:text-[#631521] transition-colors p-1 cursor-pointer">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -172,8 +172,8 @@ export default function CartPage() {
               </div>
             </div>
 
-            {/* Right — Summary (5/4 cols) */}
-            <div className="lg:col-span-5 xl:col-span-4 sticky top-24">
+            {/* Right — Summary (4 cols) */}
+            <div className="lg:col-span-4 xl:col-span-4 sticky top-24">
               <CartSummary
                 subtotal={subtotal}
                 shippingFee={shippingFee}

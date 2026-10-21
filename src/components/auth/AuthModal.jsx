@@ -55,13 +55,17 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     }
   }
 
-  const handleGoogleClick = async () => {
+  const handleGoogleClick = () => {
     setErrorMsg('')
-    await loginWithGoogle({
+    loginWithGoogle({
       onSuccess: handleGoogleCredential,
-      onError: (err) => setErrorMsg(err),
-      onFallbackNeeded: () => {
-        if (email.trim()) {
+      onError: (err) => {
+        if (err) setErrorMsg(typeof err === 'string' ? err : 'Đăng nhập Google thất bại.')
+      },
+      onFallbackNeeded: (reason) => {
+        if (reason === 'popup_blocked') {
+          setErrorMsg('Trình duyệt đã chặn cửa sổ đăng nhập Google. Vui lòng cho phép popup để tiếp tục.')
+        } else if (email.trim()) {
           handleGoogleCredential({ email: email.trim(), fullName: fullName.trim() || 'Quý khách Google' })
         } else {
           setErrorMsg('Vui lòng nhập email của bạn vào ô trên để tiếp tục đăng nhập.')

@@ -354,9 +354,6 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                       </span>
                     )}
                   </h2>
-                  <p className="text-[11px] text-white/70 font-normal">
-                    Theo dõi hành trình bưu phẩm Viettel Post & hóa đơn
-                  </p>
                 </div>
               </div>
 
@@ -584,15 +581,6 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
               </div>
             )}
 
-            {/* Footer hotline */}
-            <div className="p-4 bg-white border-t border-[#E8DFD5] text-center text-xs text-[#8C7E74]">
-              <p>
-                Cần hỗ trợ tra cứu nhanh? Hotline:{' '}
-                <a href="tel:0981753082" className="text-[#631521] font-bold hover:underline">
-                  0981 753 082
-                </a>
-              </p>
-            </div>
           </motion.aside>
         </>
       )}

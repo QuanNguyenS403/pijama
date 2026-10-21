@@ -66,21 +66,21 @@ export default function Section12Footer() {
       <footer
         id="section-footer"
         aria-label="Footer"
-        className="bg-[#2C201A] text-white pt-20 pb-12 border-t border-white/10 relative overflow-hidden"
+        className="bg-[#2C201A] text-white pt-12 sm:pt-14 pb-8 border-t border-white/10 relative overflow-hidden"
       >
-        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10">
+        <div className="w-full max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10">
           
           {/* Footer tagline */}
-          <div className="border-b border-white/15 pb-14 mb-12 text-center lg:text-left flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+          <div className="border-b border-white/15 pb-8 sm:pb-9 mb-8 sm:mb-9 text-center lg:text-left flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 sm:gap-6">
             <div>
-              <span className="font-sans text-xs font-bold tracking-[0.25em] text-white/60 uppercase block mb-3">
+              <span className="font-sans text-xs font-bold tracking-[0.25em] text-white/60 uppercase block mb-2 sm:mb-2.5">
                 European Casual Luxury
               </span>
               <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#D4AF37] leading-[1.08] tracking-tight">
                 "Dressed for Life
                 <span className="block">Even at Home"</span>
               </h2>
-              <p className="font-sans text-sm text-white/50 mt-2 italic">
+              <p className="font-sans text-sm text-white/50 mt-1.5 italic">
                 — QuanNguyenS
               </p>
             </div>
@@ -92,14 +92,14 @@ export default function Section12Footer() {
           </div>
 
           {/* Footer columns */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-10 pb-12 border-b border-white/10">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pb-8 sm:pb-9 border-b border-white/10">
             
             {/* Col 1: Nav & Policies */}
             <div className="md:col-span-4">
-              <h3 className="font-serif text-lg font-bold text-[#D4AF37] mb-4">
+              <h3 className="font-serif text-base sm:text-lg font-bold text-[#D4AF37] mb-3">
                 Điều Hướng & Chính Sách
               </h3>
-              <ul className="space-y-2.5">
+              <ul className="space-y-2">
                 {footerNavLinks.map((link) => (
                   <li key={link.label}>
                     {link.isAnchor ? (
@@ -125,10 +125,10 @@ export default function Section12Footer() {
 
             {/* Col 2: Contact info */}
             <div className="md:col-span-4">
-              <h3 className="font-serif text-lg font-bold text-[#D4AF37] mb-4">
+              <h3 className="font-serif text-base sm:text-lg font-bold text-[#D4AF37] mb-3">
                 Thông Tin Liên Hệ
               </h3>
-              <div className="space-y-3 font-sans text-xs sm:text-sm text-white/75 leading-relaxed">
+              <div className="space-y-2.5 font-sans text-xs sm:text-sm text-white/75 leading-relaxed">
                 <div className="flex items-start gap-2.5">
                   <MapPin className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
                   <span>Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hai Bà Trưng, Hà Nội</span>
@@ -150,19 +150,19 @@ export default function Section12Footer() {
 
             {/* Col 3: Social + newsletter */}
             <div className="md:col-span-4">
-              <h3 className="font-serif text-lg font-bold text-[#D4AF37] mb-4">
+              <h3 className="font-serif text-base sm:text-lg font-bold text-[#D4AF37] mb-3">
                 Theo Dõi QuanNguyenS
               </h3>
-              <p className="font-sans text-xs text-white/75 leading-relaxed mb-4">
+              <p className="font-sans text-xs text-white/75 leading-relaxed mb-3">
                 Follow <span className="text-[#D4AF37] font-semibold">@qns.style</span> để xem phong cách phối đồ hàng ngày ↗
               </p>
-              <div className="flex gap-3 mb-6">
+              <div className="flex gap-2.5 mb-4">
                 <a
                   href="https://www.instagram.com/qns.style"
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Instagram QuanNguyenS"
-                  className="p-2.5 bg-white/5 hover:bg-[#D4AF37] hover:text-[#2C201A] rounded-full transition-all text-white"
+                  className="p-2 bg-white/5 hover:bg-[#D4AF37] hover:text-[#2C201A] rounded-full transition-all text-white"
                 >
                   <InstagramIcon className="w-4 h-4" />
                 </a>
@@ -171,7 +171,7 @@ export default function Section12Footer() {
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Facebook QuanNguyenS"
-                  className="p-2.5 bg-white/5 hover:bg-[#D4AF37] hover:text-[#2C201A] rounded-full transition-all text-white"
+                  className="p-2 bg-white/5 hover:bg-[#D4AF37] hover:text-[#2C201A] rounded-full transition-all text-white"
                 >
                   <FacebookIcon className="w-4 h-4" />
                 </a>
@@ -180,14 +180,14 @@ export default function Section12Footer() {
                   target="_blank"
                   rel="noreferrer"
                   aria-label="TikTok QuanNguyenS"
-                  className="p-2.5 bg-white/5 hover:bg-[#D4AF37] hover:text-[#2C201A] rounded-full transition-all text-white"
+                  className="p-2 bg-white/5 hover:bg-[#D4AF37] hover:text-[#2C201A] rounded-full transition-all text-white"
                 >
                   <TiktokIcon className="w-4 h-4" />
                 </a>
               </div>
 
               {/* Newsletter */}
-              <p className="font-sans text-xs text-white/60 mb-2">
+              <p className="font-sans text-xs text-white/60 mb-1.5">
                 Nhận thông báo về bộ sưu tập mới:
               </p>
               <form onSubmit={handleNewsletter} className="flex">
@@ -205,7 +205,7 @@ export default function Section12Footer() {
                 </button>
               </form>
               {newsletterMsg && (
-                <p className="font-sans text-xs text-[#D4AF37] mt-1.5 font-medium">
+                <p className="font-sans text-xs text-[#D4AF37] mt-1 font-medium">
                   ✓ Đăng ký nhận bản tin thành công
                 </p>
               )}
@@ -214,7 +214,7 @@ export default function Section12Footer() {
           </div>
 
           {/* Bottom bar */}
-          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-white/60">
+          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-white/60">
             
             <div className="flex items-center gap-6 flex-wrap justify-center sm:justify-start">
               <button

@@ -51,7 +51,7 @@ export default function CartDrawer({ isOpen, onClose }) {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="fixed top-0 right-0 bottom-0 z-[91] w-full sm:w-[420px] bg-[#FAF8F5] border-l border-[#E8DFD5] shadow-2xl flex flex-col"
+            className="fixed top-0 right-0 bottom-0 z-[91] w-full sm:w-[450px] md:w-[480px] bg-[#FAF8F5] border-l border-[#E8DFD5] shadow-2xl flex flex-col"
             role="dialog"
             aria-modal="true"
             aria-label="Giỏ hàng của bạn"
@@ -130,8 +130,8 @@ export default function CartDrawer({ isOpen, onClose }) {
               </div>
             ) : (
               <>
-                {/* Scrollable items */}
-                <div className="flex-1 overflow-y-auto pdp-scrollbar px-6 py-2">
+                {/* Scrollable items — takes the majority of the drawer */}
+                <div className="flex-1 overflow-y-auto pdp-scrollbar px-6 py-3 divide-y divide-[#E8DFD5]">
                   {items.map((item) => (
                     <CartItemRow
                       key={item.id}
@@ -143,7 +143,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                   ))}
                 </div>
 
-                {/* Summary + actions */}
+                {/* Summary + actions — compact and streamlined */}
                 <div className="shrink-0 border-t border-[#E8DFD5] bg-[#FAF8F5]">
                   <CartSummary
                     subtotal={subtotal}
@@ -152,14 +152,15 @@ export default function CartDrawer({ isOpen, onClose }) {
                     remainingForFreeShipping={remainingForFreeShipping}
                     onCheckout={handleCheckout}
                     showVoucher
+                    isDrawer
                   />
 
-                  <div className="px-6 pb-6 pt-2 bg-[#FAF8F5]">
+                  <div className="px-6 pb-4 pt-1 bg-[#FAF8F5] text-center">
                     <button
                       onClick={onClose}
-                      className="w-full border border-[#631521] text-[#631521] font-sans font-bold text-xs uppercase tracking-[0.15em] py-3 rounded-[2px] hover:bg-[#631521] hover:text-[#FAF8F5] transition-colors"
+                      className="w-full text-center text-xs font-sans font-bold text-[#631521] uppercase tracking-wider hover:underline py-1 transition-colors cursor-pointer"
                     >
-                      Tiếp Tục Mua Sắm
+                      ← Tiếp Tục Mua Sắm
                     </button>
                   </div>
                 </div>

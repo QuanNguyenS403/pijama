@@ -52,7 +52,7 @@ export default function PolicyPage() {
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
       <Header onCartOpen={() => setCartOpen(true)} />
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-20">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-20">
         {/* Breadcrumb Navigation */}
         <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#E8DFD5]">
           <Link
@@ -69,7 +69,7 @@ export default function PolicyPage() {
         </div>
 
         {/* Header Title */}
-        <div className="text-center max-w-3xl mx-auto mb-10">
+        <div className="text-center max-w-4xl mx-auto mb-10">
           <span className="text-[11px] font-sans font-bold tracking-[0.25em] text-[#D4AF37] uppercase block mb-2">
             TRUNG TÂM PHÁP LÝ & BẢO MẬT DỮ LIỆU
           </span>

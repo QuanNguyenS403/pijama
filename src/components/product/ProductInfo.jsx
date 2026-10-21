@@ -140,28 +140,15 @@ export default function ProductInfo({
     <>
       <div className="flex flex-col gap-5">
         {/* Section label */}
-        <p className="font-serif text-[0.85rem] uppercase tracking-[0.25em] font-semibold text-[#631521]">
+        <p className="font-sans text-[0.85rem] uppercase tracking-[0.25em] font-semibold text-[#631521]">
           {product.sectionLabel || `BST ${product.collection?.toUpperCase()}`}
         </p>
 
-        {/* Product name & subtitle */}
+        {/* Product name */}
         <div>
           <h1 className="font-serif text-3xl sm:text-4xl md:text-[42px] font-bold leading-[1.12] text-[#1A1614] tracking-tight">
             {product.name}
           </h1>
-          <p className="font-sans text-base font-normal italic text-[#8C7E74] mt-1.5">
-            {product.subtitle}
-          </p>
-          {product.tagline && (
-            <p className="font-sans text-sm font-normal italic text-[#4A3F38] mt-2 leading-relaxed bg-[#FAF5F0] p-2.5 border-l-2 border-[#631521]">
-              "{product.tagline}"
-            </p>
-          )}
-        </div>
-
-        {/* Material Philosophy Badge */}
-        <div className="inline-block border border-[#E8DFD5] px-4 py-2 bg-[#FAF8F5] text-[0.75rem] font-sans font-normal uppercase tracking-[0.15em] text-[#631521] w-fit">
-          ✦ CHẤT LIỆU ĐƯỢC TUYỂN CHỌN & KIỂM ĐỊNH ✦
         </div>
 
         {/* Rating */}
@@ -180,7 +167,7 @@ export default function ProductInfo({
 
         {/* Price block */}
         <div className="flex flex-wrap items-baseline gap-3.5">
-          <span className="font-serif font-bold text-3xl sm:text-4xl leading-none text-[#631521]">
+          <span className="font-sans font-bold text-3xl sm:text-4xl leading-none text-[#631521]">
             {formatPrice(product.price)}
           </span>
           {product.originalPrice && (
@@ -200,7 +187,7 @@ export default function ProductInfo({
           <div className="bg-[#FAF5F0] border-2 border-[#D4AF37] p-3.5 rounded-[3px] flex items-start gap-3 text-xs font-sans text-[#631521] shadow-xs">
             <CalendarClock className="w-5 h-5 text-[#D4AF37] shrink-0 mt-0.5" />
             <div>
-              <p className="font-serif font-bold text-xs sm:text-sm text-[#631521] uppercase tracking-wider mb-0.5">
+              <p className="font-sans font-bold text-xs sm:text-sm text-[#631521] uppercase tracking-wider mb-0.5">
                 Sản Phẩm Đặt Trước (Pre-Order)
               </p>
               <p className="font-normal text-[#4A3F38] leading-relaxed">
@@ -271,7 +258,7 @@ export default function ProductInfo({
             <span className="text-sm shrink-0 mt-0.5 text-[#D4AF37]">✦</span>
             <div className="text-xs font-sans text-[#4A3F38]">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="font-serif font-bold text-[#631521] uppercase tracking-wider text-[11px]">
+                <span className="font-sans font-bold text-[#631521] uppercase tracking-wider text-[11px]">
                   Năng Lượng Ngũ Hành · Hành {product.fengShui.element}
                 </span>
                 <span className="bg-[#631521]/10 text-[#631521] px-1.5 py-0.5 rounded-[2px] text-[10px] font-medium">

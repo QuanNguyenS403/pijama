@@ -6,7 +6,7 @@ export default function QuantitySelector({ quantity, onChange, max = 99 }) {
 
   return (
     <div>
-      <p className="font-serif text-[0.8rem] uppercase tracking-[0.25em] font-semibold text-[#631521] mb-2.5">
+      <p className="font-sans text-[0.8rem] uppercase tracking-[0.25em] font-semibold text-[#631521] mb-2.5">
         SỐ LƯỢNG
       </p>
       <div className="inline-flex items-center border border-[#E8DFD5] bg-white rounded-[2px]">

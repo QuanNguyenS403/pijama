@@ -297,7 +297,7 @@ export default function CheckoutPage() {
 
       <div className="h-16 md:h-20" />
 
-      <main className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10 py-8 md:py-12">
+      <main className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 py-8 md:py-12">
         {/* Back Link */}
         <div className="mb-6 flex items-center justify-between">
           <Link

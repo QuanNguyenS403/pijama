@@ -5,7 +5,7 @@ export default function ColorSelector({ colors = [], selected, onChange }) {
 
   return (
     <div>
-      <p className="font-serif text-[0.8rem] uppercase tracking-[0.25em] font-semibold text-[#631521] mb-2.5">
+      <p className="font-sans text-[0.8rem] uppercase tracking-[0.25em] font-semibold text-[#631521] mb-2.5">
         MÀU SẮC —{' '}
         <span className="text-[#1A1614] font-bold font-sans tracking-normal normal-case">
           {selected?.label || selected?.name || ''}

@@ -6,12 +6,12 @@ export default function Section7CustomerStory() {
     <section
       id="section-customer-story"
       aria-label="Authenticity and Craftsmanship Section"
-      className="py-20 sm:py-24 md:py-28 bg-[#631521] text-white border-b border-white/10 relative overflow-hidden"
+      className="py-20 sm:py-24 md:py-28 bg-[#2C201A] text-white border-b border-white/10 relative overflow-hidden"
     >
       {/* Ambient */}
       <div className="absolute top-0 right-0 w-80 h-80 bg-[#D4AF37]/8 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10">
+      <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           
           {/* Left: Text */}

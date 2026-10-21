@@ -13,27 +13,27 @@ export default function CartItemRow({ item, onUpdateQuantity, onRemove, compact 
         <img
           src={item.image}
           alt={item.name}
-          className={`object-cover rounded-[2px] border border-[#E8DFD5] ${compact ? 'w-16 h-16 sm:w-20 sm:h-20' : 'w-20 h-20'}`}
+          className="w-20 h-24 sm:w-22 sm:h-28 object-cover rounded-[2px] border border-[#E8DFD5] bg-white shadow-xs"
         />
       </Link>
 
       {/* Info */}
-      <div className="flex-1 min-w-0 flex flex-col justify-between">
+      <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
         <div>
           <Link to={`/san-pham/${item.slug}`}>
-            <p className="font-sans font-bold text-sm text-[#1A1614] leading-tight hover:text-[#631521] transition-colors truncate">
+            <p className="font-sans font-bold text-sm sm:text-base text-[#1A1614] leading-tight hover:text-[#631521] transition-colors">
               {item.name}
             </p>
           </Link>
-          <p className="font-sans text-[0.8rem] font-normal text-[#8C7E74] mt-0.5">
-            {item.color?.name || (typeof item.color === 'string' ? item.color : '')} | Size <span className="font-medium text-[#1A1614]">{item.size}</span>
+          <p className="font-sans text-[0.8rem] sm:text-[0.85rem] font-normal text-[#8C7E74] mt-0.5">
+            {item.color?.name || (typeof item.color === 'string' ? item.color : '')} | Size <span className="font-semibold text-[#1A1614]">{item.size}</span>
           </p>
           {(item.preOrder?.enabled || item.isPreOrder || item.slug === 'the-classic-set' || item.productId === 'the-classic-set' || item.slug === 'the-evening-edit' || item.productId === 'the-evening-edit') && (
             <p className="font-sans text-[0.7rem] font-bold text-[#631521] bg-[#FAF5F0] border border-[#D4AF37]/60 px-1.5 py-0.5 rounded-[2px] w-fit mt-1 flex items-center gap-1">
               <span>⏱</span> Đặt trước — giao trong 7-10 ngày
             </p>
           )}
-          <p className="font-serif font-bold text-[1.15rem] text-[#631521] mt-1">
+          <p className="font-serif font-bold text-[1.15rem] sm:text-xl text-[#631521] mt-1">
             {formatPrice(item.price * item.quantity)}
           </p>
         </div>

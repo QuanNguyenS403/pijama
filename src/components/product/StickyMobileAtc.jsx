@@ -46,7 +46,7 @@ export default function StickyMobileAtc({
           transition={{ duration: 0.25, ease: 'easeOut' }}
           className="fixed bottom-0 left-0 right-0 z-40 bg-[#FAF8F5]/98 backdrop-blur-md border-t border-[#E8DFD5] p-3 sm:p-4 shadow-2xl lg:hidden"
         >
-          <div className="max-w-[1240px] mx-auto flex items-center justify-between gap-3">
+          <div className="max-w-[1380px] mx-auto flex items-center justify-between gap-3">
             {/* Left: Thumbnail & Price */}
             <div className="flex items-center gap-2.5 min-w-0">
               <img
@@ -55,13 +55,13 @@ export default function StickyMobileAtc({
                 className="w-12 h-14 object-cover rounded-[2px] border border-[#E8DFD5] shrink-0 bg-[#F5F0EB]"
               />
               <div className="min-w-0">
-                <p className="font-serif font-bold text-xs sm:text-sm text-[#1A1614] truncate leading-tight">
+                <p className="font-sans font-bold text-xs sm:text-sm text-[#1A1614] truncate leading-tight">
                   {product.name}
                 </p>
                 <p className="font-sans text-[11px] text-[#8C7E74] truncate">
                   {selectedColor?.label || selectedColor?.name || ''} {selectedSize ? `· Size ${selectedSize}` : ''}
                 </p>
-                <p className="font-serif text-sm font-bold text-[#631521] leading-none mt-0.5">
+                <p className="font-sans text-sm font-bold text-[#631521] leading-none mt-0.5">
                   {formatPrice(product.price)}
                 </p>
               </div>

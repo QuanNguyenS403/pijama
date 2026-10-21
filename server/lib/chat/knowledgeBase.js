@@ -47,7 +47,17 @@ function buildKnowledgeChunks() {
       .map((s) => {
         const guide = p.sizeGuide?.[s]
         if (!guide) return `Size ${s}`
-        return `Size ${s}: cân nặng ${guide.weight || 'N/A'}, chiều cao ${guide.height || 'N/A'}, vòng ngực ${guide.chest || 'N/A'}, vòng eo ${guide.waist || 'N/A'}`
+        const parts = []
+        if (guide.shirtLength) parts.push(`dài áo ${guide.shirtLength}`)
+        if (guide.chest) parts.push(`vòng ngực ${guide.chest}`)
+        if (guide.sleeveLength) parts.push(`dài tay ${guide.sleeveLength}`)
+        if (guide.maxWaist) parts.push(`max eo ${guide.maxWaist}`)
+        else if (guide.waist) parts.push(`vòng eo ${guide.waist}`)
+        if (guide.thigh) parts.push(`đùi ${guide.thigh}`)
+        if (guide.trouserLength) parts.push(`dài quần ${guide.trouserLength}`)
+        if (guide.weight) parts.push(`cân nặng ${guide.weight}`)
+        if (guide.height) parts.push(`chiều cao ${guide.height}`)
+        return `Size ${s}: ${parts.join(', ')}`
       })
       .join('; ')
 

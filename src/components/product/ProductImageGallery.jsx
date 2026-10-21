@@ -58,11 +58,10 @@ export default function ProductImageGallery({
 
   return (
     <>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3.5">
         {/* Main hero image */}
         <div
-          className="relative overflow-hidden bg-[#F5F0EB] border border-[#E8DFD5] cursor-zoom-in group rounded-[3px]"
-          style={{ aspectRatio: '4/5' }}
+          className="relative overflow-hidden bg-[#F5F0EB] border border-[#E8DFD5] cursor-zoom-in group rounded-[4px] w-full flex items-center justify-center aspect-[3/4] max-h-[700px]"
           onClick={() => openLightbox(activeIndex)}
           role="button"
           tabIndex={0}
@@ -78,6 +77,41 @@ export default function ProductImageGallery({
           {preOrder?.enabled && (
             <div className="absolute top-4 right-4 z-10 bg-[#D4AF37] text-[#1A1614] text-[0.7rem] font-sans font-bold uppercase tracking-[0.16em] px-3 py-1 rounded-[2px] shadow-md">
               Pre-order
+            </div>
+          )}
+
+          {/* Quick Prev / Next navigation buttons on desktop */}
+          {currentImages.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setActiveIndex((i) => (i - 1 + currentImages.length) % currentImages.length)
+                }}
+                aria-label="Ảnh trước"
+                className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/90 text-[#1A1614] hover:bg-[#631521] hover:text-white flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer backdrop-blur-xs"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setActiveIndex((i) => (i + 1) % currentImages.length)
+                }}
+                aria-label="Ảnh tiếp theo"
+                className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/90 text-[#1A1614] hover:bg-[#631521] hover:text-white flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer backdrop-blur-xs"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </>
+          )}
+
+          {/* Image index counter badge */}
+          {currentImages.length > 1 && (
+            <div className="absolute bottom-3.5 left-3.5 z-10 bg-[#1A1614]/75 backdrop-blur-xs text-[#FAF8F5] text-[11px] font-sans font-medium px-2 py-0.5 rounded-[2px] tracking-wider pointer-events-none">
+              {activeIndex + 1} / {currentImages.length}
             </div>
           )}
 
@@ -108,19 +142,19 @@ export default function ProductImageGallery({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="flex gap-2.5 overflow-x-auto pb-1"
+              className="flex gap-2.5 overflow-x-auto pb-1 shrink-0 pt-0.5"
             >
               {currentImages.map((img, i) => (
                 <motion.button
                   key={`${selectedColor?.name}-${i}`}
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, delay: i * 0.05 }}
+                  transition={{ duration: 0.2, delay: i * 0.04 }}
                   onClick={() => setActiveIndex(i)}
                   aria-label={`Chọn ảnh ${i + 1}`}
-                  className={`shrink-0 w-20 aspect-[4/5] overflow-hidden transition-all duration-150 rounded-[2px] ${
+                  className={`shrink-0 w-16 sm:w-20 lg:w-[72px] xl:w-20 aspect-[3/4] overflow-hidden transition-all duration-150 rounded-[3px] cursor-pointer ${
                     i === activeIndex
-                      ? 'border-2 border-[#631521] shadow-md opacity-100 ring-2 ring-[#D4AF37]/30'
+                      ? 'border-2 border-[#631521] shadow-md opacity-100 ring-2 ring-[#D4AF37]/40 scale-[1.02]'
                       : 'border border-[#E8DFD5] opacity-70 hover:opacity-100 hover:border-[#631521]'
                   }`}
                 >

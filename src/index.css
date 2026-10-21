@@ -22,8 +22,8 @@
   --color-mocha-dark:         #1E1510;
 
   --section-padding-y:        clamp(4rem, 8vw, 7rem);
-  --container-max:            1240px;
-  --container-px:             clamp(1.25rem, 5vw, 3rem);
+  --container-max:            1380px;
+  --container-px:             clamp(1.25rem, 4.5vw, 3.5rem);
 
   --text-hero:     clamp(2.5rem, 5vw, 4.5rem);
   --text-h1:       clamp(2rem, 3.5vw, 3rem);
@@ -40,11 +40,52 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
   body {
     @apply font-sans overflow-x-hidden;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  /* ── Toàn bộ website (trừ heading) mặc định sử dụng font chữ Inter ── */
+  *,
+  *::before,
+  *::after {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  /* ── CHỈ CÁC THẺ HEADING (h1, h2, h3, h4, h5, h6) HOẶC .font-heading MỚI DÙNG FONT SERIF (Cormorant Garamond) ── */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .font-heading,
+  .heading-serif {
+    font-family: 'Cormorant Garamond', Georgia, Cambria, 'Times New Roman', serif !important;
+  }
+
+  /* Các phần tử con nằm trong heading thừa hưởng font serif của heading */
+  h1 *,
+  h2 *,
+  h3 *,
+  h4 *,
+  h5 *,
+  h6 *,
+  .font-heading *,
+  .heading-serif * {
+    font-family: inherit !important;
+  }
+
+  /* Giữ font monospace cho mã code / tracking */
+  code,
+  kbd,
+  samp,
+  pre,
+  .font-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
   }
 
   /* Custom smooth scrollbar */
@@ -143,17 +184,25 @@
     }
   }
 
-  /* PDP section label pattern */
+  /* ── Toàn bộ phần tử KHÔNG PHẢI heading (kể cả khi mang class font-serif) đều dùng Inter ── */
+  :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(.font-heading):not(.heading-serif).font-serif {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+
+  /* PDP section label pattern chuẩn hóa sang Inter */
   .section-label {
-    @apply font-serif text-[0.8rem] uppercase tracking-[0.25em] font-semibold text-[#631521];
+    @apply font-sans text-[0.8rem] uppercase tracking-[0.25em] font-semibold text-[#631521];
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   }
 
   .section-label-gold {
-    @apply font-serif text-[0.8rem] uppercase tracking-[0.25em] font-semibold text-[#D4AF37];
+    @apply font-sans text-[0.8rem] uppercase tracking-[0.25em] font-semibold text-[#D4AF37];
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   }
 
   .section-label-light {
     @apply font-sans text-[0.7rem] uppercase tracking-[0.25em] font-bold text-[#D4AF37];
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   }
 
   /* OOS size tile strikethrough */

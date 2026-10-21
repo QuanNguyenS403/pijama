@@ -16,15 +16,15 @@ export default function RelatedProducts({ products = [], onAddToCart }) {
 
   return (
     <>
-      <section className="py-16 md:py-24 bg-[#F5F0EB] border-t border-[#E8DFD5]" aria-label="Sản phẩm liên quan">
-        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10">
+      <section className="py-14 sm:py-16 md:py-20 bg-[#F5F0EB] border-t border-[#E8DFD5]" aria-label="Sản phẩm liên quan">
+        <div className="w-full max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10">
           {/* Header */}
-          <div className="flex items-end justify-between mb-10">
+          <div className="flex items-end justify-between mb-8">
             <div>
-              <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
+              <span className="font-serif text-xs sm:text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-1.5">
                 CÓ THỂ BẠN THÍCH
               </span>
-              <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#1A1614] tracking-tight">
+              <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-[#1A1614] tracking-tight">
                 Hoàn thiện bộ sưu tập của bạn
               </h2>
             </div>
@@ -34,7 +34,7 @@ export default function RelatedProducts({ products = [], onAddToCart }) {
                   onClick={() => setStartIdx((i) => Math.max(0, i - 1))}
                   disabled={!canPrev}
                   aria-label="Sản phẩm trước"
-                  className="w-10 h-10 border border-[#E8DFD5] bg-white rounded-[2px] flex items-center justify-center text-[#4A3F38] hover:border-[#631521] hover:text-[#631521] disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-xs"
+                  className="w-9 h-9 border border-[#E8DFD5] bg-white rounded-[2px] flex items-center justify-center text-[#4A3F38] hover:border-[#631521] hover:text-[#631521] disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-xs"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -42,7 +42,7 @@ export default function RelatedProducts({ products = [], onAddToCart }) {
                   onClick={() => setStartIdx((i) => Math.min(products.length - visible, i + 1))}
                   disabled={!canNext}
                   aria-label="Sản phẩm tiếp theo"
-                  className="w-10 h-10 border border-[#E8DFD5] bg-white rounded-[2px] flex items-center justify-center text-[#4A3F38] hover:border-[#631521] hover:text-[#631521] disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-xs"
+                  className="w-9 h-9 border border-[#E8DFD5] bg-white rounded-[2px] flex items-center justify-center text-[#4A3F38] hover:border-[#631521] hover:text-[#631521] disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-xs"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -50,8 +50,8 @@ export default function RelatedProducts({ products = [], onAddToCart }) {
             )}
           </div>
 
-          {/* Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {/* Grid - Left-aligned and ordered left-to-right */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-7 justify-items-start">
             {products.slice(startIdx, startIdx + visible).map((product, i) => (
               <motion.div
                 key={product.id}
@@ -60,9 +60,11 @@ export default function RelatedProducts({ products = [], onAddToCart }) {
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: i * 0.08 }}
                 whileHover={{ y: -4 }}
+                className="w-full max-w-[340px]"
               >
                 <ProductCard
                   product={product}
+                  className="mx-0"
                   onQuickView={setQuickViewProduct}
                   onAddToCart={(p) => {
                     const color = p.colors?.[0] || null

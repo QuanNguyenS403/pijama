@@ -23,7 +23,7 @@ export default function Section6ReversedLayout() {
       aria-label="Lifestyle Section"
       className="py-20 sm:py-24 md:py-28 bg-[#2C201A] text-white border-b border-white/10 relative overflow-hidden"
     >
-      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10">
+      <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           
           {/* Left: Image */}

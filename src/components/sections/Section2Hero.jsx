@@ -100,84 +100,92 @@ export default function Section2Hero() {
               loading="eager"
             />
 
-            {/* Directional gradient overlay matching negative space alignment — thu gọn bề ngang */}
+            {/* Directional gradient overlay matching negative space alignment */}
             <div
               className={`absolute inset-y-0 transition-opacity duration-700 pointer-events-none ${
                 isRightAligned
-                  ? 'right-0 w-full sm:w-[50%] lg:w-[36%] xl:w-[32%] bg-gradient-to-l from-[#0F0A08]/90 via-[#0F0A08]/40 to-transparent'
-                  : 'left-0 w-full sm:w-[50%] lg:w-[36%] xl:w-[32%] bg-gradient-to-r from-[#0F0A08]/90 via-[#0F0A08]/40 to-transparent'
+                  ? 'right-0 w-full sm:w-[60%] lg:w-[48%] xl:w-[44%] bg-gradient-to-l from-[#0F0A08]/90 via-[#0F0A08]/40 to-transparent'
+                  : 'left-0 w-full sm:w-[60%] lg:w-[48%] xl:w-[44%] bg-gradient-to-r from-[#0F0A08]/90 via-[#0F0A08]/40 to-transparent'
               }`}
             />
           </motion.div>
         </AnimatePresence>
 
-        {/* Text Overlay — Smartly aligned per slide to sit in clean negative space */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`text-${currentSlide.id}`}
-            initial={{ opacity: 0, x: isRightAligned ? 25 : -25 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: isRightAligned ? -20 : 20 }}
-            transition={{ duration: 0.65, delay: 0.15, ease: [0.4, 0, 0.2, 1] }}
-            className={`absolute inset-y-0 flex flex-col justify-center px-6 sm:px-8 lg:px-12 max-w-[420px] sm:max-w-[460px] lg:max-w-[34%] xl:max-w-[30%] z-10 ${
-              isRightAligned ? 'right-0 items-start text-left' : 'left-0 items-start text-left'
-            }`}
-          >
-            {/* Eyebrow badge */}
-            <span className="inline-block font-sans text-[10px] sm:text-xs font-bold tracking-[0.25em] text-[#D4AF37] uppercase mb-2.5 sm:mb-4 drop-shadow-sm">
-              {currentSlide.eyebrow}
-            </span>
-
-            {/* Main Headline */}
-            <h1 className="font-serif text-2xl sm:text-4xl lg:text-[46px] xl:text-5xl font-bold text-white leading-[1.12] mb-3 sm:mb-4 tracking-tight whitespace-pre-line drop-shadow-md">
-              {currentSlide.headline}
-            </h1>
-
-            {/* Sub-headline */}
-            <p className="font-sans text-xs sm:text-sm lg:text-base text-white/80 font-normal leading-relaxed mb-5 sm:mb-7 max-w-sm sm:max-w-md drop-shadow-sm">
-              {currentSlide.sub}
-            </p>
-
-            {/* CTAs */}
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => scrollTo('#section-products')}
-                className="inline-flex items-center justify-center gap-2 bg-[#FAF8F5] hover:bg-[#D4AF37] text-[#1A1614] font-sans text-[11px] sm:text-xs font-bold tracking-[0.18em] px-5 sm:px-7 py-2.5 sm:py-3.5 rounded-[2px] transition-all duration-200 uppercase cursor-pointer active:scale-[0.98] focus:outline-none shadow-luxury"
-                aria-label="Khám phá bộ sưu tập"
+        {/* Text Overlay — Aligned within standard container width */}
+        <div className="absolute inset-0 pointer-events-none z-10 flex justify-center">
+          <div className="w-full max-w-[1380px] h-full mx-auto px-4 sm:px-6 lg:px-10 relative">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`text-${currentSlide.id}`}
+                initial={{ opacity: 0, x: isRightAligned ? 25 : -25 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: isRightAligned ? -20 : 20 }}
+                transition={{ duration: 0.65, delay: 0.15, ease: [0.4, 0, 0.2, 1] }}
+                className={`absolute inset-y-0 pointer-events-auto flex flex-col justify-center max-w-[420px] sm:max-w-[480px] lg:max-w-[46%] xl:max-w-[42%] ${
+                  isRightAligned ? 'right-4 sm:right-6 lg:right-10 items-start text-left' : 'left-4 sm:left-6 lg:left-10 items-start text-left'
+                }`}
               >
-                → KHÁM PHÁ
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollTo('#section-deep-feature')}
-                className="inline-flex items-center justify-center bg-black/25 hover:bg-[#D4AF37]/20 backdrop-blur-xs border border-[#D4AF37]/80 text-[#D4AF37] font-sans text-[11px] sm:text-xs font-semibold tracking-[0.18em] px-5 sm:px-6 py-2.5 sm:py-3.5 rounded-[2px] transition-all duration-200 cursor-pointer uppercase"
-                aria-label="Xem chi tiết"
-              >
-                XEM CHI TIẾT
-              </button>
+                {/* Eyebrow badge */}
+                <span className="inline-block font-sans text-[10px] sm:text-xs font-bold tracking-[0.25em] text-[#D4AF37] uppercase mb-2.5 sm:mb-4 drop-shadow-sm">
+                  {currentSlide.eyebrow}
+                </span>
+
+                {/* Main Headline */}
+                <h1 className="font-serif text-2xl sm:text-4xl lg:text-[46px] xl:text-5xl font-bold text-white leading-[1.12] mb-3 sm:mb-4 tracking-tight whitespace-pre-line drop-shadow-md">
+                  {currentSlide.headline}
+                </h1>
+
+                {/* Sub-headline */}
+                <p className="font-sans text-xs sm:text-sm lg:text-base text-white/80 font-normal leading-relaxed mb-5 sm:mb-7 max-w-sm sm:max-w-md drop-shadow-sm">
+                  {currentSlide.sub}
+                </p>
+
+                {/* CTAs */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => scrollTo('#section-products')}
+                    className="inline-flex items-center justify-center gap-2 bg-[#FAF8F5] hover:bg-[#D4AF37] text-[#1A1614] font-sans text-[11px] sm:text-xs font-bold tracking-[0.18em] px-5 sm:px-7 py-2.5 sm:py-3.5 rounded-[2px] transition-all duration-200 uppercase cursor-pointer active:scale-[0.98] focus:outline-none shadow-luxury"
+                    aria-label="Khám phá bộ sưu tập"
+                  >
+                    → KHÁM PHÁ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollTo('#section-features')}
+                    className="inline-flex items-center justify-center bg-black/25 hover:bg-[#D4AF37]/20 backdrop-blur-xs border border-[#D4AF37]/80 text-[#D4AF37] font-sans text-[11px] sm:text-xs font-semibold tracking-[0.18em] px-5 sm:px-6 py-2.5 sm:py-3.5 rounded-[2px] transition-all duration-200 cursor-pointer uppercase"
+                    aria-label="Xem chi tiết"
+                  >
+                    XEM CHI TIẾT
+                  </button>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Slide Counter & Dots — Aligned with 1380px container */}
+        <div className="absolute inset-x-0 bottom-4 sm:bottom-6 pointer-events-none z-20 flex justify-center">
+          <div className="w-full max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 flex items-center pointer-events-none">
+            <div className="flex items-center gap-2 pointer-events-auto">
+              {slides.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  aria-label={`Slide ${i + 1}`}
+                  onClick={() => setCurrent(i)}
+                  className={`transition-all duration-300 rounded-full focus:outline-none cursor-pointer ${
+                    i === current
+                      ? 'bg-[#D4AF37] w-6 sm:w-7 h-1.5 shadow-gold-glow'
+                      : 'bg-white/40 hover:bg-white/75 w-1.5 h-1.5'
+                  }`}
+                />
+              ))}
+              <span className="ml-2 font-sans text-[10px] sm:text-[11px] font-medium text-white/60 tracking-widest select-none">
+                {String(current + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}
+              </span>
             </div>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Slide Counter & Dots */}
-        <div className="absolute bottom-4 sm:bottom-6 left-6 sm:left-8 lg:left-12 flex items-center gap-2 z-20">
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              aria-label={`Slide ${i + 1}`}
-              onClick={() => setCurrent(i)}
-              className={`transition-all duration-300 rounded-full focus:outline-none cursor-pointer ${
-                i === current
-                  ? 'bg-[#D4AF37] w-6 sm:w-7 h-1.5 shadow-gold-glow'
-                  : 'bg-white/40 hover:bg-white/75 w-1.5 h-1.5'
-              }`}
-            />
-          ))}
-          <span className="ml-2 font-sans text-[10px] sm:text-[11px] font-medium text-white/60 tracking-widest select-none">
-            {String(current + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}
-          </span>
+          </div>
         </div>
 
         {/* Navigation Arrows */}
