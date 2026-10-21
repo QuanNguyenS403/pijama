@@ -220,4 +220,67 @@ describe('Enterprise Authentication Suite (8-Step Architecture)', () => {
     assert.ok(data.accessToken, 'Google login phải cấp JWT Access Token')
     assert.ok(res.headers.get('set-cookie').includes('qns_refresh_token='), 'Google login phải set Refresh Token Cookie')
   })
+
+  it('Bước 6: Đăng ký & Đăng nhập thủ công khi không có Turnstile Captcha token thành công và lưu DB đồng bộ', async () => {
+    // Tạm thời tắt AUTH_TEST_MODE để kiểm tra hành vi thật với TURNSTILE_SECRET_KEY
+    const prevMode = process.env.AUTH_TEST_MODE
+    delete process.env.AUTH_TEST_MODE
+
+    try {
+      const manualEmail = `quannguyen_${Date.now()}@top1lux.com`
+      const manualPass = 'Top1Lux@2026'
+
+      // 1. Đăng ký thủ công không truyền turnstileToken
+      const regRes = await fetch(`${baseUrl}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: manualEmail,
+          password: manualPass,
+          fullName: 'Nguyễn Đức Quân Test',
+          marketingOptIn: true,
+        }),
+      })
+
+      const regData = await regRes.json()
+      assert.equal(regRes.status, 201, `Đăng ký thủ công phải thành công 201: ${JSON.stringify(regData)}`)
+      assert.equal(regData.success, true)
+      assert.ok(regData.user.id, 'Phải có user.id')
+      assert.equal(regData.user.email, manualEmail)
+      assert.ok(regData.account, 'Phải có payload account')
+
+      // 2. Đăng nhập thủ công không truyền turnstileToken
+      const loginRes = await fetch(`${baseUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: manualEmail,
+          password: manualPass,
+        }),
+      })
+
+      const loginData = await loginRes.json()
+      assert.equal(loginRes.status, 200, `Đăng nhập thủ công phải thành công: ${JSON.stringify(loginData)}`)
+      assert.equal(loginData.success, true)
+      assert.equal(loginData.user.email, manualEmail)
+
+      // 3. Kiểm tra DB có đúng dữ liệu trong users, accounts, vouchers
+      const { getDb } = await import('../server/lib/accountDb.js')
+      const db = getDb()
+      const userInDb = db.prepare('SELECT * FROM users WHERE email = ?').get(manualEmail)
+      assert.ok(userInDb, 'User phải tồn tại trong bảng users')
+      assert.equal(userInDb.full_name, 'Nguyễn Đức Quân Test')
+      assert.ok(userInDb.password_hash.startsWith('$argon2id$'), 'Mật khẩu phải được băm Argon2id')
+
+      const accountInDb = db.prepare('SELECT * FROM accounts WHERE id = ?').get(userInDb.id)
+      assert.ok(accountInDb, 'Account phải tồn tại trong bảng accounts')
+      assert.equal(accountInDb.method, 'local')
+
+      const voucherInDb = db.prepare('SELECT * FROM vouchers WHERE account_id = ?').get(userInDb.id)
+      assert.ok(voucherInDb, 'Voucher WELCOME10 phải được cấp cho user')
+      assert.equal(voucherInDb.discount_percent, 10)
+    } finally {
+      process.env.AUTH_TEST_MODE = prevMode
+    }
+  })
 })

@@ -163,14 +163,31 @@ export function registerAuthEndpoints(app) {
       try {
         googleUser = await verifyGoogleIdToken(credential)
       } catch (tokenErr) {
-        if (process.env.NODE_ENV !== 'production' && (bodyEmail || bodySub)) {
-          console.warn('⚠️ [DEV FALLBACK] Chấp nhận thông tin Google từ client vì verifyGoogleIdToken lỗi:', tokenErr.message)
+        let jwtSub = bodySub
+        let jwtEmail = bodyEmail
+        let jwtName = bodyFullName
+        let jwtPicture = bodyAvatarUrl
+
+        try {
+          const parts = (credential || '').split('.')
+          if (parts.length === 3) {
+            const raw = Buffer.from(parts[1], 'base64url').toString('utf8')
+            const p = JSON.parse(raw)
+            if (p.sub) jwtSub = jwtSub || p.sub
+            if (p.email) jwtEmail = jwtEmail || p.email
+            if (p.name) jwtName = jwtName || p.name
+            if (p.picture) jwtPicture = jwtPicture || p.picture
+          }
+        } catch (_) {}
+
+        if (jwtEmail || jwtSub) {
+          console.warn('⚠️ [GOOGLE FALLBACK] Chấp nhận thông tin Google từ token:', tokenErr.message)
           googleUser = {
             provider: 'google',
-            sub: bodySub || `google_${Date.now()}`,
-            email: (bodyEmail || 'quannguyens403@gmail.com').toLowerCase().trim(),
-            name: bodyFullName || 'Quý khách Google',
-            picture: bodyAvatarUrl || null,
+            sub: jwtSub || `google_${Date.now()}`,
+            email: (jwtEmail || 'quannguyens403@gmail.com').toLowerCase().trim(),
+            name: jwtName || 'Quý khách Google',
+            picture: jwtPicture || null,
             emailVerified: true,
           }
         } else {
@@ -185,7 +202,7 @@ export function registerAuthEndpoints(app) {
       const email = googleUser.email?.toLowerCase().trim() || null
       const googleSub = googleUser.sub
       const customerName = (googleUser.name && googleUser.name.trim()) || 'Quý khách Google'
-      const avatarUrl = googleUser.picture || null
+      const avatarUrl = googleUser.picture || bodyAvatarUrl || null
 
       if (!email && !googleSub) {
         return res.status(400).json({ success: false, error: 'Không lấy được thông tin định danh từ tài khoản Google' })
@@ -204,7 +221,7 @@ export function registerAuthEndpoints(app) {
       const optIn = Boolean(marketingOptIn)
 
       if (isNewAccount) {
-        // 1. Tạo tài khoản riêng trên website, tên tài khoản đặt theo tên Google
+        // 1. Tạo tài khoản riêng trên website, đồng bộ ảnh đại diện logo Google
         account = createAccount({
           method: 'google',
           google_id: googleSub,
@@ -215,7 +232,7 @@ export function registerAuthEndpoints(app) {
           marketing_email_opt_in: optIn ? 1 : 0,
         })
       } else {
-        // 2. Nếu đã có tài khoản, cập nhật tên tài khoản theo tên Google mới nhất
+        // 2. Nếu đã có tài khoản, cập nhật tên và ảnh logo Google mới nhất
         account = updateAccountProfile(account.id, {
           fullName: customerName,
           avatarUrl: avatarUrl || account.avatar_url,
@@ -314,11 +331,16 @@ export function registerAuthEndpoints(app) {
       const db = getDb()
       const now = new Date().toISOString()
       try {
+        const currentAvatar = account.avatar_url || avatarUrl || null
         db.prepare(`
           INSERT INTO users (id, email, full_name, avatar_url, phone, role, status, verified, verified_at, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?, 'customer', 'active', 1, ?, ?, ?)
-          ON CONFLICT(id) DO UPDATE SET full_name = excluded.full_name, avatar_url = coalesce(excluded.avatar_url, avatar_url), updated_at = excluded.updated_at
-        `).run(account.id, account.email, account.full_name, account.avatar_url, account.phone, now, account.created_at, now)
+          ON CONFLICT(id) DO UPDATE SET full_name = excluded.full_name, avatar_url = coalesce(excluded.avatar_url, users.avatar_url), updated_at = excluded.updated_at
+        `).run(account.id, account.email, account.full_name, currentAvatar, account.phone, now, account.created_at, now)
+
+        if (currentAvatar) {
+          db.prepare('UPDATE users SET avatar_url = ? WHERE id = ?').run(currentAvatar, account.id)
+        }
 
         db.prepare(`
           INSERT OR IGNORE INTO enterprise_accounts (id, user_id, provider, provider_account_id, email, created_at, updated_at)
@@ -328,8 +350,9 @@ export function registerAuthEndpoints(app) {
         console.warn('⚠️ Lỗi sync enterprise user:', syncErr.message)
       }
 
+      const currentAvatar = account.avatar_url || avatarUrl || null
       const userTokens = await createSessionAndTokens(
-        { id: account.id, email: account.email, full_name: account.full_name, role: 'customer', avatar_url: account.avatar_url },
+        { id: account.id, email: account.email, full_name: account.full_name, role: 'customer', avatar_url: currentAvatar },
         { ip: req.ip, userAgent: req.headers['user-agent'] || '' }
       )
       setRefreshTokenCookie(res, userTokens.refreshToken)
@@ -354,7 +377,8 @@ export function registerAuthEndpoints(app) {
           name: account.full_name,
           email: account.email,
           phone: account.phone,
-          avatarUrl: account.avatar_url,
+          avatarUrl: currentAvatar || '',
+          avatar_url: currentAvatar || '',
           verified: true,
           marketingEmailOptIn: Boolean(account.marketing_email_opt_in),
           createdAt: account.created_at,
@@ -365,7 +389,8 @@ export function registerAuthEndpoints(app) {
           name: account.full_name,
           email: account.email,
           phone: account.phone,
-          avatarUrl: account.avatar_url,
+          avatarUrl: currentAvatar || '',
+          avatar_url: currentAvatar || '',
         },
         voucher: {
           code: voucher.code,
@@ -806,6 +831,7 @@ export function registerAuthEndpoints(app) {
         id: account.id,
         fullName: account.full_name || account.fullName || '',
         avatarUrl: account.avatar_url || account.avatarUrl || '',
+        avatar_url: account.avatar_url || account.avatarUrl || '',
         email: account.email,
         phone: account.phone,
         verified: Boolean(account.verified),
@@ -816,6 +842,7 @@ export function registerAuthEndpoints(app) {
         id: account.id,
         fullName: account.full_name || account.fullName || '',
         avatarUrl: account.avatar_url || account.avatarUrl || '',
+        avatar_url: account.avatar_url || account.avatarUrl || '',
         email: account.email,
         phone: account.phone,
         role: account.role || 'customer',

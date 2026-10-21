@@ -12,6 +12,28 @@ let currentErrorCb = null
 const DEFAULT_CLIENT_ID = '745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com'
 
 /**
+ * Giải mã an toàn JWT Google ID Token ở phía Client
+ */
+export function decodeGoogleJwt(jwt) {
+  try {
+    const parts = String(jwt || '').split('.')
+    if (parts.length !== 3) return null
+    const base64Url = parts[1]
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=')
+    const jsonPayload = decodeURIComponent(
+      atob(padded)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    )
+    return JSON.parse(jsonPayload)
+  } catch (err) {
+    return null
+  }
+}
+
+/**
  * Lấy Google Client ID một cách đồng bộ (không await để giữ user gesture context)
  */
 export function getGoogleClientIdSync() {
@@ -90,24 +112,29 @@ function getOrCreateTokenClient(clientId) {
         }
 
         if (tokenResponse?.access_token) {
+          let userInfo = {}
           try {
             const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
               headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
             })
-            const userInfo = await res.json()
-            if (currentSuccessCb) {
-              await currentSuccessCb({
-                credential: tokenResponse.access_token,
-                accessToken: tokenResponse.access_token,
-                email: userInfo.email,
-                fullName: userInfo.name || 'Quý khách Google',
-                picture: userInfo.picture,
-                sub: userInfo.sub,
-              })
+            if (res.ok) {
+              userInfo = await res.json()
             }
           } catch (fetchErr) {
-            console.warn('Lỗi lấy userinfo Google:', fetchErr)
-            if (currentErrorCb) currentErrorCb(fetchErr.message)
+            console.warn('Không thể lấy userinfo từ client (sẽ xác thực qua backend):', fetchErr.message)
+          }
+
+          if (currentSuccessCb) {
+            await currentSuccessCb({
+              credential: tokenResponse.access_token,
+              accessToken: tokenResponse.access_token,
+              email: userInfo.email,
+              fullName: userInfo.name || 'Quý khách Google',
+              picture: userInfo.picture,
+              avatarUrl: userInfo.picture,
+              avatar_url: userInfo.picture,
+              sub: userInfo.sub,
+            })
           }
         }
       },
@@ -224,8 +251,17 @@ export async function setupGoogleSignInButton(containerElement, { onSuccess, onE
           if (!response?.credential) {
             throw new Error('Không nhận được token xác thực từ Google')
           }
+          const decoded = decodeGoogleJwt(response.credential)
           if (onSuccess) {
-            await onSuccess(response.credential)
+            await onSuccess({
+              credential: response.credential,
+              sub: decoded?.sub,
+              email: decoded?.email,
+              fullName: decoded?.name || 'Quý khách Google',
+              picture: decoded?.picture,
+              avatarUrl: decoded?.picture,
+              avatar_url: decoded?.picture,
+            })
           }
         } catch (err) {
           if (onError) onError(err.message || 'Lỗi xử lý tài khoản Google')

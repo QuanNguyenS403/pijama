@@ -29,15 +29,22 @@ import CartDrawer from '../components/cart/CartDrawer'
 import { Toast } from '../components/ui/Toast'
 import { setAccessToken, clearAccessToken } from '../lib/apiClient'
 import { clearLocalOrders } from '../lib/orderSync'
-import { loginWithGoogle, setupGoogleSignInButton } from '../lib/googleAuth'
+import { loginWithGoogle, setupGoogleSignInButton, decodeGoogleJwt } from '../lib/googleAuth'
 
 const formatVND = (amount) => Number(amount || 0).toLocaleString('vi-VN') + 'đ'
 
 export default function AccountPage() {
   const [cartOpen, setCartOpen] = useState(false)
   const [toast, setToast] = useState(null)
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('qns_customer_account')
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
+  })
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState(null)
   const [voucher, setVoucher] = useState(null)
   const [orders, setOrders] = useState([])
   const [activeTab, setActiveTab] = useState('vouchers') // 'vouchers' | 'orders' | 'settings'
@@ -56,8 +63,14 @@ export default function AccountPage() {
       setAuthSubmitting(true)
       setAuthError(null)
       const credStr = typeof credential === 'string' ? credential : credential?.credential
+      const decoded = typeof credStr === 'string' ? decodeGoogleJwt(credStr) : null
       const payload = {
         credential: credStr || (credential?.email ? `mock-google-token:sub:${credential.email}:${encodeURIComponent(credential.fullName || '')}` : ''),
+        email: decoded?.email || credential?.email,
+        fullName: decoded?.name || credential?.fullName || credential?.name,
+        sub: decoded?.sub || credential?.sub,
+        avatarUrl: decoded?.picture || credential?.picture,
+        picture: decoded?.picture || credential?.picture,
         marketingOptIn: true,
         ...(typeof credential === 'object' ? credential : {}),
       }
@@ -89,11 +102,21 @@ export default function AccountPage() {
       if (data.accessToken) {
         setAccessToken(data.accessToken)
       }
-      setUser(data.account || data.user)
+      const loggedInAccount = data.account || data.user
+      if (loggedInAccount) {
+        const resolvedAvatar = loggedInAccount.avatarUrl || loggedInAccount.avatar_url || payload.avatarUrl || null
+        loggedInAccount.avatarUrl = resolvedAvatar
+        loggedInAccount.avatar_url = resolvedAvatar
+      }
+      setUser(loggedInAccount)
       setVoucher(data.voucher)
       setMarketingOptIn(true)
+      try {
+        localStorage.setItem('qns_customer_account', JSON.stringify(loggedInAccount))
+      } catch (_) {}
+      window.dispatchEvent(new CustomEvent('customer_auth_changed', { detail: { user: loggedInAccount } }))
       fetchUserOrders()
-      setToast({ productName: `Chào mừng ${data.account?.fullName || data.user?.fullName || 'bạn'} trở lại!`, id: Date.now() })
+      setToast({ productName: `Chào mừng ${loggedInAccount?.fullName || 'bạn'} trở lại!`, id: Date.now() })
     } catch (err) {
       setAuthError('Lỗi kết nối máy chủ xác thực: ' + (err.message || 'Không thể kết nối'))
     } finally {
@@ -138,19 +161,68 @@ export default function AccountPage() {
         const text = await res.text()
         data = text ? JSON.parse(text) : null
       } catch (e) {}
+
       if (data && data.success && data.authenticated && data.account) {
-        setUser(data.account)
+        const acc = {
+          ...data.account,
+          avatarUrl: data.account.avatarUrl || data.account.avatar_url || '',
+          avatar_url: data.account.avatar_url || data.account.avatarUrl || '',
+        }
+        setUser(acc)
         setVoucher(data.voucher)
-        setMarketingOptIn(Boolean(data.account.marketingEmailOptIn))
+        setMarketingOptIn(Boolean(acc.marketingEmailOptIn))
+        try {
+          localStorage.setItem('qns_customer_account', JSON.stringify(acc))
+        } catch (_) {}
+        window.dispatchEvent(new CustomEvent('customer_auth_changed', { detail: { user: acc } }))
         fetchUserOrders()
       } else {
-        setUser(null)
-        setVoucher(null)
-        setOrders([])
+        // Thử khôi phục session qua token rotation / refresh cookie nếu có
+        let restored = false
+        try {
+          const refreshRes = await fetch('/api/auth/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+          })
+          if (refreshRes.ok) {
+            const refreshData = await refreshRes.json().catch(() => null)
+            if (refreshData?.success && refreshData?.user) {
+              if (refreshData.accessToken) setAccessToken(refreshData.accessToken)
+              const reMe = await fetch('/api/auth/me', { credentials: 'include' })
+              const reData = await reMe.json().catch(() => null)
+              if (reData?.authenticated && reData?.account) {
+                const reAcc = {
+                  ...reData.account,
+                  avatarUrl: reData.account.avatarUrl || reData.account.avatar_url || '',
+                  avatar_url: reData.account.avatar_url || reData.account.avatarUrl || '',
+                }
+                setUser(reAcc)
+                setVoucher(reData.voucher)
+                setMarketingOptIn(Boolean(reAcc.marketingEmailOptIn))
+                try {
+                  localStorage.setItem('qns_customer_account', JSON.stringify(reAcc))
+                } catch (_) {}
+                window.dispatchEvent(new CustomEvent('customer_auth_changed', { detail: { user: reAcc } }))
+                fetchUserOrders()
+                restored = true
+              }
+            }
+          }
+        } catch (_) {}
+
+        if (!restored) {
+          setUser(null)
+          setVoucher(null)
+          setOrders([])
+          try {
+            localStorage.removeItem('qns_customer_account')
+          } catch (_) {}
+          window.dispatchEvent(new CustomEvent('customer_auth_changed', { detail: { user: null } }))
+        }
       }
     } catch (err) {
       console.warn('Lỗi kiểm tra phiên làm việc:', err)
-      setUser(null)
     } finally {
       setLoading(false)
     }
@@ -210,9 +282,13 @@ export default function AccountPage() {
       })
       clearAccessToken()
       clearLocalOrders()
+      try {
+        localStorage.removeItem('qns_customer_account')
+      } catch (_) {}
       setUser(null)
       setVoucher(null)
       setOrders([])
+      window.dispatchEvent(new CustomEvent('customer_auth_changed', { detail: { user: null } }))
       setToast({ productName: 'Đã đăng xuất thành công', id: Date.now() })
     } catch (err) {
       console.error('Lỗi đăng xuất:', err)
@@ -439,12 +515,26 @@ export default function AccountPage() {
               className="bg-white p-6 sm:p-8 rounded-[4px] border border-[#E8DFD5] shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
             >
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-[#631521] text-[#D4AF37] flex items-center justify-center font-serif text-xl font-bold border-2 border-[#D4AF37]/50 shadow-sm shrink-0 overflow-hidden">
-                  {user.avatarUrl ? (
-                    <img src={user.avatarUrl} alt={user.fullName} className="w-full h-full object-cover" />
-                  ) : (
-                    <span>{(user.fullName || 'Q')[0].toUpperCase()}</span>
-                  )}
+                <div className="w-14 h-14 rounded-full bg-[#631521] text-[#D4AF37] flex items-center justify-center font-serif text-xl font-bold border-2 border-[#D4AF37]/50 shadow-sm shrink-0 overflow-hidden relative">
+                  {(user.avatarUrl || user.avatar_url) ? (
+                    <img
+                      src={user.avatarUrl || user.avatar_url}
+                      alt={user.fullName || 'Thành viên'}
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none'
+                        if (e.currentTarget.parentElement) {
+                          const fb = e.currentTarget.parentElement.querySelector('.profile-avatar-fallback')
+                          if (fb) fb.classList.remove('hidden')
+                        }
+                      }}
+                    />
+                  ) : null}
+                  <span className={`profile-avatar-fallback ${(user.avatarUrl || user.avatar_url) ? 'hidden' : 'flex items-center justify-center'}`}>
+                    {(user.fullName || 'Q')[0].toUpperCase()}
+                  </span>
                 </div>
 
                 <div>

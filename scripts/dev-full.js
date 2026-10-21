@@ -15,8 +15,8 @@ console.log('===================================================\n')
 const nodeCmd = process.execPath
 const viteCliPath = path.resolve(rootDir, 'node_modules', 'vite', 'bin', 'vite.js')
 
-// 1. Khởi động Backend API Server (Port 3001) có --watch tự động nạp code mới
-const backend = spawn(nodeCmd, ['--watch', 'server/index.js'], {
+// 1. Khởi động Backend API Server (Port 3001) có --watch chỉ theo dõi thư mục server
+const backend = spawn(nodeCmd, ['--watch', '--watch-path=server', 'server/index.js'], {
   cwd: rootDir,
   stdio: 'inherit',
   env: { ...process.env, PORT: '3001' },

@@ -121,6 +121,14 @@ export function registerEnterpriseAuthEndpoints(app) {
         now
       )
 
+      // Đồng bộ sang account_identities để tương thích trọn vẹn mọi truy vấn liên kết danh tính
+      try {
+        db.prepare(`
+          INSERT OR IGNORE INTO account_identities (id, account_id, provider, provider_subject, email, created_at)
+          VALUES (?, ?, 'local', ?, ?, ?)
+        `).run(`ident_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`, userId, userId, email, now)
+      } catch (_) {}
+
       // F. Tự động cấp Voucher chào mừng WELCOME10
       let voucherCode = 'WELCOME10'
       try {
@@ -154,16 +162,21 @@ export function registerEnterpriseAuthEndpoints(app) {
         details: { email, marketingOptIn },
       })
 
+      const userPayload = {
+        id: userId,
+        email,
+        fullName,
+        full_name: fullName,
+        role: 'customer',
+        voucherCode,
+        verified: false,
+      }
+
       return res.status(201).json({
         success: true,
         message: 'Đăng ký tài khoản thành công! Mã ưu đãi chào mừng WELCOME10 đã được lưu vào ví voucher của bạn.',
-        user: {
-          id: userId,
-          email,
-          fullName,
-          role: 'customer',
-          voucherCode,
-        },
+        user: userPayload,
+        account: userPayload,
         accessToken: tokens.accessToken,
         expiresIn: tokens.expiresIn,
       })
@@ -268,6 +281,13 @@ export function registerEnterpriseAuthEndpoints(app) {
         new Date().toISOString()
       )
 
+      try {
+        db.prepare(`
+          INSERT OR IGNORE INTO account_identities (id, account_id, provider, provider_subject, email, created_at)
+          VALUES (?, ?, 'local', ?, ?, ?)
+        `).run(`ident_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`, user.id, user.id, user.email, new Date().toISOString())
+      } catch (_) {}
+
       createCustomerSession({
         accountId: user.id,
         token: tokens.refreshToken,
@@ -277,17 +297,22 @@ export function registerEnterpriseAuthEndpoints(app) {
 
       logSecurityAudit({ userId: user.id, action: 'LOGIN_SUCCESS', status: 'SUCCESS', ip, userAgent })
 
+      const userPayload = {
+        id: user.id,
+        email: user.email,
+        fullName: user.full_name,
+        full_name: user.full_name,
+        role: user.role,
+        avatarUrl: user.avatar_url || '',
+        avatar_url: user.avatar_url || '',
+        verified: Boolean(user.verified),
+      }
+
       return res.json({
         success: true,
         message: 'Đăng nhập thành công!',
-        user: {
-          id: user.id,
-          email: user.email,
-          fullName: user.full_name,
-          role: user.role,
-          avatarUrl: user.avatar_url,
-          verified: Boolean(user.verified),
-        },
+        user: userPayload,
+        account: userPayload,
         accessToken: tokens.accessToken,
         expiresIn: tokens.expiresIn,
       })

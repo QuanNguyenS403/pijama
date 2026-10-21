@@ -88,11 +88,24 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
   }
 
-  /* Custom smooth scrollbar */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: #1E1510; }
-  ::-webkit-scrollbar-thumb { background: #631521; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #D4AF37; }
+  /* Custom smooth scrollbar - Kích thước tiêu chuẩn công thái học (10px) */
+  html {
+    scrollbar-color: #631521 #1E1510;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #1E1510;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #631521;
+    border-radius: 5px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #D4AF37;
+  }
 }
 
 @layer utilities {

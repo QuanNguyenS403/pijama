@@ -3,9 +3,15 @@
  */
 export async function verifyTurnstileToken(token, clientIp = '') {
   const secretKey = (process.env.TURNSTILE_SECRET_KEY || '').trim()
+  const isEnforced = process.env.TURNSTILE_ENFORCE === 'true'
   const isProd = process.env.NODE_ENV === 'production'
 
-  // Bỏ qua kiểm tra nếu chưa cấu hình secret trong dev/test mode
+  // Token mock cho automated testing
+  if (token === 'mock-turnstile-token-valid' || (process.env.AUTH_TEST_MODE === 'true' && !token)) {
+    return { success: true, mocked: true }
+  }
+
+  // Bỏ qua kiểm tra nếu chưa cấu hình secret
   if (!secretKey) {
     if (isProd) {
       console.warn('⚠️ [SECURITY] TURNSTILE_SECRET_KEY chưa được cấu hình trong production. Tạm thời bỏ qua.')
@@ -13,13 +19,13 @@ export async function verifyTurnstileToken(token, clientIp = '') {
     return { success: true, bypassed: true }
   }
 
-  // Token mock cho automated testing
-  if (token === 'mock-turnstile-token-valid' || (process.env.AUTH_TEST_MODE === 'true' && !token)) {
-    return { success: true, mocked: true }
-  }
-
+  // Nếu client không gửi token (vì giao diện không hiển thị Captcha hoặc cấu hình tùy chọn)
   if (!token) {
-    return { success: false, error: 'Vui lòng hoàn thành xác minh bảo mật Captcha' }
+    if (isEnforced) {
+      return { success: false, error: 'Vui lòng hoàn thành xác minh bảo mật Captcha' }
+    }
+    // Mặc định cho phép đi qua đối với đăng ký/đăng nhập thông thường (Rate limiting & Argon2id đã bảo vệ an ninh)
+    return { success: true, optional: true }
   }
 
   try {

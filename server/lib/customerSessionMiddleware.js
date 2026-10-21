@@ -92,21 +92,23 @@ export async function customerSessionMiddleware(req, res, next) {
   try {
     const cookieHeader = req.headers.cookie
     const cookies = cookieHeader ? parseCookies(cookieHeader) : {}
-    const token = cookies[HOST_COOKIE_NAME] || cookies[COOKIE_NAME] || cookies['qns_session'] || cookies['qns_refresh_token']
+    const sessionCookie = cookies[HOST_COOKIE_NAME] || cookies[COOKIE_NAME] || cookies['qns_session']
+    const refreshCookie = cookies['qns_refresh_token'] || cookies['refreshToken']
 
-    // 1. Kiểm tra bảng customer_sessions
-    if (token) {
-      const sessionData = findCustomerSessionByToken(token)
-      if (sessionData && sessionData.account && sessionData.account.status === 'active') {
+    // 1. Kiểm tra bảng customer_sessions qua session cookie
+    if (sessionCookie) {
+      const sessionData = findCustomerSessionByToken(sessionCookie)
+      if (sessionData && sessionData.account && (sessionData.account.status === 'active' || !sessionData.account.status)) {
         req.customerAccount = sessionData.account
         req.customerSession = sessionData.session
       }
     }
 
-    // 2. Kiểm tra bảng enterprise_sessions nếu chưa có session
-    if (!req.customerAccount && token) {
+    // 2. Kiểm tra bảng enterprise_sessions qua refresh token cookie nếu chưa có session
+    const candidateRefreshToken = refreshCookie || (!req.customerAccount ? sessionCookie : null)
+    if (!req.customerAccount && candidateRefreshToken) {
       const db = getDb()
-      const tokenHash = hashRefreshToken(token)
+      const tokenHash = hashRefreshToken(candidateRefreshToken)
       const entSession = db.prepare(`
         SELECT s.*, u.id as u_id, u.email as u_email, u.full_name, u.role, u.avatar_url, u.status as u_status, u.verified, u.marketing_email_opt_in, u.phone as u_phone
         FROM enterprise_sessions s
@@ -114,7 +116,7 @@ export async function customerSessionMiddleware(req, res, next) {
         WHERE s.refresh_token_hash = ? AND s.is_revoked = 0 AND s.expires_at > ?
       `).get(tokenHash, Date.now())
 
-      if (entSession && entSession.u_status === 'active') {
+      if (entSession && (entSession.u_status === 'active' || !entSession.u_status)) {
         req.customerAccount = {
           id: entSession.u_id,
           email: entSession.u_email,

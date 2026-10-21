@@ -14,6 +14,14 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
   const [wishlistCount, setWishlistCount] = useState(0)
   const [ordersDrawerOpen, setOrdersDrawerOpen] = useState(false)
   const [ordersCount, setOrdersCount] = useState(0)
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('qns_customer_account')
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
+  })
 
   const { totalItems } = useCart()
   const navigate = useNavigate()
@@ -46,6 +54,46 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
     const handleStorage = () => {
       updateWishlistCount()
       updateOrdersCount()
+      try {
+        const saved = localStorage.getItem('qns_customer_account')
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          const resolved = parsed.avatarUrl || parsed.avatar_url || ''
+          parsed.avatarUrl = resolved
+          parsed.avatar_url = resolved
+          setCurrentUser(parsed)
+        } else {
+          setCurrentUser(null)
+        }
+      } catch {
+        setCurrentUser(null)
+      }
+    }
+    const handleAuthChanged = (e) => {
+      if (e?.detail?.user !== undefined) {
+        const u = e.detail.user
+        if (u) {
+          const resolved = u.avatarUrl || u.avatar_url || ''
+          u.avatarUrl = resolved
+          u.avatar_url = resolved
+        }
+        setCurrentUser(u)
+      } else {
+        try {
+          const saved = localStorage.getItem('qns_customer_account')
+          if (saved) {
+            const parsed = JSON.parse(saved)
+            const resolved = parsed.avatarUrl || parsed.avatar_url || ''
+            parsed.avatarUrl = resolved
+            parsed.avatar_url = resolved
+            setCurrentUser(parsed)
+          } else {
+            setCurrentUser(null)
+          }
+        } catch {
+          setCurrentUser(null)
+        }
+      }
     }
     const handleOrdersUpdated = () => updateOrdersCount()
     const handleWishlistUpdated = () => updateWishlistCount()
@@ -58,10 +106,31 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll, { passive: true })
     window.addEventListener('wishlist_updated', handleWishlistUpdated)
+    window.addEventListener('customer_auth_changed', handleAuthChanged)
+    window.addEventListener('storage', handleStorage)
+
+    // Khôi phục phiên nhẹ nhàng từ /api/auth/me
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.authenticated && data?.account) {
+          const acc = {
+            ...data.account,
+            avatarUrl: data.account.avatarUrl || data.account.avatar_url || '',
+            avatar_url: data.account.avatar_url || data.account.avatarUrl || '',
+          }
+          setCurrentUser(acc)
+          try {
+            localStorage.setItem('qns_customer_account', JSON.stringify(acc))
+          } catch (_) {}
+        }
+      })
+      .catch(() => {})
 
     return () => {
       clearInterval(interval)
       window.removeEventListener('storage', handleStorage)
+      window.removeEventListener('customer_auth_changed', handleAuthChanged)
       window.removeEventListener('orders_updated', handleOrdersUpdated)
       window.removeEventListener('wishlist_updated', handleWishlistUpdated)
       window.removeEventListener('open_orders_drawer', handleOpenOrdersEvent)
@@ -220,14 +289,41 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
               {/* Customer Account Button (Enterprise Auth UX) */}
               <Link
                 to="/tai-khoan"
-                onMouseEnter={() => {
-                  fetch('/api/auth/me', { credentials: 'include' }).catch(() => {})
-                }}
                 aria-label="Tài khoản & Đặc quyền thành viên"
-                className="relative hidden sm:flex text-white/80 hover:text-[#D4AF37] transition-colors p-1 cursor-pointer items-center justify-center"
-                title="Tài khoản & Ưu đãi thành viên"
+                className="relative hidden sm:flex text-white/90 hover:text-[#D4AF37] transition-all p-1 cursor-pointer items-center gap-1.5 group"
+                title={currentUser ? `Tài khoản: ${currentUser.fullName || currentUser.email}` : 'Tài khoản & Ưu đãi thành viên'}
               >
-                <User className="w-5 h-5" />
+                {currentUser ? (
+                  <div className="flex items-center gap-2 bg-white/10 hover:bg-white/15 px-2.5 py-1 rounded-full border border-[#D4AF37]/40 transition-colors shadow-xs">
+                    <div className="w-6 h-6 rounded-full bg-[#D4AF37] text-[#2C201A] flex items-center justify-center text-[11px] font-bold overflow-hidden shrink-0 border border-[#D4AF37] relative">
+                      {(currentUser.avatarUrl || currentUser.avatar_url) ? (
+                        <img
+                          src={currentUser.avatarUrl || currentUser.avatar_url}
+                          alt={currentUser.fullName || ''}
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                            if (e.currentTarget.parentElement) {
+                              const fb = e.currentTarget.parentElement.querySelector('.header-avatar-fallback')
+                              if (fb) fb.classList.remove('hidden')
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <span className={`header-avatar-fallback ${(currentUser.avatarUrl || currentUser.avatar_url) ? 'hidden' : 'flex items-center justify-center'}`}>
+                        {(currentUser.fullName || currentUser.email || 'Q')[0].toUpperCase()}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-medium text-white max-w-[110px] truncate tracking-wide">
+                      {currentUser.fullName ? currentUser.fullName.split(' ').slice(-1)[0] : 'Thành viên'}
+                    </span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+                  </div>
+                ) : (
+                  <User className="w-5 h-5 text-white/80 group-hover:text-[#D4AF37] transition-colors" />
+                )}
               </Link>
 
               {/* Cart Button (Biểu tượng giỏ hàng — Bỏ chữ) */}
@@ -348,10 +444,39 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
                 <Link
                   to="/tai-khoan"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 text-white/90 hover:text-[#D4AF37] py-2 border-b border-white/10 text-sm font-sans font-medium uppercase tracking-wider"
+                  className="flex items-center justify-between text-white/90 hover:text-[#D4AF37] py-2 border-b border-white/10 text-sm font-sans font-medium uppercase tracking-wider"
                 >
-                  <User className="w-4 h-4 text-[#D4AF37]" />
-                  <span>Tài khoản & Ưu đãi CLB</span>
+                  <span className="flex items-center gap-2.5">
+                    {currentUser && (currentUser.avatarUrl || currentUser.avatar_url) ? (
+                      <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 border border-[#D4AF37] relative flex items-center justify-center bg-[#D4AF37] text-[#2C201A] text-[10px] font-bold">
+                        <img
+                          src={currentUser.avatarUrl || currentUser.avatar_url}
+                          alt=""
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                            if (e.currentTarget.parentElement) {
+                              const fb = e.currentTarget.parentElement.querySelector('.mobile-avatar-fb')
+                              if (fb) fb.classList.remove('hidden')
+                            }
+                          }}
+                        />
+                        <span className="mobile-avatar-fb hidden">
+                          {(currentUser.fullName || currentUser.email || 'Q')[0].toUpperCase()}
+                        </span>
+                      </div>
+                    ) : (
+                      <User className="w-4 h-4 text-[#D4AF37]" />
+                    )}
+                    <span>{currentUser ? `Tài khoản (${currentUser.fullName || 'Đã đăng nhập'})` : 'Tài khoản & Ưu đãi CLB'}</span>
+                  </span>
+                  {currentUser ? (
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                      Đã đăng nhập
+                    </span>
+                  ) : null}
                 </Link>
               </div>
             </motion.div>

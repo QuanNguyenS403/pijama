@@ -84,6 +84,7 @@ app.use(
               connectSrc: [
                 "'self'",
                 'https://accounts.google.com',
+                'https://www.googleapis.com',
                 'https://challenges.cloudflare.com',
                 'https://graph.facebook.com',
               ],
