@@ -10,6 +10,7 @@ import WishlistButton from '../ui/WishlistButton'
 import Button from '../ui/Button'
 import { useCart } from '../../hooks/useCart'
 import { useNavigate } from 'react-router-dom'
+import { useProductReviews } from '../../hooks/useProductReviews'
 
 function StarRow({ rating, size = 'sm' }) {
   const full = Math.floor(rating)
@@ -68,6 +69,7 @@ export default function ProductInfo({
 
   const { addItem } = useCart()
   const navigate = useNavigate()
+  const { summary } = useProductReviews(product.id)
 
   const stockForSize = selectedColor && selectedSize ? (selectedColor.stock?.[selectedSize] ?? 0) : 99
   const canAdd = selectedSize && stockForSize > 0
@@ -151,13 +153,19 @@ export default function ProductInfo({
           </h1>
         </div>
 
-        {/* Rating */}
-        {product.rating && (
+        {/* Rating — Chỉ hiển thị khi có dữ liệu đánh giá thật từ khách đã mua hàng */}
+        {summary.totalReviews > 0 ? (
           <div className="flex items-center gap-2.5">
-            <StarRow rating={product.rating} />
-            <span className="font-sans text-sm font-bold text-[#1A1614]">{product.rating}</span>
+            <StarRow rating={summary.averageRating} />
+            <span className="font-sans text-sm font-bold text-[#1A1614]">{summary.averageRating}</span>
             <a href="#reviews" className="font-sans text-sm font-medium text-[#8C7E74] hover:text-[#631521] underline transition-colors">
-              ({product.reviewCount} đánh giá)
+              ({summary.totalReviews} đánh giá)
+            </a>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <a href="#reviews" className="font-sans text-xs text-[#8C7E74] hover:text-[#631521] underline transition-colors">
+              Chưa có đánh giá · Gửi cảm nhận đầu tiên
             </a>
           </div>
         )}

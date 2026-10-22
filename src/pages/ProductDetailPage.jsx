@@ -39,7 +39,9 @@ const materialStoryConfig = {
 }
 
 
-function VisualProofSection() {
+function VisualProofSection({ summary }) {
+  const hasReviews = summary && summary.totalReviews > 0
+
   return (
     <section className="py-14 sm:py-16 md:py-20 bg-[#FAF8F5] border-b border-[#E8DFD5]" aria-label="Tại sao khách hàng tin tưởng">
       <div className="w-full max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10">
@@ -55,23 +57,36 @@ function VisualProofSection() {
 
           <div className="flex flex-col items-center justify-center p-4">
             <span className="font-serif text-4xl sm:text-5xl font-bold text-[#631521] leading-none mb-2">
-              127
+              BST 2026
             </span>
             <span className="font-sans text-xs sm:text-sm text-[#4A3F38] font-normal">
-              khách đã quay lại mua thêm
+              phiên bản giới hạn thiết kế độc quyền
             </span>
           </div>
 
           <div className="flex flex-col items-center justify-center p-4">
-            <div className="flex items-center justify-center gap-1 mb-2">
-              <span className="font-serif text-4xl sm:text-5xl font-bold text-[#631521] leading-none">
-                4.9
-              </span>
-              <span className="text-3xl text-[#D4AF37]">★</span>
-            </div>
-            <span className="font-sans text-xs sm:text-sm text-[#4A3F38] font-normal">
-              điểm đánh giá trung bình
-            </span>
+            {hasReviews ? (
+              <>
+                <div className="flex items-center justify-center gap-1 mb-2">
+                  <span className="font-serif text-4xl sm:text-5xl font-bold text-[#631521] leading-none">
+                    {summary.averageRating}
+                  </span>
+                  <span className="text-3xl text-[#D4AF37]">★</span>
+                </div>
+                <span className="font-sans text-xs sm:text-sm text-[#4A3F38] font-normal">
+                  điểm đánh giá thực tế ({summary.totalReviews} lượt)
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="font-serif text-4xl sm:text-5xl font-bold text-[#631521] leading-none mb-2">
+                  100%
+                </span>
+                <span className="font-sans text-xs sm:text-sm text-[#4A3F38] font-normal">
+                  may đo chuẩn chỉ từng đường kim
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -81,6 +96,7 @@ function VisualProofSection() {
 
 import StickyMobileAtc from '../components/product/StickyMobileAtc'
 import { useCart } from '../hooks/useCart'
+import { useProductReviews } from '../hooks/useProductReviews'
 
 export default function ProductDetailPage() {
   const { productSlug } = useParams()
@@ -90,6 +106,7 @@ export default function ProductDetailPage() {
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
   const [toast, setToast] = useState(null)
   const { addItem } = useCart()
+  const { summary } = useProductReviews(product?.id)
 
   useEffect(() => {
     if (product) {
@@ -326,7 +343,7 @@ export default function ProductDetailPage() {
       </section>
 
       {/* Visual Proof Section: Tại Sao Khách Tin Tưởng */}
-      <VisualProofSection />
+      <VisualProofSection summary={summary} />
 
       {/* Reviews */}
       <ProductReviews product={product} />

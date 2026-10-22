@@ -139,7 +139,7 @@ export default function PolicyModal({ isOpen, onClose, initialPolicy = 'terms' }
                   Cần hỗ trợ thêm về chính sách hoặc đơn hàng?
                 </p>
                 <p className="font-sans text-xs text-[#8C7E74] mt-0.5">
-                  Bộ phận CSKH của QuanNguyenS sẵn sàng phục vụ 24/7
+                  Bộ phận CSKH của QuanNguyenS sẵn sàng hỗ trợ tận tâm
                 </p>
               </div>
               <div className="flex items-center gap-3 shrink-0">

@@ -118,9 +118,28 @@ export default function PolicyPage() {
               {currentPolicy.title}
             </h2>
             <p className="text-xs text-[#8C7E74] mt-1">{currentPolicy.subtitle}</p>
-            <div className="inline-block mt-3 px-2.5 py-1 bg-[#FAF8F5] border border-[#E8DFD5] rounded-[2px] text-[11px] font-medium text-[#631521]">
-              {currentPolicy.lastUpdated}
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              <div className="inline-block px-2.5 py-1 bg-[#FAF8F5] border border-[#E8DFD5] rounded-[2px] text-[11px] font-medium text-[#631521]">
+                {currentPolicy.lastUpdated}
+              </div>
+              {currentPolicy.version && (
+                <span className="inline-block px-2 py-0.5 bg-[#F5F0EB] border border-[#E8DFD5] rounded-[2px] text-[10px] font-semibold text-[#8C7E74]">
+                  v{currentPolicy.version}
+                </span>
+              )}
             </div>
+
+            {/* Version Changelog */}
+            {Array.isArray(currentPolicy.changelog) && currentPolicy.changelog.length > 0 && (
+              <div className="mt-4 p-3 bg-[#FAF8F5] border border-[#E8DFD5] rounded-[3px] text-xs">
+                <span className="font-semibold text-[#631521] block mb-1">Nhật ký cập nhật:</span>
+                {currentPolicy.changelog.map((c, cIdx) => (
+                  <p key={cIdx} className="text-[#4A3F38] text-[11px] leading-relaxed">
+                    • <strong>Phiên bản {c.version} ({c.date}):</strong> {c.summary}
+                  </p>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Sections List */}
@@ -163,7 +182,7 @@ export default function PolicyPage() {
               <div className="flex items-center gap-2 p-2.5 bg-white border border-[#E8DFD5] rounded-[2px]">
                 <Phone className="w-4 h-4 text-[#D4AF37] shrink-0" />
                 <a href="tel:0981753082" className="hover:text-[#631521] font-medium">
-                  0981 753 082 (Hỗ trợ 24/7)
+                  0981 753 082 (Hotline hỗ trợ)
                 </a>
               </div>
               <div className="flex items-center gap-2 p-2.5 bg-white border border-[#E8DFD5] rounded-[2px]">

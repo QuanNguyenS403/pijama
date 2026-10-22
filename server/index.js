@@ -15,6 +15,7 @@ import { createRateLimiter } from './lib/rateLimiter.js'
 import { addSseClient } from './lib/orderEvents.js'
 import { verifyAdminLogin, adminLoginLimiter, requireAdminAuth } from './lib/adminAuth.js'
 import { registerAuthEndpoints } from './lib/authEndpoints.js'
+import { registerReviewEndpoints } from './lib/reviewEndpoints.js'
 import { verifyTrackingToken } from './lib/orderTokenService.js'
 import { normalizeVietnamesePhone } from './lib/smsService.js'
 import { customerSessionMiddleware } from './lib/customerSessionMiddleware.js'
@@ -875,6 +876,16 @@ app.post('/api/shipping/viettelpost/webhook', async (req, res) => {
 
 // ── 10. Hệ Thống Tài Khoản Khách Hàng, Voucher & Broadcast ──────
 registerAuthEndpoints(app)
+
+// ── 10.1 Hệ Thống Đánh Giá Sản Phẩm Thật (Real Customer Reviews) ──
+registerReviewEndpoints(app)
+
+// Phục vụ thư mục ảnh uploads công khai
+const publicUploadsPath = path.resolve(__dirname, '../public/uploads')
+if (!fs.existsSync(publicUploadsPath)) {
+  fs.mkdirSync(publicUploadsPath, { recursive: true })
+}
+app.use('/uploads', express.static(publicUploadsPath))
 
 // ── 11. Hệ Thống Chatbot Trợ Lý Ảo QuanNguyenS (Chi phí 0đ) ────────
 try {

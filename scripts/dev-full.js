@@ -14,14 +14,12 @@ console.log('===================================================\n')
 
 const nodeCmd = process.execPath
 const viteCliPath = path.resolve(rootDir, 'node_modules', 'vite', 'bin', 'vite.js')
-
-// 1. Khởi động Backend API Server (Port 3001) có --watch chỉ theo dõi thư mục server
-const backend = spawn(nodeCmd, ['--watch', '--watch-path=server', 'server/index.js'], {
+// 1. Khởi động Backend API Server (Port 3001) có --watch chỉ theo dõi server/lib và server/index.js (tránh loop với SQLite accounts.db)
+const backend = spawn(nodeCmd, ['--watch', '--watch-path=server/lib', '--watch-path=server/index.js', 'server/index.js'], {
   cwd: rootDir,
   stdio: 'inherit',
   env: { ...process.env, PORT: '3001' },
 })
-
 // 2. Khởi động Frontend Vite Dev Server (Port 3000)
 const frontend = spawn(nodeCmd, [viteCliPath, '--port', '3000'], {
   cwd: rootDir,
