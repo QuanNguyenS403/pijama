@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { getSupabase } from './supabaseClient.js'
+import { upsertOrderToDb, getOrderFromDb } from './accountDb.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -70,10 +71,13 @@ function loadFromDisk() {
         data.forEach((order) => {
           if (order && order.orderId) {
             ordersMap.set(order.orderId, order)
+            try {
+              upsertOrderToDb(order)
+            } catch {}
           }
         })
       }
-      console.log(`📦 [PERSISTENCE] Đã khôi phục ${ordersMap.size} đơn hàng từ disk.`)
+      console.log(`📦 [PERSISTENCE] Đã khôi phục ${ordersMap.size} đơn hàng từ disk và đồng bộ vào Database SQLite.`)
     }
   } catch (err) {
     console.warn('⚠️ Lỗi đọc orders_store.json:', err.message)
@@ -144,7 +148,14 @@ loadFromDisk()
 export const orderPersistence = {
   get(orderId) {
     if (!orderId) return null
-    return ordersMap.get(orderId) || null
+    let order = ordersMap.get(orderId)
+    if (!order) {
+      order = getOrderFromDb(orderId)
+      if (order) {
+        ordersMap.set(orderId, order)
+      }
+    }
+    return order || null
   },
 
   set(orderId, order) {
@@ -165,6 +176,7 @@ export const orderPersistence = {
     ordersMap.set(orderId, order)
     saveToDisk()
     syncOrderToSupabase(order)
+    upsertOrderToDb(order)
   },
 
   setBatch(orders) {
@@ -186,6 +198,7 @@ export const orderPersistence = {
         }
         ordersMap.set(id, order)
         syncOrderToSupabase(order)
+        upsertOrderToDb(order)
         changed = true
       }
     })

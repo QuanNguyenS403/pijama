@@ -373,26 +373,6 @@ export default function AdminOrdersPage() {
           >
             <span>📢 Gửi Broadcast</span>
           </Link>
-          <Link
-            to="/admin/reviews"
-            title="Kiểm duyệt và phản hồi đánh giá sản phẩm từ khách hàng"
-            style={{
-              ...btnStyle,
-              background: '#FAF8F5',
-              color: '#631521',
-              border: '1px solid #D4AF37',
-              padding: '10px 16px',
-              fontSize: '12px',
-              textDecoration: 'none',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontWeight: 600,
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-            }}
-          >
-            <span>⭐ Duyệt Đánh Giá</span>
-          </Link>
           <button
             onClick={() => handleSyncViettelPost(false)}
             disabled={isSyncingViettel || loading}

@@ -27,29 +27,6 @@ function StarRating({ rating = 5, size = 'sm' }) {
   )
 }
 
-function VerifiedBadge({ verified, source }) {
-  if (verified) {
-    return (
-      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full">
-        <span className="w-3.5 h-3.5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[9px] font-bold">
-          ✓
-        </span>
-        Đã mua hàng
-      </span>
-    )
-  }
-
-  if (source === 'imported') {
-    return (
-      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-neutral-600 bg-neutral-100 border border-neutral-200 px-2 py-0.5 rounded-full">
-        Phản hồi qua Zalo/FB
-      </span>
-    )
-  }
-
-  return null
-}
-
 const INITIAL_REVIEW_COUNT = 4
 
 function useColumnCount() {
@@ -111,14 +88,11 @@ function ReviewCard({ review, idx, onOpenPhoto }) {
 
       {/* Card Body */}
       <div className="p-3.5 sm:p-4 flex flex-col gap-1.5 text-left">
-        {/* Author & Badge */}
+        {/* Author */}
         <div className="flex items-center justify-between gap-1 flex-wrap">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="font-sans font-bold text-xs sm:text-[13px] text-neutral-900 tracking-tight">
-              {review.displayName || review.author}
-            </span>
-            <VerifiedBadge verified={review.verifiedPurchase ?? review.verified} source={review.source} />
-          </div>
+          <span className="font-sans font-bold text-xs sm:text-[13px] text-neutral-900 tracking-tight">
+            {review.displayName || review.author}
+          </span>
         </div>
 
         {/* Star Rating */}
@@ -263,18 +237,25 @@ export default function ProductReviews({ product }) {
       setVerifiedOrderData(data)
       setDisplayNameInput(data.customerName || '')
 
-      // Tìm sản phẩm trong đơn
-      const match = data.items.find((i) => i.productId === product.id && !i.alreadyReviewed)
-      if (match) {
-        setSelectedItemKey(match.itemKey)
-      } else if (data.items.length > 0) {
-        setSelectedItemKey(data.items[0].itemKey)
+      // Kiểm tra xem đơn hàng có chứa sản phẩm này không
+      const productInOrder = (data.items || []).find(
+        (i) => i.productId === product.id || i.slug === product.slug || i.productId === product.slug
+      )
+      
+      if (!productInOrder) {
+        setVerifyError(`Đơn hàng #${data.orderId} không chứa sản phẩm "${product.name}". Quý khách chỉ có thể đánh giá cho đúng sản phẩm đã mua trong đơn hàng này.`)
+        return
       }
 
+      if (productInOrder.alreadyReviewed) {
+        setVerifyError(`Sản phẩm "${product.name}" trong đơn hàng #${data.orderId} đã được đánh giá rồi. Cảm ơn quý khách!`)
+        return
+      }
+
+      setSelectedItemKey(productInOrder.itemKey)
+
       if (!data.isDelivered) {
-        setVerifyError(`Đơn hàng #${data.orderId} đang ở trạng thái "${data.status}". Bạn chỉ có thể đánh giá sau khi đơn hàng đã được giao thành công (DELIVERED).`)
-      } else if (data.items.every((i) => i.alreadyReviewed)) {
-        setVerifyError(`Toàn bộ sản phẩm trong đơn hàng #${data.orderId} đã được đánh giá. Cảm ơn bạn!`)
+        setVerifyError(`Đơn hàng #${data.orderId} đã bị hủy. Quý khách chỉ có thể đánh giá cho đơn hàng mua thành công.`)
       } else {
         setStep(2) // Chuyển sang form viết đánh giá
       }
@@ -379,7 +360,7 @@ export default function ProductReviews({ product }) {
                     aria-expanded={showFilters}
                     aria-label="Tùy chọn lọc đánh giá"
                   >
-                    <span>{summary.totalReviews} đánh giá đã mua hàng</span>
+                    <span>{summary.totalReviews} đánh giá</span>
                     <ChevronDown
                       className={`w-4 h-4 text-neutral-500 group-hover:text-[#631521] transition-transform duration-200 ${
                         showFilters ? 'rotate-180' : ''
@@ -593,7 +574,7 @@ export default function ProductReviews({ product }) {
                       Cảm ơn bạn đã gửi đánh giá!
                     </h4>
                     <p className="font-sans text-xs text-neutral-500 max-w-xs mx-auto mb-6">
-                      Đánh giá của bạn đã được ghi nhận vào hệ thống và sẽ hiển thị công khai trên website sau khi được kiểm duyệt theo quy chế.
+                      Đánh giá của bạn đã được ghi nhận và hiển thị thành công trên trang sản phẩm. Cảm ơn bạn đã chia sẻ trải nghiệm thực tế!
                     </p>
                     <button
                       type="button"
@@ -607,9 +588,9 @@ export default function ProductReviews({ product }) {
                   /* Bước 1: Tra cứu đơn hàng để đảm bảo review từ khách thật đã nhận hàng */
                   <div className="space-y-4 font-sans text-xs">
                     <div className="p-3 bg-[#FAF8F5] border border-[#E8DFD5] rounded text-neutral-700 leading-relaxed">
-                      <p className="font-semibold text-[#631521] mb-1">Nguyên tắc đánh giá minh bạch:</p>
+                      <p className="font-semibold text-[#631521] mb-1">Đánh giá sản phẩm:</p>
                       <p>
-                        QuanNguyenS cam kết chỉ hiển thị đánh giá từ khách hàng đã đặt mua và nhận hàng thành công. Vui lòng cung cấp mã đơn hàng để xác minh.
+                        Dành riêng cho khách hàng đã mua sản phẩm tại QuanNguyenS. Vui lòng cung cấp mã đơn hàng để viết đánh giá cho sản phẩm đã mua.
                       </p>
                     </div>
 

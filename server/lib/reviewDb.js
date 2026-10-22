@@ -1,8 +1,9 @@
 import crypto from 'crypto'
 import { getDb } from './accountDb.js'
+import { seedInitialReviews } from './seedReviews.js'
 
 /**
- * Khởi tạo Schema bảng đánh giá sản phẩm thật (Idempotent)
+ * Khởi tạo Schema bảng đánh giá sản phẩm (Idempotent)
  */
 export function initReviewSchema(database = getDb()) {
   database.exec(`
@@ -14,10 +15,10 @@ export function initReviewSchema(database = getDb()) {
       rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
       body TEXT NOT NULL,
       display_name TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected')),
+      status TEXT NOT NULL DEFAULT 'approved' CHECK(status IN ('pending', 'approved', 'rejected')),
       reject_reason TEXT,
       verified_purchase INTEGER NOT NULL DEFAULT 0,
-      source TEXT NOT NULL DEFAULT 'order' CHECK(source IN ('order', 'imported')),
+      source TEXT NOT NULL DEFAULT 'order' CHECK(source IN ('order', 'imported', 'sample')),
       consent_evidence TEXT,
       shop_reply TEXT,
       shop_replied_at TEXT,
@@ -67,6 +68,9 @@ export function initReviewSchema(database = getDb()) {
     CREATE INDEX IF NOT EXISTS idx_review_invites_order 
       ON review_invites(order_id);
   `)
+
+  // Khởi tạo tự động 24 đánh giá ban đầu lên website
+  seedInitialReviews(database)
 }
 
 /**
@@ -108,7 +112,7 @@ export function sanitizeReviewBody(raw) {
 }
 
 /**
- * Tạo mới đánh giá sản phẩm (mặc định status = 'pending')
+ * Tạo mới đánh giá sản phẩm (tự động approved để hiển thị ngay lập tức)
  */
 export function createReview({
   productId,
@@ -121,7 +125,7 @@ export function createReview({
   source = 'order',
   consentEvidence = null,
   photos = [],
-  status = 'pending',
+  status = 'approved',
 }, database = getDb()) {
   initReviewSchema(database)
 
@@ -129,6 +133,7 @@ export function createReview({
   const now = new Date().toISOString()
   const cleanDisplayName = formatDisplayName(displayName)
   const cleanBody = sanitizeReviewBody(body)
+  const moderatedAt = status === 'approved' ? now : null
 
   const stmt = database.prepare(`
     INSERT INTO product_reviews (
@@ -138,7 +143,7 @@ export function createReview({
     ) VALUES (
       ?, ?, ?, ?, ?, ?, ?,
       ?, NULL, ?, ?, ?,
-      NULL, NULL, ?, NULL
+      NULL, NULL, ?, ?
     )
   `)
 
@@ -154,7 +159,8 @@ export function createReview({
     verifiedPurchase ? 1 : 0,
     source,
     consentEvidence,
-    now
+    now,
+    moderatedAt
   )
 
   if (Array.isArray(photos) && photos.length > 0) {

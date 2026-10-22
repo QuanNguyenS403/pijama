@@ -169,14 +169,6 @@ Nếu bạn có bất kỳ câu hỏi nào về bảng size hoặc chất liệu
               <span>Quản Lý Đơn Hàng</span>
             </Link>
 
-            <Link
-              to="/admin/reviews"
-              className="px-3 py-1.5 text-xs font-semibold text-[#631521] bg-[#FAF8F5] border border-[#D4AF37] rounded hover:bg-[#F5F0EB] transition-colors flex items-center gap-1.5"
-            >
-              <Star className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span>Duyệt Đánh Giá</span>
-            </Link>
-
             <span className="px-3 py-1.5 text-xs font-bold bg-[#631521] text-white rounded-[2px] shadow-xs flex items-center gap-1.5">
               <Send className="w-3.5 h-3.5 text-[#D4AF37]" />
               <span>Gửi Broadcast Email</span>

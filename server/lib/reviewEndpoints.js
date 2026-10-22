@@ -119,7 +119,11 @@ export function registerReviewEndpoints(app) {
         return res.status(400).json({ success: false, error: 'Vui lòng cung cấp mã đơn hàng' })
       }
 
-      const order = orderPersistence.get(targetOrderId)
+      let order = orderPersistence.get(targetOrderId)
+      if (!order) {
+        const { getOrderFromDb } = await import('./accountDb.js')
+        order = getOrderFromDb(targetOrderId)
+      }
       if (!order) {
         return res.status(404).json({ success: false, error: 'Không tìm thấy đơn hàng trong hệ thống' })
       }
@@ -145,8 +149,8 @@ export function registerReviewEndpoints(app) {
         }
       }
 
-      // Kiểm tra trạng thái đơn: Bắt buộc phải là DELIVERED
-      const isDelivered = order.status === 'DELIVERED'
+      // Kiểm tra trạng thái đơn: Bất cứ khách nào mua hàng thành công (không bị hủy) đều có thể đánh giá
+      const isPurchased = order.status !== 'CANCELLED'
 
       // Kiểm tra các mặt hàng trong đơn và trạng thái đã đánh giá chưa
       const items = (order.items || []).map((item) => {
@@ -167,9 +171,9 @@ export function registerReviewEndpoints(app) {
         orderId: targetOrderId,
         customerName: order.customer?.fullName || 'Quý khách',
         status: order.status,
-        isDelivered,
+        isDelivered: isPurchased,
         items,
-        eligible: isDelivered && items.some((i) => !i.alreadyReviewed),
+        eligible: isPurchased && items.some((i) => !i.alreadyReviewed),
       })
     } catch (err) {
       console.error('Lỗi xác minh đơn hàng để đánh giá:', err)
@@ -240,8 +244,12 @@ export function registerReviewEndpoints(app) {
         })
       }
 
-      // Tra cứu đơn hàng từ hệ thống
-      const order = orderPersistence.get(orderId)
+      // Tra cứu đơn hàng từ hệ thống (RAM Map + SQLite orders table)
+      let order = orderPersistence.get(orderId)
+      if (!order) {
+        const { getOrderFromDb } = await import('./accountDb.js')
+        order = getOrderFromDb(orderId)
+      }
       if (!order) {
         return res.status(404).json({ success: false, error: 'Không tìm thấy đơn hàng tương ứng.' })
       }
@@ -267,23 +275,23 @@ export function registerReviewEndpoints(app) {
         }
       }
 
-      // Kiểm tra trạng thái đơn: BẮT BUỘC ĐÃ GIAO HÀNG (DELIVERED)
-      if (order.status !== 'DELIVERED') {
+      // Kiểm tra trạng thái đơn: Không được là đơn đã hủy (CANCELLED)
+      if (order.status === 'CANCELLED') {
         return res.status(400).json({
           success: false,
-          error: `Đơn hàng đang ở trạng thái "${order.status}". Bạn chỉ có thể đánh giá sau khi đã nhận hàng thành công (DELIVERED).`,
+          error: `Đơn hàng #${orderId} đã bị hủy. Quý khách chỉ có thể đánh giá cho đơn hàng mua thành công.`,
         })
       }
 
-      // Kiểm tra sản phẩm có nằm trong đơn hàng không
+      // Kiểm tra nghiêm ngặt: KHÔNG ĐƯỢC PHÉP khi mua sản phẩm này nhưng review trong trang sản phẩm khác
       const matchedItem = (order.items || []).find(
-        (i) => i.productId === catalogProduct.id || i.slug === catalogProduct.slug || i.productId === productId
+        (i) => i.productId === catalogProduct.id || i.slug === catalogProduct.slug || i.productId === productId || i.slug === productId
       )
 
       if (!matchedItem) {
         return res.status(400).json({
           success: false,
-          error: `Đơn hàng #${orderId} không chứa sản phẩm "${catalogProduct.name}".`,
+          error: `Đơn hàng #${orderId} không chứa sản phẩm "${catalogProduct.name}". Quý khách chỉ có thể đánh giá cho đúng sản phẩm đã mua trong đơn hàng này.`,
         })
       }
 
@@ -312,7 +320,7 @@ export function registerReviewEndpoints(app) {
         }
       }
 
-      // Tạo review mới với verified_purchase = 1 (do server tự xác thực, bỏ qua giá trị client gửi)
+      // Tạo review mới với status = 'approved' (TỰ ĐỘNG DUYỆT VÀ ĐĂNG NGAY LẬP TỨC, không cần qua admin phê duyệt)
       const newReview = createReview({
         productId: catalogProduct.id,
         orderId,
@@ -320,11 +328,11 @@ export function registerReviewEndpoints(app) {
         rating,
         body,
         displayName,
-        verifiedPurchase: 1, // BẢO ĐẢM TÍNH XÁC THỰC: Server tự gắn sau khi kiểm tra đơn DELIVERED
+        verifiedPurchase: 1,
         source: 'order',
-        consentEvidence: 'order_verified',
+        consentEvidence: 'order_purchased',
         photos: photoUrls,
-        status: 'pending', // Mặc định chờ duyệt
+        status: 'approved',
       })
 
       if (inviteToken) {
@@ -333,7 +341,7 @@ export function registerReviewEndpoints(app) {
 
       return res.status(201).json({
         success: true,
-        message: 'Cảm ơn bạn đã gửi đánh giá! Đánh giá sẽ được kiểm duyệt và hiển thị trên website.',
+        message: 'Đánh giá của bạn đã được ghi nhận và hiển thị thành công trên trang sản phẩm. Cảm ơn bạn!',
         reviewId: newReview.id,
       })
     } catch (err) {

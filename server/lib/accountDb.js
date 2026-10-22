@@ -233,6 +233,31 @@ function migrateSchema(database) {
     CREATE INDEX IF NOT EXISTS idx_unsub_email ON marketing_unsubscribes(email);
   `)
 
+  // G. Bảng lưu trữ đơn hàng khách hàng (đồng bộ Database chính thức)
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS orders (
+      order_id TEXT PRIMARY KEY,
+      customer_name TEXT,
+      customer_phone TEXT,
+      customer_email TEXT,
+      total INTEGER DEFAULT 0,
+      subtotal INTEGER DEFAULT 0,
+      shipping_fee INTEGER DEFAULT 0,
+      discount INTEGER DEFAULT 0,
+      payment_method TEXT,
+      payment_status TEXT,
+      status TEXT DEFAULT 'PENDING',
+      tracking_code TEXT,
+      items_json TEXT,
+      raw_json TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_orders_phone ON orders(customer_phone);
+    CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+    CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
+  `)
+
   // G. Backfill existing account identities if not already mapped
   const unmappedAccounts = database.prepare(`
     SELECT a.id, a.method, a.google_id, a.facebook_id, a.phone, a.email, a.created_at
@@ -966,6 +991,91 @@ export function createBroadcastLog({ subject, content, recipients_count, broadca
 export function getBroadcastLogs(limit = 20) {
   const database = getDb()
   return database.prepare('SELECT * FROM broadcast_logs ORDER BY sent_at DESC LIMIT ?').all(limit)
+}
+
+// ── CRUD Orders (Database SQLite Đồng Bộ) ───────────────────────
+
+export function upsertOrderToDb(order, database = getDb()) {
+  if (!order) return null
+  const id = order.orderId || order.id
+  if (!id) return null
+
+  const customerName = order.customer?.fullName || order.customerName || 'Khách hàng'
+  const customerPhone = order.customer?.phone || order.customerPhone || ''
+  const customerEmail = order.customer?.email || order.customerEmail || null
+  const total = Number(order.total || 0)
+  const subtotal = Number(order.subtotal || order.total || 0)
+  const shippingFee = Number(order.shippingFee || 0)
+  const discount = Number(order.discount || order.discountAmount || 0)
+  const paymentMethod = order.payment?.method || order.paymentMethod || 'COD'
+  const paymentStatus = order.payment?.status || order.paymentStatus || 'PENDING'
+  const status = order.status || 'PENDING'
+  const trackingCode = order.trackingCode || null
+  const itemsJson = JSON.stringify(order.items || [])
+  const rawJson = JSON.stringify(order)
+  const createdAt = order.createdAt || order.orderDate || new Date().toISOString()
+  const updatedAt = new Date().toISOString()
+
+  try {
+    const stmt = database.prepare(`
+      INSERT INTO orders (
+        order_id, customer_name, customer_phone, customer_email,
+        total, subtotal, shipping_fee, discount,
+        payment_method, payment_status, status, tracking_code,
+        items_json, raw_json, created_at, updated_at
+      ) VALUES (
+        ?, ?, ?, ?,
+        ?, ?, ?, ?,
+        ?, ?, ?, ?,
+        ?, ?, ?, ?
+      ) ON CONFLICT(order_id) DO UPDATE SET
+        customer_name = excluded.customer_name,
+        customer_phone = excluded.customer_phone,
+        customer_email = excluded.customer_email,
+        total = excluded.total,
+        subtotal = excluded.subtotal,
+        shipping_fee = excluded.shipping_fee,
+        discount = excluded.discount,
+        payment_method = excluded.payment_method,
+        payment_status = excluded.payment_status,
+        status = excluded.status,
+        tracking_code = COALESCE(excluded.tracking_code, orders.tracking_code),
+        items_json = CASE WHEN excluded.items_json != '[]' THEN excluded.items_json ELSE orders.items_json END,
+        raw_json = excluded.raw_json,
+        updated_at = excluded.updated_at
+    `)
+    stmt.run(
+      id, customerName, customerPhone, customerEmail,
+      total, subtotal, shippingFee, discount,
+      paymentMethod, paymentStatus, status, trackingCode,
+      itemsJson, rawJson, createdAt, updatedAt
+    )
+    return id
+  } catch (err) {
+    console.warn(`⚠️ [DB ORDER UPSERT ERROR] Không thể ghi nhận đơn ${id} vào DB:`, err.message)
+    return null
+  }
+}
+
+export function getOrderFromDb(orderId, database = getDb()) {
+  if (!orderId) return null
+  try {
+    const row = database.prepare('SELECT raw_json FROM orders WHERE order_id = ?').get(orderId)
+    if (!row?.raw_json) return null
+    return JSON.parse(row.raw_json)
+  } catch {
+    return null
+  }
+}
+
+export function getOrdersByPhoneFromDb(phone, database = getDb()) {
+  if (!phone) return []
+  try {
+    const rows = database.prepare('SELECT raw_json FROM orders WHERE customer_phone = ? ORDER BY created_at DESC').all(phone)
+    return rows.map((r) => JSON.parse(r.raw_json))
+  } catch {
+    return []
+  }
 }
 
 export { generateSessionToken } from './authCrypto.js'
