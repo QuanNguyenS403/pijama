@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { SlidersHorizontal, ChevronDown, Check, X, Camera, Star, AlertCircle, Loader2, ShieldCheck, MessageSquare } from 'lucide-react'
 import { useProductReviews } from '../../hooks/useProductReviews'
 
-function StarRating({ rating = 5, size = 'sm' }) {
+function StarRating({ rating = 5, size = 'sm', onDark = false }) {
   const sizeClasses = {
     xs: 'text-xs',
     sm: 'text-sm',
@@ -14,11 +14,17 @@ function StarRating({ rating = 5, size = 'sm' }) {
   const rounded = Math.round(Number(rating) || 5)
 
   return (
-    <div className={`flex items-center gap-0.5 text-amber-400 ${sizeClasses[size] || 'text-sm'}`} aria-label={`${rating} trên 5 sao`}>
+    <div className={`flex items-center gap-0.5 ${sizeClasses[size] || 'text-sm'}`} aria-label={`${rating} trên 5 sao`}>
       {[1, 2, 3, 4, 5].map((star) => (
         <span
           key={star}
-          className={star <= rounded ? 'text-amber-400' : 'text-neutral-200'}
+          className={
+            star <= rounded
+              ? 'text-[#D4AF37]'
+              : onDark
+              ? 'text-white/20'
+              : 'text-neutral-200'
+          }
         >
           ★
         </span>
@@ -63,7 +69,7 @@ function ReviewCard({ review, idx, onOpenPhoto }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.3, delay: (idx % 4) * 0.04 }}
-      className="w-full bg-white rounded-lg border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-md transition-all duration-300 overflow-hidden group/card"
+      className="w-full bg-white rounded-lg border border-white/20 shadow-[0_4px_20px_rgba(0,0,0,0.18)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.28)] hover:border-[#D4AF37]/50 transition-all duration-300 overflow-hidden group/card"
     >
       {/* Photo Header (if present) */}
       {photo && (
@@ -78,26 +84,29 @@ function ReviewCard({ review, idx, onOpenPhoto }) {
             className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-700 ease-out"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-black/0 group-hover/card:bg-black/10 transition-colors duration-300 flex items-center justify-center">
-            <span className="opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 bg-white/90 backdrop-blur-sm text-neutral-900 text-[11px] font-sans font-medium px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
-              <Camera className="w-3 h-3" /> Xem ảnh
+          <div className="absolute inset-0 bg-black/0 group-hover/card:bg-black/15 transition-colors duration-300 flex items-center justify-center">
+            <span className="opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 bg-white/95 backdrop-blur-sm text-neutral-900 text-[11px] font-sans font-medium px-3 py-1 rounded-full shadow-md flex items-center gap-1.5">
+              <Camera className="w-3.5 h-3.5 text-[#631521]" /> Xem ảnh
             </span>
           </div>
         </div>
       )}
 
       {/* Card Body */}
-      <div className="p-3.5 sm:p-4 flex flex-col gap-1.5 text-left">
+      <div className="p-3.5 sm:p-4 flex flex-col gap-1.5 text-left bg-white">
         {/* Author */}
         <div className="flex items-center justify-between gap-1 flex-wrap">
           <span className="font-sans font-bold text-xs sm:text-[13px] text-neutral-900 tracking-tight">
             {review.displayName || review.author}
           </span>
+          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-sans font-medium">
+            <ShieldCheck className="w-3 h-3 text-emerald-600" /> Đã mua hàng
+          </span>
         </div>
 
         {/* Star Rating */}
         <div className="my-0.5">
-          <StarRating rating={review.rating} size="xs" />
+          <StarRating rating={review.rating} size="xs" onDark={false} />
         </div>
 
         {/* Review Text */}
@@ -320,57 +329,65 @@ export default function ProductReviews({ product }) {
   return (
     <section
       id="reviews"
-      className="py-16 md:py-24 bg-[#FCFBF9] border-t border-[#E8DFD5] relative overflow-hidden"
+      className="py-16 md:py-24 bg-[#631521] text-white border-y border-white/10 relative overflow-hidden"
       aria-label="Đánh giá từ khách hàng"
     >
-      <div className="w-full max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10">
+      {/* Ambient glow effects matching the website's dark luxury sections */}
+      <div className="absolute top-1/2 left-0 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#4A0D17]/70 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="w-full max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 relative z-10">
         {/* ─── 1. Header ─── */}
         <div className="text-center max-w-4xl mx-auto mb-10">
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-[44px] font-bold text-[#1A1614] tracking-tight leading-tight">
+          <span className="font-serif text-xs sm:text-sm font-semibold tracking-[0.25em] text-[#D4AF37] uppercase block mb-2">
+            ĐÁNH GIÁ THỰC TẾ
+          </span>
+          <h2 className="font-serif text-3xl sm:text-4xl md:text-[44px] font-bold text-white tracking-tight leading-tight">
             Người Thật,{' '}
-            <span className="italic font-normal text-[#631521]">Trải Nghiệm Thật</span>
+            <span className="italic font-normal text-[#D4AF37]">Trải Nghiệm Thật</span>
           </h2>
-          <p className="font-sans text-xs sm:text-sm md:text-base text-neutral-500 mt-3 leading-relaxed">
+          <div className="w-16 h-[2px] bg-[#D4AF37] mx-auto mt-3.5 mb-3.5" />
+          <p className="font-sans text-xs sm:text-sm md:text-base text-white/80 mt-3 leading-relaxed">
             {hasReviews ? (
               <>
                 Đánh giá thực tế từ khách hàng đã nhận và trải nghiệm{' '}
-                <span className="font-semibold text-[#631521]">{product.name}</span>.
+                <span className="font-semibold text-[#D4AF37]">{product.name}</span>.
               </>
             ) : (
               <>
-                Trải nghiệm thực tế về <span className="font-semibold text-[#631521]">{product.name}</span> từ chính khách hàng đã nhận hàng.
+                Trải nghiệm thực tế về <span className="font-semibold text-[#D4AF37]">{product.name}</span> từ chính khách hàng đã nhận hàng.
               </>
             )}
           </p>
         </div>
 
         {/* ─── 2. Review Summary & Filter Toolbar ─── */}
-        <div className="border-b border-neutral-200 pb-4 mb-8">
+        <div className="border-b border-white/15 pb-4 mb-8">
           <div className="flex items-center justify-between flex-wrap gap-4">
             {/* Left: Star rating summary & dropdown toggle */}
             <div className="flex items-center gap-2.5">
               {hasReviews ? (
                 <>
-                  <StarRating rating={summary.averageRating} size="base" />
-                  <span className="font-bold text-sm text-[#1A1614]">{summary.averageRating}</span>
+                  <StarRating rating={summary.averageRating} size="base" onDark={true} />
+                  <span className="font-bold text-sm text-white">{summary.averageRating}</span>
                   <button
                     type="button"
                     onClick={() => setShowFilters((prev) => !prev)}
-                    className="group inline-flex items-center gap-1.5 font-sans text-xs sm:text-sm font-semibold text-neutral-800 hover:text-[#631521] transition-colors cursor-pointer"
+                    className="group inline-flex items-center gap-1.5 font-sans text-xs sm:text-sm font-semibold text-white/90 hover:text-[#D4AF37] transition-colors cursor-pointer"
                     aria-expanded={showFilters}
                     aria-label="Tùy chọn lọc đánh giá"
                   >
                     <span>{summary.totalReviews} đánh giá</span>
                     <ChevronDown
-                      className={`w-4 h-4 text-neutral-500 group-hover:text-[#631521] transition-transform duration-200 ${
+                      className={`w-4 h-4 text-white/60 group-hover:text-[#D4AF37] transition-transform duration-200 ${
                         showFilters ? 'rotate-180' : ''
                       }`}
                     />
                   </button>
                 </>
               ) : (
-                <div className="flex items-center gap-2 text-xs text-neutral-500">
-                  <Star className="w-4 h-4 text-neutral-300" />
+                <div className="flex items-center gap-2 text-xs text-white/70">
+                  <Star className="w-4 h-4 text-white/30" />
                   <span>Chưa có đánh giá nào cho sản phẩm này</span>
                 </div>
               )}
@@ -384,7 +401,7 @@ export default function ProductReviews({ product }) {
                   setWriteModalOpen(true)
                   setStep(1)
                 }}
-                className="inline-flex items-center gap-1.5 font-sans text-xs font-semibold uppercase tracking-[0.08em] px-3.5 py-1.5 rounded-full border border-[#631521] text-[#631521] hover:bg-[#631521] hover:text-white transition-all shadow-xs cursor-pointer"
+                className="inline-flex items-center gap-1.5 font-sans text-xs font-semibold uppercase tracking-[0.08em] px-4 py-2 rounded-full border border-[#D4AF37] text-[#D4AF37] bg-white/5 hover:bg-[#D4AF37] hover:text-[#1A1614] transition-all shadow-xs cursor-pointer"
               >
                 <span>Viết đánh giá</span>
               </button>
@@ -395,8 +412,8 @@ export default function ProductReviews({ product }) {
                   onClick={() => setShowFilters((prev) => !prev)}
                   className={`p-2 rounded-md border transition-all cursor-pointer ${
                     showFilters
-                      ? 'bg-neutral-900 text-white border-neutral-900 shadow-sm'
-                      : 'bg-white text-neutral-700 border-neutral-200 hover:border-neutral-400'
+                      ? 'bg-[#D4AF37] text-[#1A1614] border-[#D4AF37] shadow-sm'
+                      : 'bg-white/10 text-white border-white/20 hover:bg-white/20 hover:border-white/40'
                   }`}
                   title="Bật/tắt thanh lọc đánh giá"
                   aria-label="Bật/tắt thanh lọc đánh giá"
@@ -418,7 +435,7 @@ export default function ProductReviews({ product }) {
                 className="overflow-hidden"
               >
                 <div className="pt-4 flex items-center gap-2 flex-wrap text-xs font-sans">
-                  <span className="text-neutral-400 mr-1 font-medium">Lọc theo:</span>
+                  <span className="text-white/60 mr-1 font-medium">Lọc theo:</span>
 
                   {[
                     { key: 'all', label: `Tất cả (${summary.totalReviews})` },
@@ -432,8 +449,8 @@ export default function ProductReviews({ product }) {
                       onClick={() => setFilterType(filter.key)}
                       className={`px-3 py-1 rounded-full text-xs transition-colors cursor-pointer ${
                         filterType === filter.key
-                          ? 'bg-[#631521] text-white font-medium shadow-xs'
-                          : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200 font-normal'
+                          ? 'bg-[#D4AF37] text-[#1A1614] font-semibold shadow-xs'
+                          : 'bg-white/10 text-white/80 hover:bg-white/20 border border-white/10 font-normal'
                       }`}
                     >
                       {filter.label}
@@ -447,19 +464,19 @@ export default function ProductReviews({ product }) {
 
         {/* ─── 3. Reviews Display or Empty State ─── */}
         {loading ? (
-          <div className="py-16 text-center text-neutral-400 flex flex-col items-center justify-center gap-2">
-            <Loader2 className="w-6 h-6 animate-spin text-[#631521]" />
+          <div className="py-16 text-center text-white/80 flex flex-col items-center justify-center gap-2">
+            <Loader2 className="w-6 h-6 animate-spin text-[#D4AF37]" />
             <span className="text-xs">Đang tải đánh giá từ khách hàng...</span>
           </div>
         ) : !hasReviews ? (
-          <div className="py-12 px-6 max-w-lg mx-auto bg-white rounded-lg border border-[#E8DFD5] text-center shadow-xs">
-            <div className="w-12 h-12 rounded-full bg-[#FAF8F5] border border-[#D4AF37]/50 text-[#631521] flex items-center justify-center mx-auto mb-3">
-              <ShieldCheck className="w-6 h-6 text-[#631521]" />
+          <div className="py-12 px-6 max-w-lg mx-auto bg-[#4A0D17]/85 backdrop-blur-md rounded-lg border border-[#D4AF37]/30 text-center shadow-xl text-white">
+            <div className="w-12 h-12 rounded-full bg-[#631521] border border-[#D4AF37]/50 text-[#D4AF37] flex items-center justify-center mx-auto mb-3 shadow-md">
+              <ShieldCheck className="w-6 h-6 text-[#D4AF37]" />
             </div>
-            <h3 className="font-serif text-lg font-bold text-[#1A1614] mb-1">
+            <h3 className="font-serif text-lg sm:text-xl font-bold text-white mb-2">
               Chưa có đánh giá nào cho sản phẩm này
             </h3>
-            <p className="font-sans text-xs text-[#8C7E74] leading-relaxed mb-5">
+            <p className="font-sans text-xs sm:text-[13px] text-white/80 leading-relaxed mb-6">
               QuanNguyenS chỉ hiển thị đánh giá xác thực từ chính những khách hàng đã đặt mua và nhận hàng thành công. Hãy là người đầu tiên trải nghiệm và chia sẻ cảm nhận của bạn!
             </p>
             <button
@@ -468,7 +485,7 @@ export default function ProductReviews({ product }) {
                 setWriteModalOpen(true)
                 setStep(1)
               }}
-              className="px-5 py-2.5 bg-[#631521] text-white rounded-[3px] text-xs font-semibold uppercase tracking-wider hover:bg-[#4A0D17] transition-all"
+              className="px-6 py-2.5 bg-[#D4AF37] text-[#1A1614] rounded-[3px] text-xs font-bold uppercase tracking-wider hover:bg-[#b8860b] transition-all shadow-md cursor-pointer"
             >
               Gửi Đánh Giá Đơn Hàng Của Bạn
             </button>
@@ -497,7 +514,7 @@ export default function ProductReviews({ product }) {
                 <button
                   type="button"
                   onClick={handleToggleExpand}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-neutral-300 bg-white hover:border-[#631521] hover:text-[#631521] text-xs font-sans font-semibold uppercase tracking-wider transition-all shadow-xs cursor-pointer"
+                  className="inline-flex items-center gap-2 px-7 py-2.5 rounded-full border border-[#D4AF37] bg-white text-[#1A1614] hover:bg-[#D4AF37] hover:text-[#1A1614] text-xs font-sans font-bold uppercase tracking-wider transition-all shadow-md cursor-pointer"
                 >
                   <span>{isExpanded ? 'Thu gọn' : `Xem thêm đánh giá (${reviews.length - INITIAL_REVIEW_COUNT})`}</span>
                 </button>

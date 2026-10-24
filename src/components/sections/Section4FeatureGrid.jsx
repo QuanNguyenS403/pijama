@@ -19,17 +19,17 @@ export default function Section4FeatureGrid() {
     },
     {
       icon: Sparkles,
-      title: 'Nhăn một cách có chủ ý',
-      englishSubtitle: 'Effortless Texture',
+      title: 'Bảo hành miễn phí',
+      englishSubtitle: '1 ĐỔI 1 TRONG 7 NGÀY',
       description:
-        'Bề mặt vải mịn màng, kết cấu gợn nhẹ tự nhiên — không phải lỗi, đó là đặc điểm. Tạo cảm giác effortless chic mà bạn không cần cố',
+        '1 đổi 1 trong vòng 7 ngày kể từ ngày nhận hàng đối với bất kỳ lỗi nào từ nhà sản xuất.',
     },
     {
       icon: Heart,
-      title: 'Thân thiện với da nhạy cảm',
-      englishSubtitle: 'Sensitive Skin Safe',
+      title: 'Ưu đãi hội viên',
+      englishSubtitle: 'HÀNG NGÀN VOUCHER ĐỘC QUYỀN MEMBERSHIP',
       description:
-        'Không hóa chất tổng hợp. Không tĩnh điện. Không gây ngứa. Phù hợp với da nhạy cảm và làn da trẻ năng động',
+        'Nhận ngay ưu đãi giảm giá cho đơn hàng đầu tiên khi đăng ký. Tận hưởng chính sách tích điểm thăng hạng, quà tặng sinh nhật cá nhân hóa và đặc quyền sở hữu sớm các bộ sưu tập mới nhất.',
     },
   ]
 
@@ -37,61 +37,61 @@ export default function Section4FeatureGrid() {
     <section
       id="section-features"
       aria-label="Feature Grid"
-      className="py-14 sm:py-16 md:py-20 bg-[#FAF8F5] text-[#2C201A] border-b border-[#E8DFD5]"
+      className="py-20 sm:py-24 md:py-28 bg-[#FAF8F5] text-[#2C201A] border-b border-[#E8DFD5]"
     >
-      <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10">
+      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10">
         {/* Header */}
-        <div className="text-center max-w-4xl mx-auto mb-10 sm:mb-12">
-          <span className="font-serif text-xs sm:text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
-            CHẤT VẢI CỦA CHÚNG TÔI
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
+            ƯU ĐÃI ĐỘC QUYỀN
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#1A1614] tracking-tight">
-            Không phải may mặc thông thường
+            ĐẶC QUYỀN KHÁCH HÀNG
             <span className="block text-[#631521] italic font-normal mt-1 text-2xl sm:text-3xl md:text-4xl">
-              Đây là lý do chất liệu của chúng tôi thay đổi mọi thứ
+              Sự hài lòng của khách hàng là ưu tiên của QNS
             </span>
           </h2>
-          <div className="w-16 h-[2px] bg-[#D4AF37] mx-auto mt-3.5" />
+          <div className="w-16 h-[2px] bg-[#D4AF37] mx-auto mt-4" />
         </div>
 
-        {/* Grid - Refined & slightly more compact */}
-        <div className="max-w-[1180px] mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-7">
-            {features.map((item, index) => {
-              const IconComp = item.icon
-              return (
-                <motion.div
-                  key={item.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="bg-white p-6 sm:p-7 md:p-8 rounded-[4px] border border-[#E8DFD5] shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between group"
-                >
-                  <div>
-                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-[2px] bg-[#631521] text-[#D4AF37] flex items-center justify-center mb-4 sm:mb-5 group-hover:scale-105 transition-transform duration-300 shadow-sm">
-                      <IconComp className="w-5 h-5" />
-                    </div>
-
-                    <div className="mb-2 sm:mb-2.5">
-                      <h3 className="font-serif text-lg sm:text-xl font-bold text-[#1A1614] group-hover:text-[#631521] transition-colors">
-                        {item.title}
-                      </h3>
-                      <span className="text-[10px] sm:text-[11px] font-sans font-medium text-[#8C7E74] uppercase tracking-wider block mt-0.5">
-                        {item.englishSubtitle}
-                      </span>
-                    </div>
-
-                    <p className="font-sans text-xs sm:text-sm text-[#4A3F38] font-normal leading-relaxed">
-                      {item.description}
-                    </p>
+        {/* Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
+          {features.map((item, index) => {
+            const IconComp = item.icon
+            return (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0, margin: '0px 0px 200px 0px' }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="bg-white p-8 sm:p-10 rounded-[4px] border border-[#E8DFD5] shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between group"
+              >
+                <div>
+                  <div className="w-14 h-14 rounded-[2px] bg-[#631521] text-[#D4AF37] flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-md">
+                    <IconComp className="w-6 h-6" />
                   </div>
 
-                  <div className="w-10 h-[1px] bg-[#D4AF37]/50 mt-4 sm:mt-5 group-hover:w-16 transition-all duration-300" />
-                </motion.div>
-              )
-            })}
-          </div>
+                  <div className="mb-3">
+                    <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#1A1614] group-hover:text-[#631521] transition-colors">
+                      {item.title}
+                    </h3>
+                    {item.englishSubtitle && item.englishSubtitle.trim() && (
+                      <span className="text-[11px] font-sans font-medium text-[#8C7E74] uppercase tracking-wider block mt-0.5">
+                        {item.englishSubtitle}
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="font-sans text-sm sm:text-base text-[#4A3F38] font-normal leading-relaxed">
+                    {item.description}
+                  </p>
+                </div>
+
+                <div className="w-12 h-[1px] bg-[#D4AF37]/50 mt-6 group-hover:w-20 transition-all duration-300" />
+              </motion.div>
+            )
+          })}
         </div>
       </div>
     </section>

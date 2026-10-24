@@ -11,6 +11,15 @@ export default function Section3FeaturedProducts() {
     if (elem) elem.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const handleProductAction = (product) => {
+    const elem = document.querySelector('#section-deep-feature')
+    if (elem) {
+      elem.scrollIntoView({ behavior: 'smooth' })
+    } else {
+      navigate(`/san-pham/${product.slug}`)
+    }
+  }
+
   const products = [
     {
       id: 'classic-set',
@@ -57,7 +66,6 @@ export default function Section3FeaturedProducts() {
       desc: 'Sọc Nâu mocha ấm áp — cảm giác "về nhà" nuôi dưỡng năng lượng.\nDáng wide-leg buông rủ thượng hạng.\nSang trọng tuyệt đối cho những buổi tối chill.',
       image: '/images/classic-set-brown-main.jpg',
       badge: 'PHIÊN BẢN GIỚI HẠN',
-      preOrderBadge: 'Pre-order',
       swatches: [
         {
           type: 'stripe',
@@ -72,103 +80,101 @@ export default function Section3FeaturedProducts() {
     <section
       id="mot-bo-la-mot-mood"
       aria-label="Featured Products"
-      className="py-12 sm:py-14 md:py-18 bg-[#FAF8F5] text-[#2C201A] border-b border-[#E8DFD5] scroll-mt-16"
+      className="py-20 sm:py-24 md:py-28 bg-[#FAF8F5] text-[#2C201A] border-b border-[#E8DFD5] scroll-mt-16"
     >
-      <div id="section-products" className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10">
+      <div id="section-products" className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10">
-          <span className="font-serif text-xs sm:text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-1.5">
+        <div className="text-center max-w-2xl mx-auto mb-14">
+          <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
             BỘ SƯU TẬP MỚI NHẤT
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#1A1614] tracking-tight">
-            Mỗi bộ là một mood
-            <span className="block text-[#631521] italic font-normal mt-0.5 text-2xl sm:text-3xl">
-              Hôm nay bạn chọn mặc gì?
+            Chuẩn Mực Thoải Mái, Trọn Nét Thanh Lịch
+            <span className="block text-[#631521] italic font-normal mt-1 text-2xl sm:text-3xl">
+              Thư thái trong từng phút giây ở nhà – Tự tin khi bước ra phố.
             </span>
           </h2>
-          <div className="w-16 h-[2px] bg-[#D4AF37] mx-auto mt-3 sm:mt-3.5" />
+          <div className="w-16 h-[2px] bg-[#D4AF37] mx-auto mt-4" />
         </div>
 
-        {/* Product grid - elegant and compact showcase */}
-        <div className="max-w-[1040px] mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-7">
-            {products.map((product, idx) => (
-              <motion.div
-                key={product.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: idx * 0.15 }}
-                className="bg-white rounded-[4px] border border-[#E8DFD5] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer w-full max-w-[340px] mx-auto"
-                onClick={() => navigate(`/san-pham/${product.slug}`)}
-              >
-                {/* Image */}
-                <div className="relative aspect-[4/5] overflow-hidden bg-[#F5F0EB]">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                  {/* Badge Left */}
-                  {product.badge && (
-                    <div className="absolute top-2.5 left-2.5 bg-[#631521] text-white text-[9px] font-sans font-bold tracking-wider px-2 py-0.5 rounded-[2px] uppercase shadow-sm">
-                      {product.badge}
-                    </div>
-                  )}
-                  {/* Pre-order Badge Right */}
-                  {product.preOrderBadge && (
-                    <div className="absolute top-2.5 right-2.5 bg-[#D4AF37] text-[#1A1614] text-[9px] font-sans font-bold tracking-wider px-2 py-0.5 rounded-[2px] uppercase shadow-sm">
-                      {product.preOrderBadge}
+        {/* Product grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-14">
+          {products.map((product, idx) => (
+            <motion.div
+              key={product.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: idx * 0.15 }}
+              className="bg-white rounded-[4px] border border-[#E8DFD5] overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group cursor-pointer"
+              onClick={() => handleProductAction(product)}
+            >
+              {/* Image */}
+              <div className="relative aspect-[4/5] overflow-hidden bg-[#F5F0EB]">
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+                {/* Badge Left */}
+                {product.badge && (
+                  <div className="absolute top-3 left-3 bg-[#631521] text-white text-[10px] font-sans font-bold tracking-wider px-2.5 py-1 rounded-[2px] uppercase shadow-sm">
+                    {product.badge}
+                  </div>
+                )}
+                {/* Pre-order Badge Right */}
+                {product.preOrderBadge && (
+                  <div className="absolute top-3 right-3 bg-[#D4AF37] text-[#1A1614] text-[10px] font-sans font-bold tracking-wider px-2.5 py-1 rounded-[2px] uppercase shadow-sm">
+                    {product.preOrderBadge}
+                  </div>
+                )}
+              </div>
+
+              {/* Info */}
+              <div className="p-5 sm:p-6 flex flex-col flex-grow justify-between bg-white">
+                <div>
+                  <h3 className="font-serif text-lg sm:text-xl font-bold text-[#1A1614] leading-snug group-hover:text-[#631521] transition-colors">
+                    {product.name}
+                  </h3>
+                  <span className="text-[11px] font-sans text-[#8C7E74] block mt-1">{product.color}</span>
+                  <p className="font-sans text-sm text-[#4A3F38] italic mt-2.5 leading-relaxed whitespace-pre-line">
+                    "{product.desc}"
+                  </p>
+
+                  {/* Swatches */}
+                  {product.swatches && (
+                    <div className="flex items-center gap-2 mt-3 pt-2">
+                      {product.swatches.map((sw, sIdx) => (
+                        <span
+                          key={sIdx}
+                          title={sw.label}
+                          className="w-4 h-4 border border-[#E8DFD5] shadow-xs inline-block"
+                          style={{
+                            borderRadius: sw.type === 'solid' ? '50%' : '0px',
+                            background: sw.bg || sw.color,
+                            backgroundColor: sw.color,
+                          }}
+                        />
+                      ))}
                     </div>
                   )}
                 </div>
 
-                {/* Info */}
-                <div className="p-4 sm:p-4.5 flex flex-col flex-grow justify-between bg-white">
-                  <div>
-                    <h3 className="font-serif text-base sm:text-lg font-bold text-[#1A1614] leading-snug group-hover:text-[#631521] transition-colors">
-                      {product.name}
-                    </h3>
-                    <span className="text-[11px] font-sans text-[#8C7E74] block mt-0.5">{product.color}</span>
-                    <p className="font-sans text-xs sm:text-[0.825rem] text-[#4A3F38] italic mt-1.5 leading-relaxed whitespace-pre-line">
-                      "{product.desc}"
-                    </p>
-
-                    {/* Swatches */}
-                    {product.swatches && (
-                      <div className="flex items-center gap-2 mt-2 pt-1">
-                        {product.swatches.map((sw, sIdx) => (
-                          <span
-                            key={sIdx}
-                            title={sw.label}
-                            className="w-3.5 h-3.5 border border-[#E8DFD5] shadow-xs inline-block"
-                            style={{
-                              borderRadius: sw.type === 'solid' ? '50%' : '0px',
-                              background: sw.bg || sw.color,
-                              backgroundColor: sw.color,
-                            }}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mt-3 pt-2.5 border-t border-[#F5F0EB]">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        navigate(`/san-pham/${product.slug}`)
-                      }}
-                      className="w-full inline-flex items-center justify-center bg-[#2C201A] hover:bg-[#631521] text-white font-sans text-[11px] font-bold tracking-wider px-3.5 py-2 rounded-[2px] transition-colors uppercase cursor-pointer"
-                    >
-                      KHÁM PHÁ {product.name}
-                    </button>
-                  </div>
+                <div className="mt-5 pt-4 border-t border-[#F5F0EB]">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleProductAction(product)
+                    }}
+                    className="w-full inline-flex items-center justify-center bg-[#2C201A] hover:bg-[#631521] text-white font-sans text-xs font-bold tracking-wider px-4 py-2.5 rounded-[2px] transition-colors uppercase cursor-pointer"
+                  >
+                    {'CHI TIẾT\u00a0'}
+                  </button>
                 </div>
-              </motion.div>
-            ))}
-          </div>
+              </div>
+            </motion.div>
+          ))}
         </div>
 
       </div>
