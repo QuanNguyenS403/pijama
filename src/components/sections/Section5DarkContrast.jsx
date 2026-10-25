@@ -19,7 +19,7 @@ export default function Section5DarkContrast() {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, amount: 0, margin: '0px 0px 200px 0px' }}
+            viewport={{ once: true, amount: 0, margin: "0px 0px 200px 0px" }}
             transition={{ duration: 0.7 }}
             className="lg:col-span-6 flex flex-col justify-center"
           >
@@ -43,54 +43,26 @@ export default function Section5DarkContrast() {
             </p>
 
             <p className="font-sans text-sm sm:text-base text-white/75 font-normal leading-relaxed mb-8">
-              Mang nguồn cảm hứng thẩm mỹ đương đại từ Châu Âu cùng ngôn ngữ thiết kế tinh tế, QuanNguyenS định nghĩa lại chuẩn mực mặc đẹp thường thấy. Chúng tôi tạo ra những thiết kế đủ thời thượng để tôn vinh bản sắc riêng khi đi dạo phố, và đủ tự nhiên để bạn luôn là chính mình trong mọi khoảnh khắc.
+              Mang nguồn cảm hứng thẩm mỹ đương đại từ Châu Âu cùng ngôn ngữ thiết kế tinh tế, QuanNguyenS định nghĩa lại chuẩn mực mặc đẹp thường thấy. Chúng tôi tạo ra những thiết kế đủ thời thượng để tôn vinh bản sắc riêng khi đi dạo phố, và đủ thoải mái để bạn luôn là chính mình trong mọi khoảnh khắc.
             </p>
-
-            <div className="flex items-center gap-8 pt-4 border-t border-white/10">
-              <div>
-                <span className="font-serif text-2xl sm:text-3xl font-bold text-[#D4AF37] block">
-                  100%
-                </span>
-                <span className="text-xs font-sans text-white/70 uppercase tracking-wider">
-                  Sợi tự nhiên thuần khiết
-                </span>
-              </div>
-              <div className="w-[1px] h-10 bg-white/20" />
-              <div>
-                <span className="font-serif text-2xl sm:text-3xl font-bold text-[#D4AF37] block">
-                  0
-                </span>
-                <span className="text-xs font-sans text-white/70 uppercase tracking-wider">
-                  lý do để không mặc ra ngoài
-                </span>
-              </div>
-            </div>
           </motion.div>
 
           {/* Right: Image */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, amount: 0, margin: '0px 0px 200px 0px' }}
+            viewport={{ once: true, amount: 0, margin: "0px 0px 200px 0px" }}
             transition={{ duration: 0.7, delay: 0.2 }}
             className="lg:col-span-6"
           >
             <div className="relative rounded-[4px] overflow-hidden shadow-2xl border-2 border-[#D4AF37]/40 bg-[#1E1510] aspect-[4/3] w-full group">
               <img
                 src={storyBrownCraftsmanshipImg}
-                alt="The Hearth Set sọc nâu QuanNguyenS — European Casual Luxury tay nghề may đo tinh xảo"
+                alt="The Hearth Set sọc nâu QuanNguyenS — Style To Be Lived In tay nghề may đo tinh xảo"
                 loading="lazy"
                 decoding="async"
                 className="w-full h-full object-cover object-center group-hover:scale-103 transition-transform duration-700"
               />
-              <div className="absolute bottom-4 left-4 right-4 bg-[#1E1510]/85 backdrop-blur-md p-4 rounded-[2px] border border-[#D4AF37]/30">
-                <span className="font-serif text-sm font-semibold text-[#D4AF37] block">
-                  European Casual Luxury
-                </span>
-                <span className="text-xs text-white/80 font-sans mt-0.5 block">
-                  Pijama không chỉ để ngủ — mà để sống trong đó
-                </span>
-              </div>
             </div>
           </motion.div>
 

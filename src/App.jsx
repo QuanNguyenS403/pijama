@@ -51,11 +51,6 @@ export default function App() {
           window.location.href = '/tai-khoan'
         }}
       />
-      {!isAdminRoute && (
-        <Suspense fallback={null}>
-          <ChatWidget />
-        </Suspense>
-      )}
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
@@ -79,6 +74,11 @@ export default function App() {
           <Route path="*" element={<LandingPage />} />
         </Routes>
       </Suspense>
+      {!isAdminRoute && (
+        <Suspense fallback={null}>
+          <ChatWidget />
+        </Suspense>
+      )}
     </>
   )
 }

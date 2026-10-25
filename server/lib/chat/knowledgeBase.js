@@ -162,8 +162,8 @@ function buildKnowledgeChunks() {
     topic: 'contact',
     title: 'Thông tin Thương hiệu & Kênh Liên hệ QuanNguyenS',
     text: [
-      'Thương hiệu: QuanNguyenS — Thời trang pijama cao cấp phong cách European Casual Luxury.',
-      'Slogan: "Dressed for Life. Even at Home."',
+      'Thương hiệu: QuanNguyenS — Thời trang pijama cao cấp định vị Style To Be Lived In ("Every girls deserve QuanNguyenS\'s Pyjama").',
+      'Slogan chính: "Style To Be Lived In".',
       'Địa chỉ: Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hai Bà Trưng, Hà Nội.',
       'Hotline & Zalo tư vấn 24/7: 0981 753 082.',
       'Link chat Zalo trực tiếp: https://zalo.me/0981753082.',

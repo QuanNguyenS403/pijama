@@ -196,7 +196,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           </button>
 
           <span className="text-[9px] tracking-[0.28em] font-medium uppercase text-[#D4AF37] block">
-            QUANNGUYENS CASUAL LUXURY
+            QUANNGUYENS — STYLE TO BE LIVED IN
           </span>
           <h3 className="font-serif text-lg sm:text-xl font-light tracking-wide mt-0.5 text-[#FAF8F5]">
             {activeTab === 'login' ? 'Đăng Nhập Thành Viên' : 'Gia Nhập Đặc Quyền'}

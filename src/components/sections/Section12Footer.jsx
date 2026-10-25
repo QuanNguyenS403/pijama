@@ -74,7 +74,7 @@ export default function Section12Footer() {
           <div className="border-b border-white/15 pb-8 sm:pb-9 mb-8 sm:mb-9 text-center lg:text-left flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 sm:gap-6">
             <div>
               <span className="font-sans text-xs font-bold tracking-[0.25em] text-white/60 uppercase block mb-2 sm:mb-2.5">
-                European Casual Luxury
+                Style To Be Lived In
               </span>
               <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#D4AF37] leading-[1.08] tracking-tight">
                 "Dressed for Life
@@ -247,7 +247,7 @@ export default function Section12Footer() {
             </div>
 
             <div className="text-center sm:text-right">
-              © 2026 QuanNguyenS — European Casual Luxury
+              © 2026 QuanNguyenS — Style To Be Lived In
             </div>
           </div>
 

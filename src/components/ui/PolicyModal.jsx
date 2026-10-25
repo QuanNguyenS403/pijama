@@ -64,7 +64,7 @@ export default function PolicyModal({ isOpen, onClose, initialPolicy = 'terms' }
                   Chính Sách & Quy Định QuanNguyenS
                 </span>
                 <span className="text-[10px] tracking-[0.2em] text-[#D4AF37] uppercase font-normal -mt-0.5 block">
-                  European Casual Luxury
+                  Style To Be Lived In
                 </span>
               </div>
             </div>
@@ -164,7 +164,7 @@ export default function PolicyModal({ isOpen, onClose, initialPolicy = 'terms' }
           {/* Footer of Modal */}
           <div className="px-6 py-3.5 bg-[#FAF8F5] border-t border-[#E8DFD5] flex items-center justify-between shrink-0">
             <span className="font-sans text-xs text-[#8C7E74] font-normal">
-              © 2026 QuanNguyenS — European Casual Luxury ·{' '}
+              © 2026 QuanNguyenS — Style To Be Lived In ·{' '}
               <a href="/chinh-sach" onClick={onClose} className="text-[#631521] underline hover:text-[#D4AF37] font-medium">
                 Mở trang chính sách đầy đủ ↗
               </a>

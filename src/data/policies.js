@@ -17,7 +17,7 @@ export const policiesData = {
       {
         heading: '1. Giới thiệu và Phạm vi Áp dụng',
         content: [
-          'Chào mừng Quý khách đến với QuanNguyenS — thương hiệu thời trang pijama cao cấp phong cách European Casual Luxury (website chính thức: https://quannguyens.com).',
+          'Chào mừng Quý khách đến với QuanNguyenS — thương hiệu thời trang pijama cao cấp phong cách Style To Be Lived In (website chính thức: https://quannguyens.com).',
           'Khi truy cập, duyệt sản phẩm hoặc đặt mua hàng tại website và các kênh truyền thông chính thức của QuanNguyenS, Quý khách xác nhận đã đọc, hiểu rõ và đồng ý tuân thủ toàn bộ các điều khoản và điều kiện được nêu tại văn bản này.',
           'Các điều khoản này điều chỉnh mối quan hệ pháp lý giữa QuanNguyenS và khách hàng trong suốt quá trình giao dịch, giao nhận và hậu mãi.',
         ],
@@ -147,7 +147,7 @@ export const policiesData = {
       {
         heading: '1. Giới thiệu và Định danh Ứng dụng',
         content: [
-          'Chào mừng bạn đến với QuanNguyenS (website chính thức: https://quannguyens.com) — thương hiệu thời trang pijama cao cấp phong cách European Casual Luxury.',
+          'Chào mừng bạn đến với QuanNguyenS (website chính thức: https://quannguyens.com) — thương hiệu thời trang pijama cao cấp phong cách Style To Be Lived In.',
           'Chính sách Bảo mật này mô tả chi tiết cách QuanNguyenS thu thập, sử dụng, lưu trữ, bảo vệ và xử lý thông tin cá nhân của người dùng khi truy cập website, mua sắm hoặc sử dụng các tính năng xác thực tài khoản (bao gồm Đăng nhập bằng tài khoản Google, Đăng nhập bằng Facebook, đăng ký bằng Email và xác thực số điện thoại OTP).',
           'Đơn vị chủ quản: Thương hiệu thời trang QuanNguyenS. Địa chỉ: Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hai Bà Trưng, Hà Nội. Hotline hỗ trợ: 0981 753 082. Email liên hệ bảo mật: quannguyens403@gmail.com.',
           'Toàn bộ nội dung sản phẩm, giá bán, lookbook và thông tin tại trang chủ https://quannguyens.com được mở công khai cho mọi người dùng truy cập tự do mà KHÔNG BẮT BUỘC phải đăng nhập hay tạo tài khoản.',
@@ -230,7 +230,7 @@ export const policiesData = {
         content: [
           'QuanNguyenS có thể định kỳ cập nhật Chính sách Bảo mật này để phản ánh các cải tiến về tính năng hoặc tuân thủ các quy định pháp luật mới nhất. Mọi thay đổi đều được đăng tải công khai tại đường dẫn https://quannguyens.com/chinh-sach kèm ngày cập nhật mới nhất.',
           'Mọi câu hỏi, khiếu nại hoặc yêu cầu giải đáp về quyền riêng tư và bảo mật thông tin, xin vui lòng liên hệ trực tiếp với chúng tôi qua:',
-          '• Thương hiệu: QuanNguyenS (European Casual Luxury)',
+          '• Thương hiệu: QuanNguyenS (Style To Be Lived In)',
           '• Địa chỉ: Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hai Bà Trưng, Hà Nội',
           '• Hotline hỗ trợ khách hàng: 0981 753 082 (trong giờ làm việc)',
           '• Email hỗ trợ bảo mật dữ liệu: quannguyens403@gmail.com',

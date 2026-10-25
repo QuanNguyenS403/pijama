@@ -47,15 +47,37 @@ export default function ChatPanel({ isOpen, onClose }) {
     }
   }, [isOpen])
 
-  // Lắng nghe phím ESC để đóng
+  // Lắng nghe phím ESC và cử chỉ Back của điện thoại để thoát chat
   useEffect(() => {
+    if (!isOpen) return
+
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape') {
         onClose()
       }
     }
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+
+    // Tạo history state tạm để khi bấm Back trên điện thoại thì thoát chat bot thay vì thoát khỏi website
+    const stateKey = 'qns_chatbot_open'
+    try {
+      window.history.pushState({ [stateKey]: true }, '')
+    } catch (_) {}
+
+    const handlePopState = () => {
+      onClose()
+    }
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('popstate', handlePopState)
+      try {
+        if (window.history.state?.[stateKey]) {
+          window.history.back()
+        }
+      } catch (_) {}
+    }
   }, [isOpen, onClose])
 
   // Reset cuộc trò chuyện mới
@@ -207,8 +229,13 @@ export default function ChatPanel({ isOpen, onClose }) {
       className="w-full sm:w-[355px] h-[100dvh] sm:h-[520px] bg-[#FAF8F5] sm:border sm:border-[#E8DFD5] sm:rounded-[6px] shadow-2xl flex flex-col overflow-hidden text-[#2C201A]"
     >
       {/* ── HEADER ────────────────────────────────────────── */}
-      <div className="bg-[#631521] text-[#FAF8F5] p-3 px-3.5 flex items-center justify-between border-b border-[#D4AF37]/40 shrink-0">
-        <div className="flex items-center gap-2.5">
+      <div
+        style={{
+          paddingTop: 'max(12px, env(safe-area-inset-top, 12px))',
+        }}
+        className="bg-[#631521] text-[#FAF8F5] pb-3 px-3.5 sm:pt-3 sm:pb-3 flex items-center justify-between border-b border-[#D4AF37]/40 shrink-0 select-none shadow-sm"
+      >
+        <div className="flex items-center gap-2.5 min-w-0 pr-2">
           <div className="w-8 h-8 rounded-full overflow-hidden border border-[#D4AF37] shadow-sm shrink-0">
             <img
               src="/images/logo.jpg"
@@ -216,35 +243,38 @@ export default function ChatPanel({ isOpen, onClose }) {
               className="w-full h-full object-cover"
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <h3 className="font-serif text-xs sm:text-sm font-bold tracking-wider uppercase text-white">
+              <h3 className="font-serif text-xs sm:text-sm font-bold tracking-wider uppercase text-white truncate">
                 QuanNguyenS Assistant
               </h3>
-              <div className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" title="Sẵn sàng 24/7" />
+              <div className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse shrink-0" title="Sẵn sàng 24/7" />
             </div>
-            <p className="font-sans text-[10px] text-[#FAF8F5]/80">
+            <p className="font-sans text-[10px] text-[#FAF8F5]/80 truncate">
               Trợ lý ảo tư vấn thời trang & CSKH 24/7
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
+            type="button"
             onClick={handleResetChat}
-            className="p-1.5 text-[#FAF8F5]/80 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+            className="p-1.5 text-[#FAF8F5]/80 hover:text-white hover:bg-white/10 active:scale-95 rounded-full transition-colors cursor-pointer"
             title="Bắt đầu cuộc trò chuyện mới"
             aria-label="Làm mới hội thoại"
           >
             <RotateCcw className="w-4 h-4" />
           </button>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 text-[#FAF8F5]/80 hover:text-white hover:bg-white/10 rounded-full transition-colors cursor-pointer"
-            title="Đóng khung chat (Esc)"
-            aria-label="Đóng cửa sổ chat"
+            className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-white/15 hover:bg-white/25 active:scale-95 text-white font-sans text-xs font-semibold rounded-full border border-white/25 transition-all cursor-pointer shadow-xs"
+            title="Thoát khỏi chat bot (Esc)"
+            aria-label="Thoát khỏi chat bot"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 stroke-[2.5]" />
+            <span className="tracking-wide">Thoát</span>
           </button>
         </div>
       </div>
@@ -276,7 +306,12 @@ export default function ChatPanel({ isOpen, onClose }) {
       )}
 
       {/* ── INPUT BAR ─────────────────────────────────────── */}
-      <div className="p-3 bg-white border-t border-[#E8DFD5] shrink-0">
+      <div
+        style={{
+          paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))',
+        }}
+        className="p-3 bg-white border-t border-[#E8DFD5] shrink-0"
+      >
         <form
           onSubmit={(e) => {
             e.preventDefault()

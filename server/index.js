@@ -797,6 +797,18 @@ app.post('/api/admin/orders/:orderId/sync-viettelpost', requireAdminAuth, async 
   }
 })
 
+// ── 9.1b Đồng Bộ Toàn Bộ Dữ Liệu Website Lên Google Sheets (Đơn Hàng, Chi Tiết SP, Chi Tiết SP Pyjama) ──
+app.post('/api/admin/sync-sheets', requireAdminAuth, async (req, res) => {
+  try {
+    const { syncAllToGoogleSheets } = await import('./lib/googleSheets.js')
+    const result = await syncAllToGoogleSheets()
+    return res.json({ success: true, ...result })
+  } catch (err) {
+    console.error('Admin sync Google Sheets error:', err)
+    return res.status(500).json({ success: false, error: err.message })
+  }
+})
+
 // ── 9.2 Viettel Post Webhook Receiver (Tự động cập nhật khi bưu tá phát thành công) ───
 app.post('/api/shipping/viettelpost/webhook', async (req, res) => {
   try {

@@ -20,6 +20,7 @@ const getAuth = () => {
 export const SHEET_TABS = {
   ORDERS: 'Đơn Hàng', // Tab chính — mỗi đơn 1 dòng
   PRODUCTS: 'Chi Tiết SP', // Tab chi tiết sản phẩm trong đơn
+  CATALOG: 'Chi Tiết SP Pyjama', // Tab danh mục chi tiết các bộ pyjama của shop
   SUMMARY: 'Tổng Quan',
 }
 
@@ -66,6 +67,38 @@ export const PRODUCT_HEADERS = [
   'Thành Tiền', // I
 ]
 
+// ── Header row cho sheet CATALOG (17 cột A -> Q) ───────────────────────
+export const CATALOG_HEADERS = [
+  'Mã SP', // A
+  'Tên Bộ Pyjama', // B
+  'Phụ Đề / Phong Cách', // C
+  'Bộ Sưu Tập', // D
+  'Giá Bán (VNĐ)', // E
+  'Giá Gốc (VNĐ)', // F
+  'Giảm Giá (%)', // G
+  'Màu Sắc & Họa Tiết', // H
+  'Kích Cỡ Khả Dụng', // I
+  'Tồn Kho Chi Tiết', // J
+  'Tổng Tồn Kho', // K
+  'Chất Liệu Vải', // L
+  'Định Lượng GSM & Tiêu Chuẩn', // M
+  'Bản Mệnh Ngũ Hành', // N
+  'Đánh Giá (Sao)', // O
+  'Số Lượng Đánh Giá', // P
+  'Link Chi Tiết Website', // Q
+]
+
+// Chống Formula Injection (CSV/Spreadsheet Formula Injection)
+export const sanitizeSheetValue = (val) => {
+  if (val === null || val === undefined) return ''
+  if (typeof val === 'number') return val
+  const str = String(val).trim()
+  if (/^[=+@\-\t\r]/.test(str)) {
+    return `'${str}`
+  }
+  return str
+}
+
 // ── Đảm bảo các sheet tabs tồn tại, nếu chưa có thì tự tạo ────────────
 export const ensureSheetsExist = async (sheets, spreadsheetId) => {
   try {
@@ -84,6 +117,13 @@ export const ensureSheetsExist = async (sheets, spreadsheetId) => {
       requests.push({
         addSheet: {
           properties: { title: SHEET_TABS.PRODUCTS },
+        },
+      })
+    }
+    if (!existingTitles.includes(SHEET_TABS.CATALOG)) {
+      requests.push({
+        addSheet: {
+          properties: { title: SHEET_TABS.CATALOG },
         },
       })
     }
@@ -145,6 +185,22 @@ export const initializeSheet = async () => {
       })
       console.log(`✅ Đã tạo Header cho tab "${SHEET_TABS.PRODUCTS}"`)
     }
+
+    // Kiểm tra header sheet CATALOG
+    const catalogRes = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `'${SHEET_TABS.CATALOG}'!A1:Q1`,
+    })
+
+    if (!catalogRes.data.values || catalogRes.data.values.length === 0) {
+      await sheets.spreadsheets.values.append({
+        spreadsheetId,
+        range: `'${SHEET_TABS.CATALOG}'!A1`,
+        valueInputOption: 'RAW',
+        requestBody: { values: [CATALOG_HEADERS] },
+      })
+      console.log(`✅ Đã tạo Header cho tab "${SHEET_TABS.CATALOG}"`)
+    }
   } catch (error) {
     console.warn('⚠️ Google Sheets initializeSheet note:', error.message)
     throw error
@@ -169,7 +225,7 @@ export const appendOrderToSheet = async (order) => {
   }
 
   // Tách ngày và giờ theo múi giờ Việt Nam
-  const orderDateTime = new Date(order.orderDate || Date.now())
+  const orderDateTime = new Date(order.createdAt || order.orderDate || Date.now())
   const dateStr = orderDateTime.toLocaleDateString('vi-VN', {
     timeZone: 'Asia/Ho_Chi_Minh',
   })
@@ -180,49 +236,53 @@ export const appendOrderToSheet = async (order) => {
   })
 
   // Join nhiều sản phẩm thành chuỗi cho sheet ORDERS
-  const itemNames = (order.items || []).map((i) => i.productName).join(' | ')
-  const itemVariants = (order.items || []).map((i) => i.variant).join(' | ')
-  const itemQtys = (order.items || []).map((i) => i.quantity).join(' | ')
+  const items = Array.isArray(order.items) ? order.items : []
+  const itemNames = items.map((i) => i.productName || i.name || 'Pijama QuanNguyenS').join(' | ')
+  const itemVariants = items.map((i) => i.variant || [i.color || i.colorLabel, i.size].filter(Boolean).join(' - ')).join(' | ')
+  const itemQtys = items.map((i) => i.quantity || 1).join(' | ')
+
+  const customerName = order.customer?.fullName || order.customerName || ''
+  const phone = order.customer?.phone || order.customerPhone || ''
+  const email = order.customer?.email || order.customerEmail || ''
+
+  const address = order.shipping?.address || order.shippingAddress || ''
+  const ward = order.shipping?.ward || ''
+  const district = order.shipping?.district || ''
+  const city = order.shipping?.city || ''
+  const fullAddress =
+    order.shipping?.fullAddress ||
+    order.shippingAddress ||
+    [address, ward, district, city].filter(Boolean).join(', ')
 
   // ── Dòng cho sheet ORDERS (1 đơn = 1 dòng tổng hợp 26 cột A -> Z) ──
   const orderRow = [
-    order.orderId, // A: Mã Đơn
+    order.orderId || order.id || '', // A: Mã Đơn
     dateStr, // B: Ngày Đặt
     timeStr, // C: Giờ Đặt
-    order.customer?.fullName || '', // D: Tên Khách
-    order.customer?.phone || '', // E: Số ĐT
-    order.customer?.email || '', // F: Email
-    order.shipping?.address || '', // G: Địa Chỉ
-    order.shipping?.ward || '', // H: Phường/Xã
-    order.shipping?.district || '', // I: Quận/Huyện
-    order.shipping?.city || '', // J: Tỉnh/TP
-    order.shipping?.fullAddress || '', // K: Địa Chỉ Đầy Đủ
+    customerName, // D: Tên Khách
+    phone, // E: Số ĐT
+    email, // F: Email
+    address, // G: Địa Chỉ
+    ward, // H: Phường/Xã
+    district, // I: Quận/Huyện
+    city, // J: Tỉnh/TP
+    fullAddress, // K: Địa Chỉ Đầy Đủ
     itemNames, // L: Tên SP
     itemVariants, // M: Biến Thể
     itemQtys, // N: Số Lượng
-    order.subtotal || 0, // O: Tạm Tính (số)
+    order.subtotal || order.total || 0, // O: Tạm Tính (số)
     order.shippingFee || 0, // P: Phí Ship (số)
     order.discount || 0, // Q: Giảm Giá (số)
     order.voucherCode || '', // R: Mã Voucher
     order.total || 0, // S: Tổng Cộng (số)
-    order.payment?.methodLabel || order.payment?.method || '', // T: Phương Thức TT
-    order.payment?.status || 'UNPAID', // U: Trạng Thái TT
-    order.note || '', // V: Ghi Chú
+    order.payment?.methodLabel || order.payment?.method || order.paymentMethod || 'COD', // T: Phương Thức TT
+    order.payment?.status || order.paymentStatus || 'UNPAID', // U: Trạng Thái TT
+    order.note || order.adminNote || '', // V: Ghi Chú
     order.status || 'PENDING', // W: Trạng Thái ĐH
     order.source || 'website', // X: Nguồn
-    order.trackingCode || '', // Y: Mã Vận Đơn
+    order.trackingCode || order.trackingNumber || '', // Y: Mã Vận Đơn
     order.carrier || '', // Z: Đơn Vị Vận Chuyển
   ]
-
-  // Chống Formula Injection (CSV/Spreadsheet Formula Injection)
-  const sanitizeSheetValue = (val) => {
-    if (typeof val !== 'string') return val
-    const trimmed = val.trim()
-    if (/^[=+@\-\t\r]/.test(trimmed)) {
-      return `'${val}`
-    }
-    return val
-  }
 
   // Ghi vào sheet ORDERS
   await sheets.spreadsheets.values.append({
@@ -233,17 +293,26 @@ export const appendOrderToSheet = async (order) => {
   })
 
   // ── Dòng cho sheet PRODUCTS (1 SP = 1 dòng riêng) ────
-  const productRows = (order.items || []).map((item) => [
-    order.orderId, // A: Mã Đơn
-    dateStr, // B: Ngày Đặt
-    order.customer?.fullName || '', // C: Tên Khách
-    item.productName, // D: Tên SP
-    item.color || '', // E: Màu Sắc
-    item.size || '', // F: Size
-    item.quantity, // G: Số Lượng
-    item.unitPrice, // H: Đơn Giá
-    item.totalPrice, // I: Thành Tiền
-  ])
+  const productRows = items.map((item) => {
+    const pName = item.productName || item.name || 'Pijama QuanNguyenS'
+    const color = item.color || item.colorLabel || (item.variant ? item.variant.split(' - ')[0] : '')
+    const size = item.size || (item.variant ? item.variant.split(' - ')[1] : '')
+    const qty = Number(item.quantity) || 1
+    const unitPrice = Number(item.unitPrice || item.price || 0)
+    const totalPrice = Number(item.totalPrice || item.total || unitPrice * qty)
+
+    return [
+      order.orderId || order.id || '', // A: Mã Đơn
+      dateStr, // B: Ngày Đặt
+      customerName, // C: Tên Khách
+      pName, // D: Tên SP
+      color, // E: Màu Sắc
+      size, // F: Size
+      qty, // G: Số Lượng
+      unitPrice, // H: Đơn Giá
+      totalPrice, // I: Thành Tiền
+    ]
+  })
 
   if (productRows.length > 0) {
     // Ghi vào sheet PRODUCTS
@@ -258,8 +327,8 @@ export const appendOrderToSheet = async (order) => {
   // Xóa cache để các truy vấn sau nhận được đơn mới ngay
   invalidateSheetOrdersCache()
 
-  console.log(`✅ Order ${order.orderId} written to Google Sheets`)
-  return { success: true, orderId: order.orderId }
+  console.log(`✅ Order ${order.orderId || order.id} written to Google Sheets`)
+  return { success: true, orderId: order.orderId || order.id }
 }
 
 // ── In-Memory Cache & Request Deduplication Cho Sheet Orders ─────────
@@ -481,4 +550,232 @@ export const updateOrderStatusInSheet = async (orderId, newStatus, note = '', tr
     return { success: false, error: err.message }
   }
 }
+
+// ── Đồng bộ danh mục chi tiết sản phẩm Pyjama lên Google Sheet ─────────────────
+export const syncProductCatalogToSheet = async () => {
+  const auth = getAuth()
+  const sheets = google.sheets({ version: 'v4', auth })
+  const spreadsheetId = process.env.GOOGLE_SHEET_ID
+  if (!spreadsheetId) throw new Error('Thiếu GOOGLE_SHEET_ID trong .env')
+
+  await ensureSheetsExist(sheets, spreadsheetId)
+
+  const { products } = await import('../../src/data/products.js')
+  const catalogRows = [CATALOG_HEADERS]
+
+  products.forEach((p) => {
+    let totalStock = 0
+    const stockDetails = []
+    ;(p.colors || []).forEach((c) => {
+      const colorLabel = c.label || c.name || ''
+      if (c.stock) {
+        Object.entries(c.stock).forEach(([sz, qty]) => {
+          totalStock += Number(qty) || 0
+          stockDetails.push(`${colorLabel} (Size ${sz}): ${qty}`)
+        })
+      }
+    })
+
+    const colorLabels = (p.colors || []).map((c) => c.label || c.name).join(', ')
+    const sizes = (p.sizes || []).join(', ')
+    const link = `https://quannguyens.com/san-pham/${p.slug}`
+
+    catalogRows.push([
+      sanitizeSheetValue(p.id || p.slug),
+      sanitizeSheetValue(p.name),
+      sanitizeSheetValue(p.subtitle),
+      sanitizeSheetValue(p.collection),
+      Number(p.price) || 0,
+      p.originalPrice ? Number(p.originalPrice) : '',
+      p.discount ? Number(p.discount) : 0,
+      sanitizeSheetValue(colorLabels),
+      sanitizeSheetValue(sizes),
+      sanitizeSheetValue(stockDetails.join(' | ')),
+      Number(totalStock),
+      sanitizeSheetValue(p.fabric),
+      sanitizeSheetValue(p.fabricDetail),
+      sanitizeSheetValue(p.fengShui?.element ? `${p.fengShui.element} (${p.fengShui.energyNote || ''})` : ''),
+      Number(p.rating) || 5.0,
+      Number(p.reviewCount) || 0,
+      sanitizeSheetValue(link),
+    ])
+  })
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `'${SHEET_TABS.CATALOG}'!A1:Q${catalogRows.length}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: catalogRows },
+  })
+
+  return { success: true, count: products.length }
+}
+
+// ── Đồng bộ toàn diện: Cả danh mục Pyjama, Đơn Hàng và Chi Tiết SP ─────────────
+export const syncAllToGoogleSheets = async () => {
+  const auth = getAuth()
+  const sheets = google.sheets({ version: 'v4', auth })
+  const spreadsheetId = process.env.GOOGLE_SHEET_ID
+  if (!spreadsheetId) throw new Error('Thiếu GOOGLE_SHEET_ID trong .env')
+
+  await ensureSheetsExist(sheets, spreadsheetId)
+
+  // 1. Đồng bộ Catalog
+  await syncProductCatalogToSheet()
+
+  // 2. Đồng bộ Đơn Hàng & Chi Tiết SP
+  const orders = orderPersistence.getAll() || []
+  const orderRows = [ORDER_HEADERS]
+  const productRows = [PRODUCT_HEADERS]
+
+  orders.forEach((order) => {
+    const orderId = order.orderId || order.id || ''
+    if (!orderId) return
+
+    let dateStr = ''
+    let timeStr = ''
+    try {
+      const d = new Date(order.createdAt || order.orderDate || Date.now())
+      if (!isNaN(d.getTime())) {
+        dateStr = d.toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
+        timeStr = d.toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })
+      }
+    } catch (_) {}
+
+    if (!dateStr && order.orderDateVN) {
+      const parts = order.orderDateVN.split(' ')
+      dateStr = parts[0] || order.orderDateVN
+      timeStr = parts[1] || ''
+    }
+
+    const customerName = order.customer?.fullName || order.customerName || ''
+    const phone = order.customer?.phone || order.customerPhone || ''
+    const email = order.customer?.email || order.customerEmail || ''
+
+    const address = order.shipping?.address || order.shippingAddress || ''
+    const ward = order.shipping?.ward || ''
+    const district = order.shipping?.district || ''
+    const city = order.shipping?.city || ''
+    const fullAddress =
+      order.shipping?.fullAddress ||
+      order.shippingAddress ||
+      [address, ward, district, city].filter(Boolean).join(', ')
+
+    const items = Array.isArray(order.items) ? order.items : []
+    const itemNames = items.map((i) => i.productName || i.name || 'Pijama QuanNguyenS').join(' | ')
+    const itemVariants = items.map((i) => i.variant || [i.color || i.colorLabel, i.size].filter(Boolean).join(' - ')).join(' | ')
+    const itemQtys = items.map((i) => i.quantity || 1).join(' | ')
+
+    const subtotal = Number(order.subtotal || order.total || 0)
+    const shippingFee = Number(order.shippingFee || 0)
+    const discount = Number(order.discount || 0)
+    const voucherCode = order.voucherCode || ''
+    const total = Number(order.total || 0)
+
+    const paymentMethod =
+      order.payment?.methodLabel ||
+      order.payment?.method ||
+      order.paymentMethod ||
+      'COD'
+    const paymentStatus =
+      order.payment?.status ||
+      order.paymentStatus ||
+      'UNPAID'
+
+    const note = order.note || order.adminNote || ''
+    const status = order.status || 'PENDING'
+    const source = order.source || 'website'
+    const trackingCode = order.trackingCode || order.trackingNumber || ''
+    const carrier = order.carrier || ''
+
+    orderRows.push([
+      sanitizeSheetValue(orderId),
+      sanitizeSheetValue(dateStr),
+      sanitizeSheetValue(timeStr),
+      sanitizeSheetValue(customerName),
+      sanitizeSheetValue(phone),
+      sanitizeSheetValue(email),
+      sanitizeSheetValue(address),
+      sanitizeSheetValue(ward),
+      sanitizeSheetValue(district),
+      sanitizeSheetValue(city),
+      sanitizeSheetValue(fullAddress),
+      sanitizeSheetValue(itemNames),
+      sanitizeSheetValue(itemVariants),
+      sanitizeSheetValue(itemQtys),
+      subtotal,
+      shippingFee,
+      discount,
+      sanitizeSheetValue(voucherCode),
+      total,
+      sanitizeSheetValue(paymentMethod),
+      sanitizeSheetValue(paymentStatus),
+      sanitizeSheetValue(note),
+      sanitizeSheetValue(status),
+      sanitizeSheetValue(source),
+      sanitizeSheetValue(trackingCode),
+      sanitizeSheetValue(carrier),
+    ])
+
+    if (items.length > 0) {
+      items.forEach((item) => {
+        const pName = item.productName || item.name || 'Pijama QuanNguyenS'
+        const color = item.color || item.colorLabel || (item.variant ? item.variant.split(' - ')[0] : '')
+        const size = item.size || (item.variant ? item.variant.split(' - ')[1] : '')
+        const qty = Number(item.quantity) || 1
+        const unitPrice = Number(item.unitPrice || item.price || 0)
+        const totalPrice = Number(item.totalPrice || item.total || unitPrice * qty)
+
+        productRows.push([
+          sanitizeSheetValue(orderId),
+          sanitizeSheetValue(dateStr),
+          sanitizeSheetValue(customerName),
+          sanitizeSheetValue(pName),
+          sanitizeSheetValue(color),
+          sanitizeSheetValue(size),
+          qty,
+          unitPrice,
+          totalPrice,
+        ])
+      })
+    } else {
+      productRows.push([
+        sanitizeSheetValue(orderId),
+        sanitizeSheetValue(dateStr),
+        sanitizeSheetValue(customerName),
+        'Pijama Cao Cấp QuanNguyenS',
+        '',
+        '',
+        1,
+        total,
+        total,
+      ])
+    }
+  })
+
+  // Cập nhật tab Đơn Hàng
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `'${SHEET_TABS.ORDERS}'!A1:Z${orderRows.length}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: orderRows },
+  })
+
+  // Cập nhật tab Chi Tiết SP
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `'${SHEET_TABS.PRODUCTS}'!A1:I${productRows.length}`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: productRows },
+  })
+
+  invalidateSheetOrdersCache()
+
+  return {
+    success: true,
+    ordersSynced: orderRows.length - 1,
+    productsSynced: productRows.length - 1,
+  }
+}
+
 

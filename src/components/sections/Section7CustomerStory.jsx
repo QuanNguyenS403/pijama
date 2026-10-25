@@ -11,14 +11,14 @@ export default function Section7CustomerStory() {
       {/* Ambient */}
       <div className="absolute top-0 right-0 w-80 h-80 bg-[#D4AF37]/8 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10">
+      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           
           {/* Left: Text */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, amount: 0, margin: "0px 0px 200px 0px" }}
             transition={{ duration: 0.7 }}
             className="lg:col-span-6 flex flex-col justify-center"
           >
@@ -27,28 +27,28 @@ export default function Section7CustomerStory() {
             </span>
 
             <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-[1.12] mb-6">
-              Không mass production
+              SỨ MỆNH
               <span className="block text-[#D4AF37] italic font-normal mt-1 text-2xl sm:text-3xl">
-                Mỗi đường may là một quyết định
+                Every girls deserve QuanNguyenS's Pyjama
               </span>
             </h2>
 
             <p className="font-sans text-base sm:text-lg text-white/90 font-normal leading-relaxed mb-4">
-              Chúng tôi không sản xuất hàng loạt để bán rẻ. Chúng tôi chọn từng mét vải, kiểm từng đường chỉ, và quyết định từng màu sắc — để mỗi bộ QuanNguyenS đến tay bạn đều xứng đáng được mặc nhiều lần hơn, không chỉ một lần
+              QuanNguyenS tin rằng, vẻ đẹp cuốn hút nhất của người phụ nữ không nằm ở lớp váy áo lộng lẫy để chiều lòng thế giới ngoài kia, mà tỏa ra từ khí chất tự tại khi nàng khép cánh cửa nhà và trở về với chính mình. Sứ mệnh của thương hiệu không đơn thuần là tạo ra những thiết kế đồ ngủ chỉn chu về ngoại hình, mà là đánh thức thần thái thanh lịch và sự kiêu hãnh ngầm bên trong mỗi cô gái. Bằng những phom dáng chuẩn mực giúp giải phóng cơ thể trong sự thoải mái tuyệt đối, chúng mình đồng hành cùng nàng nuôi dưỡng thói quen yêu chiều bản thân — bởi khi một người phụ nữ biết trân quý cả những khoảnh khắc riêng tư nhất, khí chất của nàng sẽ tự khắc tỏa sáng mà chẳng cần bất kỳ sự phô trương nào.
             </p>
 
             <p className="font-sans text-sm sm:text-base text-white/75 font-normal leading-relaxed mb-8">
-              Từng mét vải được chọn lọc thủ công. Thiết kế được kiểm duyệt nghiêm. Số lượng có giới hạn — vì chúng tôi muốn làm tốt, không chỉ làm nhiều
+              QuanNguyenS tin rằng vẻ đẹp đích thực cần thời gian để thành hình. Thay vì sản xuất ồ ạt, QuanNguyenS gói ghém tâm huyết vào từng bộ sưu tập mang đến mọi người.
             </p>
 
             <div className="flex flex-col gap-3 pt-4 border-t border-white/10">
               <div className="flex items-center gap-3">
                 <span className="text-[#D4AF37] text-lg">✦</span>
-                <span className="font-sans text-sm font-semibold text-white">Thiết kế giới hạn theo mùa</span>
+                <span className="font-sans text-sm font-semibold text-white">Là con gái phải đẹp</span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-[#D4AF37] text-lg">✦</span>
-                <span className="font-sans text-sm font-semibold text-white">Chất liệu tuyển chọn thủ công, kiểm định chất lượng nghiêm ngặt</span>
+                <span className="font-sans text-sm font-semibold text-white">QuanNguyenS</span>
               </div>
             </div>
           </motion.div>
@@ -57,7 +57,7 @@ export default function Section7CustomerStory() {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
+            viewport={{ once: true, amount: 0, margin: "0px 0px 200px 0px" }}
             transition={{ duration: 0.7, delay: 0.2 }}
             className="lg:col-span-6"
           >
@@ -69,14 +69,6 @@ export default function Section7CustomerStory() {
                 decoding="async"
                 className="w-full h-full object-cover object-center group-hover:scale-103 transition-transform duration-700"
               />
-              <div className="absolute bottom-4 left-4 right-4 bg-[#1E1510]/90 backdrop-blur-sm p-3.5 rounded-[2px] border border-white/10">
-                <span className="font-serif text-sm font-bold text-[#D4AF37] block">
-                  Limited Edition — Seasonal
-                </span>
-                <span className="text-xs text-white/80 font-sans">
-                  Mỗi mùa ra mắt một số lượng có giới hạn — vì chất lượng không thể vội
-                </span>
-              </div>
             </div>
           </motion.div>
 

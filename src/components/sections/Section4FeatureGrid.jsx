@@ -20,9 +20,9 @@ export default function Section4FeatureGrid() {
     {
       icon: Sparkles,
       title: 'Bảo hành miễn phí',
-      englishSubtitle: '1 ĐỔI 1 TRONG 7 NGÀY',
+      englishSubtitle: '',
       description:
-        '1 đổi 1 trong vòng 7 ngày kể từ ngày nhận hàng đối với bất kỳ lỗi nào từ nhà sản xuất.',
+        '1 đổi 1 trong vòng 7 ngày kể từ ngày nhận hàng đối với các lỗi theo quy định.',
     },
     {
       icon: Heart,

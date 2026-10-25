@@ -9,7 +9,7 @@ const slides = [
   {
     id: 1,
     src: heroSlide01,
-    alt: 'The Hearth Set — Set pijama sọc nâu ấm áp phong cách European Luxury',
+    alt: 'The Hearth Set — Set pijama sọc nâu ấm áp phong cách Style To Be Lived In',
     eyebrow: 'THE HEARTH SET — PRE-ORDER',
     headline: 'Ấm Áp Như\nBuổi Sáng Đầu Tiên',
     sub: 'Chất liệu sọc nâu, phom dáng suông phóng khoáng — từ giường ngủ đến hiên nhà.',
@@ -18,7 +18,7 @@ const slides = [
   {
     id: 2,
     src: heroSlide02,
-    alt: 'The Stillwater Set — Set pijama caro navy thanh lịch phong cách European Luxury',
+    alt: 'The Stillwater Set — Set pijama caro navy thanh lịch phong cách Style To Be Lived In',
     eyebrow: 'THE STILLWATER SET',
     headline: 'Tĩnh Lặng,\nSâu Lắng',
     sub: 'Caro navy tinh tế với viền trắng tương phản — vẻ đẹp điềm tĩnh mà không kém phần tinh tế.',
@@ -27,7 +27,7 @@ const slides = [
   {
     id: 3,
     src: heroSlide03,
-    alt: 'The Daybreak Set — Set pijama sọc hồng nhẹ nhàng phong cách European Luxury',
+    alt: 'The Daybreak Set — Set pijama sọc hồng nhẹ nhàng phong cách Style To Be Lived In',
     eyebrow: 'THE DAYBREAK SET — PRE-ORDER',
     headline: 'Bình Minh\nNhẹ Nhàng',
     sub: 'Sọc hồng nhẹ nhàng, dáng rộng thoải mái — phong cách buổi sáng bạn mong chờ.',
@@ -36,9 +36,9 @@ const slides = [
   {
     id: 4,
     src: heroSlide04,
-    alt: 'Bộ sưu tập pijama QuanNguyenS — Ba thiết kế trong một khung hình',
+    alt: "Bộ sưu tập pijama QuanNguyenS — Every girls deserve QuanNguyenS's Pyjama",
     eyebrow: 'BỘ SƯU TẬP 2026',
-    headline: 'Style to be lived in',
+    headline: "Every girls deserve\nQuanNguyenS's Pyjama",
     sub: 'Ba thiết kế. Một phong cách. Chất liệu tự nhiên chuẩn xuất khẩu châu Âu.',
     align: 'left',
   },

@@ -23,9 +23,9 @@ export default function LandingPage() {
   return (
     <div className="bg-[#2C201A] text-white min-h-screen font-sans selection:bg-[#D4AF37] selection:text-[#2C201A] overflow-x-hidden">
       {/* SEO & OpenGraph Meta Tags */}
-      <title>QuanNguyenS — European Casual Luxury</title>
+      <title>QuanNguyenS — Style To Be Lived In</title>
       <meta name="description" content="Thương hiệu pijama thiết kế cao cấp QuanNguyenS. Chất liệu tự nhiên, sợi dệt chuẩn xuất khẩu châu Âu, phom dáng suông phóng khoáng từ nhà ra phố." />
-      <meta property="og:title" content="QuanNguyenS — European Casual Luxury" />
+      <meta property="og:title" content="QuanNguyenS — Style To Be Lived In" />
       <meta property="og:description" content="Thương hiệu pijama thiết kế cao cấp QuanNguyenS. Chất liệu tự nhiên, sợi dệt chuẩn xuất khẩu châu Âu, phom dáng suông phóng khoáng từ nhà ra phố." />
       <meta property="og:url" content="https://quannguyens.com/" />
       <meta property="og:type" content="website" />

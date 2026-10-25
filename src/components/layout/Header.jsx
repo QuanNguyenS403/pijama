@@ -242,7 +242,7 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
                 QuanNguyenS
               </span>
               <span className="text-[8.5px] sm:text-[9px] tracking-[0.2em] sm:tracking-[0.25em] text-[#D4AF37] uppercase font-normal -mt-0.5 sm:-mt-1 whitespace-nowrap">
-                European Casual Luxury
+                Style To Be Lived In
               </span>
             </div>
           </Link>

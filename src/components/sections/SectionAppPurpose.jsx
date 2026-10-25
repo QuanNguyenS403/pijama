@@ -23,7 +23,7 @@ export default function SectionAppPurpose() {
           </h2>
           <div className="w-16 h-[2px] bg-[#D4AF37] mx-auto mt-4 mb-4" />
           <p className="font-sans text-xs sm:text-sm text-[#5C4A3E] leading-relaxed">
-            QuanNguyenS là nền tảng thương mại điện tử chuyên cung cấp pijama cao cấp phong cách European Casual Luxury. Chúng tôi xây dựng trải nghiệm mua sắm mở, hoàn toàn không có rào cản đăng nhập bắt buộc và tôn trọng tối đa dữ liệu người dùng.
+            QuanNguyenS là nền tảng thương mại điện tử chuyên cung cấp pijama cao cấp phong cách Style To Be Lived In. Chúng tôi xây dựng trải nghiệm mua sắm mở, hoàn toàn không có rào cản đăng nhập bắt buộc và tôn trọng tối đa dữ liệu người dùng.
           </p>
         </div>
 

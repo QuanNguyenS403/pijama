@@ -21,7 +21,7 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF8F5]">
-      <title>Giỏ Hàng — QuanNguyenS European Casual Luxury</title>
+      <title>Giỏ Hàng — QuanNguyenS Style To Be Lived In</title>
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
       <CartDrawer isOpen={cartDrawerOpen} onClose={() => setCartDrawerOpen(false)} />

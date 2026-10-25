@@ -116,7 +116,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
   ) {
     return {
       reply:
-        'Dạ QuanNguyenS hiện có 3 bộ pijama thiết kế cao cấp trong Bộ Sưu Tập Thu Đông 2026 chuẩn phong cách European Casual Luxury ạ:\n\n' +
+        'Dạ QuanNguyenS hiện có 3 bộ pijama thiết kế cao cấp trong Bộ Sưu Tập Thu Đông 2026 chuẩn phong cách Style To Be Lived In ạ:\n\n' +
         '1. 🌸 **THE DAYBREAK SET (390.000đ)**: Họa tiết sọc hồng nắng sớm ấm áp (Hành Hỏa), viền tương phản sắc nét, cổ notch cổ điển, 100% sợi tự nhiên Cotton-Modal thoáng khí 4 mùa (Size S, M).\n\n' +
         '2. 🌊 **THE STILLWATER SET (550.000đ)**: Họa tiết Caro Navy lịch lãm (Hành Thủy), thiết kế cổ V thanh thoát tôn dáng, chất liệu 95% Modal & 5% Spandex mướt mát chống nhăn tự nhiên (Size S, L).\n\n' +
         '3. 🍂 **THE HEARTH SET (750.000đ)**: Họa tiết sọc nâu mocha quý phái (Hành Thổ), quần dáng wide-leg ống rộng buông rủ kiêu sa, chế tác từ 100% Tencel Lyocell thượng hạng (Size S, M).\n\n' +
@@ -368,7 +368,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
   // Fallback thân thiện, luôn hỗ trợ khách nhiệt tình
   return {
     reply:
-      'Dạ em là Trợ lý ảo thời trang của QuanNguyenS (phong cách European Casual Luxury). Em rất vui được hỗ trợ anh/chị chọn size vừa vặn theo chiều cao/cân nặng, tư vấn chất liệu các mẫu pijama (Daybreak Sọc Hồng, Stillwater Caro Navy, Hearth Sọc Nâu Tencel) hoặc thông tin ưu đãi và giao nhận của shop ạ.\n\nAnh/chị đang quan tâm đến bộ pijama cho dịp nào ạ?',
+      'Dạ em là Trợ lý ảo thời trang của QuanNguyenS (phong cách Style To Be Lived In — "Every girls deserve QuanNguyenS\'s Pyjama"). Em rất vui được hỗ trợ anh/chị chọn size vừa vặn theo chiều cao/cân nặng, tư vấn chất liệu các mẫu pijama (Daybreak Sọc Hồng, Stillwater Caro Navy, Hearth Sọc Nâu Tencel) hoặc thông tin ưu đãi và giao nhận của shop ạ.\n\nAnh/chị đang quan tâm đến bộ pijama cho dịp nào ạ?',
     quickReplies: ['Xem 3 mẫu Pijama', 'Tư vấn chọn size', 'Ưu đãi & Freeship', 'Gặp chủ shop'],
   }
 }

@@ -104,7 +104,7 @@ const facebookThreads = [
       avatarBg: '#631521',
       isAuthor: true,
       time: '3 ngày',
-      text: 'Dạ đó chính là tinh thần Casual Luxury mà QuanNguyenS hướng tới — vừa thư thái thoải mái tại nhà, vừa thanh lịch chỉn chu khi bước ra phố ạ ✨',
+      text: 'Dạ đó chính là tinh thần Style To Be Lived In mà QuanNguyenS hướng tới — vừa thư thái thoải mái tại nhà, vừa thanh lịch chỉn chu khi bước ra phố ạ ✨',
       likes: 72,
       reactions: ['love'],
     },
