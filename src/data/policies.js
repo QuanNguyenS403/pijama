@@ -329,4 +329,71 @@ export const policiesData = {
       },
     ],
   },
+  loyalty: {
+    id: 'loyalty',
+    title: 'Điều Khoản Chương Trình Hội Viên',
+    subtitle: 'Quy chế tích điểm, đổi voucher, thăng hạng và duy trì quyền lợi',
+    lastUpdated: 'Hiệu lực từ 25/10/2026 (Phiên bản 1.0)',
+    effectiveDate: '2026-10-25',
+    version: '1.0.0',
+    changelog: [
+      {
+        version: '1.0.0',
+        date: '25/10/2026',
+        summary: 'Ban hành chính thức Điều khoản Chương trình Khách hàng thân thiết & Ưu đãi Hội viên QuanNguyenS.',
+      },
+    ],
+    sections: [
+      {
+        heading: '1. Nguyên tắc Tham gia Tự nguyện & Xác thực SĐT',
+        content: [
+          'Chương trình Hội viên QuanNguyenS hoạt động trên nguyên tắc tự nguyện 100%: Chỉ khách hàng chủ động đăng ký mới trở thành hội viên. Hệ thống không tự động kích hoạt hay ép buộc.',
+          'Số điện thoại di động chính chủ (được xác minh bằng mã OTP gửi về số đó) là khóa định danh duy nhất để tích lũy và sử dụng quyền lợi điểm thưởng.',
+          'Chương trình áp dụng cho cá nhân từ đủ 16 tuổi trở lên.',
+        ],
+      },
+      {
+        heading: '2. Tiêu chuẩn 4 Hạng Hội Viên & Chi tiêu Tích lũy 365 Ngày',
+        content: [
+          'Hạng hội viên được xác định tự động dựa trên tổng chi tiêu thực trả cho hàng hóa trong cửa sổ trượt 365 ngày gần nhất:',
+          '• Hạng 1 — Thân Thiết (Member): Áp dụng ngay khi đăng ký thành công (chi tiêu 0đ). Tích lũy 100.000đ = 1 điểm, voucher sinh nhật 50.000đ, đổi 10 điểm = voucher 50.000đ.',
+          '• Hạng 2 — Bạc (Silver): Tích lũy đạt 5.000.000đ trong 365 ngày. Giảm 5% mọi đơn hàng, voucher thăng hạng 200.000đ, voucher sinh nhật 200.000đ.',
+          '• Hạng 3 — Vàng (Gold): Tích lũy đạt 10.000.000đ trong 365 ngày. Giảm 10% mọi đơn hàng, voucher thăng hạng 300.000đ, voucher sinh nhật 300.000đ, ưu tiên hỗ trợ đơn.',
+          '• Hạng 4 — Kim Cương (Diamond): Tích lũy đạt 25.000.000đ trong 365 ngày. Giảm 15% mọi đơn hàng, voucher thăng hạng 500.000đ, voucher sinh nhật 500.000đ, đặc quyền Private Party & Bộ quà đặc biệt theo từng BST.',
+        ],
+      },
+      {
+        heading: '3. Cơ chế Tích điểm & Đổi điểm thành Voucher',
+        content: [
+          'Tỷ lệ tích điểm: 100.000đ giá trị hàng thực trả = 1 điểm thưởng (làm tròn xuống từng đơn hàng, không tính phí vận chuyển).',
+          'Thời điểm cộng điểm: Điểm chỉ được cộng chính thức vào Sổ cái khi đơn hàng chuyển sang trạng thái Đã giao thành công (DELIVERED). Đơn hàng không xác thực chủ sở hữu lúc đặt có thời hạn 7 ngày để nhận điểm qua mã OTP.',
+          'Tỷ lệ đổi điểm: Cứ 10 điểm thưởng được đổi thành 1 Voucher giảm giá 50.000đ áp dụng cho đơn hàng từ 0đ (hạn sử dụng 90 ngày kể từ ngày đổi).',
+          'Bảo mật đổi điểm: Mọi giao dịch đổi điểm thành tiền bắt buộc xác thực mã OTP gửi về số điện thoại hội viên để bảo đảm chính chủ.',
+        ],
+      },
+      {
+        heading: '4. Thời hạn Duy trì Hạng & Điểm Thưởng (Quy tắc 365 Ngày)',
+        content: [
+          'Hạng hội viên được duy trì trong 365 ngày. Nếu quá 365 ngày kể từ đơn hàng hoàn tất gần nhất mà không phát sinh đơn hàng mới đủ điều kiện, hội viên sẽ bị hạ 1 bậc hạng.',
+          'Điểm thưởng có thời hạn duy trì 365 ngày. Quá 365 ngày không mua hàng, toàn bộ điểm thưởng khả dụng sẽ hết hạn về 0.',
+          'QuanNguyenS cam kết gửi email/thông báo nhắc nhở trước 30 ngày để khách hàng chủ động sử dụng điểm trước khi hết hạn.',
+        ],
+      },
+      {
+        heading: '5. Voucher Sinh Nhật & Voucher Thăng Hạng',
+        content: [
+          'Voucher sinh nhật được phát hành vào đầu tháng sinh của hội viên và có giá trị sử dụng đến hết ngày cuối cùng của tháng sinh đó (tối đa 01 lần/năm). Ngày sinh nhật khóa sau khi đặt và chỉ thay đổi thông qua Admin có nhật ký kiểm toán.',
+          'Voucher thăng hạng có thời hạn 90 ngày và chỉ cấp 01 lần duy nhất cho mỗi mốc hạng đạt được (không cấp lại nếu rớt hạng rồi thăng lại).',
+        ],
+      },
+      {
+        heading: '6. Chống Gian Lận, Thay Đổi Chương Trình & Quyền Rời Chương Trình',
+        content: [
+          'Nghiêm cấm các hành vi tạo đơn ảo rồi hủy để trục lợi điểm hoặc voucher. Mọi vi phạm sẽ dẫn đến việc đóng băng điểm và tài khoản hội viên.',
+          'QuanNguyenS bảo lưu quyền điều chỉnh quy chế chương trình với thông báo trước tối thiểu 30 ngày trên website và email.',
+          'Khách hàng có quyền chủ động rời chương trình hoặc yêu cầu ẩn danh hóa toàn bộ dữ liệu cá nhân tại trang cá nhân bất kỳ lúc nào. Dữ liệu chứng từ kế toán đơn hàng vẫn được lưu giữ theo luật định.',
+        ],
+      },
+    ],
+  },
 }

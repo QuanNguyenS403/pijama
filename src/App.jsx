@@ -13,9 +13,11 @@ const BankTransferPaymentPage = lazy(() => import('./pages/BankTransferPaymentPa
 const OrderSuccessPage = lazy(() => import('./pages/OrderSuccessPage'))
 const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage'))
 const AdminBroadcastPage = lazy(() => import('./pages/admin/AdminBroadcastPage'))
+const AdminMembersPage = lazy(() => import('./pages/admin/AdminMembersPage'))
 const AdminLoginGate = lazy(() => import('./pages/admin/AdminLoginGate'))
 const UnsubscribePage = lazy(() => import('./pages/UnsubscribePage'))
 const AccountPage = lazy(() => import('./pages/AccountPage'))
+const LoyaltyPage = lazy(() => import('./pages/LoyaltyPage'))
 const PolicyPage = lazy(() => import('./pages/PolicyPage'))
 
 function PageFallback() {
@@ -63,7 +65,9 @@ export default function App() {
           <Route path="/admin/login" element={<Navigate to="/admin/orders" replace />} />
           <Route path="/admin/orders" element={<AdminLoginGate><AdminOrdersPage /></AdminLoginGate>} />
           <Route path="/admin/broadcast" element={<AdminLoginGate><AdminBroadcastPage /></AdminLoginGate>} />
+          <Route path="/admin/members" element={<AdminLoginGate><AdminMembersPage /></AdminLoginGate>} />
           <Route path="/tai-khoan" element={<AccountPage />} />
+          <Route path="/hoi-vien" element={<LoyaltyPage />} />
           <Route path="/chinh-sach" element={<PolicyPage />} />
           <Route path="/chinh-sach-bao-mat" element={<PolicyPage />} />
           <Route path="/privacy-policy" element={<PolicyPage />} />

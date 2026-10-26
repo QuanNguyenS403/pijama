@@ -40,9 +40,35 @@ export function validateVoucher(code, context = {}) {
     }
   }
 
-  // 3. Kiểm tra quyền sở hữu (Ownership)
+  // 3. Kiểm tra hạn sử dụng (nếu có)
+  if (voucher.expires_at && new Date() > new Date(voucher.expires_at)) {
+    return {
+      isValid: false,
+      error: 'Mã ưu đãi này đã hết hạn sử dụng',
+    }
+  }
+
+  // 4. Kiểm tra giá trị đơn hàng tối thiểu (nếu có)
+  if (voucher.min_subtotal && context.subtotal !== undefined && Number(context.subtotal) < Number(voucher.min_subtotal)) {
+    return {
+      isValid: false,
+      error: `Mã ưu đãi này chỉ áp dụng cho đơn hàng từ ${Number(voucher.min_subtotal).toLocaleString('vi-VN')}đ`,
+    }
+  }
+
+  // 5. Kiểm tra quyền sở hữu hội viên (nếu voucher gắn riêng cho member_id)
+  if (voucher.member_id) {
+    if (!context.memberId || context.memberId !== voucher.member_id) {
+      return {
+        isValid: false,
+        error: 'Mã ưu đãi này chỉ dành riêng cho hội viên sở hữu',
+      }
+    }
+  }
+
+  // 6. Kiểm tra quyền sở hữu (Tài khoản chào mừng truyền thống)
   const isSystemCampaign = voucher.account_id === 'system'
-  if (!isSystemCampaign) {
+  if (!isSystemCampaign && !voucher.member_id) {
     // Nếu là voucher cá nhân (Welcome Voucher), bắt buộc phải có accountId và khớp chủ sở hữu
     if (!context.accountId) {
       return {
@@ -58,7 +84,7 @@ export function validateVoucher(code, context = {}) {
       }
     }
 
-    // 4. Kiểm tra điều kiện First Eligible Order cho Welcome Voucher
+    // 7. Kiểm tra điều kiện First Eligible Order cho Welcome Voucher
     if (!isFirstOrderEligible(voucher.account_id)) {
       return {
         isValid: false,
@@ -71,10 +97,16 @@ export function validateVoucher(code, context = {}) {
     isValid: true,
     voucher: {
       code: voucher.code,
-      discountPercent: voucher.discount_percent || 10,
+      kind: voucher.kind || 'percent',
+      discountAmount: Number(voucher.discount_amount) || 0,
+      discountPercent: voucher.discount_percent || 0,
+      minSubtotal: Number(voucher.min_subtotal) || 0,
+      expiresAt: voucher.expires_at || null,
       freeShipping: Boolean(voucher.free_shipping),
       accountId: voucher.account_id,
-      isWelcomeVoucher: !isSystemCampaign,
+      memberId: voucher.member_id || null,
+      source: voucher.source || 'campaign',
+      isWelcomeVoucher: !isSystemCampaign && !voucher.member_id,
     },
   }
 }
@@ -91,8 +123,14 @@ export function calculateVoucherBenefits(voucher, subtotal, originalShippingFee)
     }
   }
 
-  const discountPercent = Number(voucher.discountPercent) || 0
-  const discountAmount = Math.round(subtotal * (discountPercent / 100))
+  let discountAmount = 0
+  if (voucher.kind === 'amount') {
+    discountAmount = Math.min(subtotal, Math.max(0, Number(voucher.discountAmount) || 0))
+  } else {
+    const discountPercent = Number(voucher.discountPercent) || 0
+    discountAmount = Math.round(subtotal * (discountPercent / 100))
+  }
+
   const freeShipping = Boolean(voucher.freeShipping)
   const shippingFee = freeShipping ? 0 : originalShippingFee
 

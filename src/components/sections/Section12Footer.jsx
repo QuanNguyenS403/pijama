@@ -48,6 +48,7 @@ export default function Section12Footer() {
 
   const footerNavLinks = [
     { label: 'Bộ sưu tập', href: '#section-products', isAnchor: true },
+    { label: 'Ưu đãi hội viên', href: '/hoi-vien' },
     { label: 'Về chúng tôi', href: '#section-dark-contrast', isAnchor: true },
     { label: 'Chính sách bảo mật', href: '/chinh-sach?tab=privacy' },
     { label: 'Điều khoản dịch vụ', href: '/chinh-sach?tab=terms' },

@@ -187,6 +187,12 @@ export function validateEnvironment(env = process.env) {
     { name: 'VITE_TURNSTILE_SITE_KEY', isSecret: false },
     { name: 'REDIS_URL', isSecret: true },
     { name: 'VITE_BACKEND_URL', isSecret: false },
+    { name: 'LOYALTY_ENABLED', isSecret: false },
+    { name: 'LOYALTY_PHONE_VERIFIER', isSecret: false },
+    { name: 'ZALO_OA_ACCESS_TOKEN', isSecret: true },
+    { name: 'ZALO_APP_ID', isSecret: false },
+    { name: 'ZALO_SECRET_KEY', isSecret: true },
+    { name: 'ZALO_ZNS_TEMPLATE_OTP', isSecret: false },
   ]
 
   for (const spec of featureSpecs) {

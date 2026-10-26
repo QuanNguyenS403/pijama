@@ -6,6 +6,7 @@ import {
   FileText,
   RotateCcw,
   Truck,
+  Award,
   ArrowLeft,
   Mail,
   Phone,
@@ -40,6 +41,7 @@ export default function PolicyPage() {
 
   const tabs = [
     { key: 'privacy', label: 'Chính Sách Bảo Mật', icon: ShieldCheck, subtitle: 'Bảo vệ dữ liệu & Tuân thủ Google API' },
+    { key: 'loyalty', label: 'Ưu Đãi Hội Viên', icon: Award, subtitle: 'Quy chế tích điểm & Hạng thành viên' },
     { key: 'terms', label: 'Điều Khoản Dịch Vụ', icon: FileText, subtitle: 'Quy chế hoạt động & Cam kết' },
     { key: 'return', label: 'Chính Sách Đổi Trả Hàng', icon: RotateCcw, subtitle: '30 ngày đổi trả minh bạch' },
     { key: 'shipping', label: 'Chính Sách Giao Hàng', icon: Truck, subtitle: 'Vận chuyển toàn quốc Viettel Post' },

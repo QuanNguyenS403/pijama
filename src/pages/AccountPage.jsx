@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   User,
@@ -22,6 +22,7 @@ import {
   AlertCircle,
   Loader2,
   Lock,
+  Crown,
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Section12Footer from '../components/sections/Section12Footer'
@@ -30,6 +31,7 @@ import { Toast } from '../components/ui/Toast'
 import { setAccessToken, clearAccessToken } from '../lib/apiClient'
 import { clearLocalOrders } from '../lib/orderSync'
 import { loginWithGoogle, setupGoogleSignInButton, decodeGoogleJwt } from '../lib/googleAuth'
+import LoyaltyMemberCard from '../components/loyalty/LoyaltyMemberCard'
 
 const formatVND = (amount) => Number(amount || 0).toLocaleString('vi-VN') + 'đ'
 
@@ -45,9 +47,10 @@ export default function AccountPage() {
     }
   })
   const [loading, setLoading] = useState(true)
+  const [searchParams] = useSearchParams()
   const [voucher, setVoucher] = useState(null)
   const [orders, setOrders] = useState([])
-  const [activeTab, setActiveTab] = useState('vouchers') // 'vouchers' | 'orders' | 'settings'
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'loyalty') // 'loyalty' | 'vouchers' | 'orders' | 'settings'
   const [copiedCode, setCopiedCode] = useState(false)
   const [marketingOptIn, setMarketingOptIn] = useState(false)
   const [updatingPrefs, setUpdatingPrefs] = useState(false)
@@ -565,18 +568,31 @@ export default function AccountPage() {
             </motion.div>
 
             {/* Navigation Tabs */}
-            <div className="flex border-b border-[#E8DFD5] gap-8 text-xs font-bold uppercase tracking-wider">
+            <div className="flex border-b border-[#E8DFD5] gap-6 sm:gap-8 text-xs font-bold uppercase tracking-wider overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setActiveTab('loyalty')}
+                className={`pb-3 border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+                  activeTab === 'loyalty'
+                    ? 'border-[#631521] text-[#631521]'
+                    : 'border-transparent text-[#8C7E74] hover:text-[#1A1614]'
+                }`}
+              >
+                <Crown className="w-4 h-4 text-[#D4AF37]" />
+                <span>Ưu Đãi Hội Viên</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setActiveTab('vouchers')}
-                className={`pb-3 border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+                className={`pb-3 border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
                   activeTab === 'vouchers'
                     ? 'border-[#631521] text-[#631521]'
                     : 'border-transparent text-[#8C7E74] hover:text-[#1A1614]'
                 }`}
               >
                 <Gift className="w-4 h-4" />
-                <span>Voucher Của Tôi</span>
+                <span>Voucher Chào Mừng</span>
                 {voucher && !voucher.used && (
                   <span className="w-2 h-2 rounded-full bg-[#D4AF37]" />
                 )}
@@ -585,7 +601,7 @@ export default function AccountPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab('orders')}
-                className={`pb-3 border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+                className={`pb-3 border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
                   activeTab === 'orders'
                     ? 'border-[#631521] text-[#631521]'
                     : 'border-transparent text-[#8C7E74] hover:text-[#1A1614]'
@@ -598,7 +614,7 @@ export default function AccountPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab('settings')}
-                className={`pb-3 border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+                className={`pb-3 border-b-2 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
                   activeTab === 'settings'
                     ? 'border-[#631521] text-[#631521]'
                     : 'border-transparent text-[#8C7E74] hover:text-[#1A1614]'
@@ -611,6 +627,16 @@ export default function AccountPage() {
 
             {/* Tab Contents */}
             <div>
+              {/* TAB 0: LOYALTY */}
+              {activeTab === 'loyalty' && (
+                <div className="space-y-6">
+                  <LoyaltyMemberCard
+                    customerPhone={user?.phone || ''}
+                    onRefresh={fetchUserOrders}
+                  />
+                </div>
+              )}
+
               {/* TAB 1: VOUCHERS */}
               {activeTab === 'vouchers' && (
                 <div className="space-y-6">

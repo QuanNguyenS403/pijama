@@ -165,8 +165,14 @@ Nếu bạn có bất kỳ câu hỏi nào về bảng size hoặc chất liệu
               to="/admin/orders"
               className="px-3 py-1.5 text-xs font-semibold text-[#4A3F38] hover:text-[#631521] hover:bg-[#FAF5F0] rounded-[2px] transition-colors flex items-center gap-1.5"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Quản Lý Đơn Hàng</span>
+              <span>📦 Quản Lý Đơn Hàng</span>
+            </Link>
+
+            <Link
+              to="/admin/members"
+              className="px-3 py-1.5 text-xs font-semibold text-[#4A3F38] hover:text-[#631521] hover:bg-[#FAF5F0] rounded-[2px] transition-colors flex items-center gap-1.5"
+            >
+              <span>💎 Ưu Đãi Hội Viên</span>
             </Link>
 
             <span className="px-3 py-1.5 text-xs font-bold bg-[#631521] text-white rounded-[2px] shadow-xs flex items-center gap-1.5">

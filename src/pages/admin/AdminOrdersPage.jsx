@@ -354,6 +354,26 @@ export default function AdminOrdersPage() {
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <Link
+            to="/admin/members"
+            title="Quản lý hồ sơ hội viên, tích điểm, voucher và cảnh báo"
+            style={{
+              ...btnStyle,
+              background: '#FAF8F5',
+              color: '#631521',
+              border: '1px solid #D4AF37',
+              padding: '10px 16px',
+              fontSize: '12px',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontWeight: 600,
+              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+            }}
+          >
+            <span>💎 Ưu Đãi Hội Viên</span>
+          </Link>
+          <Link
             to="/admin/broadcast"
             title="Soạn và gửi thông báo email hàng loạt cho khách hàng"
             style={{
@@ -824,6 +844,17 @@ export default function AdminOrdersPage() {
 
             <div style={{ background:'#FAF7F3', padding:'14px', marginBottom:'16px', fontSize:'13px', border:'1px solid #E8DFD5', lineHeight:'1.8' }}>
               <div><strong>Khách hàng:</strong> {selectedOrder.customerName || selectedOrder.customer?.fullName}</div>
+              {selectedOrder.loyalty && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '4px 0' }}>
+                  <strong>Hội viên:</strong>
+                  <span style={{ background: '#FAF8F5', color: '#631521', border: '1px solid #D4AF37', padding: '1px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}>
+                    💎 {selectedOrder.loyalty.tier || 'Thân Thiết'}
+                  </span>
+                  <span style={{ fontSize: '12px', color: '#B45309' }}>
+                    ({selectedOrder.status === 'DELIVERED' ? 'Đã tích lũy' : 'Dự kiến tích lũy'}: +{Math.floor(Math.max(0, (selectedOrder.subtotal || 0) - (selectedOrder.discount || 0)) / 100000)} điểm)
+                  </span>
+                </div>
+              )}
               <div><strong>Điện thoại:</strong> <a href={`tel:${selectedOrder.customerPhone || selectedOrder.customer?.phone}`} style={{ color:'#631521', fontWeight:600 }}>{selectedOrder.customerPhone || selectedOrder.customer?.phone}</a></div>
               {(selectedOrder.customerEmail || selectedOrder.customer?.email) && (
                 <div><strong>Email:</strong> {selectedOrder.customerEmail || selectedOrder.customer?.email}</div>

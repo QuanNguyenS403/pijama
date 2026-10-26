@@ -8,6 +8,7 @@ import {
   Copy,
   Check,
   Gift,
+  Sparkles,
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Section12Footer from '../components/sections/Section12Footer'
@@ -421,6 +422,36 @@ export default function OrderSuccessPage() {
                       <p><strong>Phương thức TT:</strong> {order.payment?.methodLabel || (isBankTransfer ? 'VietQR (Giảm 10%)' : 'COD')}</p>
                     </div>
                   )}
+
+                  {/* Loyalty Points Earn Notice */}
+                  {(() => {
+                    const estimatedSpend = Math.max(0, (order.subtotal || total - (order.shippingFee || 0)))
+                    const estimatedPoints = Math.floor(estimatedSpend / 100000)
+                    if (estimatedPoints <= 0) return null
+                    return (
+                      <div className="border-t border-[#E8DFD5] pt-3 mt-3">
+                        <div className="p-3 bg-[#FAF5F0] border border-[#D4AF37]/50 rounded-[2px] flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-[#D4AF37] shrink-0" />
+                            <div>
+                              <span className="font-serif font-bold text-[#631521] block">
+                                Tích lũy {estimatedPoints} điểm hội viên ({formatVND(estimatedSpend)})
+                              </span>
+                              <span className="text-[11px] text-[#4A3F38]">
+                                Điểm sẽ tự động cộng vào tài khoản sau khi đơn hàng được giao thành công.
+                              </span>
+                            </div>
+                          </div>
+                          <Link
+                            to="/hoi-vien"
+                            className="text-[11px] font-bold text-[#631521] hover:underline shrink-0"
+                          >
+                            Chi tiết →
+                          </Link>
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 {/* Delivery Timeline Notice */}

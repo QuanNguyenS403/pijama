@@ -16,6 +16,7 @@ import { addSseClient } from './lib/orderEvents.js'
 import { verifyAdminLogin, adminLoginLimiter, requireAdminAuth } from './lib/adminAuth.js'
 import { registerAuthEndpoints } from './lib/authEndpoints.js'
 import { registerReviewEndpoints } from './lib/reviewEndpoints.js'
+import { registerLoyaltyEndpoints } from './lib/loyaltyEndpoints.js'
 import { verifyTrackingToken } from './lib/orderTokenService.js'
 import { normalizeVietnamesePhone } from './lib/smsService.js'
 import { customerSessionMiddleware } from './lib/customerSessionMiddleware.js'
@@ -891,6 +892,9 @@ registerAuthEndpoints(app)
 
 // ── 10.1 Hệ Thống Đánh Giá Sản Phẩm Thật (Real Customer Reviews) ──
 registerReviewEndpoints(app)
+
+// ── 10.2 Hệ Thống Ưu Đãi Hội Viên & Điểm Thưởng (Loyalty Program) ──
+registerLoyaltyEndpoints(app)
 
 // Phục vụ thư mục ảnh uploads công khai
 const publicUploadsPath = path.resolve(__dirname, '../public/uploads')

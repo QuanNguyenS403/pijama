@@ -3,6 +3,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { getSupabase } from './supabaseClient.js'
 import { upsertOrderToDb, getOrderFromDb } from './accountDb.js'
+import { handleOrderDeliveredHook, handleOrderCancelledHook } from './loyalty/orderHook.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -177,6 +178,21 @@ export const orderPersistence = {
     saveToDisk()
     syncOrderToSupabase(order)
     upsertOrderToDb(order)
+
+    // Loyalty Order Status Hooks (Idempotent, an toàn khi tắt cờ)
+    if (order.status === 'DELIVERED') {
+      try {
+        handleOrderDeliveredHook(order)
+      } catch (err) {
+        console.error('⚠️ [LOYALTY HOOK ERROR]', err.message)
+      }
+    } else if (order.status === 'CANCELLED') {
+      try {
+        handleOrderCancelledHook(order)
+      } catch (err) {
+        console.error('⚠️ [LOYALTY CANCEL HOOK ERROR]', err.message)
+      }
+    }
   },
 
   setBatch(orders) {
@@ -199,6 +215,14 @@ export const orderPersistence = {
         ordersMap.set(id, order)
         syncOrderToSupabase(order)
         upsertOrderToDb(order)
+
+        if (order.status === 'DELIVERED') {
+          try {
+            handleOrderDeliveredHook(order)
+          } catch (err) {
+            console.error('⚠️ [LOYALTY BATCH HOOK ERROR]', err.message)
+          }
+        }
         changed = true
       }
     })

@@ -15,6 +15,7 @@ import {
 import Header from '../components/layout/Header'
 import CartDrawer from '../components/cart/CartDrawer'
 import VoucherInput from '../components/cart/VoucherInput'
+import LoyaltyCheckoutPerks from '../components/loyalty/LoyaltyCheckoutPerks'
 import Section12Footer from '../components/sections/Section12Footer'
 import { useCart } from '../hooks/useCart'
 import { VIETNAM_PROVINCES } from '../data/provinces'
@@ -110,9 +111,12 @@ export default function CheckoutPage() {
     return isBankTransfer ? Math.round(subtotal * 0.10) : 0
   }, [isBankTransfer, subtotal])
 
-  // Calculate voucher benefits (10% + Freeship)
+  // Calculate voucher benefits (10% + Freeship or fixed amount)
   const voucherDiscount = useMemo(() => {
     if (!appliedVoucher) return 0
+    if (appliedVoucher.kind === 'amount' || appliedVoucher.discountAmount) {
+      return Math.min(subtotal, Number(appliedVoucher.discountAmount || appliedVoucher.discount_amount || 0))
+    }
     return Math.round(subtotal * (Number(appliedVoucher.discountPercent || 10) / 100))
   }, [appliedVoucher, subtotal])
 
@@ -758,6 +762,17 @@ export default function CheckoutPage() {
                         </div>
                       )
                     })}
+                  </div>
+
+                  {/* Loyalty Perks & Points Redemption */}
+                  <div className="pt-2 pb-2 border-t border-[#E8DFD5]">
+                    <LoyaltyCheckoutPerks
+                      subtotal={subtotal}
+                      paymentMethod={formData.paymentMethod}
+                      customerPhone={formData.phone}
+                      appliedVoucher={appliedVoucher}
+                      onApplyVoucher={(v) => setAppliedVoucher(v)}
+                    />
                   </div>
 
                   {/* Voucher Input */}
