@@ -111,7 +111,7 @@ export default function ProductAccordion({ product }) {
       content: (
         <div className="space-y-4 text-sm text-[#4A3F38]">
           <p className="font-normal text-xs sm:text-sm leading-relaxed">
-            Đối với phom dáng pijama suông cổ điển châu Âu của QuanNguyenS, bạn có thể dễ dàng đối chiếu số đo cơ thể theo bảng quy chuẩn bên dưới. Nếu nằm giữa 2 size, chúng tôi khuyên bạn nên chọn <strong>size lớn hơn</strong> để có trải nghiệm mặc thư thái nhất.
+            Đối với phom dáng sleepwear suông cổ điển châu Âu của QuanNguyenS, bạn có thể dễ dàng đối chiếu số đo cơ thể theo bảng quy chuẩn bên dưới. Nếu nằm giữa 2 size, chúng tôi khuyên bạn nên chọn <strong>size lớn hơn</strong> để có trải nghiệm mặc thư thái nhất.
           </p>
 
           {sizeEntries.length > 0 ? (
@@ -162,7 +162,7 @@ export default function ProductAccordion({ product }) {
 
     // ─── MỤC 3: CHẤT LIỆU & HƯỚNG DẪN BẢO QUẢN ───────────────────────────
     {
-      label: 'Chất Liệu & Hướng Dẫn Bảo Quản',
+      label: 'HƯỚNG DẪN BẢO QUẢN',
       content: (
         <div className="space-y-6 text-sm text-[#4A3F38]">
           {/* Material Overview */}
@@ -234,7 +234,7 @@ export default function ProductAccordion({ product }) {
 
     // ─── MỤC 4: CHÍNH SÁCH ĐỔI TRẢ & GIAO HÀNG ────────────────────────────
     {
-      label: 'Chính Sách Đổi Trả & Giao Hàng',
+      label: 'CHÍNH SÁCH GIAO HÀNG & ĐỔI TRẢ',
       content: (
         <div className="space-y-4 text-sm text-[#4A3F38]">
           {/* Pre-order Special Notice */}

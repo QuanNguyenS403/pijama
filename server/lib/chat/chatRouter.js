@@ -94,7 +94,7 @@ router.post('/', checkChatEnabled, chatLimiter, async (req, res) => {
       return res.json({
         success: true,
         reply: guarded.sanitizedReply,
-        quickReplies: tier0Result.quickReplies || ['Tư vấn chọn size', 'Xem mẫu pijama', 'Gặp chủ shop'],
+        quickReplies: tier0Result.quickReplies || ['Tư vấn chọn size', 'Xem mẫu sleepwear', 'Gặp chủ shop'],
         handoff: tier0Result.handoff || null,
         usedTier: tier0Result.usedTier || 'tier-0',
       })
@@ -153,7 +153,7 @@ router.post('/', checkChatEnabled, chatLimiter, async (req, res) => {
     const dynamicQuickReplies =
       llmResult.quickReplies && llmResult.quickReplies.length > 0
         ? llmResult.quickReplies
-        : ['Xem 3 mẫu pijama', 'Tư vấn chọn size', 'Phí ship & Đổi trả', 'Gặp chủ shop']
+        : ['Xem 3 mẫu sleepwear', 'Tư vấn chọn size', 'Phí ship & Đổi trả', 'Gặp chủ shop']
 
     return res.json({
       success: true,

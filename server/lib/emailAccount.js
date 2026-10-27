@@ -79,7 +79,7 @@ export async function sendVerificationCodeEmail({ to, code, name = 'Quý khách'
               <tr>
                 <td style="padding: 24px 32px; background-color: #F5EFE6; border-top: 1px solid #E8DFD5; text-align: center;">
                   <p style="margin: 0 0 6px 0; font-size: 12px; color: #631521; font-weight: 600;">
-                    ${SHOP_NAME} — Lụa Tơ Tằm & Pyjama Cao Cấp
+                    ${SHOP_NAME} — Lụa Tơ Tằm & Sleepwear Cao Cấp
                   </p>
                   <p style="margin: 0 0 4px 0; font-size: 11px; color: #8C7E74;">
                     Hotline: ${SHOP_PHONE} · Email: ${user}
@@ -170,7 +170,7 @@ export async function sendWelcomeVoucherEmail({ to, code, name = 'Quý khách' }
                       Cách sử dụng ưu đãi:
                     </p>
                     <ol style="margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.6; color: #631521;">
-                      <li>Chọn bộ Pyjama yêu thích vào giỏ hàng.</li>
+                      <li>Chọn bộ Sleepwear yêu thích vào giỏ hàng.</li>
                       <li>Ở bước giỏ hàng hoặc thanh toán, nhập mã <strong style="font-family: monospace;">${code}</strong>.</li>
                       <li>Hệ thống sẽ tự động trừ 10% và miễn phí tiền ship!</li>
                     </ol>
@@ -259,7 +259,7 @@ export async function sendBroadcastEmail({ to, subject, contentHtml, broadcastTy
               <tr>
                 <td style="padding: 24px 32px; background-color: #F5EFE6; border-top: 1px solid #E8DFD5; text-align: center;">
                   <p style="margin: 0 0 6px 0; font-size: 12px; color: #631521; font-weight: 600;">
-                    ${SHOP_NAME} — Lụa Tơ Tằm & Pyjama Thiết Kế
+                    ${SHOP_NAME} — Lụa Tơ Tằm & Sleepwear Thiết Kế
                   </p>
                   <p style="margin: 0 0 4px 0; font-size: 11px; color: #8C7E74;">
                     Hotline: ${SHOP_PHONE} · Địa chỉ: ${SHOP_ADDRESS}
@@ -406,7 +406,7 @@ export async function sendGoogleRegisterSuccessEmail({
               <tr>
                 <td style="padding: 22px 32px; background-color: #F5EFE6; border-top: 1px solid #E8DFD5; text-align: center;">
                   <p style="margin: 0 0 4px 0; font-size: 12px; color: #631521; font-weight: 600;">
-                    ${SHOP_NAME} — Lụa Tơ Tằm & Pyjama Thiết Kế Cao Cấp
+                    ${SHOP_NAME} — Lụa Tơ Tằm & Sleepwear Thiết Kế Cao Cấp
                   </p>
                   <p style="margin: 0; font-size: 11px; color: #8C7E74;">
                     ${SHOP_ADDRESS} · Hotline: ${SHOP_PHONE}

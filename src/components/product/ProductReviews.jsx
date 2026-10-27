@@ -340,7 +340,7 @@ export default function ProductReviews({ product }) {
         {/* ─── 1. Header ─── */}
         <div className="text-center max-w-4xl mx-auto mb-10">
           <span className="font-serif text-xs sm:text-sm font-semibold tracking-[0.25em] text-[#D4AF37] uppercase block mb-2">
-            ĐÁNH GIÁ THỰC TẾ
+            ĐÁNH GIÁ SẢN PHẨM
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl md:text-[44px] font-bold text-white tracking-tight leading-tight">
             Người Thật,{' '}
@@ -355,7 +355,7 @@ export default function ProductReviews({ product }) {
               </>
             ) : (
               <>
-                Trải nghiệm thực tế về <span className="font-semibold text-[#D4AF37]">{product.name}</span> từ chính khách hàng đã nhận hàng.
+                {'\n'}
               </>
             )}
           </p>

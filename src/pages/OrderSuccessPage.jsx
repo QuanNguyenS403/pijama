@@ -133,7 +133,7 @@ export default function OrderSuccessPage() {
   }
 
   const handleOpenOrdersDrawer = () => {
-    window.dispatchEvent(new Event('open_orders_drawer'))
+    window.dispatchEvent(new CustomEvent('open_orders_drawer', { detail: { orderId } }))
   }
 
   const customerEmail = order?.customer?.email || ''

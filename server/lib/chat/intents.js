@@ -112,8 +112,8 @@ export function processTier0Intent(message, context = {}) {
       handled: true,
       intentName: 'OUT_OF_SCOPE',
       reply:
-        'Dạ em là trợ lý ảo chuyên về trang phục pijama cao cấp và dịch vụ của QuanNguyenS, nên em chưa hỗ trợ được chủ đề ngoài thời trang rồi ạ. Em rất sẵn lòng hỗ trợ anh/chị về mẫu mã, chất liệu hoặc chọn size vừa vặn nhé!',
-      quickReplies: ['Xem các mẫu Pijama', 'Tư vấn chọn size', 'Phí ship & Ưu đãi'],
+        'Dạ em là trợ lý ảo chuyên về trang phục sleepwear cao cấp và dịch vụ của QuanNguyenS, nên em chưa hỗ trợ được chủ đề ngoài thời trang rồi ạ. Em rất sẵn lòng hỗ trợ anh/chị về mẫu mã, chất liệu hoặc chọn size vừa vặn nhé!',
+      quickReplies: ['Xem các mẫu Sleepwear', 'Tư vấn chọn size', 'Phí ship & Ưu đãi'],
       usedTier: 'tier-0',
     }
   }
@@ -127,8 +127,8 @@ export function processTier0Intent(message, context = {}) {
       handled: true,
       intentName: 'GREETING',
       reply:
-        'Dạ em chào anh/chị ạ! Em là Trợ lý ảo của QuanNguyenS. Em rất vui được hỗ trợ anh/chị chọn size chuẩn vóc dáng, tìm hiểu chất liệu các bộ pijama hoặc các ưu đãi đang áp dụng. Anh/chị đang quan tâm đến bộ pijama cho dịp nào ạ?',
-      quickReplies: ['Tư vấn chọn size', 'Xem 3 mẫu Pijama', 'Ưu đãi & Freeship', 'Gặp chủ shop'],
+        'Dạ em chào anh/chị ạ! Em là Trợ lý ảo của QuanNguyenS. Em rất vui được hỗ trợ anh/chị chọn size chuẩn vóc dáng, tìm hiểu chất liệu các bộ sleepwear hoặc các ưu đãi đang áp dụng. Anh/chị đang quan tâm đến bộ sleepwear cho dịp nào ạ?',
+      quickReplies: ['Tư vấn chọn size', 'Xem 3 mẫu Sleepwear', 'Ưu đãi & Freeship', 'Gặp chủ shop'],
       usedTier: 'tier-0',
     }
   }
@@ -154,7 +154,7 @@ export function processTier0Intent(message, context = {}) {
       reply:
         'Dạ QuanNguyenS MIỄN PHÍ VẬN CHUYỂN toàn quốc cho đơn hàng từ 500.000đ trở lên ạ! Đơn dưới 500.000đ áp dụng phí ship đồng giá tiêu chuẩn 30.000đ.\n\n• Nội thành Hà Nội: 1–2 ngày làm việc.\n• Tỉnh thành khác: 2–4 ngày làm việc.\n• Dòng đặt may thủ công (Pre-order): 7–10 ngày làm việc.\nĐặc biệt, quý khách được đồng kiểm gói hàng cùng nhân viên bưu tá trước khi nhận nhé ạ!' +
         upsellNote,
-      quickReplies: ['Chính sách đổi trả', 'Xem mẫu pijama', 'Thanh toán VietQR'],
+      quickReplies: ['Chính sách đổi trả', 'Xem mẫu sleepwear', 'Thanh toán VietQR'],
       usedTier: 'tier-0',
     }
   }
@@ -235,7 +235,7 @@ export function processTier0Intent(message, context = {}) {
       intentName: 'STORE_INFO',
       reply:
         `Dạ xưởng may và không gian trưng bày của QuanNguyenS tọa lạc tại:\n📍 ${liveFacts.shopAddress}.\n📞 Hotline/Zalo tư vấn 24/7: ${liveFacts.hotline}.\nWebsite: https://quannguyens.com\n\nShop hỗ trợ giao hàng tận nơi trên toàn quốc và đồng kiểm khi nhận hàng ạ!`,
-      quickReplies: ['Chat Zalo', 'Gọi Hotline', 'Xem 3 mẫu pijama'],
+      quickReplies: ['Chat Zalo', 'Gọi Hotline', 'Xem 3 mẫu sleepwear'],
       usedTier: 'tier-0',
     }
   }

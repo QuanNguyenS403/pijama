@@ -1,16 +1,15 @@
-import { Sparkles, ShieldCheck, Globe, Heart, Crown } from 'lucide-react'
+import { ShieldCheck, Truck, Sparkles, Crown } from 'lucide-react'
 
 export default function CraftsmanshipStrip() {
   const features = [
-    { icon: Sparkles, text: '100% Sợi Tự Nhiên Tuyển Chọn' },
-    { icon: ShieldCheck, text: 'Kiểm Định Thủ Công Từng Mét Vải' },
-    { icon: Globe, text: 'Chuẩn Mực Xuất Khẩu Châu Âu' },
-    { icon: Heart, text: 'Thân Thiện & Dịu Êm Với Mọi Làn Da' },
-    { icon: Crown, text: 'Phom Dáng Phóng Khoáng Từ Nhà Ra Phố' },
+    { icon: ShieldCheck, text: 'Cam kết chất lượng' },
+    { icon: Truck, text: 'Miễn phí vận chuyển' },
+    { icon: Sparkles, text: 'Bảo hành miễn phí' },
+    { icon: Crown, text: 'Ưu đãi hội viên' },
   ]
 
   // Lặp lại bộ đặc điểm để đảm bảo dải chạy tràn đầy và liên tục trên mọi kích cỡ màn hình
-  const repeatedFeatures = [...features, ...features, ...features]
+  const repeatedFeatures = [...features, ...features, ...features, ...features]
 
   return (
     <section

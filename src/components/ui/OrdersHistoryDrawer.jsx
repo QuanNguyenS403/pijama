@@ -725,7 +725,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
         ) : (
           <div className="p-3.5 sm:p-4 bg-[#FAF8F5] text-xs text-[#4A3F38] italic flex items-center gap-2">
             <Package className="w-4 h-4 text-[#8C7E74]" />
-            <span>Bộ sản phẩm Pijama thiết kế lụa cao cấp QuanNguyenS · Đơn hàng #{order.orderId}</span>
+            <span>Bộ sản phẩm Sleepwear thiết kế lụa cao cấp QuanNguyenS · Đơn hàng #{order.orderId}</span>
           </div>
         )}
 

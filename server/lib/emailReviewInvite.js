@@ -68,7 +68,7 @@ export async function sendReviewInviteEmail(order, options = {}) {
   // 5. Xác định sản phẩm đầu tiên trong đơn để tạo đường dẫn review
   const firstItem = Array.isArray(order.items) && order.items.length > 0 ? order.items[0] : null
   const productSlug = firstItem?.slug || firstItem?.productId || 'the-classic-set'
-  const productName = firstItem?.name || firstItem?.productName || 'Trang phục pijama QuanNguyenS'
+  const productName = firstItem?.name || firstItem?.productName || 'Trang phục sleepwear QuanNguyenS'
 
   const reviewUrl = `${APP_URL}/san-pham/${productSlug}?review_token=${token}&order_id=${encodeURIComponent(orderId)}#reviews`
   const unsubToken = generateUnsubscribeToken(cleanEmail, order.customer?.accountId || null)
@@ -113,7 +113,7 @@ export async function sendReviewInviteEmail(order, options = {}) {
                     QuanNguyenS hy vọng bạn đang có những phút giây thư thái và trọn vẹn trong bộ trang phục <strong>${productName}</strong> (Đơn hàng <strong>#${orderId}</strong>).
                   </p>
                   <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #4A3F38;">
-                    Mỗi bộ pijama của chúng tôi được may đo từ sự tỉ mỉ của thợ thủ công lành nghề. Chúng tôi rất mong được lắng nghe cảm nhận thực tế của bạn — dù là lời khen ngợi hay góp ý chân thành — để không ngừng hoàn thiện chất lượng phục vụ.
+                    Mỗi bộ sleepwear của chúng tôi được may đo từ sự tỉ mỉ của thợ thủ công lành nghề. Chúng tôi rất mong được lắng nghe cảm nhận thực tế của bạn — dù là lời khen ngợi hay góp ý chân thành — để không ngừng hoàn thiện chất lượng phục vụ.
                   </p>
 
                   <!-- CTA Button -->

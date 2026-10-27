@@ -45,7 +45,7 @@ export function formatAdminOrder(order) {
     adminNote: order.adminNote || '',
     items: (order.items || []).map((item, idx) => ({
       id: item.id || idx,
-      productName: item.productName || item.product?.name || item.name || 'Bộ Pijama Thiết Kế',
+      productName: item.productName || item.product?.name || item.name || 'Bộ Sleepwear Thiết Kế',
       color: item.color || item.colorLabel || item.variant || '',
       colorLabel: item.color || item.colorLabel || item.variant || '',
       variant: item.variant || item.colorLabel || item.color || '',

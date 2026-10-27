@@ -112,11 +112,13 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     norm.includes('tu van mau') ||
     norm.includes('ban chay') ||
     norm.includes('bo do ngu') ||
-    norm.includes('bo pijama')
+    norm.includes('bo pijama') ||
+    norm.includes('bo sleepwear') ||
+    norm.includes('sleepwear')
   ) {
     return {
       reply:
-        'Dạ QuanNguyenS hiện có 3 bộ pijama thiết kế cao cấp trong Bộ Sưu Tập Thu Đông 2026 chuẩn phong cách Style To Be Lived In ạ:\n\n' +
+        'Dạ QuanNguyenS hiện có 3 bộ sleepwear thiết kế cao cấp trong Bộ Sưu Tập Thu Đông 2026 chuẩn phong cách Style To Be Lived In ạ:\n\n' +
         '1. 🌸 **THE DAYBREAK SET (390.000đ)**: Họa tiết sọc hồng nắng sớm ấm áp (Hành Hỏa), viền tương phản sắc nét, cổ notch cổ điển, 100% sợi tự nhiên Cotton-Modal thoáng khí 4 mùa (Size S, M).\n\n' +
         '2. 🌊 **THE STILLWATER SET (550.000đ)**: Họa tiết Caro Navy lịch lãm (Hành Thủy), thiết kế cổ V thanh thoát tôn dáng, chất liệu 95% Modal & 5% Spandex mướt mát chống nhăn tự nhiên (Size S, L).\n\n' +
         '3. 🍂 **THE HEARTH SET (750.000đ)**: Họa tiết sọc nâu mocha quý phái (Hành Thổ), quần dáng wide-leg ống rộng buông rủ kiêu sa, chế tác từ 100% Tencel Lyocell thượng hạng (Size S, M).\n\n' +
@@ -144,7 +146,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
       }
 
       return {
-        reply: `Dạ ${sizeAdvice.reason}\n\n${sizeAdvice.models}\n\nAnh/chị thích mẫu pijama tone màu nào nhất để em gửi chi tiết ạ?`,
+        reply: `Dạ ${sizeAdvice.reason}\n\n${sizeAdvice.models}\n\nAnh/chị thích mẫu sleepwear tone màu nào nhất để em gửi chi tiết ạ?`,
         quickReplies: ['Xem Daybreak (Hồng)', 'Xem Stillwater (Navy)', 'Xem Hearth (Nâu)', 'Phí ship & Ưu đãi'],
       }
     }
@@ -159,7 +161,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
   ) {
     return {
       reply:
-        'Dạ bộ **THE DAYBREAK SET** là mẫu pijama cổ bẻ kinh điển phong cách châu Âu bán rất chạy tại QuanNguyenS ạ:\n\n' +
+        'Dạ bộ **THE DAYBREAK SET** là mẫu sleepwear cổ bẻ kinh điển phong cách châu Âu bán rất chạy tại QuanNguyenS ạ:\n\n' +
         '• **Giá bán**: 390.000đ (đang ưu đãi 20% từ giá gốc 490.000đ).\n' +
         '• **Màu sắc**: Sọc Hồng (Pink Stripe) mang năng lượng Hỏa ấm áp, tươi vui như nắng sớm.\n' +
         '• **Chất liệu**: 100% sợi tự nhiên Cotton-Modal dệt thoi thoáng khí 4 mùa, an toàn cho da nhạy cảm theo tiêu chuẩn OEKO-TEX 100.\n' +
@@ -169,7 +171,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
       quickReplies: ['Chọn size cho bộ này', 'Chính sách freeship', 'Xem mẫu Caro Navy'],
       product: {
         name: 'THE DAYBREAK SET',
-        subtitle: 'Pijama Phong Cách Châu Âu · Sọc Hồng',
+        subtitle: 'Sleepwear Phong Cách Châu Âu · Sọc Hồng',
         price: 390000,
         slug: 'the-classic-set',
         preOrder: true,
@@ -189,7 +191,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
   ) {
     return {
       reply:
-        'Dạ bộ **THE STILLWATER SET** là thiết kế pijama cổ V hiện đại được rất nhiều khách hàng yêu thích:\n\n' +
+        'Dạ bộ **THE STILLWATER SET** là thiết kế sleepwear cổ V hiện đại được rất nhiều khách hàng yêu thích:\n\n' +
         '• **Giá bán**: 550.000đ.\n' +
         '• **Màu sắc**: Họa tiết Caro Navy lịch lãm, chiều sâu tĩnh tại của hành Thủy mang lại cảm giác an yên, thư thái.\n' +
         '• **Chất liệu**: 95% sợi gỗ tự nhiên Modal & 5% Spandex cao cấp định lượng 180 GSM, sờ vào mềm mướt mát lạnh và chống nhăn tự nhiên.\n' +
@@ -199,7 +201,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
       quickReplies: ['Tư vấn size S', 'Tư vấn size L', 'Ưu đãi chuyển khoản VietQR'],
       product: {
         name: 'THE STILLWATER SET',
-        subtitle: 'Pijama Cổ V Lịch Lãm · Caro Navy',
+        subtitle: 'Sleepwear Cổ V Lịch Lãm · Caro Navy',
         price: 550000,
         slug: 'the-stillwater-set',
         preOrder: false,
@@ -229,7 +231,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
       quickReplies: ['Tư vấn chọn size', 'Chính sách đổi trả', 'Gặp chủ shop'],
       product: {
         name: 'THE HEARTH SET',
-        subtitle: 'Pijama Wide-Leg Thượng Hạng · Sọc Nâu',
+        subtitle: 'Sleepwear Wide-Leg Thượng Hạng · Sọc Nâu',
         price: 750000,
         slug: 'the-hearth-set',
         preOrder: true,
@@ -273,14 +275,14 @@ export function generateLocalAdvisorResponse(message, context = {}) {
   ) {
     return {
       reply:
-        'Dạ QuanNguyenS niêm yết mức giá minh bạch cho 3 bộ pijama thiết kế như sau ạ:\n\n' +
+        'Dạ QuanNguyenS niêm yết mức giá minh bạch cho 3 bộ sleepwear thiết kế như sau ạ:\n\n' +
         '• **THE DAYBREAK SET**: 390.000đ (đang ưu đãi từ 490.000đ) · Sọc Hồng Cotton-Modal.\n' +
         '• **THE STILLWATER SET**: 550.000đ · Caro Navy Modal cao cấp.\n' +
         '• **THE HEARTH SET**: 750.000đ · Sọc Nâu Wide-Leg Tencel thượng hạng.\n\n' +
         '🎁 **Ưu đãi áp dụng**:\n' +
         '• Giảm ngay **10% TRỰC TIẾP** trên tổng đơn khi thanh toán Chuyển khoản VietQR (Napas 24/7).\n' +
         '• **MIỄN PHÍ VẬN CHUYỂN** toàn quốc cho đơn từ 500.000đ ạ!',
-      quickReplies: ['Tư vấn chọn size', 'Xem mẫu pijama', 'Gặp chủ shop'],
+      quickReplies: ['Tư vấn chọn size', 'Xem mẫu sleepwear', 'Gặp chủ shop'],
     }
   }
 
@@ -297,7 +299,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
   ) {
     return {
       reply:
-        'Dạ anh/chị chọn pijama cao cấp làm quà tặng là một lựa chọn cực kỳ chu đáo và tinh tế!\n\n' +
+        'Dạ anh/chị chọn sleepwear cao cấp làm quà tặng là một lựa chọn cực kỳ chu đáo và tinh tế!\n\n' +
         '• Nếu người nhận thích phong cách ngọt ngào, tươi trẻ: mẫu **THE DAYBREAK SET** (Sọc Hồng, 390k) mang năng lượng ấm áp, rạng rỡ như nắng sớm.\n' +
         '• Nếu người nhận thích phong cách thanh lịch, trầm tĩnh: mẫu **THE STILLWATER SET** (Caro Navy, 550k) cổ V rất tôn dáng và hiện đại.\n' +
         '• Nếu muốn món quà đẳng cấp nhất dành tặng người đặc biệt: mẫu **THE HEARTH SET** (Sọc Nâu Tencel, 750k) phom wide-leg quý phái là lựa chọn hoàn hảo nhất.\n\n' +
@@ -334,6 +336,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     norm.includes('do nam hay nu') ||
     norm.includes('do nam') ||
     norm.includes('pijama nam') ||
+    norm.includes('sleepwear nam') ||
     norm.includes('cho nam') ||
     norm.includes('unisex')
   ) {
@@ -341,12 +344,12 @@ export function generateLocalAdvisorResponse(message, context = {}) {
       reply:
         'Dạ toàn bộ thiết kế của QuanNguyenS mang phom dáng suông phóng khoáng (straight-leg & relaxed fit) theo chuẩn phong cách châu Âu, nên cả nam và nữ đều mặc rất sang và thoải mái ạ!\n\n' +
         '• Đặc biệt mẫu **THE STILLWATER SET (Caro Navy)** có Size L (dành cho người 58–66kg, chiều cao đến 1m72) với họa tiết caro cổ V lịch lãm được rất nhiều khách hàng nam yêu thích.\n' +
-        '• Rất nhiều khách hàng cũng chọn làm set pijama đôi (couple) cho cả hai vợ chồng/bạn gái bạn trai.\n\n' +
+        '• Rất nhiều khách hàng cũng chọn làm set sleepwear đôi (couple) cho cả hai vợ chồng/bạn gái bạn trai.\n\n' +
         'Anh/chị cho em xin chiều cao và cân nặng để em tư vấn size chuẩn nhất nhé!',
       quickReplies: ['Mẫu The Stillwater (Navy)', 'Tư vấn chọn size', 'Ưu đãi & Freeship'],
       product: {
         name: 'THE STILLWATER SET',
-        subtitle: 'Pijama Cổ V Lịch Lãm · Caro Navy',
+        subtitle: 'Sleepwear Cổ V Lịch Lãm · Caro Navy',
         price: 550000,
         slug: 'the-stillwater-set',
         preOrder: false,
@@ -368,7 +371,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
   // Fallback thân thiện, luôn hỗ trợ khách nhiệt tình
   return {
     reply:
-      'Dạ em là Trợ lý ảo thời trang của QuanNguyenS (phong cách Style To Be Lived In — "Every girls deserve QuanNguyenS\'s Pyjama"). Em rất vui được hỗ trợ anh/chị chọn size vừa vặn theo chiều cao/cân nặng, tư vấn chất liệu các mẫu pijama (Daybreak Sọc Hồng, Stillwater Caro Navy, Hearth Sọc Nâu Tencel) hoặc thông tin ưu đãi và giao nhận của shop ạ.\n\nAnh/chị đang quan tâm đến bộ pijama cho dịp nào ạ?',
-    quickReplies: ['Xem 3 mẫu Pijama', 'Tư vấn chọn size', 'Ưu đãi & Freeship', 'Gặp chủ shop'],
+      'Dạ em là Trợ lý ảo thời trang của QuanNguyenS (phong cách Style To Be Lived In — "Every girls deserve QuanNguyenS\'s Sleepwear"). Em rất vui được hỗ trợ anh/chị chọn size vừa vặn theo chiều cao/cân nặng, tư vấn chất liệu các mẫu sleepwear (Daybreak Sọc Hồng, Stillwater Caro Navy, Hearth Sọc Nâu Tencel) hoặc thông tin ưu đãi và giao nhận của shop ạ.\n\nAnh/chị đang quan tâm đến bộ sleepwear cho dịp nào ạ?',
+    quickReplies: ['Xem 3 mẫu Sleepwear', 'Tư vấn chọn size', 'Ưu đãi & Freeship', 'Gặp chủ shop'],
   }
 }

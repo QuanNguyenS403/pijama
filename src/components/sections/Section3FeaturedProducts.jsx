@@ -12,12 +12,7 @@ export default function Section3FeaturedProducts() {
   }
 
   const handleProductAction = (product) => {
-    const elem = document.querySelector('#section-deep-feature')
-    if (elem) {
-      elem.scrollIntoView({ behavior: 'smooth' })
-    } else {
-      navigate(`/san-pham/${product.slug}`)
-    }
+    navigate(`/san-pham/${product.slug}`)
   }
 
   const products = [
@@ -80,25 +75,22 @@ export default function Section3FeaturedProducts() {
     <section
       id="mot-bo-la-mot-mood"
       aria-label="Featured Products"
-      className="py-20 sm:py-24 md:py-28 bg-[#FAF8F5] text-[#2C201A] border-b border-[#E8DFD5] scroll-mt-16"
+      className="py-12 sm:py-14 md:py-16 bg-[#FAF8F5] text-[#2C201A] border-b border-[#E8DFD5] scroll-mt-16"
     >
       <div id="section-products" className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10">
         {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-14">
+        <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
           <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
             BỘ SƯU TẬP MỚI NHẤT
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#1A1614] tracking-tight">
             Chuẩn Mực Thoải Mái, Trọn Nét Thanh Lịch
-            <span className="block text-[#631521] italic font-normal mt-1 text-2xl sm:text-3xl">
-              Thư thái trong từng phút giây ở nhà – Tự tin khi bước ra phố.
-            </span>
           </h2>
-          <div className="w-16 h-[2px] bg-[#D4AF37] mx-auto mt-4" />
+          <div className="w-16 h-[2px] bg-[#D4AF37] mx-auto mt-3" />
         </div>
 
         {/* Product grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7 mb-4">
           {products.map((product, idx) => (
             <motion.div
               key={product.id}
@@ -110,7 +102,7 @@ export default function Section3FeaturedProducts() {
               onClick={() => handleProductAction(product)}
             >
               {/* Image */}
-              <div className="relative aspect-[4/5] overflow-hidden bg-[#F5F0EB]">
+              <div className="relative aspect-[1/1.1] overflow-hidden bg-[#F5F0EB]">
                 <img
                   src={product.image}
                   alt={product.name}
@@ -131,19 +123,19 @@ export default function Section3FeaturedProducts() {
               </div>
 
               {/* Info */}
-              <div className="p-5 sm:p-6 flex flex-col flex-grow justify-between bg-white">
+              <div className="p-4 sm:p-5 flex flex-col flex-grow justify-between bg-white">
                 <div>
                   <h3 className="font-serif text-lg sm:text-xl font-bold text-[#1A1614] leading-snug group-hover:text-[#631521] transition-colors">
                     {product.name}
                   </h3>
-                  <span className="text-[11px] font-sans text-[#8C7E74] block mt-1">{product.color}</span>
-                  <p className="font-sans text-sm text-[#4A3F38] italic mt-2.5 leading-relaxed whitespace-pre-line">
+                  <span className="text-[11px] font-sans text-[#8C7E74] block mt-0.5">{product.color}</span>
+                  <p className="font-sans text-sm text-[#4A3F38] italic mt-2 leading-relaxed whitespace-pre-line">
                     "{product.desc}"
                   </p>
 
                   {/* Swatches */}
                   {product.swatches && (
-                    <div className="flex items-center gap-2 mt-3 pt-2">
+                    <div className="flex items-center gap-2 mt-2.5 pt-1.5">
                       {product.swatches.map((sw, sIdx) => (
                         <span
                           key={sIdx}
@@ -160,14 +152,14 @@ export default function Section3FeaturedProducts() {
                   )}
                 </div>
 
-                <div className="mt-5 pt-4 border-t border-[#F5F0EB]">
+                <div className="mt-3.5 pt-3 border-t border-[#F5F0EB]">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleProductAction(product)
                     }}
-                    className="w-full inline-flex items-center justify-center bg-[#2C201A] hover:bg-[#631521] text-white font-sans text-xs font-bold tracking-wider px-4 py-2.5 rounded-[2px] transition-colors uppercase cursor-pointer"
+                    className="w-full inline-flex items-center justify-center bg-[#2C201A] hover:bg-[#631521] text-white font-sans text-xs font-bold tracking-wider px-4 py-2 rounded-[2px] transition-colors uppercase cursor-pointer"
                   >
                     {'CHI TIẾT\u00a0'}
                   </button>

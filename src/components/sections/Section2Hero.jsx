@@ -9,7 +9,7 @@ const slides = [
   {
     id: 1,
     src: heroSlide01,
-    alt: 'The Hearth Set — Set pijama sọc nâu ấm áp phong cách Style To Be Lived In',
+    alt: 'The Hearth Set — Set sleepwear sọc nâu ấm áp phong cách Style To Be Lived In',
     eyebrow: 'THE HEARTH SET — PRE-ORDER',
     headline: 'Ấm Áp Như\nBuổi Sáng Đầu Tiên',
     sub: 'Chất liệu sọc nâu, phom dáng suông phóng khoáng — từ giường ngủ đến hiên nhà.',
@@ -18,7 +18,7 @@ const slides = [
   {
     id: 2,
     src: heroSlide02,
-    alt: 'The Stillwater Set — Set pijama caro navy thanh lịch phong cách Style To Be Lived In',
+    alt: 'The Stillwater Set — Set sleepwear caro navy thanh lịch phong cách Style To Be Lived In',
     eyebrow: 'THE STILLWATER SET',
     headline: 'Tĩnh Lặng,\nSâu Lắng',
     sub: 'Caro navy tinh tế với viền trắng tương phản — vẻ đẹp điềm tĩnh mà không kém phần tinh tế.',
@@ -27,7 +27,7 @@ const slides = [
   {
     id: 3,
     src: heroSlide03,
-    alt: 'The Daybreak Set — Set pijama sọc hồng nhẹ nhàng phong cách Style To Be Lived In',
+    alt: 'The Daybreak Set — Set sleepwear sọc hồng nhẹ nhàng phong cách Style To Be Lived In',
     eyebrow: 'THE DAYBREAK SET — PRE-ORDER',
     headline: 'Bình Minh\nNhẹ Nhàng',
     sub: 'Sọc hồng nhẹ nhàng, dáng rộng thoải mái — phong cách buổi sáng bạn mong chờ.',
@@ -36,9 +36,9 @@ const slides = [
   {
     id: 4,
     src: heroSlide04,
-    alt: "Bộ sưu tập pijama QuanNguyenS — Every girls deserve QuanNguyenS's Pyjama",
+    alt: "Bộ sưu tập sleepwear QuanNguyenS — Every girls deserve QuanNguyenS's Sleepwear",
     eyebrow: 'BỘ SƯU TẬP 2026',
-    headline: "Every girls deserve\nQuanNguyenS's Pyjama",
+    headline: "Every girls deserve\nQuanNguyenS's Sleepwear",
     sub: 'Ba thiết kế. Một phong cách. Chất liệu tự nhiên chuẩn xuất khẩu châu Âu.',
     align: 'left',
   },
@@ -149,14 +149,6 @@ export default function Section2Hero() {
                     aria-label="Khám phá bộ sưu tập"
                   >
                     → KHÁM PHÁ
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => scrollTo('#section-features')}
-                    className="inline-flex items-center justify-center bg-black/25 hover:bg-[#D4AF37]/20 backdrop-blur-xs border border-[#D4AF37]/80 text-[#D4AF37] font-sans text-[11px] sm:text-xs font-semibold tracking-[0.18em] px-5 sm:px-6 py-2.5 sm:py-3.5 rounded-[2px] transition-all duration-200 cursor-pointer uppercase"
-                    aria-label="Xem chi tiết"
-                  >
-                    XEM CHI TIẾT
                   </button>
                 </div>
               </motion.div>

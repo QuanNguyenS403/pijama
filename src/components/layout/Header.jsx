@@ -106,6 +106,8 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll, { passive: true })
     window.addEventListener('wishlist_updated', handleWishlistUpdated)
+    window.addEventListener('orders_updated', handleOrdersUpdated)
+    window.addEventListener('open_orders_drawer', handleOpenOrdersEvent)
     window.addEventListener('customer_auth_changed', handleAuthChanged)
     window.addEventListener('storage', handleStorage)
 

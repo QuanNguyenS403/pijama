@@ -31,7 +31,7 @@ function TiktokIcon({ className = 'w-4 h-4' }) {
 
 export default function Section12Footer() {
   const [policyModalOpen, setPolicyModalOpen] = useState(false)
-  const [activePolicy, setActivePolicy] = useState('terms')
+  const [activePolicy, setActivePolicy] = useState('privacy')
   const [newsletterMsg, setNewsletterMsg] = useState(false)
 
   const openPolicy = (e, policyKey) => {
@@ -48,12 +48,12 @@ export default function Section12Footer() {
 
   const footerNavLinks = [
     { label: 'Bộ sưu tập', href: '#section-products', isAnchor: true },
+    { label: 'Giới thiệu', href: '#section-dark-contrast', isAnchor: true },
     { label: 'Ưu đãi hội viên', href: '/hoi-vien' },
-    { label: 'Về chúng tôi', href: '#section-dark-contrast', isAnchor: true },
     { label: 'Chính sách bảo mật', href: '/chinh-sach?tab=privacy' },
-    { label: 'Điều khoản dịch vụ', href: '/chinh-sach?tab=terms' },
-    { label: 'Chính sách đổi trả hàng', href: '/chinh-sach?tab=return' },
     { label: 'Chính sách giao hàng', href: '/chinh-sach?tab=shipping' },
+    { label: 'Chính sách trả hàng', href: '/chinh-sach?tab=return' },
+    { label: 'Chính sách đổi hàng', href: '/chinh-sach?tab=exchange' },
   ]
 
   const handleNavClick = (e, href) => {
@@ -75,11 +75,11 @@ export default function Section12Footer() {
           <div className="border-b border-white/15 pb-8 sm:pb-9 mb-8 sm:mb-9 text-center lg:text-left flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 sm:gap-6">
             <div>
               <span className="font-sans text-xs font-bold tracking-[0.25em] text-white/60 uppercase block mb-2 sm:mb-2.5">
-                Style To Be Lived In
+                {'\n'}
               </span>
               <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#D4AF37] leading-[1.08] tracking-tight">
-                "Dressed for Life
-                <span className="block">Even at Home"</span>
+                "STYLE TO BE{'\u00a0'}
+                <span className="block">{'\u00a0        '}LIVED IN"</span>
               </h2>
               <p className="font-sans text-sm text-white/50 mt-1.5 italic">
                 — QuanNguyenS
@@ -87,8 +87,7 @@ export default function Section12Footer() {
             </div>
 
             <div className="text-sm font-sans text-white/70 max-w-sm text-center lg:text-right leading-relaxed">
-              Pijama không chỉ để ngủ<br />
-              Một bộ đồ — vô số câu chuyện
+              Every girls deserve QuanNguyenS Sleepwear
             </div>
           </div>
 
@@ -152,7 +151,7 @@ export default function Section12Footer() {
             {/* Col 3: Social + newsletter */}
             <div className="md:col-span-4">
               <h3 className="font-serif text-base sm:text-lg font-bold text-[#D4AF37] mb-3">
-                Theo Dõi QuanNguyenS
+                Kết nối với chúng tôi{'\u00a0'}
               </h3>
               <p className="font-sans text-xs text-white/75 leading-relaxed mb-3">
                 Follow <span className="text-[#D4AF37] font-semibold">@qns.style</span> để xem phong cách phối đồ hàng ngày ↗
@@ -219,13 +218,6 @@ export default function Section12Footer() {
             
             <div className="flex items-center gap-6 flex-wrap justify-center sm:justify-start">
               <button
-                onClick={(e) => openPolicy(e, 'terms')}
-                className="hover:text-[#D4AF37] transition-colors"
-              >
-                Điều khoản & Điều kiện
-              </button>
-              <span className="text-white/20">•</span>
-              <button
                 onClick={(e) => openPolicy(e, 'privacy')}
                 className="hover:text-[#D4AF37] transition-colors"
               >
@@ -233,17 +225,24 @@ export default function Section12Footer() {
               </button>
               <span className="text-white/20">•</span>
               <button
-                onClick={(e) => openPolicy(e, 'return')}
-                className="hover:text-[#D4AF37] transition-colors"
-              >
-                Chính sách đổi trả hàng
-              </button>
-              <span className="text-white/20">•</span>
-              <button
                 onClick={(e) => openPolicy(e, 'shipping')}
                 className="hover:text-[#D4AF37] transition-colors"
               >
                 Chính sách giao hàng
+              </button>
+              <span className="text-white/20">•</span>
+              <button
+                onClick={(e) => openPolicy(e, 'return')}
+                className="hover:text-[#D4AF37] transition-colors"
+              >
+                Chính sách trả hàng
+              </button>
+              <span className="text-white/20">•</span>
+              <button
+                onClick={(e) => openPolicy(e, 'exchange')}
+                className="hover:text-[#D4AF37] transition-colors"
+              >
+                Chính sách đổi hàng
               </button>
             </div>
 

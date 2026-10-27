@@ -108,7 +108,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                 <div>
                   <p className="font-serif text-2xl font-bold text-[#1A1614]">Giỏ hàng đang trống</p>
                   <p className="font-sans text-sm font-normal text-[#8C7E74] mt-1 max-w-xs">
-                    Hãy khám phá những bộ pijama tự nhiên cao cấp phong cách châu Âu
+                    Hãy khám phá những bộ sleepwear tự nhiên cao cấp phong cách châu Âu
                   </p>
                 </div>
                 <button

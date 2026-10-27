@@ -21,7 +21,7 @@ export default function ProductCard({ product, onSelect }) {
           {product.name}
         </h4>
         <p className="font-sans text-[11px] text-[#8C7E74] truncate">
-          {product.subtitle || 'Pijama Cao Cấp'}
+          {product.subtitle || 'Sleepwear Cao Cấp'}
         </p>
         <div className="flex items-center gap-2 mt-0.5">
           <span className="font-sans text-xs font-bold text-[#2C201A]">

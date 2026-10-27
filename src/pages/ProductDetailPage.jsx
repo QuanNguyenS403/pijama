@@ -11,47 +11,25 @@ import CartDrawer from '../components/cart/CartDrawer'
 import { Toast } from '../components/ui/Toast'
 import Section12Footer from '../components/sections/Section12Footer'
 import CraftsmanshipStrip from '../components/sections/CraftsmanshipStrip'
+import StickyMobileAtc from '../components/product/StickyMobileAtc'
 import { useProduct } from '../hooks/useProduct'
-import fabricMacroImg from '../assets/images/fabric-macro.jpg'
-import storyDaybreakMaterialImg from '../assets/images/story-daybreak-material.jpg'
-import storyStillwaterMaterialImg from '../assets/images/story-stillwater-material.jpg'
-import storyHearthMaterialImg from '../assets/images/story-hearth-material.jpg'
-
-const materialStoryConfig = {
-  'the-classic-set': {
-    image: storyDaybreakMaterialImg,
-    alt: 'The Daybreak Set — Triết lý chất liệu mềm hơn mỗi ngày trôi qua',
-    tag: 'Chất Liệu Tự Nhiên Cao Cấp',
-    note: 'Quy trình xử lý vi sinh xoa mềm độc quyền mang lại cảm giác thoải mái tuyệt đối',
-  },
-  'the-cafe-look': {
-    image: storyStillwaterMaterialImg,
-    alt: 'The Stillwater Set — Triết lý chất liệu mềm hơn mỗi ngày trôi qua',
-    tag: 'Chất Liệu Tự Nhiên Cao Cấp',
-    note: 'Quy trình xử lý vi sinh xoa mềm độc quyền mang lại cảm giác thoải mái tuyệt đối',
-  },
-  'the-evening-edit': {
-    image: storyHearthMaterialImg,
-    alt: 'The Hearth Set — Triết lý chất liệu mềm hơn mỗi ngày trôi qua',
-    tag: 'Chất Liệu Tự Nhiên Cao Cấp',
-    note: 'Quy trình xử lý vi sinh xoa mềm độc quyền mang lại cảm giác thoải mái tuyệt đối',
-  },
-}
+import { useCart } from '../hooks/useCart'
+import { useProductReviews } from '../hooks/useProductReviews'
 
 
 function VisualProofSection({ summary }) {
   const hasReviews = summary && summary.totalReviews > 0
 
   return (
-    <section className="py-14 sm:py-16 md:py-20 bg-[#FAF8F5] border-b border-[#E8DFD5]" aria-label="Tại sao khách hàng tin tưởng">
+    <section className="py-14 sm:py-16 md:py-20 bg-[#FAF8F5] border-y border-[#E8DFD5]" aria-label="Tại sao khách hàng tin tưởng">
       <div className="w-full max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center divide-y md:divide-y-0 md:divide-x divide-[#E8DFD5]">
           <div className="flex flex-col items-center justify-center p-4">
             <span className="font-serif text-4xl sm:text-5xl font-bold text-[#631521] leading-none mb-2">
-              50+
+              500+
             </span>
             <span className="font-sans text-xs sm:text-sm text-[#4A3F38] font-normal">
-              lần giặt — màu sắc vẫn như mới
+              Lượt bán ra
             </span>
           </div>
 
@@ -80,10 +58,10 @@ function VisualProofSection({ summary }) {
             ) : (
               <>
                 <span className="font-serif text-4xl sm:text-5xl font-bold text-[#631521] leading-none mb-2">
-                  100%
+                  100+
                 </span>
                 <span className="font-sans text-xs sm:text-sm text-[#4A3F38] font-normal">
-                  may đo chuẩn chỉ từng đường kim
+                  Đánh giá 5 sao
                 </span>
               </>
             )}
@@ -93,10 +71,6 @@ function VisualProofSection({ summary }) {
     </section>
   )
 }
-
-import StickyMobileAtc from '../components/product/StickyMobileAtc'
-import { useCart } from '../hooks/useCart'
-import { useProductReviews } from '../hooks/useProductReviews'
 
 export default function ProductDetailPage() {
   const { productSlug } = useParams()
@@ -178,15 +152,8 @@ export default function ProductDetailPage() {
     ? metaImage
     : `https://quannguyens.com${metaImage || ''}`
   const pageUrl = `https://quannguyens.com/san-pham/${product.slug}`
-  const pageTitle = `${product.name} — ${product.subtitle} | QuanNguyenS Pijama`
-  const pageDesc = product.description || `${product.name} — Thiết kế pijama cao cấp, chất liệu tự nhiên thoáng khí chuẩn phong cách châu Âu.`
-
-  const currentStory = (product && (materialStoryConfig[product.id] || materialStoryConfig[product.slug])) || {
-    image: fabricMacroImg,
-    alt: 'Cận cảnh kết cấu vải tự nhiên cao cấp QuanNguyenS',
-    tag: 'Chất Liệu Tự Nhiên Cao Cấp',
-    note: 'Quy trình xử lý vi sinh xoa mềm độc quyền mang lại cảm giác thoải mái tuyệt đối',
-  }
+  const pageTitle = `${product.name} — ${product.subtitle} | QuanNguyenS Sleepwear`
+  const pageDesc = product.description || `${product.name} — Thiết kế sleepwear cao cấp, chất liệu tự nhiên thoáng khí chuẩn phong cách châu Âu.`
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#1A1614] overflow-x-clip">
@@ -198,7 +165,7 @@ export default function ProductDetailPage() {
       <meta property="og:image" content={fullImageUrl} />
       <meta property="og:url" content={pageUrl} />
       <meta property="og:type" content="product" />
-      <meta property="og:site_name" content="QuanNguyenS Pijama" />
+      <meta property="og:site_name" content="QuanNguyenS Sleepwear" />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={pageTitle} />
       <meta name="twitter:description" content={pageDesc} />
@@ -267,91 +234,17 @@ export default function ProductDetailPage() {
       {/* Craftsmanship Strip */}
       <CraftsmanshipStrip />
 
-      {/* Product Story — Dark Burgundy Luxury Section */}
-      <section className="relative bg-[#631521] text-white py-14 sm:py-16 md:py-18 border-y border-white/10 overflow-hidden" aria-label="Triết lý chất liệu">
-        {/* Ambient glow */}
-        <div className="absolute top-1/2 left-0 w-96 h-96 bg-[#D4AF37]/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#4A0D17]/60 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="w-full max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            {/* Text side */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="lg:col-span-6 flex flex-col justify-center"
-            >
-              <span className="font-serif text-xs sm:text-sm font-semibold tracking-[0.25em] text-[#D4AF37] uppercase block mb-2 sm:mb-2.5">
-                TRIẾT LÝ CHẤT LIỆU
-              </span>
-              <h2 className="font-serif text-3xl sm:text-4xl lg:text-[42px] font-bold text-white leading-[1.12] mb-4 sm:mb-5">
-                Mềm hơn mỗi
-                <span className="block text-[#D4AF37] italic font-normal mt-0.5">
-                  ngày trôi qua
-                </span>
-              </h2>
-              <p className="font-sans text-sm sm:text-base text-white/90 font-normal leading-relaxed mb-6">
-                Chúng tôi không nói nhiều về chất vải — chúng tôi để cảm giác trên da bạn nói thay. Được làm từ sợi tự nhiên qua quy trình kiểm định kỹ lưỡng, mỗi bộ QuanNguyenS được thiết kế để trở nên tốt hơn theo thời gian — mềm hơn, quen tay hơn, và gắn bó hơn với cuộc sống của bạn.
-              </p>
-              <div className="space-y-1.5 pt-1">
-                {[
-                  { arrow: '↳', title: 'Thoáng khí 4 mùa', desc: 'Sợi vi xốp điều hoà thân nhiệt tự nhiên cả mùa đông lẫn hè' },
-                  { arrow: '↳', title: 'Càng giặt càng mềm', desc: 'Không bai dão, không xù lông, ngày càng mịn màng' },
-                  { arrow: '↳', title: 'Thân thiện da nhạy cảm', desc: '100% tự nhiên, nhuộm thực vật, không gây kích ứng' },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-3 py-2 sm:py-2.5 border-t border-white/15">
-                    <span className="text-[#D4AF37] font-serif text-lg shrink-0 mt-0.5">{item.arrow}</span>
-                    <div>
-                      <span className="font-serif text-sm sm:text-base font-bold text-[#D4AF37] block">{item.title}</span>
-                      <span className="font-sans text-xs sm:text-sm text-white/80 font-normal">{item.desc}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Image side */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.15 }}
-              className="lg:col-span-6"
-            >
-              <div className="relative rounded-[4px] overflow-hidden shadow-2xl border-2 border-[#D4AF37]/40 bg-[#1E1510] group">
-                <img
-                  src={currentStory.image}
-                  alt={currentStory.alt}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-[320px] sm:h-[380px] md:h-[420px] lg:h-[460px] object-cover group-hover:scale-105 transition-transform duration-700"
-                />
-                <div className="absolute bottom-3 left-3 right-3 bg-[#1E1510]/90 backdrop-blur-md p-3 sm:p-3.5 rounded-[2px] border border-[#D4AF37]/30">
-                  <span className="font-serif text-xs sm:text-sm font-semibold text-[#D4AF37] block">
-                    {currentStory.tag}
-                  </span>
-                  <span className="text-[11px] sm:text-xs text-white/80 font-sans mt-0.5 block">
-                    {currentStory.note}
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
+      {/* Related products (Có thể bạn thích) */}
+      {related.length > 0 && (
+        <RelatedProducts products={related} onAddToCart={handleAddToCart} />
+      )}
 
       {/* Visual Proof Section: Tại Sao Khách Tin Tưởng */}
       <VisualProofSection summary={summary} />
 
       {/* Reviews */}
       <ProductReviews product={product} />
-
-      {/* Related products */}
-      {related.length > 0 && (
-        <RelatedProducts products={related} onAddToCart={handleAddToCart} />
-      )}
 
 
       {/* Sticky Mobile Add To Cart Bar */}

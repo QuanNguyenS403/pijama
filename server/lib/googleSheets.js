@@ -237,7 +237,7 @@ export const appendOrderToSheet = async (order) => {
 
   // Join nhiều sản phẩm thành chuỗi cho sheet ORDERS
   const items = Array.isArray(order.items) ? order.items : []
-  const itemNames = items.map((i) => i.productName || i.name || 'Pijama QuanNguyenS').join(' | ')
+  const itemNames = items.map((i) => i.productName || i.name || 'Sleepwear QuanNguyenS').join(' | ')
   const itemVariants = items.map((i) => i.variant || [i.color || i.colorLabel, i.size].filter(Boolean).join(' - ')).join(' | ')
   const itemQtys = items.map((i) => i.quantity || 1).join(' | ')
 
@@ -294,7 +294,7 @@ export const appendOrderToSheet = async (order) => {
 
   // ── Dòng cho sheet PRODUCTS (1 SP = 1 dòng riêng) ────
   const productRows = items.map((item) => {
-    const pName = item.productName || item.name || 'Pijama QuanNguyenS'
+    const pName = item.productName || item.name || 'Sleepwear QuanNguyenS'
     const color = item.color || item.colorLabel || (item.variant ? item.variant.split(' - ')[0] : '')
     const size = item.size || (item.variant ? item.variant.split(' - ')[1] : '')
     const qty = Number(item.quantity) || 1
@@ -662,7 +662,7 @@ export const syncAllToGoogleSheets = async () => {
       [address, ward, district, city].filter(Boolean).join(', ')
 
     const items = Array.isArray(order.items) ? order.items : []
-    const itemNames = items.map((i) => i.productName || i.name || 'Pijama QuanNguyenS').join(' | ')
+    const itemNames = items.map((i) => i.productName || i.name || 'Sleepwear QuanNguyenS').join(' | ')
     const itemVariants = items.map((i) => i.variant || [i.color || i.colorLabel, i.size].filter(Boolean).join(' - ')).join(' | ')
     const itemQtys = items.map((i) => i.quantity || 1).join(' | ')
 
@@ -719,7 +719,7 @@ export const syncAllToGoogleSheets = async () => {
 
     if (items.length > 0) {
       items.forEach((item) => {
-        const pName = item.productName || item.name || 'Pijama QuanNguyenS'
+        const pName = item.productName || item.name || 'Sleepwear QuanNguyenS'
         const color = item.color || item.colorLabel || (item.variant ? item.variant.split(' - ')[0] : '')
         const size = item.size || (item.variant ? item.variant.split(' - ')[1] : '')
         const qty = Number(item.quantity) || 1
@@ -743,7 +743,7 @@ export const syncAllToGoogleSheets = async () => {
         sanitizeSheetValue(orderId),
         sanitizeSheetValue(dateStr),
         sanitizeSheetValue(customerName),
-        'Pijama Cao Cấp QuanNguyenS',
+        'Sleepwear Cao Cấp QuanNguyenS',
         '',
         '',
         1,

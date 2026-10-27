@@ -62,7 +62,7 @@ export default function LoyaltyPage() {
       vipGifts: 'Ưu tiên xem BST mới',
       accentColor: '#7E8794',
       bgLight: 'bg-[#F1F3F5]',
-      desc: 'Dành cho quý khách hàng đã gắn bó và sở hữu từ 5-7 bộ pijama thiết kế.',
+      desc: 'Dành cho quý khách hàng đã gắn bó và sở hữu từ 5-7 bộ sleepwear thiết kế.',
     },
     {
       id: 'GOLD',

@@ -560,7 +560,7 @@ export default function AdminOrdersPage() {
                       {order.items?.map((item, idx) => (
                         <div key={idx} style={{ fontSize:'12px', marginBottom:'4px', lineHeight:'1.4' }}>
                           <div style={{ fontWeight: 600, color: '#1A1614' }}>
-                            {item.productName || 'Bộ Pijama'}
+                            {item.productName || 'Bộ Sleepwear'}
                           </div>
                           <div style={{ color:'#7A6E6E', fontSize:'11px' }}>
                             {item.colorLabel ? `${item.colorLabel} · ` : ''}{item.size ? `Size ${item.size}` : ''} × <strong style={{ color: '#631521' }}>{item.quantity}</strong>
@@ -948,7 +948,7 @@ export default function AdminOrdersPage() {
                 {selectedOrder.items?.map((item, idx) => (
                   <div key={idx} style={{ display:'flex', justifyContent:'space-between', padding:'10px 12px', borderBottom: idx < selectedOrder.items.length - 1 ? '1px solid #E8DFD5' : 'none', fontSize:'13px' }}>
                     <div>
-                      <div style={{ fontWeight:600, color:'#1A1614' }}>{item.productName || 'Bộ Pijama'}</div>
+                      <div style={{ fontWeight:600, color:'#1A1614' }}>{item.productName || 'Bộ Sleepwear'}</div>
                       <div style={{ fontSize:'11px', color:'#7A6E6E' }}>{item.colorLabel ? `${item.colorLabel} · ` : ''}{item.size ? `Size ${item.size}` : ''} × {item.quantity}</div>
                     </div>
                     <div style={{ fontWeight:600, color:'#631521' }}>

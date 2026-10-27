@@ -730,7 +730,7 @@ export default function CheckoutPage() {
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-xs text-[#8C7E74]">
-                                Pijama
+                                Sleepwear
                               </div>
                             )}
                           </div>

@@ -39,7 +39,7 @@ export default function Section5DarkContrast() {
             </p>
 
             <p className="font-sans text-sm sm:text-base text-white/75 font-normal leading-relaxed mb-4">
-              Giữa lòng Paris, ở Milan hay Copenhagen — người ta tìm thấy vẻ đẹp trong chính sự ngẫu hứng đầy thanh lịch: mặc set đồ nhẹ tênh ra phố mua bánh mì buổi sáng và không ai nhìn. Ở Hà Nội, mặc pijama ra ngoài vẫn còn là chủ đề bàn tán
+              Giữa lòng Paris, ở Milan hay Copenhagen — người ta tìm thấy vẻ đẹp trong chính sự ngẫu hứng đầy thanh lịch: mặc set đồ nhẹ tênh ra phố mua bánh mì buổi sáng và không ai nhìn. Ở Hà Nội, mặc sleepwear ra ngoài vẫn còn là chủ đề bàn tán
             </p>
 
             <p className="font-sans text-sm sm:text-base text-white/75 font-normal leading-relaxed mb-8">

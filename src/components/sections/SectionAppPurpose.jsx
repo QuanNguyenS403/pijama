@@ -23,7 +23,7 @@ export default function SectionAppPurpose() {
           </h2>
           <div className="w-16 h-[2px] bg-[#D4AF37] mx-auto mt-4 mb-4" />
           <p className="font-sans text-xs sm:text-sm text-[#5C4A3E] leading-relaxed">
-            QuanNguyenS là nền tảng thương mại điện tử chuyên cung cấp pijama cao cấp phong cách Style To Be Lived In. Chúng tôi xây dựng trải nghiệm mua sắm mở, hoàn toàn không có rào cản đăng nhập bắt buộc và tôn trọng tối đa dữ liệu người dùng.
+            QuanNguyenS là nền tảng thương mại điện tử chuyên cung cấp sleepwear cao cấp phong cách Style To Be Lived In. Chúng tôi xây dựng trải nghiệm mua sắm mở, hoàn toàn không có rào cản đăng nhập bắt buộc và tôn trọng tối đa dữ liệu người dùng.
           </p>
         </div>
 
@@ -125,10 +125,10 @@ export default function SectionAppPurpose() {
               <span>Chính Sách Bảo Mật</span>
             </Link>
             <Link
-              to="/chinh-sach?tab=terms"
+              to="/chinh-sach"
               className="inline-flex items-center gap-2 bg-[#FAF8F5] hover:bg-[#E8DFD5] text-[#2C201A] border border-[#D4AF37]/60 font-sans text-xs font-semibold tracking-wider px-4 py-3 rounded-[2px] transition-colors uppercase"
             >
-              <span>Điều Khoản Dịch Vụ</span>
+              <span>Xem Tất Cả Chính Sách</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>

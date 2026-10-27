@@ -261,7 +261,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     color: 'Sọc Nâu',
     size: 'M',
     photo: null,
-    text: 'Bộ pijama sang và êm nhất tủ đồ của mình tính đến giờ. Dáng áo thanh mảnh, cổ bẻ vừa vặn không bị xộc xệch. Mặc ở nhà tiếp khách hay ăn tối thân mật gia đình đều rất nhã nhặn, tôn trọng người đối diện.',
+    text: 'Bộ sleepwear sang và êm nhất tủ đồ của mình tính đến giờ. Dáng áo thanh mảnh, cổ bẻ vừa vặn không bị xộc xệch. Mặc ở nhà tiếp khách hay ăn tối thân mật gia đình đều rất nhã nhặn, tôn trọng người đối diện.',
   },
   {
     id: 'rv-23',

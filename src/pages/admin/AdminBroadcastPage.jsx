@@ -36,14 +36,14 @@ export default function AdminBroadcastPage() {
   const [content, setContent] = useState(
 `Kính gửi Quý khách hàng thân mến của QuanNguyenS,
 
-Chúng tôi rất hân hạnh được giới thiệu đến bạn Bộ sưu tập Lụa Pyjama Thu Đông 2026 với 3 thiết kế chủ đạo:
+Chúng tôi rất hân hạnh được giới thiệu đến bạn Bộ sưu tập Lụa Sleepwear Thu Đông 2026 với 3 thiết kế chủ đạo:
 1. THE DAYBREAK SET — Sọc Hồng thanh lịch, trẻ trung
 2. THE STILLWATER SET — Caro Navy trầm tĩnh, quý phái
 3. THE HEARTH SET — Sọc Nâu ấm áp, sang trọng
 
 Tất cả sản phẩm đều được dệt may từ chất liệu lụa satin tự nhiên cao cấp, mang lại cảm giác mềm mại, thoáng mát tuyệt đối trên làn da.
 
-Hãy ghé thăm website quannguyens.com ngay hôm nay để khám phá và chọn cho mình bộ Pyjama hoàn hảo nhất!
+Hãy ghé thăm website quannguyens.com ngay hôm nay để khám phá và chọn cho mình bộ Sleepwear hoàn hảo nhất!
 
 Nếu bạn có bất kỳ câu hỏi nào về bảng size hoặc chất liệu, đừng ngần ngại liên hệ hotline 0981 753 082 để được tư vấn tận tâm.`
   )
@@ -427,7 +427,7 @@ Nếu bạn có bất kỳ câu hỏi nào về bảng size hoặc chất liệu
 
                   {/* Footer preview */}
                   <div className="bg-[#F5EFE6] p-5 text-center text-xs text-[#8C7E74] border-t border-[#E8DFD5] space-y-1">
-                    <p className="font-semibold text-[#631521]">QuanNguyenS — Lụa Tơ Tằm & Pyjama Thiết Kế</p>
+                    <p className="font-semibold text-[#631521]">QuanNguyenS — Lụa Tơ Tằm & Sleepwear Thiết Kế</p>
                     <p>Hotline: 0981 753 082 · Amber Riverside, 622 Minh Khai, Hà Nội</p>
                     <p className="text-[10.5px] text-[#A89F91] mt-2">
                       Bạn nhận được thông báo này vì đã đăng ký thành viên tại website QuanNguyenS.

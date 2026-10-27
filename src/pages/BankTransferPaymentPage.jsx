@@ -388,7 +388,7 @@ export default function BankTransferPaymentPage() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2 max-w-md mx-auto">
                   <button
-                    onClick={() => window.dispatchEvent(new Event('open_orders_drawer'))}
+                    onClick={() => window.dispatchEvent(new CustomEvent('open_orders_drawer'))}
                     className="flex-1 bg-[#631521] text-[#FAF8F5] font-sans font-bold text-xs uppercase tracking-[0.15em] py-3.5 px-6 rounded-[2px] hover:bg-[#4A0D17] border border-[#D4AF37]/30 shadow-sm transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Package className="w-4 h-4 text-[#D4AF37]" />

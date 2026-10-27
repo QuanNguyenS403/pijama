@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ShoppingBag, CreditCard, Share2, Ruler, Truck, RotateCcw, CheckCircle, Lock, CalendarClock } from 'lucide-react'
+import { ShoppingBag, CreditCard, Share2, Ruler, Truck, RotateCcw, CheckCircle, CalendarClock } from 'lucide-react'
 import ColorSelector from './ColorSelector'
 import SizeSelector from './SizeSelector'
 import QuantitySelector from './QuantitySelector'
@@ -35,10 +35,9 @@ function formatPrice(n) {
 }
 
 const trustItems = [
-  { icon: <Truck className="w-5 h-5" />, label: 'Giao hàng miễn phí', sub: 'Đơn từ 500K' },
-  { icon: <RotateCcw className="w-5 h-5" />, label: 'Đổi trả 30 ngày', sub: 'Cam kết chất lượng' },
-  { icon: <CheckCircle className="w-5 h-5" />, label: 'Chất liệu tự nhiên', sub: 'Thuần khiết cao cấp' },
-  { icon: <Lock className="w-5 h-5" />, label: 'Thanh toán an toàn', sub: 'Mã hoá SSL' },
+  { icon: <Truck className="w-5 h-5" />, label: 'Miễn phí giao hàng', sub: 'Đơn từ 500.000VNĐ' },
+  { icon: <RotateCcw className="w-5 h-5" />, label: 'Miễn phí đổi trả', sub: '7 ngày' },
+  { icon: <CheckCircle className="w-5 h-5" />, label: 'Tích điểm hội viên', sub: '' },
 ]
 
 export default function ProductInfo({
@@ -260,35 +259,6 @@ export default function ProductInfo({
           </ul>
         )}
 
-        {/* Feng Shui Inspiration Card */}
-        {product.fengShui && (
-          <div className="bg-[#FAF5F0] border border-[#E8DFD5] p-3.5 rounded-[3px] flex items-start gap-3">
-            <span className="text-sm shrink-0 mt-0.5 text-[#D4AF37]">✦</span>
-            <div className="text-xs font-sans text-[#4A3F38]">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <span className="font-sans font-bold text-[#631521] uppercase tracking-wider text-[11px]">
-                  Năng Lượng Ngũ Hành · Hành {product.fengShui.element}
-                </span>
-                <span className="bg-[#631521]/10 text-[#631521] px-1.5 py-0.5 rounded-[2px] text-[10px] font-medium">
-                  Hợp mệnh {product.fengShui.goodFor.join(' & ')}
-                </span>
-              </div>
-              <p className="font-normal leading-relaxed text-[#4A3F38]">
-                {product.fengShui.energyNote}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Fabric Sensory Callout */}
-        <div className="bg-[#FAF5F0] border-l-[3px] border-[#D4AF37] p-4 sm:p-5">
-          <span className="font-sans font-semibold text-[11px] uppercase tracking-[0.15em] text-[#631521] block mb-1">
-            CẢM NHẬN KHÁC BIỆT
-          </span>
-          <p className="font-sans font-normal italic text-sm text-[#4A3F38] leading-relaxed">
-            "Chất vải của chúng tôi không cần một cái tên để chứng minh. Chỉ cần một lần chạm."
-          </p>
-        </div>
 
         {/* Validation hint */}
         {!selectedSize && (
@@ -365,7 +335,7 @@ export default function ProductInfo({
         <div className="border-t border-[#E8DFD5]" />
 
         {/* Trust strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 text-center bg-[#F5F0EB] p-4 rounded-[3px] border border-[#E8DFD5]">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3.5 text-center bg-[#F5F0EB] p-4 rounded-[3px] border border-[#E8DFD5]">
           {trustItems.map((t) => (
             <div key={t.label} className="flex flex-col items-center gap-1">
               <span className="text-[#631521]">{t.icon}</span>

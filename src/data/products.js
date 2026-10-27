@@ -5,7 +5,7 @@ export const products = [
     id: "the-classic-set",
     slug: "the-classic-set",
     name: "THE DAYBREAK SET",
-    subtitle: "Pijama Phong Cách Châu Âu · Sọc Hồng Nắng Sớm",
+    subtitle: "Sleepwear Phong Cách Châu Âu · Sọc Hồng Nắng Sớm",
     collection: "Thu Đông 2026",
     badge: "MỚI RA MẮT",
     preOrder: {
@@ -14,11 +14,11 @@ export const products = [
       message: 'Hàng đặt trước — Giao hàng dự kiến trong 7-10 ngày làm việc',
     },
 
-    description: `Bộ pijama lấy cảm hứng từ phong cách ngủ cổ điển châu Âu với họa tiết Sọc Hồng ngọt ngào — đường viền tương phản tinh tế, cổ áo notch thanh lịch, và phom dáng suông tự do cho cảm giác thoải mái trọn ngày. Mang năng lượng Hỏa ấm áp và rạng rỡ như nắng sớm, khơi dậy nguồn sinh khí tươi mới cho không gian nghỉ ngơi của bạn.`,
+    description: `Bộ sleepwear lấy cảm hứng từ phong cách ngủ cổ điển châu Âu với họa tiết Sọc Hồng ngọt ngào — đường viền tương phản tinh tế, cổ áo notch thanh lịch, và phom dáng suông tự do cho cảm giác thoải mái trọn ngày. Mang năng lượng Hỏa ấm áp và rạng rỡ như nắng sớm, khơi dậy nguồn sinh khí tươi mới cho không gian nghỉ ngơi của bạn.`,
 
     longDescription: `THE DAYBREAK SET được thiết kế để mang lại cảm giác như đang thức giấc tại một khách sạn boutique 5 sao giữa lòng châu Âu. Họa tiết Sọc Hồng (Pink Stripe) mang sắc thái ấm áp, dịu dàng của hành Hỏa — như những tia nắng sớm đầu ngày tiếp thêm sinh khí và năng lượng tích cực cho tinh thần. Thiết kế suông nhẹ, viền tương phản sắc nét giúp bạn luôn thanh lịch, tự tin diện từ phòng ngủ ra phố hay tiếp khách tại nhà mà không cần đắn đo. Tương sinh và hòa hợp lý tưởng cho người mệnh Hỏa và Thổ.`,
 
-    detailedDescription: `THE DAYBREAK SET lấy cảm hứng từ đồ ngủ của các khách sạn boutique châu Âu — nơi pijama không chỉ là trang phục nghỉ ngơi mà là một tuyên ngôn phong cách sống tinh tế.
+    detailedDescription: `THE DAYBREAK SET lấy cảm hứng từ đồ ngủ của các khách sạn boutique châu Âu — nơi sleepwear không chỉ là trang phục nghỉ ngơi mà là một tuyên ngôn phong cách sống tinh tế.
 
 Thiết kế notch collar (cổ bẻ cổ điển) với viền tương phản trắng sắc nét chạy dọc ve áo, cổ tay và miệng túi — tạo nên dấu ấn thanh lịch đặc trưng. Hàng cúc trước tiệp màu cùng hai túi patch rộng rãi và một túi ngực nhỏ hoàn thiện phom dáng chuẩn mực.
 
@@ -117,7 +117,7 @@ Họa tiết Sọc Hồng (Pink Stripe) biểu trưng cho năng lượng Hỏa �
     id: 'the-cafe-look',
     slug: 'the-cafe-look',
     name: 'THE STILLWATER SET',
-    subtitle: 'Pijama Thiết Kế Cổ V · Caro Navy Tĩnh Tại',
+    subtitle: 'Sleepwear Thiết Kế Cổ V · Caro Navy Tĩnh Tại',
     collection: 'Thu Đông 2026',
     badge: 'BÁN CHẠY NHẤT',
 
@@ -221,7 +221,7 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
     id: 'the-evening-edit',
     slug: 'the-evening-edit',
     name: 'THE HEARTH SET',
-    subtitle: 'Pijama Wide-Leg Cao Cấp · Sọc Nâu Vững Chãi',
+    subtitle: 'Sleepwear Wide-Leg Cao Cấp · Sọc Nâu Vững Chãi',
     collection: 'Thu Đông 2026',
     badge: 'PHIÊN BẢN GIỚI HẠN',
     preOrder: {
@@ -592,7 +592,7 @@ export const sampleReviews = [
     size: 'M',
     verified: true,
     photo: null,
-    text: 'Bộ pijama sang và êm nhất tủ đồ của mình tính đến giờ. Dáng áo thanh mảnh, cổ bẻ vừa vặn không bị xộc xệch. Mặc ở nhà tiếp khách hay ăn tối thân mật gia đình đều rất nhã nhặn, tôn trọng người đối diện.',
+    text: 'Bộ sleepwear sang và êm nhất tủ đồ của mình tính đến giờ. Dáng áo thanh mảnh, cổ bẻ vừa vặn không bị xộc xệch. Mặc ở nhà tiếp khách hay ăn tối thân mật gia đình đều rất nhã nhặn, tôn trọng người đối diện.',
   },
   {
     id: 'rv-23',

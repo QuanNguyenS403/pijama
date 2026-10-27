@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ShieldCheck, FileText, RotateCcw, Truck, Phone, Mail } from 'lucide-react'
+import { X, ShieldCheck, RotateCcw, RefreshCw, Truck, Phone, Mail, Award } from 'lucide-react'
 import { policiesData } from '../../data/policies'
 
-export default function PolicyModal({ isOpen, onClose, initialPolicy = 'terms' }) {
+export default function PolicyModal({ isOpen, onClose, initialPolicy = 'privacy' }) {
   const [activeTab, setActiveTab] = useState(initialPolicy)
 
   useEffect(() => {
@@ -13,14 +13,14 @@ export default function PolicyModal({ isOpen, onClose, initialPolicy = 'terms' }
   }, [initialPolicy, isOpen])
 
   // Ensure current active tab aligns if initialPolicy changes on open
-  const currentKey = policiesData[activeTab] ? activeTab : 'terms'
+  const currentKey = policiesData[activeTab] ? activeTab : 'privacy'
   const policy = policiesData[currentKey]
 
   const tabs = [
-    { key: 'terms', label: 'Điều Khoản Dịch Vụ', icon: FileText },
     { key: 'privacy', label: 'Chính Sách Bảo Mật', icon: ShieldCheck },
-    { key: 'return', label: 'Chính Sách Đổi Trả Hàng', icon: RotateCcw },
     { key: 'shipping', label: 'Chính Sách Giao Hàng', icon: Truck },
+    { key: 'return', label: 'Chính Sách Trả Hàng', icon: RotateCcw },
+    { key: 'exchange', label: 'Chính Sách Đổi Hàng', icon: RefreshCw },
   ]
 
   if (!isOpen) return null
@@ -102,31 +102,29 @@ export default function PolicyModal({ isOpen, onClose, initialPolicy = 'terms' }
           {/* Policy Content Area */}
           <div className="flex-1 overflow-y-auto pdp-scrollbar p-6 sm:p-8 space-y-6">
             <div className="border-b border-[#E8DFD5] pb-4">
-              <span className="font-serif text-xs font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-1">
-                {policy?.lastUpdated}
-              </span>
               <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1A1614] tracking-tight">
                 {policy?.title}
               </h2>
-              <p className="font-sans text-sm font-normal italic text-[#8C7E74] mt-1">
-                {policy?.subtitle}
-              </p>
             </div>
 
             {/* Sections */}
             <div className="space-y-6">
               {policy?.sections.map((section, idx) => (
                 <div key={idx} className="bg-white p-5 rounded-[3px] border border-[#E8DFD5] shadow-xs">
-                  <h3 className="font-serif text-base sm:text-lg font-bold text-[#631521] mb-3">
+                  <h3 className="font-serif text-lg sm:text-xl md:text-2xl font-black text-[#631521] mb-3 leading-snug">
                     {section.heading}
                   </h3>
                   <ul className="space-y-2.5">
-                    {section.content.map((line, lineIdx) => (
-                      <li key={lineIdx} className="flex items-start gap-2.5 font-sans text-xs sm:text-sm font-normal text-[#4A3F38] leading-relaxed">
-                        <span className="text-[#D4AF37] font-bold mt-0.5 shrink-0">•</span>
-                        <span>{line}</span>
-                      </li>
-                    ))}
+                    {section.content.map((line, lineIdx) => {
+                      const cleanLine = line.replace(/^[•\s]+/, '')
+                      const isNumbered = /^\d+\./.test(line)
+                      return (
+                        <li key={lineIdx} className="flex items-start gap-2.5 font-sans text-xs sm:text-sm font-normal text-[#4A3F38] leading-relaxed">
+                          {!isNumbered && <span className="text-[#D4AF37] font-bold mt-0.5 shrink-0">•</span>}
+                          <span>{isNumbered ? line : cleanLine}</span>
+                        </li>
+                      )
+                    })}
                   </ul>
                 </div>
               ))}
@@ -165,7 +163,7 @@ export default function PolicyModal({ isOpen, onClose, initialPolicy = 'terms' }
           <div className="px-6 py-3.5 bg-[#FAF8F5] border-t border-[#E8DFD5] flex items-center justify-between shrink-0">
             <span className="font-sans text-xs text-[#8C7E74] font-normal">
               © 2026 QuanNguyenS — Style To Be Lived In ·{' '}
-              <a href="/chinh-sach" onClick={onClose} className="text-[#631521] underline hover:text-[#D4AF37] font-medium">
+              <a href={`/chinh-sach?tab=${currentKey}`} onClick={onClose} className="text-[#631521] underline hover:text-[#D4AF37] font-medium">
                 Mở trang chính sách đầy đủ ↗
               </a>
             </span>

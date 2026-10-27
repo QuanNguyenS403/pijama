@@ -6,7 +6,7 @@ const INITIAL_WELCOME = {
   id: 'msg_welcome',
   role: 'assistant',
   content:
-    'Dạ em chào anh/chị ạ! Em là Trợ lý ảo của QuanNguyenS. Em có thể hỗ trợ anh/chị chọn size vừa vặn, tư vấn chất liệu các mẫu pijama hoặc thông tin phí ship và ưu đãi đang có.\n\nAnh/chị đang quan tâm đến bộ pijama cho dịp nào ạ?',
+    'Dạ em chào anh/chị ạ! Em là Trợ lý ảo của QuanNguyenS. Em có thể hỗ trợ anh/chị chọn size vừa vặn, tư vấn chất liệu các mẫu sleepwear hoặc thông tin phí ship và ưu đãi đang có.\n\nAnh/chị đang quan tâm đến bộ sleepwear cho dịp nào ạ?',
   time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
 }
 
@@ -250,9 +250,6 @@ export default function ChatPanel({ isOpen, onClose }) {
               </h3>
               <div className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse shrink-0" title="Sẵn sàng 24/7" />
             </div>
-            <p className="font-sans text-[10px] text-[#FAF8F5]/80 truncate">
-              Trợ lý ảo tư vấn thời trang & CSKH 24/7
-            </p>
           </div>
         </div>
 
@@ -269,12 +266,11 @@ export default function ChatPanel({ isOpen, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-white/15 hover:bg-white/25 active:scale-95 text-white font-sans text-xs font-semibold rounded-full border border-white/25 transition-all cursor-pointer shadow-xs"
-            title="Thoát khỏi chat bot (Esc)"
-            aria-label="Thoát khỏi chat bot"
+            className="p-1.5 sm:p-2 bg-white/15 hover:bg-white/25 active:scale-95 text-white rounded-full border border-white/25 transition-all cursor-pointer shadow-xs flex items-center justify-center"
+            title="Đóng chat bot (Esc)"
+            aria-label="Đóng chat bot"
           >
             <X className="w-4 h-4 stroke-[2.5]" />
-            <span className="tracking-wide">Thoát</span>
           </button>
         </div>
       </div>

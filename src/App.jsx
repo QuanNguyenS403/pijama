@@ -71,8 +71,8 @@ export default function App() {
           <Route path="/chinh-sach" element={<PolicyPage />} />
           <Route path="/chinh-sach-bao-mat" element={<PolicyPage />} />
           <Route path="/privacy-policy" element={<PolicyPage />} />
-          <Route path="/dieu-khoan" element={<PolicyPage />} />
-          <Route path="/terms" element={<PolicyPage />} />
+          <Route path="/dieu-khoan" element={<Navigate to="/chinh-sach" replace />} />
+          <Route path="/terms" element={<Navigate to="/chinh-sach" replace />} />
           <Route path="/huy-dang-ky" element={<UnsubscribePage />} />
           {/* Fallback */}
           <Route path="*" element={<LandingPage />} />
