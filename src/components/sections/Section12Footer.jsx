@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from '@/lib/router-compat'
 import { Mail, Phone, MapPin } from 'lucide-react'
 import PolicyModal from '../ui/PolicyModal'
 
@@ -49,11 +49,10 @@ export default function Section12Footer() {
   const footerNavLinks = [
     { label: 'Bộ sưu tập', href: '#section-products', isAnchor: true },
     { label: 'Giới thiệu', href: '#section-dark-contrast', isAnchor: true },
-    { label: 'Ưu đãi hội viên', href: '/hoi-vien' },
+    { label: 'Ưu đãi thành viên', href: '/hoi-vien' },
     { label: 'Chính sách bảo mật', href: '/chinh-sach?tab=privacy' },
-    { label: 'Chính sách giao hàng', href: '/chinh-sach?tab=shipping' },
-    { label: 'Chính sách trả hàng', href: '/chinh-sach?tab=return' },
     { label: 'Chính sách đổi hàng', href: '/chinh-sach?tab=exchange' },
+    { label: 'Chính sách giao hàng', href: '/chinh-sach?tab=shipping' },
   ]
 
   const handleNavClick = (e, href) => {
@@ -87,7 +86,7 @@ export default function Section12Footer() {
             </div>
 
             <div className="text-sm font-sans text-white/70 max-w-sm text-center lg:text-right leading-relaxed">
-              Every girls deserve QuanNguyenS Sleepwear
+              Every girls deserve QuanNguyenS Pyjama
             </div>
           </div>
 
@@ -100,7 +99,7 @@ export default function Section12Footer() {
                 Điều Hướng & Chính Sách
               </h3>
               <ul className="space-y-2">
-                {footerNavLinks.map((link) => (
+                {footerNavLinks.filter((link) => link.label && link.label.trim()).map((link) => (
                   <li key={link.label}>
                     {link.isAnchor ? (
                       <a
@@ -131,12 +130,12 @@ export default function Section12Footer() {
               <div className="space-y-2.5 font-sans text-xs sm:text-sm text-white/75 leading-relaxed">
                 <div className="flex items-start gap-2.5">
                   <MapPin className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
-                  <span>Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hai Bà Trưng, Hà Nội</span>
+                  <span>{'\u00a0Hai Bà Trưng, Hà Nội'}</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <Phone className="w-4 h-4 text-[#D4AF37] shrink-0" />
                   <a href="tel:0981753082" className="hover:text-[#D4AF37] transition-colors">
-                    0981 753 082 (Hỗ trợ 24/7)
+                    xxxxxxxxx (Hỗ trợ 24/7)
                   </a>
                 </div>
                 <div className="flex items-center gap-2.5">

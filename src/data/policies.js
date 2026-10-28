@@ -10,7 +10,7 @@ export const policiesData = {
       {
         version: '2.0.0',
         date: '22/10/2026',
-        summary: 'Cập nhật chuẩn hóa 6 điều khoản chính sách bảo mật theo quy định thương mại điện tử; bổ sung cơ chế tiếp nhận giải quyết khiếu nại và bảo toàn cam kết Google Limited Use Disclosure.',
+        summary: 'Cập nhật chuẩn hóa 6 điều khoản chính sách bảo mật theo quy định thương mại điện tử; bổ sung cơ chế tiếp nhận giải quyết khiếu nại.',
       },
     ],
     sections: [
@@ -61,15 +61,6 @@ export const policiesData = {
         content: [
           'Khi phát hiện thông tin cá nhân của mình bị sử dụng sai mục đích hoặc phạm vi, khách hàng gọi điện thoại tới số xxxxxxxxx hoặc Email quannguyens@gmail.com để khiếu nại và cung cấp chứng cứ liên quan đến vụ việc cho ban quản trị.',
           'Ban quản trị cam kết sẽ phản hồi ngay lập tức hoặc muộn nhất là trong vòng 24 giờ làm việc kể từ thời điểm nhận được khiếu nại.',
-        ],
-      },
-      {
-        heading: '7. Tuân thủ Chính sách Dữ liệu Người dùng Google API (Google Limited Use Disclosure)',
-        content: [
-          'QuanNguyenS cam kết tuân thủ nghiêm ngặt Chính sách Dữ liệu Người dùng Dịch vụ Google API trong mọi hoạt động:',
-          'Tuyên bố tiếng Việt: "Việc ứng dụng QuanNguyenS sử dụng và chuyển giao thông tin nhận được từ Google APIs cho bất kỳ ứng dụng nào khác sẽ luôn tuân thủ Chính sách dữ liệu người dùng của Dịch vụ Google API (Google API Services User Data Policy), bao gồm cả các yêu cầu về Sử dụng Có giới hạn (Limited Use requirements)."',
-          'Official English Statement: "QuanNguyenS\'s use and transfer to any other app of information received from Google APIs will adhere to the Google API Services User Data Policy, including the Limited Use requirements."',
-          'Chi tiết văn bản chính sách người dùng của Google có thể tham khảo trực tiếp tại: https://developers.google.com/terms/api-services-user-data-policy',
         ],
       },
     ],

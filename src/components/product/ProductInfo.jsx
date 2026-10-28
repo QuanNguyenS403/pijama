@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ShoppingBag, CreditCard, Share2, Ruler, Truck, RotateCcw, CheckCircle, CalendarClock } from 'lucide-react'
+import { ShoppingBag, CreditCard, Share2, Ruler, Truck, RotateCcw, CheckCircle, Lock, CalendarClock } from 'lucide-react'
 import ColorSelector from './ColorSelector'
 import SizeSelector from './SizeSelector'
 import QuantitySelector from './QuantitySelector'
@@ -280,7 +280,7 @@ export default function ProductInfo({
               <ShoppingBag className="w-4 h-4" />
               {addedState
                 ? (product.preOrder?.enabled ? '✓ Đã Ghi Nhận Đặt Trước' : '✓ Đã Thêm Vào Giỏ')
-                : (product.preOrder?.enabled ? 'Đặt Trước Ngay' : 'Thêm Vào Giỏ Hàng')}
+                : 'THÊM VÀO GIỎ\u00a0\u00a0'}
             </Button>
           </motion.div>
 
@@ -294,7 +294,7 @@ export default function ProductInfo({
               aria-label={product.preOrder?.enabled ? 'Đặt trước ngay' : 'Mua ngay'}
             >
               <CreditCard className="w-4 h-4" />
-              {product.preOrder?.enabled ? 'ĐẶT TRƯỚC & THANH TOÁN' : 'MUA NGAY'}
+              {'MUA NGAY\u00a0\u00a0'}
             </button>
           </motion.div>
 
@@ -335,14 +335,20 @@ export default function ProductInfo({
         <div className="border-t border-[#E8DFD5]" />
 
         {/* Trust strip */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3.5 text-center bg-[#F5F0EB] p-4 rounded-[3px] border border-[#E8DFD5]">
-          {trustItems.map((t) => (
-            <div key={t.label} className="flex flex-col items-center gap-1">
-              <span className="text-[#631521]">{t.icon}</span>
-              <span className="font-sans text-[0.75rem] font-bold text-[#1A1614] leading-tight">{t.label}</span>
-              <span className="font-sans text-[0.7rem] font-normal text-[#8C7E74]">{t.sub}</span>
-            </div>
-          ))}
+        <div className="bg-[#F5F0EB] p-4 rounded-[3px] border border-[#E8DFD5] flex items-center justify-center">
+          <div className="grid grid-cols-3 gap-3 sm:gap-6 max-w-[460px] w-full text-center">
+            {trustItems.map((t) => (
+              <div key={t.label} className="flex flex-col items-center gap-1">
+                <span className="text-[#631521]">{t.icon}</span>
+                <span className="font-sans text-[0.75rem] font-bold text-[#1A1614] leading-tight">{t.label}</span>
+                {t.sub ? (
+                  <span className="font-sans text-[0.7rem] font-normal text-[#8C7E74]">{t.sub}</span>
+                ) : (
+                  <span className="font-sans text-[0.7rem] font-normal text-transparent select-none" aria-hidden="true">&nbsp;</span>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Divider */}

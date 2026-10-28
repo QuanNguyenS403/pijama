@@ -313,7 +313,7 @@ export default function CheckoutPage() {
 
           <span className="font-serif text-xs tracking-[0.2em] text-[#631521] uppercase hidden sm:flex items-center gap-1.5 font-semibold">
             <Lock className="w-3.5 h-3.5 text-[#631521]" />
-            Giao Dịch Bảo Mật SSL 100%
+            {"\n"}
           </span>
         </div>
 
@@ -646,7 +646,7 @@ export default function CheckoutPage() {
                                   )}
                                   {isCod && !isCodDisabled && (
                                     <span className="inline-flex items-center gap-1 bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] text-[10px] font-bold px-2 py-0.5 rounded-[2px]">
-                                      📍 Bán kính ~{codStatus.distanceKm}km (Hỗ trợ COD)
+                                      chỉ áp dụng khu vực nội thành Hà Nội
                                     </span>
                                   )}
                                   {hasDiscount && (
@@ -700,7 +700,7 @@ export default function CheckoutPage() {
                           const displayNames = preOrderNames.length > 0 ? preOrderNames.join(' & ') : 'sản phẩm Đặt Trước'
                           return (
                             <p className="text-[#4A3F38] leading-relaxed">
-                              Đơn hàng có chứa sản phẩm <strong>{displayNames}</strong>. Toàn bộ đơn hàng sẽ được chuẩn bị và giao trong <strong>7–10 ngày làm việc</strong>.
+                              &nbsp;Toàn bộ sản phẩm PRE-ORDER sẽ được chuẩn bị và giao trong 10–14 ngày.
                             </p>
                           )
                         })()}
@@ -745,7 +745,7 @@ export default function CheckoutPage() {
                               </p>
                               {isItemPreOrder && (
                                 <span className="inline-block font-sans text-[10px] font-bold text-[#631521] bg-[#FAF5F0] border border-[#D4AF37]/60 px-1.5 py-0.5 rounded-[2px] mt-1">
-                                  ⏱ Đặt trước (giao 7-10 ngày)
+                                  ⏱ Đặt trước (giao 10-14 ngày)
                                 </span>
                               )}
                             </div>
@@ -846,7 +846,7 @@ export default function CheckoutPage() {
                           </span>
                         )}
                         <span className="text-[0.65rem] text-[#8C7E74] mt-1 block">
-                          (Đã bao gồm VAT & giao hàng tận nơi)
+                          (Đã bao gồm VAT)&nbsp;
                         </span>
                       </div>
                     </div>
@@ -864,7 +864,7 @@ export default function CheckoutPage() {
                         <span>ĐANG XỬ LÝ ĐƠN HÀNG...</span>
                       </>
                     ) : (
-                      <span>XÁC NHẬN ĐẶT HÀNG</span>
+                      <span>&nbsp;ĐẶT HÀNG</span>
                     )}
                   </button>
 
@@ -877,7 +877,7 @@ export default function CheckoutPage() {
                 <div className="bg-white p-5 rounded-[4px] border border-[#E8DFD5] space-y-3.5 text-xs font-sans text-[#4A3F38]">
                   <div className="flex items-center gap-3">
                     <Truck className="w-5 h-5 text-[#631521] shrink-0" />
-                    <span>Giao hàng nhanh <strong>2–4 ngày làm việc</strong> toàn quốc</span>
+                    <span>Giao hàng trong&nbsp;2–4 ngày&nbsp;</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <RotateCcw className="w-5 h-5 text-[#631521] shrink-0" />

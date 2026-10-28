@@ -62,30 +62,10 @@ test('Policy Integrity: Kiểm tra tính toàn vẹn của mục trả hàng (re
   assert.ok(fullContent.includes('Giftcard/Voucher'))
 })
 
-test('Policy Integrity: Bảo toàn nguyên vẹn Google Limited Use Disclosure theo Luật Thép 6', () => {
+test('Policy Integrity: Kiểm tra mục Google Limited Use Disclosure đã được loại bỏ theo yêu cầu', () => {
   const privacy = policiesData.privacy
   const googleSection = privacy.sections.find((s) => s.heading.includes('Google Limited Use Disclosure'))
-  assert.ok(googleSection, 'Mục Google Limited Use Disclosure phải tồn tại')
-
-  const viText = googleSection.content.find((c) => c.includes('Tuyên bố tiếng Việt:'))
-  const enText = googleSection.content.find((c) => c.includes('Official English Statement:'))
-
-  assert.ok(viText, 'Phải có tuyên bố tiếng Việt')
-  assert.ok(enText, 'Phải có tuyên bố tiếng Anh')
-
-  assert.ok(
-    viText.includes(
-      'Việc ứng dụng QuanNguyenS sử dụng và chuyển giao thông tin nhận được từ Google APIs cho bất kỳ ứng dụng nào khác sẽ luôn tuân thủ Chính sách dữ liệu người dùng của Dịch vụ Google API (Google API Services User Data Policy), bao gồm cả các yêu cầu về Sử dụng Có giới hạn (Limited Use requirements).'
-    ),
-    'Tuyên bố tiếng Việt phải nguyên văn 100%'
-  )
-
-  assert.ok(
-    enText.includes(
-      'QuanNguyenS\'s use and transfer to any other app of information received from Google APIs will adhere to the Google API Services User Data Policy, including the Limited Use requirements.'
-    ),
-    'Tuyên bố tiếng Anh phải nguyên văn 100%'
-  )
+  assert.equal(googleSection, undefined, 'Mục Google Limited Use Disclosure phải không còn tồn tại')
 })
 
 test('Policy Integrity: Kiểm tra ngày hiệu lực và phiên bản hợp lệ', () => {

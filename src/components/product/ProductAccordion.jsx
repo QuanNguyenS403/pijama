@@ -1,11 +1,6 @@
+import { Link } from 'react-router-dom'
 import Accordion from '../ui/Accordion'
 import {
-  Sparkles,
-  Heart,
-  CheckCircle2,
-  Leaf,
-  BadgeCheck,
-  ShieldCheck,
   Droplets,
   Thermometer,
   Ban,
@@ -13,20 +8,11 @@ import {
   Wind,
   Flame,
   RotateCcw,
-  Truck,
-  PhoneCall,
-  PackageCheck,
   CalendarClock,
-  Clock,
-  AlertCircle,
 } from 'lucide-react'
 
 export default function ProductAccordion({ product }) {
   const detailedText = product.detailedDescription || product.longDescription || product.description
-
-  // ─── B1: Highlights 3 thẻ trực quan ──────────────────────────────────────
-  const highlightIcons = [Sparkles, Heart, CheckCircle2]
-
   // ─── B2: Bảng Size Helper ────────────────────────────────────────────────
   const sizeEntries = product.sizeGuide ? Object.entries(product.sizeGuide) : []
   const hasWeight = sizeEntries.some(([, g]) => g.weight)
@@ -42,12 +28,13 @@ export default function ProductAccordion({ product }) {
   // ─── B3: Icon cho ký hiệu giặt ủi quốc tế ────────────────────────────────
   const getCareIcon = (text) => {
     const lower = text.toLowerCase()
-    if (lower.includes('giặt')) return Droplets
-    if (lower.includes('nhiệt') || lower.includes('độ') || lower.includes('°c') || lower.includes('nước')) return Thermometer
+    if (lower.includes('khô') || lower.includes('bảo quản')) return Sun
+    if (lower.includes('vắt') || lower.includes('xoắn')) return RotateCcw
+    if (lower.includes('ngâm') || lower.includes('loang')) return Thermometer
     if (lower.includes('tẩy')) return Ban
+    if (lower.includes('sấy') || lower.includes('ủi') || lower.includes('là')) return Flame
+    if (lower.includes('giặt')) return Droplets
     if (lower.includes('phơi') || lower.includes('nắng') || lower.includes('bóng mát')) return Sun
-    if (lower.includes('sấy')) return Wind
-    if (lower.includes('ủi') || lower.includes('là')) return Flame
     return RotateCcw
   }
 
@@ -57,40 +44,8 @@ export default function ProductAccordion({ product }) {
       label: 'Mô Tả Chi Tiết Sản Phẩm',
       content: (
         <div className="space-y-6 text-sm text-[#4A3F38]">
-          {/* 3 Lý Do Yêu Thích — Visual Highlights */}
-          {product.highlights && product.highlights.length > 0 && (
-            <div>
-              <span className="font-serif text-xs font-bold uppercase tracking-[0.18em] text-[#631521] block mb-3">
-                ✦ 3 ĐẶC ĐIỂM NỔI BẬT NHẤT
-              </span>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {product.highlights.map((hl, idx) => {
-                  const Icon = highlightIcons[idx % highlightIcons.length]
-                  return (
-                    <div
-                      key={idx}
-                      className="bg-[#FAF5F0] border border-[#E8DFD5] p-3.5 rounded-[3px] flex flex-col justify-between shadow-xs hover:border-[#D4AF37] transition-colors"
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="w-6 h-6 rounded-full bg-white text-[#631521] border border-[#E8DFD5] flex items-center justify-center shrink-0">
-                          <Icon className="w-3.5 h-3.5 text-[#D4AF37]" />
-                        </span>
-                        <span className="font-serif text-xs font-bold text-[#631521] tracking-wide">
-                          Ưu Điểm 0{idx + 1}
-                        </span>
-                      </div>
-                      <p className="font-sans text-xs text-[#4A3F38] font-normal leading-relaxed">
-                        {hl}
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
           {/* Detailed Description Paragraphs */}
-          <div className="font-sans font-normal text-sm text-[#4A3F38] leading-relaxed space-y-3 pt-2 border-t border-[#F0EAE1]">
+          <div className="font-sans font-normal text-sm text-[#4A3F38] leading-relaxed space-y-3">
             {detailedText ? (
               detailedText.split('\n\n').map((paragraph, i) => (
                 <p key={i} className="leading-relaxed">{paragraph}</p>
@@ -111,7 +66,7 @@ export default function ProductAccordion({ product }) {
       content: (
         <div className="space-y-4 text-sm text-[#4A3F38]">
           <p className="font-normal text-xs sm:text-sm leading-relaxed">
-            Đối với phom dáng sleepwear suông cổ điển châu Âu của QuanNguyenS, bạn có thể dễ dàng đối chiếu số đo cơ thể theo bảng quy chuẩn bên dưới. Nếu nằm giữa 2 size, chúng tôi khuyên bạn nên chọn <strong>size lớn hơn</strong> để có trải nghiệm mặc thư thái nhất.
+            Đối với phom dáng pijama suông cổ điển châu Âu của QuanNguyenS, bạn có thể dễ dàng đối chiếu số đo cơ thể theo bảng quy chuẩn bên dưới. Nếu nằm giữa 2 size, chúng tôi khuyên bạn nên chọn <strong>size lớn hơn</strong> để có trải nghiệm mặc thư thái nhất.
           </p>
 
           {sizeEntries.length > 0 ? (
@@ -160,56 +115,25 @@ export default function ProductAccordion({ product }) {
       ),
     },
 
-    // ─── MỤC 3: CHẤT LIỆU & HƯỚNG DẪN BẢO QUẢN ───────────────────────────
+    // ─── MỤC 3: HƯỚNG DẪN BẢO QUẢN ───────────────────────────────────────
     {
       label: 'HƯỚNG DẪN BẢO QUẢN',
       content: (
-        <div className="space-y-6 text-sm text-[#4A3F38]">
-          {/* Material Overview */}
-          <div>
-            <p className="font-serif font-bold text-[#631521] uppercase text-xs tracking-wider mb-1.5">
-              TIÊU CHUẨN CHẤT LIỆU CAO CẤP
-            </p>
-            <p className="font-normal leading-relaxed mb-3">
-              {product.fabric || 'QuanNguyenS sử dụng chất liệu sợi tự nhiên cao cấp được tuyển chọn kỹ lưỡng.'}{' '}
-              {product.fabricDetail || ''}
-            </p>
-
-            {/* 4 Distinct Badges */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-              <div className="bg-white border border-[#E8DFD5] p-2.5 rounded-[2px] flex items-center gap-2 text-xs text-[#1A1614] shadow-xs">
-                <Leaf className="w-4 h-4 text-[#2E7D32] shrink-0" />
-                <span className="font-medium">100% Tự Nhiên</span>
-              </div>
-              <div className="bg-white border border-[#E8DFD5] p-2.5 rounded-[2px] flex items-center gap-2 text-xs text-[#1A1614] shadow-xs">
-                <BadgeCheck className="w-4 h-4 text-[#D4AF37] shrink-0" />
-                <span className="font-medium">Chuẩn Xuất Khẩu</span>
-              </div>
-              <div className="bg-white border border-[#E8DFD5] p-2.5 rounded-[2px] flex items-center gap-2 text-xs text-[#1A1614] shadow-xs">
-                <Heart className="w-4 h-4 text-[#631521] shrink-0" />
-                <span className="font-medium">Lành Cho Da</span>
-              </div>
-              <div className="bg-white border border-[#E8DFD5] p-2.5 rounded-[2px] flex items-center gap-2 text-xs text-[#1A1614] shadow-xs">
-                <ShieldCheck className="w-4 h-4 text-[#1565C0] shrink-0" />
-                <span className="font-medium">Bền Phom Dáng</span>
-              </div>
-            </div>
-          </div>
-
+        <div className="space-y-4 text-sm text-[#4A3F38]">
           {/* Care Instructions - Laundry Care Symbol Grid */}
-          <div className="pt-4 border-t border-[#E8DFD5]">
+          <div>
             <p className="font-serif font-bold text-[#631521] uppercase text-xs tracking-wider mb-3">
-              KÝ HIỆU & HƯỚNG DẪN GIẶT ỦI CHUẨN QUỐC TẾ
+              HƯỚNG DẪN BẢO QUẢN
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
               {(product.careInstructions || [
-                'Giặt tay hoặc máy chế độ nhẹ (delicate)',
-                'Nước lạnh hoặc ấm — tối đa 30°C',
-                'Không sử dụng chất tẩy mạnh',
-                'Phơi trong bóng mát, tránh ánh nắng trực tiếp',
-                'Không sấy máy — để vải giữ form tự nhiên',
-                'Ủi ở nhiệt độ thấp nếu cần',
+                'Bảo quản nơi khô ráo',
+                'Giặt máy chế độ nhẹ, tốt nhất khi giặt tay',
+                'Không sử dụng chất tẩy quần áo',
+                'Không vắt hoặc xoắn mạnh vì điều này có thể gây ra các nếp nhăn và ảnh hưởng đến độ bền, cấu trúc của vải.',
+                'Không ngâm bột giặt có chất tẩy mạnh để tránh loang màu vải.',
+                'Hạn chế sử dụng máy sấy nóng và ủi ở nhiệt độ thích hợp.',
               ]).map((ins, i) => {
                 const Icon = getCareIcon(ins)
                 return (
@@ -252,90 +176,56 @@ export default function ProductAccordion({ product }) {
             </div>
           )}
 
-          <p className="font-serif font-bold text-[#631521] uppercase text-xs tracking-wider mb-2">
-            CHÍNH SÁCH ĐỔI TRẢ HÀNG & XỬ LÝ ĐƠN HÀNG
-          </p>
-
-          {/* 4 Cards Policy Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            {/* 1. Thay đổi & Hủy đơn hàng trong 1 giờ */}
-            <div className="bg-[#FAF5F0] border border-[#E8DFD5] p-4 rounded-[3px] flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-[#631521] text-white text-xs font-bold font-mono flex items-center justify-center shrink-0">
-                    1h
-                  </span>
-                  <span className="font-serif font-bold text-xs text-[#1A1614] uppercase">
-                    Thay Đổi & Hủy Đơn Hàng
-                  </span>
-                </div>
-                <p className="font-sans text-xs text-[#4A3F38] font-normal leading-relaxed">
-                  Nếu bạn mắc lỗi trong quá trình thanh toán (sai địa chỉ, sai mặt hàng hoặc mã giảm giá không được áp dụng), vui lòng liên hệ trong vòng <strong>1 giờ</strong> kể từ khi đặt hàng để chúng tôi chỉnh sửa trước khi xử lý đơn. Vui lòng không đặt thêm đơn thứ hai để sửa lỗi.
-                </p>
-              </div>
-              <div className="pt-2 mt-2 border-t border-[#E8DFD5]/60 flex items-center gap-1 text-[11px] text-[#631521] font-medium">
-                <Clock className="w-3.5 h-3.5" /> Chỉnh sửa trong vòng 1 giờ
-              </div>
+          <div className="bg-[#FAF5F0] border border-[#E8DFD5] p-5 sm:p-6 rounded-[3px] space-y-4">
+            <div>
+              <p className="font-serif font-bold text-xs uppercase tracking-wider text-[#631521] mb-3">
+                Điều kiện áp dụng:
+              </p>
+              <ul className="space-y-2.5 font-sans text-xs sm:text-sm text-[#4A3F38] leading-relaxed">
+                <li className="flex items-start gap-2">
+                  <span className="text-[#631521] font-bold shrink-0 mt-0.5">•</span>
+                  <span>Sản phẩm nằm trong thời hạn đổi / trả đã quy định</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#631521] font-bold shrink-0 mt-0.5">•</span>
+                  <span>01 đơn hàng áp dụng đổi / trả 01 lần</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#631521] font-bold shrink-0 mt-0.5">•</span>
+                  <span>Sản phẩm còn hoá đơn và nguyên tag mác</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#631521] font-bold shrink-0 mt-0.5">•</span>
+                  <span>Sản phẩm chưa qua sử dụng, giặt tẩy, không dơ bẩn và không có mùi</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#631521] font-bold shrink-0 mt-0.5">•</span>
+                  <span>Không áp dụng cho các sản phẩm phụ kiện</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#631521] font-bold shrink-0 mt-0.5">•</span>
+                  <span>Không áp dụng đổi / trả hàng với các sản phẩm sale đồng giá (99k, 199, 299k, 399k,...) và các sản phẩm sale từ 30% trở lên</span>
+                </li>
+              </ul>
             </div>
 
-            {/* 2. Hàng hóa bị hư hỏng hoặc thiếu */}
-            <div className="bg-[#FAF5F0] border border-[#E8DFD5] p-4 rounded-[3px] flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-[#631521] text-white text-xs font-bold font-mono flex items-center justify-center shrink-0">
-                    24h
-                  </span>
-                  <span className="font-serif font-bold text-xs text-[#1A1614] uppercase">
-                    Hàng Bị Hư Hỏng Hoặc Thiếu?
-                  </span>
-                </div>
-                <p className="font-sans text-xs text-[#4A3F38] font-normal leading-relaxed">
-                  Bạn nhận được hàng bị hư hỏng hoặc thiếu? Vui lòng liên hệ với chúng tôi trong vòng <strong>24 giờ</strong> kể từ khi nhận hàng kèm theo hình ảnh chứng minh. Sau khi xác minh, chúng tôi sẽ gửi lại hàng ngay lập tức bằng dịch vụ chuyển phát nhanh.
-                </p>
-              </div>
-              <div className="pt-2 mt-2 border-t border-[#E8DFD5]/60 flex items-center gap-1 text-[11px] text-[#2E7D32] font-medium">
-                <Truck className="w-3.5 h-3.5" /> Gửi lại bằng chuyển phát nhanh
-              </div>
-            </div>
-
-            {/* 3. Cam kết hài lòng 30 ngày */}
-            <div className="bg-[#FAF5F0] border border-[#E8DFD5] p-4 rounded-[3px] flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-[#631521] text-white text-xs font-bold font-mono flex items-center justify-center shrink-0">
-                    30d
-                  </span>
-                  <span className="font-serif font-bold text-xs text-[#1A1614] uppercase">
-                    Cam Kết Hài Lòng 30 Ngày
-                  </span>
-                </div>
-                <p className="font-sans text-xs text-[#4A3F38] font-normal leading-relaxed">
-                  Chúng tôi cam kết về chất lượng mọi sản phẩm mình sản xuất. Nếu bạn không hài lòng với kết quả trong vòng 30 ngày, hãy liên hệ đội ngũ hỗ trợ để cùng giải quyết. Khoản hoàn tiền chấp thuận sẽ chịu phí xử lý môi trường 15%, phí ship ban đầu không hoàn lại và khách hàng chịu phí ship hàng trả.
-                </p>
-              </div>
-              <div className="pt-2 mt-2 border-t border-[#E8DFD5]/60 flex items-center gap-1 text-[11px] text-[#631521] font-medium">
-                <ShieldCheck className="w-3.5 h-3.5" /> Cam kết chất lượng xưởng
-              </div>
-            </div>
-
-            {/* 4. Xin lưu ý điều kiện bảo hành */}
-            <div className="bg-[#FAF5F0] border border-[#E8DFD5] p-4 rounded-[3px] flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-[#8C7E74] text-white text-xs font-bold font-mono flex items-center justify-center shrink-0">
-                    !
-                  </span>
-                  <span className="font-serif font-bold text-xs text-[#1A1614] uppercase">
-                    Xin Lưu Ý Về Điều Kiện
-                  </span>
-                </div>
-                <p className="font-sans text-xs text-[#4A3F38] font-normal leading-relaxed">
-                  Chính sách bảo hành của chúng tôi chỉ áp dụng cho kết quả đạt được, không bao gồm trường hợp thay đổi sở thích hoặc sản phẩm không được sử dụng đúng hướng dẫn. Chúng tôi đề nghị quý khách dùng thử sản phẩm trước khi yêu cầu hoàn tiền.
-                </p>
-              </div>
-              <div className="pt-2 mt-2 border-t border-[#E8DFD5]/60 flex items-center gap-1 text-[11px] text-[#8C7E74] font-medium">
-                <AlertCircle className="w-3.5 h-3.5" /> Dùng thử trước khi yêu cầu
-              </div>
+            <div className="pt-3 border-t border-[#E8DFD5]">
+              <p className="font-sans font-bold text-xs text-[#631521] leading-relaxed tracking-wide uppercase">
+                LƯU Ý: CHI TIẾT XEM Ở{' '}
+                <Link
+                  to="/chinh-sach?tab=exchange"
+                  className="underline hover:text-[#D4AF37] transition-colors"
+                >
+                  CHÍNH SÁCH ĐỔI HÀNG
+                </Link>{' '}
+                VÀ{' '}
+                <Link
+                  to="/chinh-sach?tab=return"
+                  className="underline hover:text-[#D4AF37] transition-colors"
+                >
+                  CHÍNH SÁCH TRẢ HÀNG
+                </Link>
+              </p>
             </div>
           </div>
         </div>

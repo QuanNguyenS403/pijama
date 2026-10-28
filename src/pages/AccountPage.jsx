@@ -8,7 +8,6 @@ import {
   Package,
   LogOut,
   Mail,
-  ShieldCheck,
   CheckCircle2,
   Clock,
   ExternalLink,
@@ -28,7 +27,7 @@ import Header from '../components/layout/Header'
 import Section12Footer from '../components/sections/Section12Footer'
 import CartDrawer from '../components/cart/CartDrawer'
 import { Toast } from '../components/ui/Toast'
-import { setAccessToken, clearAccessToken } from '../lib/apiClient'
+import { apiPost, setAccessToken, clearAccessToken } from '../lib/apiClient'
 import { clearLocalOrders } from '../lib/orderSync'
 import { loginWithGoogle, setupGoogleSignInButton, decodeGoogleJwt } from '../lib/googleAuth'
 import LoyaltyMemberCard from '../components/loyalty/LoyaltyMemberCard'
@@ -57,6 +56,11 @@ export default function AccountPage() {
   const [authError, setAuthError] = useState(null)
   const [authSubmitting, setAuthSubmitting] = useState(false)
   const [isGisButtonMounted, setIsGisButtonMounted] = useState(false)
+  const [authMode, setAuthMode] = useState('login') // 'login' | 'register' | 'forgot'
+  const [authEmail, setAuthEmail] = useState('')
+  const [authPassword, setAuthPassword] = useState('')
+  const [authFullName, setAuthFullName] = useState('')
+  const [forgotSent, setForgotSent] = useState(false)
   const googleButtonRef = useRef(null)
 
   const navigate = useNavigate()
@@ -151,6 +155,83 @@ export default function AccountPage() {
     } catch (err) {
       setAuthSubmitting(false)
       setAuthError('Lỗi kết nối Google: ' + err.message)
+    }
+  }
+
+  const handleDirectAuth = async (e) => {
+    e.preventDefault()
+    setAuthError(null)
+    setAuthSubmitting(true)
+
+    try {
+      if (authMode === 'login') {
+        const res = await apiPost('/api/auth/login', {
+          email: authEmail.trim(),
+          password: authPassword,
+        })
+        const data = await res.json()
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Email hoặc mật khẩu không chính xác')
+        }
+
+        if (data.accessToken) {
+          setAccessToken(data.accessToken)
+        }
+
+        const loggedUser = data.account || data.user
+        if (loggedUser) {
+          const resolvedAvatar = loggedUser.avatarUrl || loggedUser.avatar_url || null
+          loggedUser.avatarUrl = resolvedAvatar
+          loggedUser.avatar_url = resolvedAvatar
+        }
+        setUser(loggedUser)
+        setVoucher(data.voucher)
+        try {
+          localStorage.setItem('qns_customer_account', JSON.stringify(loggedUser))
+        } catch (_) {}
+        window.dispatchEvent(new CustomEvent('customer_auth_changed', { detail: { user: loggedUser } }))
+        fetchUserOrders()
+        setToast({ productName: `Chào mừng ${loggedUser?.fullName || 'bạn'} trở lại!`, id: Date.now() })
+      } else if (authMode === 'register') {
+        const res = await apiPost('/api/auth/register', {
+          email: authEmail.trim(),
+          password: authPassword,
+          fullName: authFullName.trim(),
+          marketingOptIn: true,
+        })
+        const data = await res.json()
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Đăng ký không thành công')
+        }
+
+        if (data.accessToken) {
+          setAccessToken(data.accessToken)
+        }
+
+        const loggedUser = data.account || data.user
+        if (loggedUser) {
+          const resolvedAvatar = loggedUser.avatarUrl || loggedUser.avatar_url || null
+          loggedUser.avatarUrl = resolvedAvatar
+          loggedUser.avatar_url = resolvedAvatar
+        }
+        setUser(loggedUser)
+        setVoucher(data.voucher)
+        try {
+          localStorage.setItem('qns_customer_account', JSON.stringify(loggedUser))
+        } catch (_) {}
+        window.dispatchEvent(new CustomEvent('customer_auth_changed', { detail: { user: loggedUser } }))
+        fetchUserOrders()
+        setToast({ productName: `Đăng ký thành công! Chào mừng ${loggedUser?.fullName || 'bạn'}.`, id: Date.now() })
+      } else if (authMode === 'forgot') {
+        setForgotSent(true)
+        setToast({ productName: 'Đã tiếp nhận yêu cầu khôi phục', id: Date.now() })
+      }
+    } catch (err) {
+      setAuthError(err.message || 'Có lỗi xảy ra, vui lòng thử lại.')
+    } finally {
+      setAuthSubmitting(false)
     }
   }
 
@@ -367,142 +448,276 @@ export default function AccountPage() {
           /* ─────────────────────────────────────────────────────────── */
           /* CHƯA ĐĂNG NHẬP: GIAO DIỆN CLUB ĐĂNG NHẬP & QUYỀN LỢI        */
           /* ─────────────────────────────────────────────────────────── */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Cột trái: Form Đăng Nhập */}
+          <div className="max-w-[480px] mx-auto">
+            {/* Form Đăng Nhập / Đăng Ký Trực Tiếp Tối Giản */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              className="lg:col-span-7 bg-white p-6 sm:p-10 rounded-[4px] border border-[#E8DFD5] shadow-xs"
+              className="bg-white p-6 sm:p-10 rounded-[4px] border border-[#E8DFD5] shadow-xs"
             >
-              <div className="mb-6">
-                <span className="text-[10px] uppercase tracking-[0.25em] text-[#D4AF37] font-bold block mb-1">
-                  Đặc quyền thành viên
-                </span>
-                <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#1A1614] tracking-tight">
-                  Tài Khoản & Ưu Đãi
-                </h1>
-                <p className="text-xs text-[#8C7E74] mt-1.5 leading-relaxed">
-                  Đăng nhập để nhận ngay Voucher chào mừng 10%, miễn phí vận chuyển trọn đời cho đơn đầu tiên và quản lý lịch sử đơn hàng.
-                </p>
-              </div>
+              {authMode === 'login' && (
+                <form onSubmit={handleDirectAuth}>
+                  <h1 className="text-xl sm:text-2xl font-bold text-[#1A1614] text-center tracking-normal uppercase mb-2">
+                    ĐĂNG NHẬP TÀI KHOẢN
+                  </h1>
+                  <p className="text-xs sm:text-sm text-[#333333] text-center mb-6">
+                    Bạn chưa có tài khoản ?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('register')
+                        setAuthError(null)
+                      }}
+                      className="text-[#1890ff] hover:underline cursor-pointer"
+                    >
+                      Đăng ký tại đây.
+                    </button>
+                  </p>
 
-              {authError && (
-                <div className="p-3 mb-5 bg-[#FDF2F2] border border-[#F8B4B4] rounded-[3px] text-xs text-[#9B1C1C] flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{authError}</span>
-                </div>
+                  {authError && (
+                    <div className="p-3 mb-5 bg-[#FDF2F2] border border-[#F8B4B4] rounded-[2px] text-xs text-[#9B1C1C] flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{authError}</span>
+                    </div>
+                  )}
+
+                  <div className="mb-4">
+                    <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
+                      Email <span className="text-[#e53935]">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={authEmail}
+                      onChange={(e) => setAuthEmail(e.target.value)}
+                      placeholder="Email"
+                      required
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                    />
+                  </div>
+
+                  <div className="mb-2">
+                    <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
+                      Mật khẩu <span className="text-[#e53935]">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={authPassword}
+                      onChange={(e) => setAuthPassword(e.target.value)}
+                      placeholder="Mật khẩu"
+                      required
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                    />
+                  </div>
+
+                  <div className="text-left mb-5">
+                    <p className="text-xs sm:text-sm text-[#4A3F38]">
+                      Quên mật khẩu?{' '}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAuthMode('forgot')
+                          setAuthError(null)
+                          setForgotSent(false)
+                        }}
+                        className="text-[#1890ff] hover:underline cursor-pointer"
+                      >
+                        Nhấn vào đây
+                      </button>
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={authSubmitting}
+                    className="w-full py-3 bg-[#000000] hover:bg-neutral-800 text-white font-medium text-xs sm:text-sm rounded-[2px] transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center"
+                  >
+                    {authSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+                  </button>
+                </form>
+              )}
+
+              {authMode === 'register' && (
+                <form onSubmit={handleDirectAuth}>
+                  <h1 className="text-xl sm:text-2xl font-bold text-[#1A1614] text-center tracking-normal uppercase mb-2">
+                    ĐĂNG KÝ TÀI KHOẢN
+                  </h1>
+                  <p className="text-xs sm:text-sm text-[#333333] text-center mb-6">
+                    Bạn đã có tài khoản ?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('login')
+                        setAuthError(null)
+                      }}
+                      className="text-[#1890ff] hover:underline cursor-pointer"
+                    >
+                      Đăng nhập tại đây.
+                    </button>
+                  </p>
+
+                  {authError && (
+                    <div className="p-3 mb-5 bg-[#FDF2F2] border border-[#F8B4B4] rounded-[2px] text-xs text-[#9B1C1C] flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{authError}</span>
+                    </div>
+                  )}
+
+                  <div className="mb-4">
+                    <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
+                      Họ và tên <span className="text-[#e53935]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={authFullName}
+                      onChange={(e) => setAuthFullName(e.target.value)}
+                      placeholder="Họ và tên"
+                      required
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
+                      Email <span className="text-[#e53935]">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={authEmail}
+                      onChange={(e) => setAuthEmail(e.target.value)}
+                      placeholder="Email"
+                      required
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                    />
+                  </div>
+
+                  <div className="mb-6">
+                    <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
+                      Mật khẩu <span className="text-[#e53935]">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={authPassword}
+                      onChange={(e) => setAuthPassword(e.target.value)}
+                      placeholder="Mật khẩu"
+                      required
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={authSubmitting}
+                    className="w-full py-3 bg-[#000000] hover:bg-neutral-800 text-white font-medium text-xs sm:text-sm rounded-[2px] transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center"
+                  >
+                    {authSubmitting ? 'Đang tạo tài khoản...' : 'Đăng ký'}
+                  </button>
+                </form>
+              )}
+
+              {authMode === 'forgot' && (
+                <form onSubmit={handleDirectAuth}>
+                  <h1 className="text-xl sm:text-2xl font-bold text-[#1A1614] text-center tracking-normal uppercase mb-2">
+                    QUÊN MẬT KHẨU
+                  </h1>
+                  <p className="text-xs sm:text-sm text-[#333333] text-center mb-6">
+                    Bạn đã nhớ mật khẩu ?{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('login')
+                        setAuthError(null)
+                      }}
+                      className="text-[#1890ff] hover:underline cursor-pointer"
+                    >
+                      Đăng nhập tại đây.
+                    </button>
+                  </p>
+
+                  {authError && (
+                    <div className="p-3 mb-5 bg-[#FDF2F2] border border-[#F8B4B4] rounded-[2px] text-xs text-[#9B1C1C] flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{authError}</span>
+                    </div>
+                  )}
+
+                  {forgotSent ? (
+                    <div className="p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-[2px] text-xs text-[#166534] mb-6 leading-relaxed">
+                      <p className="font-semibold mb-1">Đã tiếp nhận yêu cầu!</p>
+                      <p>Vui lòng kiểm tra email của bạn để nhận hướng dẫn khôi phục mật khẩu, hoặc liên hệ Hotline/Zalo: <strong>0867 021 006</strong> để được hỗ trợ tức thì.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mb-6">
+                        <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
+                          Email <span className="text-[#e53935]">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          value={authEmail}
+                          onChange={(e) => setAuthEmail(e.target.value)}
+                          placeholder="Nhập email của bạn"
+                          required
+                          className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={authSubmitting}
+                        className="w-full py-3 bg-[#000000] hover:bg-neutral-800 text-white font-medium text-xs sm:text-sm rounded-[2px] transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center"
+                      >
+                        {authSubmitting ? 'Đang gửi yêu cầu...' : 'Lấy lại mật khẩu'}
+                      </button>
+                    </>
+                  )}
+                </form>
               )}
 
               {/* Quick Google Sign In */}
-              <div className="space-y-4">
-                <div className="w-full flex justify-center items-center min-h-[44px]">
-                  <div
-                    ref={googleButtonRef}
-                    className={isGisButtonMounted ? 'w-full flex justify-center' : 'hidden'}
-                  />
-                  {!isGisButtonMounted && (
-                    <button
-                      type="button"
-                      onClick={handleGoogleSignInClick}
-                      disabled={authSubmitting}
-                      className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-[#D4AF37] bg-[#FAF8F5] hover:bg-white text-[#2C201A] rounded-[2px] text-xs font-bold uppercase tracking-wider transition-all duration-200 shadow-xs cursor-pointer group disabled:opacity-70 active:scale-[0.99]"
-                    >
-                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                        <path
-                          fill="#4285F4"
-                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                        />
-                        <path
-                          fill="#34A853"
-                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                        />
-                        <path
-                          fill="#FBBC05"
-                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                        />
-                        <path
-                          fill="#EA4335"
-                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                        />
-                      </svg>
-                      <span className="group-hover:text-[#631521] transition-colors">
-                        {authSubmitting ? 'Đang kết nối Google...' : 'Đăng nhập nhanh với Google'}
-                      </span>
-                    </button>
-                  )}
+              <div className="relative my-6 text-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[#E8DFD5]" />
                 </div>
+                <span className="relative bg-white px-3 text-[11px] uppercase tracking-wider text-[#8C7E74]">
+                  Hoặc
+                </span>
+              </div>
 
-                <div className="relative my-6 text-center">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-[#E8DFD5]" />
-                  </div>
-                  <span className="relative bg-white px-3 text-[11px] uppercase tracking-wider text-[#8C7E74]">
-                    Hoặc đăng nhập bằng Email & Mật khẩu
-                  </span>
-                </div>
-
-                <div className="pt-4 border-t border-[#E8DFD5] text-center">
-                  <p className="text-xs text-[#8C7E74] mb-2.5">
-                    Bạn muốn bảo vệ tài khoản bằng mật khẩu riêng?
-                  </p>
+              <div className="w-full flex justify-center items-center min-h-[44px]">
+                <div
+                  ref={googleButtonRef}
+                  className={isGisButtonMounted ? 'w-full flex justify-center' : 'hidden'}
+                />
+                {!isGisButtonMounted && (
                   <button
                     type="button"
-                    onClick={() => window.dispatchEvent(new CustomEvent('open_auth_modal'))}
-                    className="w-full py-2.5 px-4 bg-white border border-[#2C201A] text-[#2C201A] hover:bg-[#2C201A] hover:text-white rounded-[2px] text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                    onClick={handleGoogleSignInClick}
+                    disabled={authSubmitting}
+                    className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[#E8DFD5] bg-[#FAF8F5] hover:bg-white text-[#2C201A] rounded-[2px] text-xs font-medium transition-all shadow-2xs cursor-pointer group disabled:opacity-70 active:scale-[0.99]"
                   >
-                    <Lock className="w-3.5 h-3.5 text-[#D4AF37]" />
-                    <span>Đăng nhập hoặc Tạo tài khoản với Mật khẩu</span>
+                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                      />
+                    </svg>
+                    <span className="group-hover:text-[#631521] transition-colors">
+                      {authSubmitting ? 'Đang kết nối Google...' : 'Tiếp tục sử dụng dịch vụ bằng Google'}
+                    </span>
                   </button>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Cột phải: Quyền lợi Thành viên */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="lg:col-span-5 space-y-4"
-            >
-              <div className="bg-[#2C201A] text-white p-6 sm:p-8 rounded-[4px] border border-[#D4AF37]/30 relative overflow-hidden">
-                <div className="absolute top-0 right-0 transform translate-x-4 -translate-y-4 w-32 h-32 bg-[#D4AF37]/10 rounded-full blur-2xl pointer-events-none" />
-
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#D4AF37] text-[10px] font-bold uppercase tracking-widest mb-3">
-                  <Sparkles className="w-3 h-3" /> Privileged Benefits
-                </span>
-
-                <h3 className="font-serif text-xl font-bold text-white mb-2">
-                  Đặc Quyền Thành Viên VIP
-                </h3>
-                <p className="text-xs text-white/70 leading-relaxed mb-6 font-light">
-                  Mỗi khách hàng là một phần trong hành trình tinh tế của QuanNguyenS.
-                </p>
-
-                <div className="space-y-4 text-xs font-light text-white/90">
-                  <div className="flex items-start gap-3">
-                    <Gift className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="font-semibold text-white block">Voucher Chào Mừng 10%</strong>
-                      <span>Giảm ngay 10% và miễn phí vận chuyển cho đơn hàng đầu tiên.</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Truck className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="font-semibold text-white block">Theo Dõi Đơn Hàng Tự Động</strong>
-                      <span>Tra cứu trạng thái vận chuyển Viettel Post và lịch sử đơn hàng tập trung.</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <ShieldCheck className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="font-semibold text-white block">Bảo Mật & Ưu Tiên</strong>
-                      <span>Nhận thông báo bộ sưu tập giới hạn trước khi mở bán công khai.</span>
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             </motion.div>
           </div>

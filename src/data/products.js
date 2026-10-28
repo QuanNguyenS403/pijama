@@ -5,7 +5,7 @@ export const products = [
     id: "the-classic-set",
     slug: "the-classic-set",
     name: "THE DAYBREAK SET",
-    subtitle: "Sleepwear Phong Cách Châu Âu · Sọc Hồng Nắng Sớm",
+    subtitle: "Pijama Phong Cách Châu Âu · Sọc Hồng Nắng Sớm",
     collection: "Thu Đông 2026",
     badge: "MỚI RA MẮT",
     preOrder: {
@@ -14,11 +14,11 @@ export const products = [
       message: 'Hàng đặt trước — Giao hàng dự kiến trong 7-10 ngày làm việc',
     },
 
-    description: `Bộ sleepwear lấy cảm hứng từ phong cách ngủ cổ điển châu Âu với họa tiết Sọc Hồng ngọt ngào — đường viền tương phản tinh tế, cổ áo notch thanh lịch, và phom dáng suông tự do cho cảm giác thoải mái trọn ngày. Mang năng lượng Hỏa ấm áp và rạng rỡ như nắng sớm, khơi dậy nguồn sinh khí tươi mới cho không gian nghỉ ngơi của bạn.`,
+    description: `Bộ pijama lấy cảm hứng từ phong cách ngủ cổ điển châu Âu với họa tiết Sọc Hồng ngọt ngào — đường viền tương phản tinh tế, cổ áo notch thanh lịch, và phom dáng suông tự do cho cảm giác thoải mái trọn ngày. Mang năng lượng Hỏa ấm áp và rạng rỡ như nắng sớm, khơi dậy nguồn sinh khí tươi mới cho không gian nghỉ ngơi của bạn.`,
 
     longDescription: `THE DAYBREAK SET được thiết kế để mang lại cảm giác như đang thức giấc tại một khách sạn boutique 5 sao giữa lòng châu Âu. Họa tiết Sọc Hồng (Pink Stripe) mang sắc thái ấm áp, dịu dàng của hành Hỏa — như những tia nắng sớm đầu ngày tiếp thêm sinh khí và năng lượng tích cực cho tinh thần. Thiết kế suông nhẹ, viền tương phản sắc nét giúp bạn luôn thanh lịch, tự tin diện từ phòng ngủ ra phố hay tiếp khách tại nhà mà không cần đắn đo. Tương sinh và hòa hợp lý tưởng cho người mệnh Hỏa và Thổ.`,
 
-    detailedDescription: `THE DAYBREAK SET lấy cảm hứng từ đồ ngủ của các khách sạn boutique châu Âu — nơi sleepwear không chỉ là trang phục nghỉ ngơi mà là một tuyên ngôn phong cách sống tinh tế.
+    detailedDescription: `THE DAYBREAK SET lấy cảm hứng từ đồ ngủ của các khách sạn boutique châu Âu — nơi pijama không chỉ là trang phục nghỉ ngơi mà là một tuyên ngôn phong cách sống tinh tế.
 
 Thiết kế notch collar (cổ bẻ cổ điển) với viền tương phản trắng sắc nét chạy dọc ve áo, cổ tay và miệng túi — tạo nên dấu ấn thanh lịch đặc trưng. Hàng cúc trước tiệp màu cùng hai túi patch rộng rãi và một túi ngực nhỏ hoàn thiện phom dáng chuẩn mực.
 
@@ -83,12 +83,12 @@ Họa tiết Sọc Hồng (Pink Stripe) biểu trưng cho năng lượng Hỏa �
     fabricDetail: "Định lượng 165 GSM · Dệt thoi vân chéo thoáng khí 4 mùa · Tiêu chuẩn OEKO-TEX Standard 100 an toàn cho da",
 
     careInstructions: [
-      "Giặt tay hoặc máy chế độ nhẹ (delicate)",
-      "Nước lạnh hoặc ấm — tối đa 30°C",
-      "Không sử dụng thuốc tẩy mạnh",
-      "Phơi bóng mát, tránh ánh nắng trực tiếp",
-      "Không sấy máy",
-      "Ủi nhiệt độ thấp nếu cần",
+      "Bảo quản nơi khô ráo",
+      "Giặt máy chế độ nhẹ, tốt nhất khi giặt tay",
+      "Không sử dụng chất tẩy quần áo",
+      "Không vắt hoặc xoắn mạnh vì điều này có thể gây ra các nếp nhăn và ảnh hưởng đến độ bền, cấu trúc của vải.",
+      "Không ngâm bột giặt có chất tẩy mạnh để tránh loang màu vải.",
+      "Hạn chế sử dụng máy sấy nóng và ủi ở nhiệt độ thích hợp.",
     ],
 
     returnPolicy: "Hỗ trợ đổi trả trong 30 ngày — Áp dụng theo chính sách đổi trả & cam kết chất lượng QuanNguyenS — Liên hệ hotline 0981 753 082",
@@ -117,7 +117,7 @@ Họa tiết Sọc Hồng (Pink Stripe) biểu trưng cho năng lượng Hỏa �
     id: 'the-cafe-look',
     slug: 'the-cafe-look',
     name: 'THE STILLWATER SET',
-    subtitle: 'Sleepwear Thiết Kế Cổ V · Caro Navy Tĩnh Tại',
+    subtitle: 'Pijama Thiết Kế Cổ V · Caro Navy Tĩnh Tại',
     collection: 'Thu Đông 2026',
     badge: 'BÁN CHẠY NHẤT',
 
@@ -175,11 +175,11 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
         hex: "#222636",
         patternPreview: true,
         patternType: "plaid",
-        stock: { S: 50, L: 50 },
+        stock: { S: 50, M: 50 },
       },
     ],
 
-    sizes: ['S', 'L'],
+    sizes: ['S', 'M'],
     sizeGuide: {
       S: {
         shirtLength: '66 cm',
@@ -189,7 +189,7 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
         thigh: '64 cm',
         trouserLength: '98 cm',
       },
-      L: {
+      M: {
         shirtLength: '68 cm',
         chest: '132 cm',
         sleeveLength: '55 cm',
@@ -201,12 +201,12 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
     fabric: '95% Modal Sợi Gỗ Tự Nhiên & 5% Spandex Cao Cấp',
     fabricDetail: 'Định lượng 180 GSM · Xử lý vi sinh xoa mềm bề mặt · Cảm giác mướt mát, chống nhăn tự nhiên',
     careInstructions: [
-      'Giặt tay hoặc máy chế độ nhẹ (delicate)',
-      'Nước lạnh hoặc ấm — tối đa 30°C',
-      'Không sử dụng chất tẩy mạnh hoặc thuốc tẩy trắng',
-      'Phơi trong bóng mát, tránh ánh nắng trực tiếp',
-      'Không sấy máy — để vải giữ form tự nhiên',
-      'Ủi ở nhiệt độ thấp nếu cần — vải sẽ tự rũ đẹp khi mặc',
+      "Bảo quản nơi khô ráo",
+      "Giặt máy chế độ nhẹ, tốt nhất khi giặt tay",
+      "Không sử dụng chất tẩy quần áo",
+      "Không vắt hoặc xoắn mạnh vì điều này có thể gây ra các nếp nhăn và ảnh hưởng đến độ bền, cấu trúc của vải.",
+      "Không ngâm bột giặt có chất tẩy mạnh để tránh loang màu vải.",
+      "Hạn chế sử dụng máy sấy nóng và ủi ở nhiệt độ thích hợp.",
     ],
     returnPolicy: 'Hỗ trợ đổi trả trong 30 ngày — Áp dụng theo chính sách đổi trả & cam kết chất lượng QuanNguyenS — Liên hệ hotline 0981 753 082',
     highlights: [
@@ -221,7 +221,7 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
     id: 'the-evening-edit',
     slug: 'the-evening-edit',
     name: 'THE HEARTH SET',
-    subtitle: 'Sleepwear Wide-Leg Cao Cấp · Sọc Nâu Vững Chãi',
+    subtitle: 'Pijama Wide-Leg Cao Cấp · Sọc Nâu Vững Chãi',
     collection: 'Thu Đông 2026',
     badge: 'PHIÊN BẢN GIỚI HẠN',
     preOrder: {
@@ -294,12 +294,12 @@ Họa tiết Sọc Nâu mocha (Brown Stripe) đại diện cho năng lượng h�
     fabric: '100% Tencel Lyocell Thượng Hạng Dáng Rủ',
     fabricDetail: 'Định lượng 190 GSM · Dệt bóng mờ tone-on-tone sang trọng · Thấm hút gấp 1.5 lần cotton, mềm rũ tự nhiên',
     careInstructions: [
-      'Giặt tay nhẹ nhàng',
-      'Nước lạnh dưới 25°C',
-      'Không sử dụng chất tẩy mạnh',
-      'Phơi trong bóng mát',
-      'Không sấy khô',
-      'Ủi nhiệt độ thấp nhất',
+      "Bảo quản nơi khô ráo",
+      "Giặt máy chế độ nhẹ, tốt nhất khi giặt tay",
+      "Không sử dụng chất tẩy quần áo",
+      "Không vắt hoặc xoắn mạnh vì điều này có thể gây ra các nếp nhăn và ảnh hưởng đến độ bền, cấu trúc của vải.",
+      "Không ngâm bột giặt có chất tẩy mạnh để tránh loang màu vải.",
+      "Hạn chế sử dụng máy sấy nóng và ủi ở nhiệt độ thích hợp.",
     ],
     returnPolicy: 'Hỗ trợ đổi trả trong 30 ngày — Áp dụng theo chính sách đổi trả & cam kết chất lượng QuanNguyenS — Liên hệ hotline 0981 753 082',
     highlights: [

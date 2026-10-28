@@ -5,15 +5,15 @@ export const PAYMENT_METHODS = [
     value: "COD",
     label: "Thanh toán khi nhận hàng (COD)",
     icon: "🚚",
-    description: "Trả tiền mặt cho nhân viên giao hàng khi nhận được sản phẩm",
+    description: "\n",
   },
   {
     value: "BANK_TRANSFER",
-    label: "Chuyển khoản VietQR / Napas 247",
+    label: "Chuyển khoản qua QR ",
     icon: "🏦",
     discountPercent: 10,
     badge: "Giảm 10% trực tiếp",
-    description: "Quét mã VietQR chuẩn Napas 24/7 tiện lợi — Nhận ngay ưu đãi GIẢM 10% trên tổng giá trị đơn hàng",
+    description: "Thanh toán bằng QR — Nhận ngay ưu đãi GIẢM 10% trên tổng giá trị đơn hàng",
     bankInfo: {
       bankName: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BANK_NAME) || "Vietcombank (Ngân hàng TMCP Ngoại thương Việt Nam)",
       bankCode: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BANK_CODE) || "VCB",
