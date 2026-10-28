@@ -15,7 +15,6 @@ import {
   Clock,
   Lock,
   AlertTriangle,
-  Sparkles,
   Bot,
   ShoppingBag,
 } from 'lucide-react'
@@ -407,43 +406,13 @@ export default function BankTransferPaymentPage() {
                   </p>
                 </div>
 
-                {/* Hướng dẫn 2 bước hoàn tất thanh toán (Rõ ràng & Minh bạch) */}
-                <div className="bg-[#FAF5F0] border border-[#D4AF37]/60 p-4 rounded-[4px] space-y-2.5 text-xs font-sans text-[#4A3F38] shadow-xs">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <span className="font-bold text-[#631521] uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                      <Clock className="w-4 h-4 text-[#D4AF37]" />
-                      HƯỚNG DẪN HOÀN TẤT ĐƠN HÀNG (HẠN THANH TOÁN 5 PHÚT)
-                    </span>
-                    <span className="text-[11px] font-mono text-[#8C7E74]">Mã đơn: #{orderId}</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-0.5">
-                    <div className="bg-white p-3 rounded-[3px] border border-[#E8DFD5] flex items-start gap-2.5">
-                      <span className="w-5 h-5 rounded-full bg-[#631521] text-[#FAF8F5] flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">1</span>
-                      <p className="leading-snug">
-                        Mở app ngân hàng, quét mã QR và hoàn tất chuyển tiền (Nội dung: <strong>{transferContent}</strong>).
-                      </p>
-                    </div>
-                    <div className="bg-white p-3 rounded-[3px] border border-[#E8DFD5] flex items-start gap-2.5">
-                      <span className="w-5 h-5 rounded-full bg-[#631521] text-[#FAF8F5] flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">2</span>
-                      <p className="leading-snug">
-                        Sau khi chuyển tiền, bấm nút <strong>"TÔI ĐÃ CHUYỂN KHOẢN THÀNH CÔNG"</strong> bên dưới để hoàn tất đơn hàng.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
                 {/* BOX 1: HƯỚNG DẪN CHUYỂN KHOẢN VIETQR (1 LẦN) */}
                 <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="bg-[#FAF5F0] border-2 border-[#D4AF37]/50 rounded-[4px] p-5 sm:p-6 space-y-4 shadow-sm"
                 >
-                  <div className="flex items-center justify-between border-b border-[#E8DFD5] pb-3 flex-wrap gap-2">
-                    <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#631521] flex items-center gap-1.5">
-                      <QrCode className="w-4 h-4 text-[#631521]" />
-                      Mã QR Napas 24/7 AI (Miễn Phí 100% - Giảm 10%)
-                    </span>
-                    
+                  <div className="flex items-center justify-end border-b border-[#E8DFD5] pb-3 flex-wrap gap-2">
                     {/* Countdown Timer Badge */}
                     <div className="flex items-center gap-2">
                       <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded border ${
@@ -525,9 +494,6 @@ export default function BankTransferPaymentPage() {
                             className="w-full h-full object-contain"
                           />
                         </div>
-                        <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-semibold mt-1.5 inline-flex items-center gap-1">
-                          <Sparkles className="w-3 h-3 text-emerald-600" /> Chuẩn NAPAS 24/7 • 0đ Phí
-                        </span>
                       </div>
 
                       {/* Bank info fields */}
@@ -593,9 +559,6 @@ export default function BankTransferPaymentPage() {
                     </div>
                   )}
 
-                  <p className="text-[0.7rem] text-[#8C7E74] italic text-center pt-1 border-t border-[#E8DFD5]">
-                    * Quý khách vui lòng nhập đúng <strong>Nội dung chuyển khoản ({transferContent})</strong> trên ứng dụng ngân hàng để hoàn tất đơn hàng nhanh chóng.
-                  </p>
                 </motion.div>
 
                 {/* BOX 2: TÓM TẮT ĐƠN HÀNG */}
@@ -687,26 +650,6 @@ export default function BankTransferPaymentPage() {
                       </p>
                     </div>
                   ) : null}
-
-                  {/* HƯỚNG DẪN THANH TOÁN TỰ ĐỘNG HOÀN TOÀN (WP7 - Không cần thao tác) */}
-                  <div className="bg-[#FAF5F0] border border-[#D4AF37]/50 rounded-[4px] p-4 text-center space-y-2 shadow-xs">
-                    <div className="flex items-center justify-center gap-2 text-[#631521] font-serif font-bold text-xs uppercase tracking-wider">
-                      <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-                      <span>XÁC NHẬN THANH TOÁN TỰ ĐỘNG 24/7</span>
-                    </div>
-                    <p className="text-xs text-[#4A3F38] leading-relaxed max-w-md mx-auto">
-                      Quý khách chỉ cần mở ứng dụng ngân hàng quét mã QR và chuyển khoản. 
-                      <strong> Hệ thống sẽ tự động xác nhận đơn hàng qua biến động số dư ngân hàng, bạn không cần phải bấm bất kỳ thao tác nào.</strong>
-                    </p>
-                  </div>
-
-                  {/* Cảnh báo khi cầu nối email đang chậm (WP7) */}
-                  {!bridgeHealthy && (
-                    <div className="p-3 bg-[#FFF8E1] border border-[#FFE082] rounded-[3px] text-xs text-[#B45309] text-center flex items-center justify-center gap-2">
-                      <AlertTriangle className="w-4 h-4 shrink-0 text-[#EA580C]" />
-                      <span>Hệ thống đối soát đang chậm; đơn sẽ được xác nhận ngay khi ngân hàng báo tiền hoặc bởi cửa hàng. Hotline 0981 753 082.</span>
-                    </div>
-                  )}
 
                   <button
                     type="button"

@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 import { getDb } from './accountDb.js'
-import { RegisterDtoSchema, LoginDtoSchema, SendOtpDtoSchema, VerifyOtpDtoSchema, validateBody } from './authDto.js'
+import { RegisterDtoSchema, RegisterRequestOtpDtoSchema, RegisterVerifyOtpDtoSchema, LoginDtoSchema, SendOtpDtoSchema, VerifyOtpDtoSchema, ForgotPasswordDtoSchema, ResetPasswordDtoSchema, validateBody } from './authDto.js'
 import { hashPassword, verifyPassword } from './passwordService.js'
 import { cacheSet, cacheGet, cacheDel, checkRateLimit } from './cacheService.js'
 import {
@@ -15,7 +15,7 @@ import {
 import { verifyTurnstileToken } from './turnstileService.js'
 import { logSecurityAudit } from './auditLogger.js'
 import { parseCookies, setCustomerSessionCookie, clearCustomerSessionCookie } from './customerSessionMiddleware.js'
-import { sendVerificationCodeEmail, sendWelcomeVoucherEmail } from './emailAccount.js'
+import { sendVerificationCodeEmail, sendWelcomeVoucherEmail, sendPasswordResetOtpEmail } from './emailAccount.js'
 import { createWelcomeVoucher, createCustomerSession } from './accountDb.js'
 
 /**
@@ -184,6 +184,271 @@ export function registerEnterpriseAuthEndpoints(app) {
       console.error('Lỗi API Register:', err)
       logSecurityAudit({ action: 'REGISTER_ERROR', status: 'FAILURE', ip, userAgent, details: err.message })
       return res.status(500).json({ success: false, error: 'Đã có lỗi xảy ra trong quá trình đăng ký tài khoản.' })
+    }
+  })
+
+  // ── 1.1 YÊU CẦU MÃ XÁC THỰC EMAIL ĐĂNG KÝ (OTP) ───────────────
+  app.post('/api/auth/register/request-otp', validateBody(RegisterRequestOtpDtoSchema), async (req, res) => {
+    const ip = getClientIp(req)
+    const userAgent = getUserAgent(req)
+    const { email, password, fullName, phone, marketingOptIn, turnstileToken } = req.validatedBody
+
+    try {
+      // A. Rate limiting (tối đa 5 lần gửi OTP / 10 phút / IP)
+      const rl = await checkRateLimit(`reg_otp:${ip}`, 5, 600)
+      if (!rl.allowed) {
+        logSecurityAudit({ action: 'REGISTER_OTP_RATE_LIMITED', status: 'BLOCKED', ip, userAgent })
+        return res.status(429).json({
+          success: false,
+          error: `Bạn đã yêu cầu gửi mã quá nhiều lần. Vui lòng thử lại sau ${rl.retryAfter} giây.`,
+        })
+      }
+
+      // B. Xác thực Turnstile Captcha nếu có
+      const turnstileCheck = await verifyTurnstileToken(turnstileToken, ip)
+      if (!turnstileCheck.success) {
+        return res.status(400).json({ success: false, error: turnstileCheck.error })
+      }
+
+      const db = getDb()
+
+      // C. Kiểm tra email đã tồn tại hay chưa
+      const existingUser = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(email)
+      if (existingUser) {
+        logSecurityAudit({
+          action: 'REGISTER_DUPLICATE_EMAIL',
+          status: 'FAILURE',
+          ip,
+          userAgent,
+          details: { email },
+        })
+        return res.status(409).json({
+          success: false,
+          error: 'Email này đã được đăng ký tài khoản. Quý khách vui lòng chọn Đăng nhập hoặc Quên mật khẩu.',
+        })
+      }
+
+      // D. Băm mật khẩu bằng Argon2id
+      const passwordHash = await hashPassword(password)
+
+      // E. Tạo mã OTP ngẫu nhiên 6 chữ số
+      const code = Math.floor(100000 + Math.random() * 900000).toString()
+
+      // F. Lưu dữ liệu đăng ký tạm vào cache trong 10 phút (600 giây)
+      const cacheKey = `pending_reg:${email.toLowerCase()}`
+      await cacheSet(
+        cacheKey,
+        JSON.stringify({
+          fullName,
+          email: email.toLowerCase(),
+          passwordHash,
+          phone: phone || null,
+          marketingOptIn: Boolean(marketingOptIn),
+          code,
+          attempts: 0,
+          createdAt: Date.now(),
+        }),
+        600
+      )
+
+      // G. Gửi email chứa mã xác thực tới người dùng
+      try {
+        await sendVerificationCodeEmail({ to: email, code, name: fullName || 'Quý khách' })
+      } catch (eErr) {
+        console.error('Lỗi khi gửi email xác thực đăng ký:', eErr)
+      }
+      console.log(`[QNS-REG-OTP] Mã xác nhận đăng ký cho ${email}: ${code}`)
+
+      logSecurityAudit({
+        action: 'REGISTER_OTP_SENT',
+        status: 'SUCCESS',
+        ip,
+        userAgent,
+        details: { email },
+      })
+
+      return res.json({
+        success: true,
+        message: `Mã xác nhận 6 chữ số đã được gửi đến email ${email}. Vui lòng kiểm tra hộp thư của bạn.`,
+        email,
+        expiresIn: 600,
+      })
+    } catch (err) {
+      console.error('Lỗi API Register Request OTP:', err)
+      return res.status(500).json({ success: false, error: 'Đã có lỗi xảy ra khi gửi mã xác thực.' })
+    }
+  })
+
+  // ── 1.2 XÁC THỰC MÃ OTP & HOÀN TẤT ĐĂNG KÝ TỰ ĐỘNG ĐĂNG NHẬP ───
+  app.post('/api/auth/register/verify-otp', validateBody(RegisterVerifyOtpDtoSchema), async (req, res) => {
+    const ip = getClientIp(req)
+    const userAgent = getUserAgent(req)
+    const { email, code } = req.validatedBody
+
+    try {
+      const cacheKey = `pending_reg:${email.toLowerCase()}`
+      const rawData = await cacheGet(cacheKey)
+
+      if (!rawData) {
+        return res.status(400).json({
+          success: false,
+          error: 'Mã xác nhận đã hết hạn hoặc không tồn tại. Quý khách vui lòng thực hiện đăng ký lại.',
+        })
+      }
+
+      let data
+      try {
+        data = typeof rawData === 'string' ? JSON.parse(rawData) : rawData
+      } catch (_) {
+        data = rawData
+      }
+
+      if (data.attempts >= 5) {
+        await cacheDel(cacheKey)
+        return res.status(400).json({
+          success: false,
+          error: 'Bạn đã nhập sai mã xác nhận quá 5 lần. Vui lòng thực hiện lại từ đầu.',
+        })
+      }
+
+      if (String(data.code).trim() !== String(code).trim()) {
+        data.attempts = (data.attempts || 0) + 1
+        await cacheSet(cacheKey, JSON.stringify(data), 600)
+        logSecurityAudit({
+          action: 'REGISTER_OTP_WRONG',
+          status: 'FAILURE',
+          ip,
+          userAgent,
+          details: { email, attempts: data.attempts },
+        })
+        return res.status(400).json({
+          success: false,
+          error: `Mã xác nhận không chính xác. Bạn còn ${5 - data.attempts} lần thử.`,
+        })
+      }
+
+      // Mã khớp! Xóa cache tạm
+      await cacheDel(cacheKey)
+
+      const db = getDb()
+      // Kiểm tra lại chống race condition
+      const existingUser = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(email.toLowerCase())
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          error: 'Email này đã được đăng ký tài khoản. Vui lòng đăng nhập.',
+        })
+      }
+
+      const userId = `usr_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`
+      const now = new Date().toISOString()
+
+      // 1. Lưu vào bảng users (đã xác thực email -> verified = 1)
+      db.prepare(`
+        INSERT INTO users (
+          id, email, password_hash, full_name, phone, role, status, verified, marketing_email_opt_in, marketing_opt_in_at, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, 'customer', 'active', 1, ?, ?, ?, ?)
+      `).run(
+        userId,
+        email.toLowerCase(),
+        data.passwordHash,
+        data.fullName,
+        data.phone || null,
+        data.marketingOptIn ? 1 : 0,
+        data.marketingOptIn ? now : null,
+        now,
+        now
+      )
+
+      // 2. Lưu vào enterprise_accounts
+      const entAccountId = `eacc_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`
+      db.prepare(`
+        INSERT INTO enterprise_accounts (id, user_id, provider, provider_account_id, email, created_at, updated_at)
+        VALUES (?, ?, 'local', ?, ?, ?, ?)
+      `).run(entAccountId, userId, userId, email.toLowerCase(), now, now)
+
+      // 3. Đồng bộ sang bảng accounts (verified = 1)
+      db.prepare(`
+        INSERT INTO accounts (
+          id, method, email, phone, full_name, verified, marketing_email_opt_in, marketing_opt_in_at, status, created_at, updated_at
+        ) VALUES (?, 'local', ?, ?, ?, 1, ?, ?, 'active', ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          email = excluded.email,
+          full_name = excluded.full_name,
+          phone = excluded.phone,
+          marketing_email_opt_in = excluded.marketing_email_opt_in,
+          verified = 1,
+          updated_at = excluded.updated_at
+      `).run(
+        userId,
+        email.toLowerCase(),
+        data.phone || null,
+        data.fullName,
+        data.marketingOptIn ? 1 : 0,
+        data.marketingOptIn ? now : null,
+        now,
+        now
+      )
+
+      // 4. Đồng bộ account_identities
+      try {
+        db.prepare(`
+          INSERT OR IGNORE INTO account_identities (id, account_id, provider, provider_subject, email, created_at)
+          VALUES (?, ?, 'local', ?, ?, ?)
+        `).run(`ident_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`, userId, userId, email.toLowerCase(), now)
+      } catch (_) {}
+
+      // 5. Cấp voucher chào mừng WELCOME10
+      let voucherCode = 'WELCOME10'
+      try {
+        const welcomeVoucher = createWelcomeVoucher(userId)
+        voucherCode = welcomeVoucher?.code || 'WELCOME10'
+      } catch (_) {}
+
+      // 6. Khởi tạo phiên & tokens (tự động đăng nhập luôn không cần đăng nhập lại)
+      const user = { id: userId, email: email.toLowerCase(), full_name: data.fullName, role: 'customer' }
+      const tokens = await createSessionAndTokens(user, { ip, userAgent })
+
+      setRefreshTokenCookie(res, tokens.refreshToken)
+      setCustomerSessionCookie(res, tokens.refreshToken)
+
+      createCustomerSession({
+        accountId: userId,
+        token: tokens.refreshToken,
+        ip,
+        userAgent,
+      })
+
+      logSecurityAudit({
+        userId,
+        action: 'REGISTER_VERIFIED_SUCCESS',
+        status: 'SUCCESS',
+        ip,
+        userAgent,
+        details: { email: email.toLowerCase() },
+      })
+
+      const userPayload = {
+        id: userId,
+        email: email.toLowerCase(),
+        fullName: data.fullName,
+        full_name: data.fullName,
+        role: 'customer',
+        voucherCode,
+        verified: true,
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: 'Đăng ký và xác thực tài khoản thành công! Bạn đã được tự động đăng nhập vào hệ thống.',
+        user: userPayload,
+        account: userPayload,
+        accessToken: tokens.accessToken,
+        expiresIn: tokens.expiresIn,
+      })
+    } catch (err) {
+      console.error('Lỗi API Register Verify OTP:', err)
+      return res.status(500).json({ success: false, error: 'Đã có lỗi xảy ra trong quá trình xác thực tài khoản.' })
     }
   })
 
@@ -451,4 +716,223 @@ export function registerEnterpriseAuthEndpoints(app) {
     })
   })
 
+  // ── 6. QUÊN MẬT KHẨU - GỬI MÃ OTP QUA GMAIL ──────────────────
+  app.post('/api/auth/password/forgot', validateBody(ForgotPasswordDtoSchema), async (req, res) => {
+    const ip = getClientIp(req)
+    const userAgent = getUserAgent(req)
+    const { email, turnstileToken } = req.validatedBody
+
+    try {
+      // Rate limiting: 5 lần trong 10 phút
+      const rl = await checkRateLimit(`pwd_forgot:${email}`, 5, 600)
+      if (!rl.allowed) {
+        return res.status(429).json({
+          success: false,
+          error: `Bạn đã yêu cầu gửi mã quá nhiều lần. Vui lòng thử lại sau ${rl.retryAfter} giây.`,
+        })
+      }
+
+      const turnstileCheck = await verifyTurnstileToken(turnstileToken, ip)
+      if (!turnstileCheck.success) {
+        return res.status(400).json({ success: false, error: turnstileCheck.error })
+      }
+
+      const db = getDb()
+      const user = db.prepare('SELECT id, email, full_name FROM users WHERE LOWER(email) = ?').get(email)
+
+      if (!user) {
+        logSecurityAudit({
+          action: 'PASSWORD_RESET_USER_NOT_FOUND',
+          status: 'FAILURE',
+          ip,
+          userAgent,
+          details: { email },
+        })
+        return res.status(404).json({
+          success: false,
+          error: 'Địa chỉ email này chưa được đăng ký tài khoản tại QuanNguyenS.',
+        })
+      }
+
+      // Sinh OTP 6 chữ số
+      const otpCode = crypto.randomInt(100000, 999999).toString()
+
+      // Lưu vào cache với TTL 10 phút (600 giây) kèm attempts: 0
+      const cacheKey = `otp:reset_password:${email}`
+      await cacheSet(cacheKey, JSON.stringify({ code: otpCode, attempts: 0 }), 600)
+
+      // Gửi email qua Gmail
+      try {
+        await sendPasswordResetOtpEmail({
+          to: user.email,
+          code: otpCode,
+          name: user.full_name || 'Quý khách',
+        })
+      } catch (mailErr) {
+        console.warn('⚠️ [GMAIL NOT SENT] Lỗi gửi email OTP đặt lại mật khẩu:', mailErr.message)
+      }
+
+      // Log mã ra terminal để phục vụ dev/test/fallback an toàn
+      console.log(`🔑 [PASSWORD RESET OTP] Mã xác nhận gửi tới ${user.email}: ${otpCode}`)
+
+      logSecurityAudit({
+        userId: user.id,
+        action: 'PASSWORD_RESET_OTP_SENT',
+        status: 'SUCCESS',
+        ip,
+        userAgent,
+        details: { email: user.email },
+      })
+
+      return res.json({
+        success: true,
+        message: `Mã xác nhận 6 chữ số đã được gửi đến Gmail ${user.email}. Vui lòng kiểm tra hộp thư của bạn.`,
+        email: user.email,
+        expiresIn: 600,
+      })
+    } catch (err) {
+      console.error('Lỗi API Forgot Password:', err)
+      return res.status(500).json({ success: false, error: 'Đã có lỗi xảy ra khi xử lý yêu cầu.' })
+    }
+  })
+
+  // ── 7. XÁC MINH MÃ OTP TỪ GMAIL ───────────────────────────────
+  app.post('/api/auth/password/verify-otp', async (req, res) => {
+    const ip = getClientIp(req)
+    const userAgent = getUserAgent(req)
+    const email = (req.body?.email || '').trim().toLowerCase()
+    const code = (req.body?.code || '').trim()
+
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ success: false, error: 'Email không hợp lệ.' })
+    }
+    if (!code || !/^\d{6}$/.test(code)) {
+      return res.status(400).json({ success: false, error: 'Mã xác nhận phải gồm chính xác 6 chữ số.' })
+    }
+
+    try {
+      const cacheKey = `otp:reset_password:${email}`
+      const rawData = await cacheGet(cacheKey)
+
+      if (!rawData) {
+        return res.status(400).json({
+          success: false,
+          error: 'Mã xác nhận đã hết hạn hoặc không tồn tại. Vui lòng bấm Lấy lại mật khẩu để nhận mã mới.',
+        })
+      }
+
+      let data
+      try {
+        data = typeof rawData === 'string' ? JSON.parse(rawData) : rawData
+      } catch (_) {
+        data = { code: String(rawData), attempts: 0 }
+      }
+
+      if (data.attempts >= 5) {
+        await cacheDel(cacheKey)
+        return res.status(400).json({
+          success: false,
+          error: 'Bạn đã nhập sai mã quá 5 lần. Vui lòng yêu cầu mã mới.',
+        })
+      }
+
+      if (String(data.code).trim() !== String(code).trim()) {
+        data.attempts = (data.attempts || 0) + 1
+        await cacheSet(cacheKey, JSON.stringify(data), 600)
+        logSecurityAudit({
+          action: 'PASSWORD_RESET_OTP_WRONG',
+          status: 'FAILURE',
+          ip,
+          userAgent,
+          details: { email, attempts: data.attempts },
+        })
+        return res.status(400).json({
+          success: false,
+          error: `Mã xác nhận không chính xác. Bạn còn ${5 - data.attempts} lần thử.`,
+        })
+      }
+
+      // Mã chính xác! Xóa OTP chống replay attack
+      await cacheDel(cacheKey)
+
+      // Cấp resetToken tạm thời có thời hạn 15 phút (900 giây)
+      const resetToken = `rst_${Date.now()}_${crypto.randomBytes(24).toString('hex')}`
+      await cacheSet(`reset_token:${resetToken}`, email, 900)
+
+      logSecurityAudit({
+        action: 'PASSWORD_RESET_OTP_VERIFIED',
+        status: 'SUCCESS',
+        ip,
+        userAgent,
+        details: { email },
+      })
+
+      return res.json({
+        success: true,
+        message: 'Xác nhận mã thành công! Vui lòng tạo mật khẩu mới.',
+        resetToken,
+      })
+    } catch (err) {
+      console.error('Lỗi API Verify Reset OTP:', err)
+      return res.status(500).json({ success: false, error: 'Lỗi xác minh mã.' })
+    }
+  })
+
+  // ── 8. THIẾT LẬP MẬT KHẨU MỚI & HOÀN TẤT ─────────────────────
+  app.post('/api/auth/password/reset', validateBody(ResetPasswordDtoSchema), async (req, res) => {
+    const ip = getClientIp(req)
+    const userAgent = getUserAgent(req)
+    const { resetToken, newPassword } = req.validatedBody
+
+    try {
+      const email = await cacheGet(`reset_token:${resetToken}`)
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          error: 'Phiên đổi mật khẩu đã hết hạn hoặc không hợp lệ. Vui lòng thực hiện lại từ đầu.',
+        })
+      }
+
+      const db = getDb()
+      const user = db.prepare('SELECT id, email, full_name FROM users WHERE LOWER(email) = ?').get(email.toLowerCase())
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          error: 'Không tìm thấy tài khoản người dùng tương ứng.',
+        })
+      }
+
+      // Băm mật khẩu mới bằng Argon2id chuẩn OWASP
+      const passwordHash = await hashPassword(newPassword)
+      const now = new Date().toISOString()
+
+      // Cập nhật users
+      db.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?').run(passwordHash, now, user.id)
+
+      // Thu hồi các phiên đăng nhập cũ để bảo đảm an toàn
+      try {
+        db.prepare('UPDATE enterprise_sessions SET is_revoked = 1, revoked_at = ? WHERE user_id = ?').run(now, user.id)
+      } catch (_) {}
+
+      // Xóa resetToken sau khi dùng
+      await cacheDel(`reset_token:${resetToken}`)
+
+      logSecurityAudit({
+        userId: user.id,
+        action: 'PASSWORD_RESET_SUCCESS',
+        status: 'SUCCESS',
+        ip,
+        userAgent,
+        details: { email },
+      })
+
+      return res.json({
+        success: true,
+        message: 'Đặt lại mật khẩu thành công! Quý khách vui lòng đăng nhập lại bằng mật khẩu mới.',
+      })
+    } catch (err) {
+      console.error('Lỗi API Reset Password:', err)
+      return res.status(500).json({ success: false, error: 'Lỗi khi cập nhật mật khẩu.' })
+    }
+  })
 }

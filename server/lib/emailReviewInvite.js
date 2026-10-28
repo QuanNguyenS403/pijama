@@ -98,7 +98,7 @@ export async function sendReviewInviteEmail(order, options = {}) {
                     QuanNguyenS
                   </span>
                   <span style="display: block; font-size: 11px; color: #D4AF37; letter-spacing: 0.25em; text-transform: uppercase; margin-top: 4px;">
-                    Style To Be Lived In
+                    Style to be lived in
                   </span>
                 </td>
               </tr>

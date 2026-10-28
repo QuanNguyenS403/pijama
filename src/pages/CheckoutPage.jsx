@@ -3,9 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ChevronLeft,
-  ShieldCheck,
-  Truck,
-  RotateCcw,
   AlertCircle,
   Loader2,
   Check,
@@ -873,21 +870,6 @@ export default function CheckoutPage() {
                   </p>
                 </div>
 
-                {/* Trust Badges */}
-                <div className="bg-white p-5 rounded-[4px] border border-[#E8DFD5] space-y-3.5 text-xs font-sans text-[#4A3F38]">
-                  <div className="flex items-center gap-3">
-                    <Truck className="w-5 h-5 text-[#631521] shrink-0" />
-                    <span>Giao hàng trong&nbsp;2–4 ngày&nbsp;</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <RotateCcw className="w-5 h-5 text-[#631521] shrink-0" />
-                    <span>Hỗ trợ đổi trả trong <strong>30 ngày</strong> — Cam kết chất lượng</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <ShieldCheck className="w-5 h-5 text-[#631521] shrink-0" />
-                    <span>Chất liệu tự nhiên cao cấp, kiểm định chất lượng nghiêm ngặt</span>
-                  </div>
-                </div>
               </div>
             </div>
           </form>

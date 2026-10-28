@@ -43,7 +43,7 @@ const baseStyles = `
 const renderHeader = () => `
   <div class="header">
     <div class="logo">QuanNguyenS</div>
-    <div class="tag">Dressed for Life. Even at Home.</div>
+    <div class="tag">Style to be lived in</div>
   </div>
 `
 
@@ -72,7 +72,7 @@ const renderItemsTable = (items) => `
 const renderFooter = () => `
   <div class="footer">
     <div class="footer-logo">QuanNguyenS</div>
-    <div class="footer-tag">Dressed for Life. Even at Home.</div>
+    <div class="footer-tag">Style to be lived in</div>
     <div class="footer-info">
       Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội<br>
       0981 753 082 · quannguyens403@gmail.com

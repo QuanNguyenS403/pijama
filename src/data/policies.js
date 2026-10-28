@@ -59,7 +59,7 @@ export const policiesData = {
       {
         heading: '6. Cơ chế tiếp nhận và giải quyết khiếu nại của người tiêu dùng.',
         content: [
-          'Khi phát hiện thông tin cá nhân của mình bị sử dụng sai mục đích hoặc phạm vi, khách hàng gọi điện thoại tới số xxxxxxxxx hoặc Email quannguyens@gmail.com để khiếu nại và cung cấp chứng cứ liên quan đến vụ việc cho ban quản trị.',
+          'Khi phát hiện thông tin cá nhân của mình bị sử dụng sai mục đích hoặc phạm vi, khách hàng gọi điện thoại tới số xxxxxxxxx hoặc Email quannguyens403@gmail.com để khiếu nại và cung cấp chứng cứ liên quan đến vụ việc cho ban quản trị.',
           'Ban quản trị cam kết sẽ phản hồi ngay lập tức hoặc muộn nhất là trong vòng 24 giờ làm việc kể từ thời điểm nhận được khiếu nại.',
         ],
       },

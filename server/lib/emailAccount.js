@@ -34,7 +34,7 @@ export async function sendVerificationCodeEmail({ to, code, name = 'Quý khách'
                     QuanNguyenS
                   </span>
                   <span style="display: block; font-size: 11px; color: #D4AF37; letter-spacing: 0.25em; text-transform: uppercase; margin-top: 4px;">
-                    Dressed for Life. Even at Home.
+                    Style to be lived in
                   </span>
                 </td>
               </tr>
@@ -79,7 +79,7 @@ export async function sendVerificationCodeEmail({ to, code, name = 'Quý khách'
               <tr>
                 <td style="padding: 24px 32px; background-color: #F5EFE6; border-top: 1px solid #E8DFD5; text-align: center;">
                   <p style="margin: 0 0 6px 0; font-size: 12px; color: #631521; font-weight: 600;">
-                    ${SHOP_NAME} — Lụa Tơ Tằm & Sleepwear Cao Cấp
+                    ${SHOP_NAME} — Style to be lived in
                   </p>
                   <p style="margin: 0 0 4px 0; font-size: 11px; color: #8C7E74;">
                     Hotline: ${SHOP_PHONE} · Email: ${user}
@@ -182,7 +182,7 @@ export async function sendWelcomeVoucherEmail({ to, code, name = 'Quý khách' }
               <tr>
                 <td style="padding: 24px 32px; background-color: #F5EFE6; border-top: 1px solid #E8DFD5; text-align: center;">
                   <p style="margin: 0 0 6px 0; font-size: 12px; color: #631521; font-weight: 600;">
-                    ${SHOP_NAME} — Dressed for Life. Even at Home.
+                    ${SHOP_NAME} — Style to be lived in
                   </p>
                   <p style="margin: 0; font-size: 11px; color: #8C7E74;">
                     Hotline tư vấn chọn size & chất liệu: ${SHOP_PHONE}
@@ -259,7 +259,7 @@ export async function sendBroadcastEmail({ to, subject, contentHtml, broadcastTy
               <tr>
                 <td style="padding: 24px 32px; background-color: #F5EFE6; border-top: 1px solid #E8DFD5; text-align: center;">
                   <p style="margin: 0 0 6px 0; font-size: 12px; color: #631521; font-weight: 600;">
-                    ${SHOP_NAME} — Lụa Tơ Tằm & Sleepwear Thiết Kế
+                    ${SHOP_NAME} — Style to be lived in
                   </p>
                   <p style="margin: 0 0 4px 0; font-size: 11px; color: #8C7E74;">
                     Hotline: ${SHOP_PHONE} · Địa chỉ: ${SHOP_ADDRESS}
@@ -353,7 +353,7 @@ export async function sendGoogleRegisterSuccessEmail({
                     QuanNguyenS
                   </span>
                   <span style="display: block; font-size: 11px; color: #D4AF37; letter-spacing: 0.25em; text-transform: uppercase; margin-top: 4px;">
-                    Dressed for Life · Even at Home
+                    Style to be lived in
                   </span>
                 </td>
               </tr>
@@ -406,7 +406,7 @@ export async function sendGoogleRegisterSuccessEmail({
               <tr>
                 <td style="padding: 22px 32px; background-color: #F5EFE6; border-top: 1px solid #E8DFD5; text-align: center;">
                   <p style="margin: 0 0 4px 0; font-size: 12px; color: #631521; font-weight: 600;">
-                    ${SHOP_NAME} — Lụa Tơ Tằm & Sleepwear Thiết Kế Cao Cấp
+                    ${SHOP_NAME} — Style to be lived in
                   </p>
                   <p style="margin: 0; font-size: 11px; color: #8C7E74;">
                     ${SHOP_ADDRESS} · Hotline: ${SHOP_PHONE}
@@ -754,6 +754,105 @@ export async function sendOwnerGoogleAuthNotification({
     from: `"${SHOP_NAME} Hệ Thống" <${user}>`,
     to: ownerEmail,
     subject,
+    html,
+  })
+}
+
+/**
+ * Gửi mã OTP xác nhận đặt lại mật khẩu qua Gmail
+ */
+export async function sendPasswordResetOtpEmail({ to, code, name = 'Quý khách' }) {
+  const transporter = getTransporter()
+  const user = (process.env.GMAIL_USER || '').trim()
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="vi">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Mã Xác Nhận Đặt Lại Mật Khẩu — ${SHOP_NAME}</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #F5F0EB; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1A1614; -webkit-font-smoothing: antialiased;">
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed;">
+        <tr>
+          <td align="center" style="padding: 40px 15px;">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 540px; background-color: #FAF8F5; border: 1px solid #D4AF37; border-radius: 4px; box-shadow: 0 4px 20px rgba(99, 21, 33, 0.08); overflow: hidden;">
+              
+              <!-- Header -->
+              <tr>
+                <td align="center" style="padding: 32px 20px 24px 20px; background: linear-gradient(180deg, #4A0D17 0%, #631521 100%); border-bottom: 2px solid #D4AF37;">
+                  <span style="display: block; font-family: 'Georgia', serif; font-size: 24px; font-weight: bold; color: #FAF8F5; letter-spacing: 0.15em; text-transform: uppercase;">
+                    ${SHOP_NAME}
+                  </span>
+                  <span style="display: block; font-size: 11px; color: #D4AF37; letter-spacing: 0.25em; text-transform: uppercase; margin-top: 4px;">
+                    Style to be lived in
+                  </span>
+                </td>
+              </tr>
+
+              <!-- Content Body -->
+              <tr>
+                <td style="padding: 36px 32px 28px 32px;">
+                  <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #4A3F38;">
+                    Kính gửi <strong>${name}</strong>,
+                  </p>
+                  <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #4A3F38;">
+                    Chúng tôi đã nhận được yêu cầu lấy lại mật khẩu cho tài khoản <strong>${to}</strong> tại website <strong>${SHOP_NAME}</strong>. Vui lòng sử dụng mã xác nhận gồm 6 chữ số dưới đây để tiến hành tạo mật khẩu mới:
+                  </p>
+
+                  <!-- 6-digit Code Box -->
+                  <div style="margin: 28px 0; padding: 22px 16px; background-color: #FFFFFF; border: 1.5px dashed #D4AF37; border-radius: 4px; text-align: center;">
+                    <span style="display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: #8C7E74; margin-bottom: 8px; font-weight: 600;">
+                      MÃ XÁC NHẬN CỦA BẠN
+                    </span>
+                    <span style="font-family: 'Georgia', monospace, sans-serif; font-size: 34px; font-weight: bold; letter-spacing: 10px; color: #631521; display: inline-block;">
+                      ${code}
+                    </span>
+                    <span style="display: block; font-size: 12px; color: #8C7E74; margin-top: 10px;">
+                      ⏱ Hiệu lực trong <strong>10 phút</strong> · Tối đa 5 lần nhập
+                    </span>
+                  </div>
+
+                  <!-- Security Note -->
+                  <div style="background-color: #FAF5F0; border-left: 3px solid #631521; padding: 12px 14px; border-radius: 2px; margin-bottom: 24px;">
+                    <p style="margin: 0; font-size: 12.5px; line-height: 1.5; color: #631521;">
+                      🔒 <strong>Lưu ý bảo mật:</strong> Tuyệt đối không chia sẻ mã này cho bất kỳ ai. Nếu bạn không yêu cầu đặt lại mật khẩu, xin hãy bỏ qua email này.
+                    </p>
+                  </div>
+
+                  <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #4A3F38;">
+                    Cần hỗ trợ trực tiếp? Quý khách vui lòng liên hệ Hotline <strong>${SHOP_PHONE}</strong>.
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 24px 32px; background-color: #F5EFE6; border-top: 1px solid #E8DFD5; text-align: center;">
+                  <p style="margin: 0 0 6px 0; font-size: 12px; color: #631521; font-weight: 600;">
+                    ${SHOP_NAME} — Style to be lived in
+                  </p>
+                  <p style="margin: 0 0 4px 0; font-size: 11px; color: #8C7E74;">
+                    Hotline: ${SHOP_PHONE} · Email: ${user}
+                  </p>
+                  <p style="margin: 0; font-size: 11px; color: #8C7E74;">
+                    ${SHOP_ADDRESS}
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `
+
+  return transporter.sendMail({
+    from: `"${SHOP_NAME}" <${user}>`,
+    to,
+    subject: `[${SHOP_NAME}] Mã xác nhận đặt lại mật khẩu: ${code}`,
     html,
   })
 }

@@ -113,7 +113,7 @@ export const buildBankTransferEmailHTML = (order) => {
 
   <div class="header">
     <div class="header-logo">QuanNguyenS</div>
-    <div class="header-tagline">Dressed for Life. Even at Home.</div>
+    <div class="header-tagline">Style to be lived in</div>
   </div>
 
   <div class="banner">
@@ -211,7 +211,7 @@ export const buildBankTransferEmailHTML = (order) => {
 
   <div class="footer">
     <div class="footer-logo">QuanNguyenS</div>
-    <div class="footer-tagline">Dressed for Life. Even at Home.</div>
+    <div class="footer-tagline">Style to be lived in</div>
     <div class="footer-info">
       Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội<br>
       0981 753 082 · quannguyens403@gmail.com
@@ -497,7 +497,7 @@ export const buildCODEmailHTML = (order) => {
   <!-- HEADER -->
   <div class="header">
     <div class="header-logo">QuanNguyenS</div>
-    <div class="header-tagline">Dressed for Life. Even at Home.</div>
+    <div class="header-tagline">Style to be lived in</div>
   </div>
 
   <!-- STATUS BANNER -->
@@ -624,7 +624,7 @@ export const buildCODEmailHTML = (order) => {
   <!-- FOOTER -->
   <div class="footer">
     <div class="footer-logo">QuanNguyenS</div>
-    <div class="footer-tagline">Dressed for Life. Even at Home.</div>
+    <div class="footer-tagline">Style to be lived in</div>
     <div class="footer-info">
       Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội<br>
       0981 753 082 · quannguyens403@gmail.com
@@ -717,7 +717,7 @@ export const buildPaidEmailHTML = (order) => {
 
   <div class="header">
     <div class="header-logo">QuanNguyenS</div>
-    <div class="header-tagline">Dressed for Life. Even at Home.</div>
+    <div class="header-tagline">Style to be lived in</div>
   </div>
 
   <!-- PAID SUCCESS BANNER -->
@@ -818,7 +818,7 @@ export const buildPaidEmailHTML = (order) => {
 
   <div class="footer">
     <div class="footer-logo">QuanNguyenS</div>
-    <div class="footer-tagline">Dressed for Life. Even at Home.</div>
+    <div class="footer-tagline">Style to be lived in</div>
     <div class="footer-info">
       Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội<br>
       0981 753 082 · quannguyens403@gmail.com

@@ -56,14 +56,55 @@ export default function AccountPage() {
   const [authError, setAuthError] = useState(null)
   const [authSubmitting, setAuthSubmitting] = useState(false)
   const [isGisButtonMounted, setIsGisButtonMounted] = useState(false)
-  const [authMode, setAuthMode] = useState('login') // 'login' | 'register' | 'forgot'
+  const [authMode, setAuthMode] = useState('login') // 'login' | 'register' | 'verify_register_otp' | 'forgot' | 'verify_otp' | 'reset_password'
   const [authEmail, setAuthEmail] = useState('')
   const [authPassword, setAuthPassword] = useState('')
   const [authFullName, setAuthFullName] = useState('')
-  const [forgotSent, setForgotSent] = useState(false)
+  const [otpCode, setOtpCode] = useState('')
+  const [resetToken, setResetToken] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [authSuccessMsg, setAuthSuccessMsg] = useState('')
   const googleButtonRef = useRef(null)
 
   const navigate = useNavigate()
+
+  const handleBack = () => {
+    // 1. Nếu chưa đăng nhập và đang ở các bước phụ (register, forgot, verify_otp, reset_password)
+    // Quay lại bước trước đó trong luồng xác thực
+    if (!user && authMode !== 'login') {
+      if (authMode === 'register' || authMode === 'forgot') {
+        setAuthMode('login')
+        setAuthError(null)
+        setAuthSuccessMsg('')
+        return
+      }
+      if (authMode === 'verify_register_otp') {
+        setAuthMode('register')
+        setAuthError(null)
+        return
+      }
+      if (authMode === 'verify_otp') {
+        setAuthMode('forgot')
+        setAuthError(null)
+        return
+      }
+      if (authMode === 'reset_password') {
+        setAuthMode('verify_otp')
+        setAuthError(null)
+        return
+      }
+    }
+
+    // 2. Nếu đang ở màn hình đăng nhập chính hoặc đã đăng nhập:
+    // Quay lại trang trước đó trong lịch sử duyệt web nếu có, hoặc fallback về trang chủ
+    if (window.history.state && window.history.state.idx > 0) {
+      navigate(-1)
+    } else {
+      navigate('/')
+    }
+  }
 
   const handleGoogleCredential = async (credential) => {
     try {
@@ -158,9 +199,52 @@ export default function AccountPage() {
     }
   }
 
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [resendCooldown])
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || authSubmitting) return
+    setAuthError(null)
+    setAuthSubmitting(true)
+    try {
+      if (authMode === 'verify_register_otp') {
+        const res = await apiPost('/api/auth/register/request-otp', {
+          email: authEmail.trim(),
+          password: authPassword,
+          fullName: authFullName.trim(),
+          marketingOptIn: true,
+        })
+        const data = await res.json()
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Không thể gửi lại mã xác thực')
+        }
+        setResendCooldown(60)
+        setToast({ productName: 'Đã gửi lại mã xác thực đến email!', id: Date.now() })
+      } else {
+        const res = await apiPost('/api/auth/password/forgot', { email: authEmail.trim() })
+        const data = await res.json()
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Không thể gửi lại mã xác nhận')
+        }
+        setResendCooldown(60)
+        setToast({ productName: 'Đã gửi lại mã xác nhận đến Gmail!', id: Date.now() })
+      }
+    } catch (err) {
+      setAuthError(err.message || 'Lỗi gửi lại mã')
+    } finally {
+      setAuthSubmitting(false)
+    }
+  }
+
   const handleDirectAuth = async (e) => {
     e.preventDefault()
     setAuthError(null)
+    setAuthSuccessMsg('')
     setAuthSubmitting(true)
 
     try {
@@ -194,7 +278,7 @@ export default function AccountPage() {
         fetchUserOrders()
         setToast({ productName: `Chào mừng ${loggedUser?.fullName || 'bạn'} trở lại!`, id: Date.now() })
       } else if (authMode === 'register') {
-        const res = await apiPost('/api/auth/register', {
+        const res = await apiPost('/api/auth/register/request-otp', {
           email: authEmail.trim(),
           password: authPassword,
           fullName: authFullName.trim(),
@@ -204,6 +288,25 @@ export default function AccountPage() {
 
         if (!res.ok || !data.success) {
           throw new Error(data.error || 'Đăng ký không thành công')
+        }
+
+        setAuthMode('verify_register_otp')
+        setOtpCode('')
+        setResendCooldown(60)
+        setToast({ productName: 'Mã xác thực 6 chữ số đã được gửi đến email!', id: Date.now() })
+      } else if (authMode === 'verify_register_otp') {
+        if (!otpCode || otpCode.trim().length !== 6) {
+          throw new Error('Vui lòng nhập đủ 6 chữ số mã xác thực')
+        }
+
+        const res = await apiPost('/api/auth/register/verify-otp', {
+          email: authEmail.trim(),
+          code: otpCode.trim(),
+        })
+        const data = await res.json()
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Xác thực mã không thành công')
         }
 
         if (data.accessToken) {
@@ -217,16 +320,70 @@ export default function AccountPage() {
           loggedUser.avatar_url = resolvedAvatar
         }
         setUser(loggedUser)
-        setVoucher(data.voucher)
+        setVoucher(data.voucher || loggedUser?.voucherCode || 'WELCOME10')
         try {
           localStorage.setItem('qns_customer_account', JSON.stringify(loggedUser))
         } catch (_) {}
         window.dispatchEvent(new CustomEvent('customer_auth_changed', { detail: { user: loggedUser } }))
+        setAuthPassword('')
+        setOtpCode('')
         fetchUserOrders()
         setToast({ productName: `Đăng ký thành công! Chào mừng ${loggedUser?.fullName || 'bạn'}.`, id: Date.now() })
       } else if (authMode === 'forgot') {
-        setForgotSent(true)
-        setToast({ productName: 'Đã tiếp nhận yêu cầu khôi phục', id: Date.now() })
+        const res = await apiPost('/api/auth/password/forgot', {
+          email: authEmail.trim(),
+        })
+        const data = await res.json()
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Không thể gửi mã xác nhận')
+        }
+
+        setAuthMode('verify_otp')
+        setOtpCode('')
+        setResendCooldown(60)
+        setToast({ productName: 'Mã xác nhận 6 chữ số đã được gửi đến Gmail!', id: Date.now() })
+      } else if (authMode === 'verify_otp') {
+        if (!otpCode || otpCode.trim().length !== 6) {
+          throw new Error('Vui lòng nhập đủ 6 chữ số mã xác nhận')
+        }
+        const res = await apiPost('/api/auth/password/verify-otp', {
+          email: authEmail.trim(),
+          code: otpCode.trim(),
+        })
+        const data = await res.json()
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Mã xác nhận không chính xác')
+        }
+
+        setResetToken(data.resetToken)
+        setAuthMode('reset_password')
+        setNewPassword('')
+        setConfirmPassword('')
+        setToast({ productName: 'Xác nhận mã thành công! Vui lòng tạo mật khẩu mới.', id: Date.now() })
+      } else if (authMode === 'reset_password') {
+        if (!newPassword || newPassword.length < 8) {
+          throw new Error('Mật khẩu mới phải có tối thiểu 8 ký tự, bao gồm chữ và số')
+        }
+        if (newPassword !== confirmPassword) {
+          throw new Error('Mật khẩu xác nhận không trùng khớp')
+        }
+        const res = await apiPost('/api/auth/password/reset', {
+          resetToken,
+          newPassword,
+          confirmPassword,
+        })
+        const data = await res.json()
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Không thể cập nhật mật khẩu')
+        }
+
+        setAuthMode('login')
+        setAuthPassword('')
+        setAuthSuccessMsg('Đặt lại mật khẩu thành công! Vui lòng nhập mật khẩu mới để đăng nhập.')
+        setToast({ productName: 'Đặt lại mật khẩu thành công!', id: Date.now() })
       }
     } catch (err) {
       setAuthError(err.message || 'Có lỗi xảy ra, vui lòng thử lại.')
@@ -422,13 +579,14 @@ export default function AccountPage() {
       <main className="flex-1 max-w-[1200px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
         {/* Breadcrumb / Back link */}
         <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#E8DFD5]">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 text-xs text-[#8C7E74] hover:text-[#631521] font-medium transition-colors"
+          <button
+            type="button"
+            onClick={handleBack}
+            className="inline-flex items-center gap-1.5 text-xs text-[#8C7E74] hover:text-[#631521] font-medium transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Quay lại trang chủ</span>
-          </Link>
+            <span>Quay lại</span>
+          </button>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[#D4AF37] animate-pulse" />
             <span className="text-xs uppercase tracking-widest text-[#8C7E74] font-serif font-bold">
@@ -467,12 +625,20 @@ export default function AccountPage() {
                       onClick={() => {
                         setAuthMode('register')
                         setAuthError(null)
+                        setAuthSuccessMsg('')
                       }}
                       className="text-[#1890ff] hover:underline cursor-pointer"
                     >
                       Đăng ký tại đây.
                     </button>
                   </p>
+
+                  {authSuccessMsg && (
+                    <div className="p-3 mb-5 bg-[#F0FDF4] border border-[#BBF7D0] rounded-[2px] text-xs text-[#166534] flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 shrink-0 text-[#166534]" />
+                      <span>{authSuccessMsg}</span>
+                    </div>
+                  )}
 
                   {authError && (
                     <div className="p-3 mb-5 bg-[#FDF2F2] border border-[#F8B4B4] rounded-[2px] text-xs text-[#9B1C1C] flex items-center gap-2">
@@ -517,7 +683,7 @@ export default function AccountPage() {
                         onClick={() => {
                           setAuthMode('forgot')
                           setAuthError(null)
-                          setForgotSent(false)
+                          setAuthSuccessMsg('')
                         }}
                         className="text-[#1890ff] hover:underline cursor-pointer"
                       >
@@ -548,6 +714,7 @@ export default function AccountPage() {
                       onClick={() => {
                         setAuthMode('login')
                         setAuthError(null)
+                        setAuthSuccessMsg('')
                       }}
                       className="text-[#1890ff] hover:underline cursor-pointer"
                     >
@@ -609,7 +776,72 @@ export default function AccountPage() {
                     disabled={authSubmitting}
                     className="w-full py-3 bg-[#000000] hover:bg-neutral-800 text-white font-medium text-xs sm:text-sm rounded-[2px] transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center"
                   >
-                    {authSubmitting ? 'Đang tạo tài khoản...' : 'Đăng ký'}
+                    {authSubmitting ? 'Đang gửi mã xác thực...' : 'Đăng ký'}
+                  </button>
+                </form>
+              )}
+
+              {authMode === 'verify_register_otp' && (
+                <form onSubmit={handleDirectAuth}>
+                  <h1 className="text-xl sm:text-2xl font-bold text-[#1A1614] text-center tracking-normal uppercase mb-2">
+                    XÁC THỰC TÀI KHOẢN
+                  </h1>
+                  <p className="text-xs sm:text-sm text-[#4A3F38] text-center mb-6 leading-relaxed">
+                    Mã xác nhận gồm 6 chữ số đã được gửi đến email:<br />
+                    <strong className="text-[#1A1614]">{authEmail}</strong>
+                  </p>
+
+                  {authError && (
+                    <div className="p-3 mb-5 bg-[#FDF2F2] border border-[#F8B4B4] rounded-[2px] text-xs text-[#9B1C1C] flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{authError}</span>
+                    </div>
+                  )}
+
+                  <div className="mb-4">
+                    <label className="block text-xs sm:text-sm text-[#1A1614] mb-2 font-medium text-center">
+                      Điền mã xác nhận 6 chữ số <span className="text-[#e53935]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      placeholder="• • • • • •"
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      required
+                      className="w-full py-3 px-4 text-center text-2xl font-mono tracking-[0.35em] font-bold border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs sm:text-sm mb-6">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('register')
+                        setAuthError(null)
+                      }}
+                      className="text-[#8C7E74] hover:text-[#1A1614] cursor-pointer"
+                    >
+                      ← Sửa lại thông tin
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={resendCooldown > 0 || authSubmitting}
+                      className="text-[#1890ff] hover:underline cursor-pointer disabled:opacity-50"
+                    >
+                      {resendCooldown > 0 ? `Gửi lại mã (${resendCooldown}s)` : 'Gửi lại mã'}
+                    </button>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={authSubmitting || otpCode.length !== 6}
+                    className="w-full py-3 bg-[#000000] hover:bg-neutral-800 text-white font-medium text-xs sm:text-sm rounded-[2px] transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center"
+                  >
+                    {authSubmitting ? 'Đang hoàn tất đăng ký...' : 'Xác nhận & Hoàn tất đăng ký'}
                   </button>
                 </form>
               )}
@@ -626,6 +858,7 @@ export default function AccountPage() {
                       onClick={() => {
                         setAuthMode('login')
                         setAuthError(null)
+                        setAuthSuccessMsg('')
                       }}
                       className="text-[#1890ff] hover:underline cursor-pointer"
                     >
@@ -640,85 +873,203 @@ export default function AccountPage() {
                     </div>
                   )}
 
-                  {forgotSent ? (
-                    <div className="p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-[2px] text-xs text-[#166534] mb-6 leading-relaxed">
-                      <p className="font-semibold mb-1">Đã tiếp nhận yêu cầu!</p>
-                      <p>Vui lòng kiểm tra email của bạn để nhận hướng dẫn khôi phục mật khẩu, hoặc liên hệ Hotline/Zalo: <strong>0867 021 006</strong> để được hỗ trợ tức thì.</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="mb-6">
-                        <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
-                          Email <span className="text-[#e53935]">*</span>
-                        </label>
-                        <input
-                          type="email"
-                          value={authEmail}
-                          onChange={(e) => setAuthEmail(e.target.value)}
-                          placeholder="Nhập email của bạn"
-                          required
-                          className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
-                        />
-                      </div>
+                  <div className="mb-6">
+                    <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
+                      Email đã đăng ký <span className="text-[#e53935]">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={authEmail}
+                      onChange={(e) => setAuthEmail(e.target.value)}
+                      placeholder="Nhập email của bạn"
+                      required
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                    />
+                    <p className="text-[11px] text-[#8C7E74] mt-1.5">
+                      Hệ thống sẽ gửi mã xác nhận 6 chữ số tới Gmail này để quý khách xác minh.
+                    </p>
+                  </div>
 
-                      <button
-                        type="submit"
-                        disabled={authSubmitting}
-                        className="w-full py-3 bg-[#000000] hover:bg-neutral-800 text-white font-medium text-xs sm:text-sm rounded-[2px] transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center"
-                      >
-                        {authSubmitting ? 'Đang gửi yêu cầu...' : 'Lấy lại mật khẩu'}
-                      </button>
-                    </>
+                  <button
+                    type="submit"
+                    disabled={authSubmitting || !authEmail.trim()}
+                    className="w-full py-3 bg-[#000000] hover:bg-neutral-800 text-white font-medium text-xs sm:text-sm rounded-[2px] transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center"
+                  >
+                    {authSubmitting ? 'Đang gửi mã tới Gmail...' : 'Lấy lại mật khẩu'}
+                  </button>
+                </form>
+              )}
+
+              {authMode === 'verify_otp' && (
+                <form onSubmit={handleDirectAuth}>
+                  <h1 className="text-xl sm:text-2xl font-bold text-[#1A1614] text-center tracking-normal uppercase mb-2">
+                    XÁC NHẬN MÃ TỪ GMAIL
+                  </h1>
+                  <p className="text-xs sm:text-sm text-[#4A3F38] text-center mb-6 leading-relaxed">
+                    Mã xác nhận gồm 6 chữ số đã được gửi đến:<br />
+                    <strong className="text-[#1A1614]">{authEmail}</strong>
+                  </p>
+
+                  {authError && (
+                    <div className="p-3 mb-5 bg-[#FDF2F2] border border-[#F8B4B4] rounded-[2px] text-xs text-[#9B1C1C] flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{authError}</span>
+                    </div>
                   )}
+
+                  <div className="mb-4">
+                    <label className="block text-xs sm:text-sm text-[#1A1614] mb-2 font-medium text-center">
+                      Điền mã xác nhận 6 chữ số <span className="text-[#e53935]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      placeholder="• • • • • •"
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      required
+                      className="w-full py-3 px-4 text-center text-2xl font-mono tracking-[0.35em] font-bold border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs sm:text-sm mb-6">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('forgot')
+                        setAuthError(null)
+                      }}
+                      className="text-[#8C7E74] hover:text-[#1A1614] cursor-pointer"
+                    >
+                      ← Đổi email
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={resendCooldown > 0 || authSubmitting}
+                      className="text-[#1890ff] hover:underline cursor-pointer disabled:opacity-50"
+                    >
+                      {resendCooldown > 0 ? `Gửi lại mã (${resendCooldown}s)` : 'Gửi lại mã'}
+                    </button>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={authSubmitting || otpCode.length !== 6}
+                    className="w-full py-3 bg-[#000000] hover:bg-neutral-800 text-white font-medium text-xs sm:text-sm rounded-[2px] transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center"
+                  >
+                    {authSubmitting ? 'Đang xác nhận mã...' : 'Xác nhận mã'}
+                  </button>
+                </form>
+              )}
+
+              {authMode === 'reset_password' && (
+                <form onSubmit={handleDirectAuth}>
+                  <h1 className="text-xl sm:text-2xl font-bold text-[#1A1614] text-center tracking-normal uppercase mb-2">
+                    TẠO MẬT KHẨU MỚI
+                  </h1>
+                  <p className="text-xs sm:text-sm text-[#4A3F38] text-center mb-6 leading-relaxed">
+                    Vui lòng nhập mật khẩu mới và xác nhận mật khẩu cho tài khoản:<br />
+                    <strong className="text-[#1A1614]">{authEmail}</strong>
+                  </p>
+
+                  {authError && (
+                    <div className="p-3 mb-5 bg-[#FDF2F2] border border-[#F8B4B4] rounded-[2px] text-xs text-[#9B1C1C] flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{authError}</span>
+                    </div>
+                  )}
+
+                  <div className="mb-4">
+                    <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
+                      Mật khẩu mới <span className="text-[#e53935]">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Mật khẩu mới (tối thiểu 8 ký tự, gồm chữ và số)"
+                      required
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                    />
+                  </div>
+
+                  <div className="mb-6">
+                    <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
+                      Xác nhận mật khẩu mới <span className="text-[#e53935]">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Nhập lại mật khẩu mới"
+                      required
+                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={authSubmitting}
+                    className="w-full py-3 bg-[#000000] hover:bg-neutral-800 text-white font-medium text-xs sm:text-sm rounded-[2px] transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center"
+                  >
+                    {authSubmitting ? 'Đang cập nhật mật khẩu...' : 'Cập nhật mật khẩu'}
+                  </button>
                 </form>
               )}
 
               {/* Quick Google Sign In */}
-              <div className="relative my-6 text-center">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[#E8DFD5]" />
-                </div>
-                <span className="relative bg-white px-3 text-[11px] uppercase tracking-wider text-[#8C7E74]">
-                  Hoặc
-                </span>
-              </div>
-
-              <div className="w-full flex justify-center items-center min-h-[44px]">
-                <div
-                  ref={googleButtonRef}
-                  className={isGisButtonMounted ? 'w-full flex justify-center' : 'hidden'}
-                />
-                {!isGisButtonMounted && (
-                  <button
-                    type="button"
-                    onClick={handleGoogleSignInClick}
-                    disabled={authSubmitting}
-                    className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[#E8DFD5] bg-[#FAF8F5] hover:bg-white text-[#2C201A] rounded-[2px] text-xs font-medium transition-all shadow-2xs cursor-pointer group disabled:opacity-70 active:scale-[0.99]"
-                  >
-                    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                      <path
-                        fill="#4285F4"
-                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                      />
-                      <path
-                        fill="#34A853"
-                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                      />
-                      <path
-                        fill="#FBBC05"
-                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                      />
-                      <path
-                        fill="#EA4335"
-                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                      />
-                    </svg>
-                    <span className="group-hover:text-[#631521] transition-colors">
-                      {authSubmitting ? 'Đang kết nối Google...' : 'Tiếp tục sử dụng dịch vụ bằng Google'}
+              {(authMode === 'login' || authMode === 'register') && (
+                <>
+                  <div className="relative my-6 text-center">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-[#E8DFD5]" />
+                    </div>
+                    <span className="relative bg-white px-3 text-[11px] uppercase tracking-wider text-[#8C7E74]">
+                      Hoặc
                     </span>
-                  </button>
-                )}
-              </div>
+                  </div>
+
+                  <div className="w-full flex justify-center items-center min-h-[44px]">
+                    <div
+                      ref={googleButtonRef}
+                      className={isGisButtonMounted ? 'w-full flex justify-center' : 'hidden'}
+                    />
+                    {!isGisButtonMounted && (
+                      <button
+                        type="button"
+                        onClick={handleGoogleSignInClick}
+                        disabled={authSubmitting}
+                        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[#E8DFD5] bg-[#FAF8F5] hover:bg-white text-[#2C201A] rounded-[2px] text-xs font-medium transition-all shadow-2xs cursor-pointer group disabled:opacity-70 active:scale-[0.99]"
+                      >
+                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                          <path
+                            fill="#4285F4"
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                          />
+                          <path
+                            fill="#34A853"
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                          />
+                          <path
+                            fill="#FBBC05"
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                          />
+                          <path
+                            fill="#EA4335"
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                          />
+                        </svg>
+                        <span className="group-hover:text-[#631521] transition-colors">
+                          {authSubmitting ? 'Đang kết nối Google...' : 'Tiếp tục sử dụng dịch vụ bằng Google'}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
             </motion.div>
           </div>
         ) : (

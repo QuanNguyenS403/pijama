@@ -161,34 +161,34 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.96 }}
-          className="bg-white w-full max-w-lg rounded-[4px] border border-[#D4AF37]/40 shadow-2xl overflow-hidden relative"
+          className="bg-white w-full max-w-[430px] rounded-[4px] border border-[#D4AF37]/40 shadow-2xl overflow-hidden relative my-auto max-h-[92vh] flex flex-col"
         >
           {/* Header */}
-          <div className="bg-[#2C201A] text-white p-6 relative">
+          <div className="bg-[#2C201A] text-white px-5 py-4 relative shrink-0">
             <button
               onClick={handleClose}
-              className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors cursor-pointer"
+              className="absolute top-3.5 right-3.5 text-white/60 hover:text-white transition-colors cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
 
-            <div className="flex items-center gap-3">
-              <TierBadge tier="MEMBER" size="md" />
+            <div className="flex items-center gap-2.5">
+              <TierBadge tier="MEMBER" size="sm" />
               <div>
-                <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#D4AF37] block">
+                <span className="text-[9.5px] uppercase font-bold tracking-[0.2em] text-[#D4AF37] block">
                   QuanNguyenS Privileged Club
                 </span>
-                <h3 className="font-serif text-lg sm:text-xl font-bold text-white">
+                <h3 className="font-serif text-base sm:text-lg font-bold text-white leading-tight">
                   {mode === 'enroll' ? 'Đăng Ký Hội Viên Thân Thiết' : 'Đăng Nhập Hội Viên'}
                 </h3>
               </div>
             </div>
-            <p className="text-xs text-white/70 mt-2 font-light leading-relaxed">
+            <p className="text-[11px] text-white/75 mt-1.5 font-light leading-relaxed">
               {mode === 'enroll'
                 ? 'Tham gia hoàn toàn tự nguyện để tích điểm đơn hàng và nhận đặc quyền giảm giá đến 15%.'
                 : 'Nhập số điện thoại đã đăng ký để kiểm tra số dư điểm thưởng và ví voucher.'}
@@ -196,7 +196,7 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
           </div>
 
           {/* Body */}
-          <div className="p-6">
+          <div className="p-4 sm:p-5 overflow-y-auto">
             {error && (
               <div className="mb-4 p-3 bg-[#FDF2F2] border border-[#F8B4B4] rounded-[2px] text-xs text-[#9B1C1C] flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
@@ -205,10 +205,10 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
             )}
 
             {step === 1 ? (
-              <form onSubmit={handleSendOtp} className="space-y-4">
+              <form onSubmit={handleSendOtp} className="space-y-3">
                 {mode === 'enroll' && (
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
                       Họ và tên <span className="text-[#631521]">*</span>
                     </label>
                     <input
@@ -217,42 +217,42 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="Ví dụ: Nguyễn Phương Mai"
-                      className="w-full px-3 py-2 bg-[#FAF8F5] border border-[#E8DFD5] text-sm rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden"
+                      className="w-full px-3 py-1.5 bg-[#FAF8F5] border border-[#E8DFD5] text-xs sm:text-sm rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
                     Số điện thoại <span className="text-[#631521]">*</span>
                   </label>
                   <div className="relative">
-                    <Phone className="w-4 h-4 text-[#8C7E74] absolute left-3 top-2.5" />
+                    <Phone className="w-3.5 h-3.5 text-[#8C7E74] absolute left-3 top-2.5" />
                     <input
                       type="tel"
                       required
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="0901 234 567"
-                      className="w-full pl-9 pr-3 py-2 bg-[#FAF8F5] border border-[#E8DFD5] text-sm rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden font-mono"
+                      className="w-full pl-8 pr-3 py-1.5 bg-[#FAF8F5] border border-[#E8DFD5] text-xs sm:text-sm rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden font-mono"
                     />
                   </div>
-                  <p className="text-[11px] text-[#8C7E74] mt-1">
+                  <p className="text-[10px] text-[#8C7E74] mt-0.5">
                     Mã OTP xác thực sẽ gửi tới số điện thoại này. Số điện thoại là chìa khóa tích và dùng điểm.
                   </p>
                 </div>
 
                 {mode === 'enroll' && (
                   <>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2.5">
                       <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
                           Ngày sinh (Tùy chọn)
                         </label>
                         <select
                           value={birthDay}
                           onChange={(e) => setBirthDay(e.target.value)}
-                          className="w-full px-2.5 py-2 bg-[#FAF8F5] border border-[#E8DFD5] text-xs rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden"
+                          className="w-full px-2 py-1.5 bg-[#FAF8F5] border border-[#E8DFD5] text-xs rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden"
                         >
                           <option value="">Ngày</option>
                           {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
@@ -264,13 +264,13 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
                           Tháng sinh (Tùy chọn)
                         </label>
                         <select
                           value={birthMonth}
                           onChange={(e) => setBirthMonth(e.target.value)}
-                          className="w-full px-2.5 py-2 bg-[#FAF8F5] border border-[#E8DFD5] text-xs rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden"
+                          className="w-full px-2 py-1.5 bg-[#FAF8F5] border border-[#E8DFD5] text-xs rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden"
                         >
                           <option value="">Tháng</option>
                           {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
@@ -281,12 +281,12 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
                         </select>
                       </div>
                     </div>
-                    <p className="text-[10.5px] text-[#8C7E74]">
+                    <p className="text-[9.5px] text-[#8C7E74] leading-tight">
                       🔒 Ngày sinh chỉ thu Ngày & Tháng để tặng voucher sinh nhật và được khóa cố định sau khi đăng ký.
                     </p>
 
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
                         Email nhận thông báo (Tùy chọn)
                       </label>
                       <input
@@ -294,18 +294,18 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="mai.nguyen@example.com"
-                        className="w-full px-3 py-2 bg-[#FAF8F5] border border-[#E8DFD5] text-sm rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden"
+                        className="w-full px-3 py-1.5 bg-[#FAF8F5] border border-[#E8DFD5] text-xs sm:text-sm rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden"
                       />
                     </div>
 
                     {/* Consents - Explicitly Unchecked */}
-                    <div className="space-y-2 pt-2 border-t border-[#E8DFD5]">
-                      <label className="flex items-start gap-2.5 text-xs text-[#4A3F38] cursor-pointer">
+                    <div className="space-y-1.5 pt-1.5 border-t border-[#E8DFD5]">
+                      <label className="flex items-start gap-2 text-[11px] text-[#4A3F38] cursor-pointer leading-tight">
                         <input
                           type="checkbox"
                           checked={consentTerms}
                           onChange={(e) => setConsentTerms(e.target.checked)}
-                          className="mt-0.5 rounded-[2px] text-[#631521] focus:ring-[#631521]"
+                          className="mt-0.5 rounded-[2px] text-[#631521] focus:ring-[#631521] shrink-0"
                         />
                         <span>
                           Tôi đã đọc và đồng ý với{' '}
@@ -321,24 +321,24 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
                         </span>
                       </label>
 
-                      <label className="flex items-start gap-2.5 text-xs text-[#4A3F38] cursor-pointer">
+                      <label className="flex items-start gap-2 text-[11px] text-[#4A3F38] cursor-pointer leading-tight">
                         <input
                           type="checkbox"
                           checked={consentAge}
                           onChange={(e) => setConsentAge(e.target.checked)}
-                          className="mt-0.5 rounded-[2px] text-[#631521] focus:ring-[#631521]"
+                          className="mt-0.5 rounded-[2px] text-[#631521] focus:ring-[#631521] shrink-0"
                         />
                         <span>
                           Tôi xác nhận từ <strong>đủ 16 tuổi trở lên</strong>. <span className="text-[#631521]">*</span>
                         </span>
                       </label>
 
-                      <label className="flex items-start gap-2.5 text-xs text-[#4A3F38] cursor-pointer">
+                      <label className="flex items-start gap-2 text-[11px] text-[#4A3F38] cursor-pointer leading-tight">
                         <input
                           type="checkbox"
                           checked={marketingOptIn}
                           onChange={(e) => setMarketingOptIn(e.target.checked)}
-                          className="mt-0.5 rounded-[2px] text-[#631521] focus:ring-[#631521]"
+                          className="mt-0.5 rounded-[2px] text-[#631521] focus:ring-[#631521] shrink-0"
                         />
                         <span>Nhận thông tin ưu đãi bộ sưu tập và quà tặng hội viên qua email.</span>
                       </label>
@@ -349,7 +349,7 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-[#631521] hover:bg-[#4A0D17] text-white rounded-[2px] text-xs font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-60"
+                  className="w-full py-2.5 bg-[#631521] hover:bg-[#4A0D17] text-white rounded-[2px] text-xs font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-60"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

@@ -60,6 +60,47 @@ export const VerifyOtpDtoSchema = z.object({
     .default('verify_email'),
 })
 
+export const ForgotPasswordDtoSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email('Email không đúng định dạng'),
+  turnstileToken: z.string().optional().nullable(),
+})
+
+export const ResetPasswordDtoSchema = z.object({
+  resetToken: z
+    .string()
+    .trim()
+    .min(1, 'Mã phiên đặt lại mật khẩu không hợp lệ'),
+  newPassword: z
+    .string()
+    .min(8, 'Mật khẩu mới phải có tối thiểu 8 ký tự')
+    .regex(/[A-Za-z]/, 'Mật khẩu phải chứa ít nhất một chữ cái')
+    .regex(/[0-9]/, 'Mật khẩu phải chứa ít nhất một chữ số'),
+  confirmPassword: z
+    .string()
+    .min(1, 'Vui lòng xác nhận mật khẩu mới'),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: 'Mật khẩu xác nhận không trùng khớp với mật khẩu mới',
+  path: ['confirmPassword'],
+})
+
+export const RegisterRequestOtpDtoSchema = RegisterDtoSchema
+
+export const RegisterVerifyOtpDtoSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email('Email không đúng định dạng'),
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, 'Mã OTP phải gồm chính xác 6 chữ số'),
+})
+
 /**
  * Middleware validate body request bằng Zod Schema
  */

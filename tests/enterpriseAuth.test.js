@@ -4,6 +4,7 @@ import express from 'express'
 import http from 'http'
 import { registerAuthEndpoints } from '../server/lib/authEndpoints.js'
 import { customerSessionMiddleware } from '../server/lib/customerSessionMiddleware.js'
+import { cacheGet } from '../server/lib/cacheService.js'
 
 describe('Enterprise Authentication Suite (8-Step Architecture)', () => {
   let server
@@ -282,5 +283,171 @@ describe('Enterprise Authentication Suite (8-Step Architecture)', () => {
     } finally {
       process.env.AUTH_TEST_MODE = prevMode
     }
+  })
+
+  it('Quy trình Quên mật khẩu: Gửi OTP Gmail -> Xác minh OTP -> Tạo mật khẩu mới -> Đăng nhập lại với mật khẩu mới', async () => {
+    const { cacheGet } = await import('../server/lib/cacheService.js')
+    const resetUserEmail = `forgot_${Date.now()}@quannguyens.com`
+    const oldPassword = 'OldPassword@123'
+    const newPassword = 'NewPassword@2026'
+
+    // 1. Tạo tài khoản mẫu
+    const regRes = await fetch(`${baseUrl}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: resetUserEmail,
+        password: oldPassword,
+        fullName: 'Khách Hàng Quên Mật Khẩu',
+      }),
+    })
+    assert.equal(regRes.status, 201)
+
+    // 2. Yêu cầu lấy lại mật khẩu (/api/auth/password/forgot)
+    const forgotRes = await fetch(`${baseUrl}/api/auth/password/forgot`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: resetUserEmail }),
+    })
+    const forgotData = await forgotRes.json()
+    assert.equal(forgotRes.status, 200, `Forgot password status 200: ${JSON.stringify(forgotData)}`)
+    assert.equal(forgotData.success, true)
+
+    // Lấy OTP từ cache
+    const rawOtp = await cacheGet(`otp:reset_password:${resetUserEmail}`)
+    assert.ok(rawOtp, 'Mã OTP phải được lưu trữ trong cache')
+    const otpData = typeof rawOtp === 'string' ? JSON.parse(rawOtp) : rawOtp
+    const generatedCode = otpData.code
+    assert.match(generatedCode, /^\d{6}$/, 'OTP phải là 6 chữ số')
+
+    // 3. Thử nhập mã OTP sai -> phải bị từ chối
+    const wrongVerifyRes = await fetch(`${baseUrl}/api/auth/password/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: resetUserEmail, code: '000000' }),
+    })
+    const wrongData = await wrongVerifyRes.json()
+    assert.equal(wrongVerifyRes.status, 400)
+    assert.equal(wrongData.success, false)
+
+    // 4. Nhập mã OTP đúng -> nhận resetToken
+    const verifyRes = await fetch(`${baseUrl}/api/auth/password/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: resetUserEmail, code: generatedCode }),
+    })
+    const verifyData = await verifyRes.json()
+    assert.equal(verifyRes.status, 200)
+    assert.equal(verifyData.success, true)
+    assert.ok(verifyData.resetToken, 'Phải trả về resetToken')
+
+    // 5. Đặt mật khẩu mới (/api/auth/password/reset)
+    const resetRes = await fetch(`${baseUrl}/api/auth/password/reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        resetToken: verifyData.resetToken,
+        newPassword,
+        confirmPassword: newPassword,
+      }),
+    })
+    const resetData = await resetRes.json()
+    assert.equal(resetRes.status, 200, `Reset password status 200: ${JSON.stringify(resetData)}`)
+    assert.equal(resetData.success, true)
+
+    // 6. Thử đăng nhập bằng mật khẩu cũ -> Thất bại
+    const oldLoginRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: resetUserEmail, password: oldPassword }),
+    })
+    assert.equal(oldLoginRes.status, 401)
+
+    // 7. Đăng nhập bằng mật khẩu mới -> Thành công!
+    const newLoginRes = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: resetUserEmail, password: newPassword }),
+    })
+    const newLoginData = await newLoginRes.json()
+    assert.equal(newLoginRes.status, 200)
+    assert.equal(newLoginData.success, true)
+    assert.equal(newLoginData.user.email, resetUserEmail)
+  })
+
+  it('Bước 1, 2, 3 (Nâng cao): Đăng ký tài khoản xác thực qua OTP Gmail & Tự động đăng nhập trực tiếp', async () => {
+    const regOtpEmail = `otp_register_${Date.now()}@quannguyens.com`
+    const regPassword = 'SecurePassword@123'
+    const regFullName = 'Khách Hàng OTP QuanNguyenS'
+
+    // 1. Gửi yêu cầu đăng ký nhận OTP (/api/auth/register/request-otp)
+    const reqRes = await fetch(`${baseUrl}/api/auth/register/request-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: regOtpEmail,
+        password: regPassword,
+        fullName: regFullName,
+        marketingOptIn: true,
+      }),
+    })
+    const reqData = await reqRes.json()
+    assert.equal(reqRes.status, 200, `Request OTP status 200: ${JSON.stringify(reqData)}`)
+    assert.equal(reqData.success, true)
+    assert.equal(reqData.email, regOtpEmail)
+
+    // 2. Nhập sai mã OTP -> Báo lỗi 400
+    const wrongRes = await fetch(`${baseUrl}/api/auth/register/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: regOtpEmail,
+        code: '999999',
+      }),
+    })
+    const wrongData = await wrongRes.json()
+    assert.equal(wrongRes.status, 400)
+    assert.equal(wrongData.success, false)
+    assert.ok(wrongData.error.includes('không chính xác'))
+
+    // 3. Lấy mã OTP thực tế được lưu an toàn trong Cache
+    const rawCache = await cacheGet(`pending_reg:${regOtpEmail.toLowerCase()}`)
+    assert.ok(rawCache, 'Pending registration data phải tồn tại trong cache')
+    const pendingData = typeof rawCache === 'string' ? JSON.parse(rawCache) : rawCache
+    const validOtpCode = pendingData.code
+    assert.match(validOtpCode, /^\d{6}$/, 'Mã OTP phải gồm 6 chữ số')
+
+    // 4. Xác nhận mã chính xác -> Tài khoản được tạo, verified=true, và tự động cấp Access Token/Session
+    const verifyRes = await fetch(`${baseUrl}/api/auth/register/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: regOtpEmail,
+        code: validOtpCode,
+      }),
+    })
+    const verifyData = await verifyRes.json()
+    assert.equal(verifyRes.status, 201, `Verify OTP status 201: ${JSON.stringify(verifyData)}`)
+    assert.equal(verifyData.success, true)
+    assert.ok(verifyData.accessToken, 'Phải cấp accessToken ngay khi xác thực thành công')
+    assert.equal(verifyData.user.email, regOtpEmail.toLowerCase())
+    assert.equal(verifyData.user.fullName, regFullName)
+    assert.equal(verifyData.user.verified, true)
+
+    // Kiểm tra Cookie Refresh Token được đính kèm tự động
+    const rawSetCookie = verifyRes.headers.get('set-cookie')
+    assert.ok(rawSetCookie, 'Phải có Set-Cookie chứa refresh token')
+
+    // 5. Thử đăng ký lại với cùng email đã xác thực -> Báo lỗi 409 Conflict
+    const dupRes = await fetch(`${baseUrl}/api/auth/register/request-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: regOtpEmail,
+        password: regPassword,
+        fullName: regFullName,
+      }),
+    })
+    assert.equal(dupRes.status, 409)
   })
 })
