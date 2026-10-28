@@ -126,6 +126,7 @@ export function applyOrderUpdateLocally(updatedOrder) {
 
     const finalStatus = updatedOrder.status || existing?.status || 'PENDING'
     const isDelivered = finalStatus === 'DELIVERED'
+    const isBankTransfer = (updatedOrder.paymentMethod === 'BANK_TRANSFER' || updatedOrder.payment?.method === 'BANK_TRANSFER' || existing?.paymentMethod === 'BANK_TRANSFER' || existing?.payment?.method === 'BANK_TRANSFER')
 
     const mergedOrder = {
       ...(existing || {}),
@@ -147,11 +148,11 @@ export function applyOrderUpdateLocally(updatedOrder) {
       trackingCode: updatedOrder.trackingCode || updatedOrder.trackingNumber || existing?.trackingCode || existing?.trackingNumber || '',
       trackingNumber: updatedOrder.trackingCode || updatedOrder.trackingNumber || existing?.trackingCode || existing?.trackingNumber || '',
       carrier: updatedOrder.carrier || existing?.carrier || 'Viettel Post',
-      paymentStatus: updatedOrder.paymentStatus || existing?.paymentStatus || (isDelivered ? 'PAID' : undefined),
+      paymentStatus: updatedOrder.paymentStatus || existing?.paymentStatus || (!isBankTransfer && isDelivered ? 'PAID' : undefined),
       payment: {
         ...(existing?.payment || {}),
         ...(updatedOrder.payment || {}),
-        status: updatedOrder.paymentStatus || updatedOrder.payment?.status || (isDelivered ? 'PAID' : existing?.payment?.status),
+        status: updatedOrder.paymentStatus || updatedOrder.payment?.status || (!isBankTransfer && isDelivered ? 'PAID' : existing?.payment?.status),
       },
       cancelReason: updatedOrder.cancelReason || existing?.cancelReason || '',
       adminNote: updatedOrder.adminNote || existing?.adminNote || '',

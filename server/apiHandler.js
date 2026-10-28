@@ -7,6 +7,7 @@ import { validateOrderStock } from './lib/stockValidator.js'
 import { calculateShippingDistance } from './lib/distanceService.js'
 import { redeemVoucher } from './lib/voucherValidator.js'
 import { generateTrackingToken } from './lib/orderTokenService.js'
+import { PAYMENT_QR_TTL_SECONDS } from './lib/paymentState.js'
 
 /**
  * Controller xử lý submit đơn hàng:
@@ -133,7 +134,7 @@ export async function handleOrderSubmit(order, context = {}) {
       method: isBankTransfer ? 'BANK_TRANSFER' : 'COD',
       status: isBankTransfer ? 'AWAITING_PAYMENT' : 'UNPAID', // PAY-001: Ban đầu là AWAITING_PAYMENT
       qrGeneratedAt: now,
-      qrExpiresAt: now + 5 * 60 * 1000, // 5 phút hiệu lực
+      qrExpiresAt: now + PAYMENT_QR_TTL_SECONDS * 1000, // Hiệu lực cấu hình (10 phút)
       isQrInvalidated: false,
     },
     createdAt: createdDate,

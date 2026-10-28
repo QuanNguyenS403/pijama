@@ -751,6 +751,10 @@ export default function AccountPage() {
                                 ? 'Đang vận chuyển'
                                 : ord.status === 'CANCELLED'
                                 ? 'Đã hủy'
+                                : ord.paymentStatus === 'CUSTOMER_CLAIMED_PAID' || ord.payment?.status === 'CUSTOMER_CLAIMED_PAID'
+                                ? 'Đã báo CK — chờ đối soát'
+                                : ord.paymentStatus === 'EXPIRED_TIMEOUT' || ord.payment?.status === 'EXPIRED_TIMEOUT'
+                                ? 'Hết hạn thanh toán'
                                 : ord.status === 'AWAITING_PAYMENT'
                                 ? 'Chờ thanh toán'
                                 : 'Đang xử lý'}

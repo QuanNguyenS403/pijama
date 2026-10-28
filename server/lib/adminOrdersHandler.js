@@ -3,6 +3,7 @@ import { orderPersistence } from './orderPersistence.js'
 import { searchOrdersFromSheet, updateOrderStatusInSheet } from './googleSheets.js'
 import { sendConfirmedEmail, sendShippedEmail, sendCancelledEmail } from './emailStatusUpdates.js'
 import { broadcastOrderUpdate } from './orderEvents.js'
+import { canAdvanceFulfilment, getPaymentPhase, markOrderPaid } from './paymentState.js'
 
 export const VALID_TRANSITIONS = {
   PENDING:          ['CONFIRMED', 'CANCELLED'],
@@ -61,6 +62,8 @@ export function formatAdminOrder(order) {
     total: Number(order.total) || 0,
     paymentMethod,
     paymentStatus,
+    phase: getPaymentPhase(order),
+    claimedAt: order.payment?.claimedAt || null,
     status: order.status || 'PENDING',
     isDelivered: order.status === 'DELIVERED',
     deliveredAt: order.deliveredAt || (order.status === 'DELIVERED' ? (order.updatedAt || new Date().toISOString()) : null),
@@ -289,11 +292,65 @@ export async function handleAdminOrderAction(orderId, payload = {}) {
     }
   }
 
+  // 1b. Action MARK_PAID (WP8: Xác nhận tiền về thủ công có lý do)
+  if (action === 'MARK_PAID') {
+    const markNote = (note || reason || '').trim()
+    if (!markNote || markNote.length < 10) {
+      return {
+        status: 400,
+        data: {
+          success: false,
+          error: 'Vui lòng nhập lý do/ghi chú đối soát hợp lệ (tối thiểu 10 ký tự)',
+        },
+      }
+    }
+
+    const markResult = markOrderPaid(order, {
+      source: 'MANUAL_ADMIN',
+      note: markNote,
+      operator: 'admin',
+    })
+
+    order.adminNote = (order.adminNote ? order.adminNote + ' | ' : '') + `[MARK_PAID] ${markNote}`
+    order.updatedAt = new Date().toISOString()
+    orderPersistence.set(orderId, order)
+
+    const formatted = formatAdminOrder(order)
+    broadcastOrderUpdate(formatted)
+
+    updateOrderStatusInSheet(
+      orderId,
+      order.status,
+      `[ADMIN_MARK_PAID] ${markNote}`,
+      order.trackingCode || order.trackingNumber || '',
+      order.carrier || ''
+    ).catch(() => {})
+
+    return {
+      status: 200,
+      data: {
+        success: true,
+        message: '✅ Đã xác nhận tiền về thủ công cho đơn hàng!',
+        order: formatted,
+        alreadyPaid: markResult.alreadyPaid || false,
+      },
+    }
+  }
+
   // 2. Action TOGGLE_PAYMENT
   if (action === 'TOGGLE_PAYMENT') {
     if (!order.payment) order.payment = {}
     const defaultMethod = order.payment.method || order.paymentMethod || 'COD'
-    const current = order.payment.status || (defaultMethod === 'BANK_TRANSFER' ? 'PAID' : 'UNPAID')
+    if (defaultMethod === 'BANK_TRANSFER') {
+      return {
+        status: 400,
+        data: {
+          success: false,
+          error: 'Đơn chuyển khoản không thể toggle thanh toán tự do. Vui lòng dùng xác nhận tiền về (MARK_PAID) có lý do đối soát.',
+        },
+      }
+    }
+    const current = order.payment.status || 'UNPAID'
     const nextStatus = current === 'PAID' ? 'UNPAID' : 'PAID'
     order.payment.status = nextStatus
     order.paymentStatus = nextStatus
@@ -328,6 +385,20 @@ export async function handleAdminOrderAction(orderId, payload = {}) {
   const currentStatus = order.status || 'PENDING'
   const allowed = VALID_TRANSITIONS[currentStatus] || []
 
+  // I4: Kiểm tra điều kiện đơn BANK_TRANSFER chưa PAID không được CONFIRM/PROCESSING/SHIP/DELIVER
+  if (['CONFIRM', 'PROCESSING', 'SHIP', 'DELIVER'].includes(action)) {
+    const check = canAdvanceFulfilment(order)
+    if (!check.allowed) {
+      return {
+        status: 400,
+        data: {
+          success: false,
+          error: check.reason,
+        },
+      }
+    }
+  }
+
   // Check valid transition
   if (!allowed.includes(newStatus)) {
     return {
@@ -361,8 +432,11 @@ export async function handleAdminOrderAction(orderId, payload = {}) {
 
   if (action === 'DELIVER') {
     if (!order.payment) order.payment = {}
-    order.payment.status = 'PAID'
-    order.paymentStatus = 'PAID'
+    const defaultMethod = order.payment.method || order.paymentMethod || 'COD'
+    if (defaultMethod === 'COD') {
+      order.payment.status = 'PAID'
+      order.paymentStatus = 'PAID'
+    }
     order.deliveredAt = new Date().toISOString()
     order.isDelivered = true
   }

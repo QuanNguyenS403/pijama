@@ -34,6 +34,8 @@ export const PAYMENT_LABELS = {
 
 export const ORDER_STATUSES = {
   AWAITING_PAYMENT: { label: "Chờ thanh toán", color: "blue", step: 0 },
+  CUSTOMER_CLAIMED_PAID: { label: "Đã báo chuyển khoản — chờ đối soát", color: "purple", step: 0 },
+  EXPIRED_TIMEOUT: { label: "Hết hạn thanh toán", color: "rose", step: -1 },
   PENDING: { label: "Đã xác nhận", color: "amber", step: 1 },
   CONFIRMED: { label: "Đã xác nhận", color: "amber", step: 1 },
   PACKING: { label: "Đang đóng gói", color: "indigo", step: 2 },

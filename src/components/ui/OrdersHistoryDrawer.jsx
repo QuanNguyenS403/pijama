@@ -16,6 +16,7 @@ import {
   ArrowRight,
   Ban,
   Loader2,
+  AlertCircle,
 } from 'lucide-react'
 import { formatVND, getCarrierTrackingUrl, PAYMENT_METHODS } from '../../data/checkoutConfig'
 import { syncBatchOrders, getSavedOrders } from '../../lib/orderSync'
@@ -37,6 +38,34 @@ function OrderTrackingTimeline({ status, isVietQR, cancelReason }) {
             Lý do: {cancelReason}
           </p>
         )}
+      </div>
+    )
+  }
+
+  if (normalizedStatus === 'CUSTOMER_CLAIMED_PAID') {
+    return (
+      <div className="py-2.5 px-3 bg-[#FAF5F0] border border-[#D4AF37]/60 rounded-[3px] flex items-center justify-between text-xs text-[#631521] font-sans">
+        <span className="flex items-center gap-1.5 font-semibold">
+          <Clock className="w-4 h-4 text-[#D4AF37]" />
+          Đã báo chuyển khoản — chờ đối soát
+        </span>
+        <span className="text-[11px] bg-white px-2 py-0.5 rounded border border-[#D4AF37]/40 font-medium">
+          Đang kiểm tra
+        </span>
+      </div>
+    )
+  }
+
+  if (normalizedStatus === 'EXPIRED_TIMEOUT') {
+    return (
+      <div className="py-2.5 px-3 bg-[#FEE2E2] border border-[#FECACA] rounded-[3px] flex items-center justify-between text-xs text-[#DC2626] font-sans">
+        <span className="flex items-center gap-1.5 font-semibold">
+          <AlertCircle className="w-4 h-4 text-[#DC2626]" />
+          Hết hạn thanh toán
+        </span>
+        <span className="text-[11px] bg-white px-2 py-0.5 rounded border border-[#FECACA] font-medium">
+          Mã QR hết hạn
+        </span>
       </div>
     )
   }
@@ -642,10 +671,22 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                 Đã giao thành công
               </span>
             ) : isVietQR && order.payment?.status !== 'PAID' ? (
-              <span className="inline-flex items-center gap-1 bg-[#E8F0FE] text-[#1967D2] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#AECBFA]">
-                <QrCode className="w-3 h-3" />
-                Chờ VietQR (-10%)
-              </span>
+              order.payment?.status === 'CUSTOMER_CLAIMED_PAID' ? (
+                <span className="inline-flex items-center gap-1 bg-[#FAF5F0] text-[#7C3AED] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#DDD6FE]">
+                  <Clock className="w-3 h-3 text-[#7C3AED]" />
+                  Đã báo CK — Chờ đối soát
+                </span>
+              ) : order.payment?.status === 'EXPIRED_TIMEOUT' ? (
+                <span className="inline-flex items-center gap-1 bg-[#FEE2E2] text-[#DC2626] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#FECACA]">
+                  <AlertCircle className="w-3 h-3 text-[#DC2626]" />
+                  Hết hạn thanh toán
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 bg-[#E8F0FE] text-[#1967D2] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#AECBFA]">
+                  <QrCode className="w-3 h-3" />
+                  Chờ thanh toán (-10%)
+                </span>
+              )
             ) : (
               <span className="inline-flex items-center gap-1 bg-[#FAF5F0] text-[#631521] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#D4AF37]/40">
                 <Truck className="w-3 h-3" />

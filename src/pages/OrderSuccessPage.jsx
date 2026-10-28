@@ -9,6 +9,8 @@ import {
   Check,
   Gift,
   Sparkles,
+  Clock,
+  AlertTriangle,
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Section12Footer from '../components/sections/Section12Footer'
@@ -22,6 +24,10 @@ export default function OrderSuccessPage() {
   const orderId = searchParams.get('orderId') || 'QNS-' + Date.now().toString().slice(-6)
 
   // Lấy dữ liệu order từ location state, sessionStorage hoặc kho lưu trữ bảo vệ
+  // Trạng thái xác thực độc lập từ máy chủ (WP7 / Invariant I1)
+  const [serverPhase, setServerPhase] = useState(null)
+  const [isValidatingServer, setIsValidatingServer] = useState(true)
+
   const [order, setOrder] = useState(() => {
     if (location.state?.order) return location.state.order
     try {
@@ -91,6 +97,20 @@ export default function OrderSuccessPage() {
       refreshOrderData()
     }
 
+    if (orderId) {
+      fetch(`/api/orders/status?orderId=${encodeURIComponent(orderId)}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data && data.success) {
+            if (data.phase) setServerPhase(data.phase)
+            if (data.order) {
+              setOrder((prev) => ({ ...(prev || {}), ...data.order }))
+            }
+          }
+        })
+        .catch(() => {})
+    }
+
     // Lắng nghe sự kiện Admin cập nhật đơn hàng realtime - bảo tồn trọn vẹn items và thông tin
     const handleOrderUpdated = (e) => {
       const updated = e?.detail
@@ -141,6 +161,12 @@ export default function OrderSuccessPage() {
   const customerPhone = order?.customer?.phone || ''
   const total = order?.total || 0
   const isBankTransfer = order?.payment?.method === 'BANK_TRANSFER'
+  const effectivePhase = serverPhase || (
+    order?.payment?.status === 'PAID' ? 'PAID' :
+    order?.payment?.status === 'CUSTOMER_CLAIMED_PAID' ? 'CLAIMED' :
+    order?.payment?.status === 'EXPIRED_TIMEOUT' || order?.status === 'CANCELLED' ? 'EXPIRED' :
+    'AWAITING'
+  )
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#1A1614]">
@@ -165,14 +191,34 @@ export default function OrderSuccessPage() {
               transition={{ delay: 0.15, type: 'spring', stiffness: 200, damping: 15 }}
               className="w-16 h-16 bg-[#FAF8F5] text-[#631521] rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-[#D4AF37] shadow-lg relative z-10"
             >
-              <CheckCircle2 className="w-10 h-10 stroke-[2.5]" />
+              {isBankTransfer && effectivePhase !== 'PAID' ? (
+                effectivePhase === 'EXPIRED' ? (
+                  <AlertTriangle className="w-10 h-10 text-[#C62828] stroke-[2.5]" />
+                ) : (
+                  <Clock className="w-10 h-10 text-[#D4AF37] stroke-[2.5]" />
+                )
+              ) : (
+                <CheckCircle2 className="w-10 h-10 stroke-[2.5]" />
+              )}
             </motion.div>
 
             <span className="font-serif text-xs font-semibold tracking-[0.3em] text-[#D4AF37] uppercase block mb-1.5 relative z-10">
-              XÁC NHẬN ĐƠN HÀNG
+              {isBankTransfer && effectivePhase !== 'PAID' ? (
+                effectivePhase === 'CLAIMED' ? 'TIẾP NHẬN BÁO CHUYỂN KHOẢN' :
+                effectivePhase === 'EXPIRED' ? 'MÃ QR HẾT HIỆU LỰC' :
+                'CHƯA HOÀN TẤT THANH TOÁN'
+              ) : (
+                'XÁC NHẬN ĐƠN HÀNG'
+              )}
             </span>
             <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide relative z-10">
-              Đặt Hàng Thành Công!
+              {isBankTransfer && effectivePhase !== 'PAID' ? (
+                effectivePhase === 'CLAIMED' ? 'Đang Chờ Xác Nhận Thanh Toán' :
+                effectivePhase === 'EXPIRED' ? 'Đơn Hàng Chưa Hoàn Tất' :
+                'Đang Chờ Chuyển Khoản'
+              ) : (
+                'Đặt Hàng Thành Công!'
+              )}
             </h1>
             <div className="inline-flex items-center gap-2 mt-3 bg-black/25 px-4 py-1.5 rounded-full border border-white/20 relative z-10">
               <p className="font-mono text-xs text-[#FAF8F5] tracking-wider">
@@ -262,13 +308,31 @@ export default function OrderSuccessPage() {
                         </p>
                       )}
                     </div>
-                  ) : order.payment?.status === 'CUSTOMER_CLAIMED_PAID' ? (
+                  ) : isBankTransfer && effectivePhase === 'CLAIMED' ? (
                     <div className="bg-[#FAF5F0] border border-[#D4AF37]/60 p-4 rounded-[4px] text-xs text-[#631521] space-y-1.5 text-left shadow-xs">
                       <p className="font-bold flex items-center gap-1.5 text-sm">
-                        <span>✅</span> QuanNguyenS đã tiếp nhận xác nhận chuyển khoản của bạn!
+                        <span>⏳</span> Tiếp nhận yêu cầu đối soát chuyển khoản
                       </p>
                       <p className="text-[#4A3F38] font-normal leading-relaxed">
-                        Đơn hàng <strong>#{order.orderId}</strong> đã được ghi nhận thành công. Bộ phận vận hành sẽ đối soát tài khoản Vietcombank và chuẩn bị đóng gói gửi hàng sớm nhất qua <strong>{order.carrier || 'Viettel Post'}</strong> cho quý khách.
+                        Đơn hàng <strong>#{order.orderId}</strong> đang chờ đối soát sao kê tài khoản ngân hàng. Bộ phận vận hành sẽ kiểm tra và chuẩn bị đóng gói gửi hàng ngay khi xác nhận tiền về.
+                      </p>
+                    </div>
+                  ) : isBankTransfer && effectivePhase === 'EXPIRED' ? (
+                    <div className="bg-[#FFF5F5] border border-[#EF9A9A] p-4 rounded-[4px] text-xs text-[#C62828] space-y-1.5 text-left shadow-xs">
+                      <p className="font-bold flex items-center gap-1.5 text-sm">
+                        <span>⚠️</span> Mã QR thanh toán đã hết hạn hiệu lực
+                      </p>
+                      <p className="text-[#4A3F38] font-normal leading-relaxed">
+                        Thời hạn chuyển khoản cho đơn hàng <strong>#{order.orderId}</strong> đã kết thúc. Vui lòng đặt lại đơn mới hoặc liên hệ hotline 0981 753 082 để được hỗ trợ.
+                      </p>
+                    </div>
+                  ) : isBankTransfer && effectivePhase === 'AWAITING' ? (
+                    <div className="bg-[#FFF8E1] border border-[#FFE082] p-4 rounded-[4px] text-xs text-[#B45309] space-y-1.5 text-left shadow-xs">
+                      <p className="font-bold flex items-center gap-1.5 text-sm">
+                        <span>⏳</span> Đơn hàng đang chờ quét mã VietQR thanh toán
+                      </p>
+                      <p className="text-[#4A3F38] font-normal leading-relaxed">
+                        Đơn hàng chưa hoàn tất thanh toán. Vui lòng quét mã QR chuyển khoản để đơn hàng được tự động xác nhận.
                       </p>
                     </div>
                   ) : (

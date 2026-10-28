@@ -2,7 +2,7 @@
 // Trang danh sách đơn hàng cho chủ shop
 // Route: /admin/orders
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { broadcastOrderUpdateClient } from '../../lib/orderSync'
 
@@ -42,6 +42,13 @@ export default function AdminOrdersPage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [toast, setToast]                 = useState(null)
   const [isSyncingViettel, setIsSyncingViettel] = useState(false)
+  const [quickFilter, setQuickFilter]           = useState('')
+  const [unresolvedTx, setUnresolvedTx]         = useState([])
+  const [bridgeHealth, setBridgeHealth]         = useState(null)
+  const [showTxPanel, setShowTxPanel]           = useState(false)
+  const [assigningTx, setAssigningTx]           = useState(null)
+  const [assignOrderId, setAssignOrderId]       = useState('')
+  const [assignNote, setAssignNote]             = useState('')
 
   const getAdminHeaders = () => {
     const token = sessionStorage.getItem('qns_admin_token') || ''
@@ -50,6 +57,60 @@ export default function AdminOrdersPage() {
       ...(token && { 'Authorization': `Bearer ${token}` }),
     }
   }
+
+  // ── Computed Displayed Orders theo Quick Filter (WP8) ────
+  const displayedOrders = useMemo(() => {
+    let list = [...orders]
+    if (quickFilter === 'CLAIMED') {
+      list = list.filter(o => o.paymentStatus === 'CUSTOMER_CLAIMED_PAID' || o.payment?.status === 'CUSTOMER_CLAIMED_PAID')
+      list.sort((a, b) => new Date(b.claimedAt || b.createdAt).getTime() - new Date(a.claimedAt || a.createdAt).getTime())
+    } else if (quickFilter === 'AWAITING') {
+      list = list.filter(o => (o.status === 'AWAITING_PAYMENT' || o.paymentStatus === 'AWAITING_PAYMENT') && o.paymentStatus !== 'CUSTOMER_CLAIMED_PAID')
+    } else if (quickFilter === 'EXPIRED') {
+      list = list.filter(o => o.paymentStatus === 'EXPIRED_TIMEOUT' || String(o.cancelReason || '').includes('Hết hạn'))
+    }
+    return list
+  }, [orders, quickFilter])
+
+  // ── Fetch Unresolved Transactions ──────────────
+  const fetchUnresolvedTx = useCallback(async () => {
+    try {
+      const token = sessionStorage.getItem('qns_admin_token') || ''
+      const res = await fetch('/api/admin/payment-transactions', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setUnresolvedTx(data.transactions || [])
+      }
+    } catch {}
+  }, [])
+
+  const fetchBridgeHealth = useCallback(async () => {
+    try {
+      const token = sessionStorage.getItem('qns_admin_token') || ''
+      const res = await fetch('/api/admin/bridge-health', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success && data.health) {
+          setBridgeHealth(data.health)
+        }
+      }
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    fetchUnresolvedTx()
+    fetchBridgeHealth()
+  }, [fetchUnresolvedTx, fetchBridgeHealth])
 
   // ── Fetch orders ────────────────────────────────
   const fetchOrders = useCallback(async (isManual = false) => {
@@ -236,6 +297,13 @@ export default function AdminOrdersPage() {
       <div style={{ display:'flex', gap:'6px', flexWrap:'wrap' }}>
         {(status === 'PENDING' || status === 'AWAITING_PAYMENT') && (
           <>
+            {((order.payment?.method || order.paymentMethod) === 'BANK_TRANSFER' && (order.payment?.status || order.paymentStatus) !== 'PAID') && (
+              <ActionBtn
+                label="💳 Xác nhận đã nhận tiền"
+                color="#059669"
+                onClick={() => setActionModal({ type:'MARK_PAID', orderId, total: order.total })}
+              />
+            )}
             <ActionBtn
               label="✅ Xác nhận"
               color="#2563EB"
@@ -353,6 +421,31 @@ export default function AdminOrdersPage() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {bridgeHealth && (
+            <div
+              title={`Cầu nối Gmail Apps Script: ${bridgeHealth.status === 'GREEN' ? 'Hoạt động tốt' : (bridgeHealth.status === 'YELLOW' ? 'Hơi chậm' : 'Ngừng kết nối')} (Lần cuối: ${bridgeHealth.minutesAgo !== null ? bridgeHealth.minutesAgo + ' phút trước' : 'Chưa có'})`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                fontSize: '11px',
+                fontWeight: 600,
+                background: bridgeHealth.status === 'GREEN' ? '#ECFDF5' : (bridgeHealth.status === 'YELLOW' ? '#FEF3C7' : '#FEE2E2'),
+                color: bridgeHealth.status === 'GREEN' ? '#065F46' : (bridgeHealth.status === 'YELLOW' ? '#92400E' : '#991B1B'),
+                border: `1px solid ${bridgeHealth.status === 'GREEN' ? '#A7F3D0' : (bridgeHealth.status === 'YELLOW' ? '#FDE68A' : '#FECACA')}`,
+              }}
+            >
+              <span style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: bridgeHealth.status === 'GREEN' ? '#10B981' : (bridgeHealth.status === 'YELLOW' ? '#F59E0B' : '#EF4444'),
+              }} />
+              <span>Gmail Bridge: {bridgeHealth.status === 'GREEN' ? 'Online' : (bridgeHealth.status === 'YELLOW' ? `${bridgeHealth.minutesAgo}p trước` : 'Mất tín hiệu')}</span>
+            </div>
+          )}
           <Link
             to="/admin/members"
             title="Quản lý hồ sơ hội viên, tích điểm, voucher và cảnh báo"
@@ -459,6 +552,162 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
+      {/* ── GIAO DỊCH NGÂN HÀNG CẦN ĐỐI SOÁT (WP8) ─────────────────── */}
+      {unresolvedTx.length > 0 && (
+        <div style={{
+          background: '#FFFBEB',
+          border: '1px solid #FCD34D',
+          padding: '16px',
+          marginBottom: '20px',
+          borderRadius: '4px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#B45309', fontWeight: 600, fontSize: '14px' }}>
+              <span>⚠️</span>
+              <span>Có {unresolvedTx.length} giao dịch ngân hàng cần đối soát (Tiền về trễ, sai số tiền hoặc chưa khớp đơn)</span>
+            </div>
+            <button
+              onClick={() => setShowTxPanel(p => !p)}
+              style={{ ...btnStyle, background: '#D97706', fontSize: '11px', padding: '6px 12px' }}
+            >
+              {showTxPanel ? 'Thu gọn' : 'Xem chi tiết giao dịch'}
+            </button>
+          </div>
+
+          {showTxPanel && (
+            <div style={{ marginTop: '14px', overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: '#fff' }}>
+                <thead>
+                  <tr style={{ background: '#FDF6B2', color: '#723B13' }}>
+                    <th style={{ padding: '8px 10px', textAlign: 'left' }}>Mã GD (tx_id)</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'left' }}>Thời gian</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'right' }}>Số tiền</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'left' }}>Nội dung CK</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'left' }}>Tình trạng</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'center' }}>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {unresolvedTx.map((tx) => (
+                    <tr key={tx.tx_id} style={{ borderBottom: '1px solid #E5E7EB' }}>
+                      <td style={{ padding: '8px 10px', fontFamily: 'monospace' }}>{tx.tx_id}</td>
+                      <td style={{ padding: '8px 10px' }}>{tx.received_at}</td>
+                      <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600, color: '#059669' }}>
+                        {Number(tx.amount || 0).toLocaleString('vi-VN')}đ
+                      </td>
+                      <td style={{ padding: '8px 10px' }}>{tx.content}</td>
+                      <td style={{ padding: '8px 10px', color: '#DC2626', fontWeight: 600 }}>{tx.outcome}</td>
+                      <td style={{ padding: '8px 10px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                          <button
+                            onClick={() => {
+                              const targetId = prompt(`Nhập mã đơn hàng (QNS-...) muốn gán cho giao dịch ${tx.tx_id} (${Number(tx.amount).toLocaleString('vi-VN')}đ):`)
+                              if (!targetId) return
+                              const note = prompt('Nhập lý do đối soát:', 'Gán thủ công từ sao kê ngân hàng') || ''
+                              fetch(`/api/admin/payment-transactions/${encodeURIComponent(tx.tx_id)}/resolve`, {
+                                method: 'POST',
+                                headers: getAdminHeaders(),
+                                body: JSON.stringify({ action: 'ASSIGN_ORDER', orderId: targetId.trim(), note }),
+                              }).then(r => r.json()).then(res => {
+                                if (res.success) {
+                                  alert('Gán đơn thành công!')
+                                  fetchUnresolvedTx()
+                                  fetchOrders(true)
+                                } else {
+                                  alert(res.error || 'Lỗi gán đơn')
+                                }
+                              })
+                            }}
+                            style={{ ...btnStyle, background: '#059669', fontSize: '11px', padding: '4px 8px' }}
+                          >
+                            Gán vào đơn
+                          </button>
+                          <button
+                            onClick={() => {
+                              const reason = prompt('Lý do bỏ qua / đã hoàn tiền:') || ''
+                              fetch(`/api/admin/payment-transactions/${encodeURIComponent(tx.tx_id)}/resolve`, {
+                                method: 'POST',
+                                headers: getAdminHeaders(),
+                                body: JSON.stringify({ action: 'IGNORE', note: reason }),
+                              }).then(r => r.json()).then(res => {
+                                if (res.success) {
+                                  alert('Đã cập nhật trạng thái giao dịch')
+                                  fetchUnresolvedTx()
+                                }
+                              })
+                            }}
+                            style={{ ...btnStyle, background: '#6B7280', fontSize: '11px', padding: '4px 8px' }}
+                          >
+                            Bỏ qua
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── THANH BỘ LỌC NHANH (WP8) ──────────────────── */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+        <button
+          onClick={() => setQuickFilter('')}
+          style={{
+            ...btnStyle,
+            background: quickFilter === '' ? '#631521' : '#F5F0E8',
+            color: quickFilter === '' ? '#FAF8F5' : '#4A3F38',
+            border: '1px solid #D9CFC4',
+            padding: '6px 14px',
+            fontSize: '12px',
+          }}
+        >
+          Tất cả đơn ({orders.length})
+        </button>
+        <button
+          onClick={() => setQuickFilter('CLAIMED')}
+          style={{
+            ...btnStyle,
+            background: quickFilter === 'CLAIMED' ? '#7C3AED' : '#F5F0E8',
+            color: quickFilter === 'CLAIMED' ? '#FAF8F5' : '#7C3AED',
+            border: '1px solid #DDD6FE',
+            padding: '6px 14px',
+            fontSize: '12px',
+            fontWeight: 600,
+          }}
+        >
+          📩 Khách báo CK — Chờ đối soát
+        </button>
+        <button
+          onClick={() => setQuickFilter('AWAITING')}
+          style={{
+            ...btnStyle,
+            background: quickFilter === 'AWAITING' ? '#3B82F6' : '#F5F0E8',
+            color: quickFilter === 'AWAITING' ? '#FAF8F5' : '#2563EB',
+            border: '1px solid #BFDBFE',
+            padding: '6px 14px',
+            fontSize: '12px',
+          }}
+        >
+          ⏳ Chờ thanh toán
+        </button>
+        <button
+          onClick={() => setQuickFilter('EXPIRED')}
+          style={{
+            ...btnStyle,
+            background: quickFilter === 'EXPIRED' ? '#DC2626' : '#F5F0E8',
+            color: quickFilter === 'EXPIRED' ? '#FAF8F5' : '#DC2626',
+            border: '1px solid #FECACA',
+            padding: '6px 14px',
+            fontSize: '12px',
+          }}
+        >
+          ⌛ Hết hạn thanh toán
+        </button>
+      </div>
+
       {/* ── BỘ LỌC ──────────────────────────── */}
       <div style={{
         display:'flex', gap:'10px', flexWrap:'wrap',
@@ -531,7 +780,7 @@ export default function AdminOrdersPage() {
                   </td>
                 </tr>
               )}
-              {orders.map((order, i) => {
+              {displayedOrders.map((order, i) => {
                 const orderId = order.orderId || order.id
                 return (
                   <tr
@@ -688,6 +937,46 @@ export default function AdminOrdersPage() {
             boxShadow:'0 20px 40px rgba(0,0,0,0.2)',
             borderRadius:'4px',
           }}>
+            {/* MARK_PAID modal (WP8) */}
+            {actionModal.type === 'MARK_PAID' && (
+              <>
+                <h2 style={modalTitle}>💳 Xác nhận đã nhận tiền (VietQR)</h2>
+                <p style={modalDesc}>
+                  Đơn hàng: <strong>#{actionModal.orderId}</strong> — Cần khớp: <strong>{(actionModal.total || 0).toLocaleString('vi-VN')}đ</strong>.
+                  <br />
+                  Chỉ xác nhận sau khi đã đối chiếu biến động số dư / sao kê Vietcombank thực tế.
+                </p>
+                <textarea
+                  placeholder="Lý do / Ghi chú đối soát sao kê (Bắt buộc tối thiểu 10 ký tự, ví dụ: 'Đã nhận 390k lúc 14:02 VCB mã GD 123456')"
+                  value={actionInput}
+                  onChange={e => setActionInput(e.target.value)}
+                  rows={3} style={textareaStyle}
+                />
+                <div style={modalActions}>
+                  <button
+                    onClick={() => {
+                      if (!actionInput || actionInput.trim().length < 10) {
+                        alert('Vui lòng nhập lý do/ghi chú đối soát sao kê ngân hàng tối thiểu 10 ký tự!')
+                        return
+                      }
+                      callAction(actionModal.orderId, 'MARK_PAID', { note: actionInput, reason: actionInput })
+                    }}
+                    disabled={actionLoading}
+                    style={{ ...btnStyle, background:'#059669' }}
+                  >
+                    {actionLoading ? 'Đang xử lý...' : '💳 Xác nhận đã nhận tiền'}
+                  </button>
+                  <button
+                    onClick={() => setActionModal(null)}
+                    disabled={actionLoading}
+                    style={{ ...btnStyle, background:'#6B7280' }}
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </>
+            )}
+
             {/* CONFIRM modal */}
             {actionModal.type === 'CONFIRM' && (
               <>

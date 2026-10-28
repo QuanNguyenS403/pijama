@@ -15,7 +15,7 @@
     "backup-data": "node scripts/backup-data.js",
     "rebuild-orders": "node scripts/rebuild-order-cache.js",
     "sync-sheets": "node scripts/sync-sheets.js",
-    "test": "cross-env NODE_ENV=test node --test tests/**/*.test.js"
+    "test": "cross-env NODE_ENV=test node --test --test-concurrency=1 tests/**/*.test.js"
   },
   "repository": {
     "type": "git",

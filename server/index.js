@@ -8,9 +8,7 @@ import fs from 'fs'
 import { handleOrderSubmit } from './apiHandler.js'
 import { initializeSheet } from './lib/googleSheets.js'
 import { verifyTransporter } from './lib/emailConfig.js'
-import { generateVietQRQuickLink, generateSePayQR } from './lib/paymentQrService.js'
-import { generateAiNapasQR, parseAndMatchTransactionAI } from './lib/aiNapasQrService.js'
-import { handlePaymentWebhook, getOrderPaymentStatus, markOrderPaidByAI } from './lib/paymentWebhook.js'
+import { handlePaymentWebhook, getOrderPaymentStatus } from './lib/paymentWebhook.js'
 import { createRateLimiter } from './lib/rateLimiter.js'
 import { addSseClient } from './lib/orderEvents.js'
 import { verifyAdminLogin, adminLoginLimiter, requireAdminAuth } from './lib/adminAuth.js'
@@ -100,7 +98,13 @@ app.use(
   })
 )
 
-app.use(express.json())
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf ? buf.toString('utf8') : ''
+    },
+  })
+)
 app.use(customerSessionMiddleware)
 
 // ── P0-5: Rate Limiters cho từng nhóm API nhạy cảm ─────────────
@@ -195,137 +199,170 @@ app.get('/api/health/email', async (req, res) => {
   }
 })
 
-// ── 1. API Tạo Mã QR Thanh Toán Động (Napas 247 AI / VietQR / SePay) ──────────
-app.post('/api/payment/generate-qr', generateQrLimiter, async (req, res) => {
+// ── 1. API Lấy Mã QR Thanh Toán VietQR Theo Đơn Hàng (WP4 - Server-Authoritative) ──
+app.get('/api/payment/qr', async (req, res) => {
   try {
-    const { amount, description, orderId, provider = 'NAPAS_247' } = req.body
-    if (!amount) {
-      return res.status(400).json({ success: false, error: 'Thiếu số tiền thanh toán (amount)' })
+    const { orderId } = req.query
+    const { getPaymentQrData } = await import('./lib/paymentQrService.js')
+    const result = await getPaymentQrData(orderId)
+    if (!result.ok) {
+      return res.status(result.status).json({ success: false, error: result.error, code: result.code })
     }
-
-    // P0 / T-4: Khóa cứng số tài khoản nhận tiền từ biến môi trường máy chủ
-    const canonicalBankCode = process.env.BANK_CODE || 'VCB'
-    const canonicalAccountNumber = process.env.BANK_ACCOUNT_NUMBER || '1050773506'
-    const canonicalAccountName = process.env.BANK_ACCOUNT_NAME || 'NGUYEN DUC QUAN'
-
-    if (provider === 'SePay') {
-      const result = generateSePayQR({
-        amount,
-        description,
-        accountNumber: canonicalAccountNumber,
-        bankName: canonicalBankCode,
-      })
-      return res.json(result)
-    }
-
-    // Mặc định: Tạo mã QR động tự động hóa qua NAPAS 247 (100% miễn phí vĩnh viễn)
-    const result = await generateAiNapasQR({
-      amount,
-      description,
-      orderId,
-      bankCode: canonicalBankCode,
-      accountNumber: canonicalAccountNumber,
-      accountName: canonicalAccountName,
-    })
-    return res.json(result)
+    return res.status(200).json(result.data)
   } catch (err) {
-    console.error('Error generating QR:', err)
-    const errorMsg = process.env.NODE_ENV === 'production' ? 'Đã có lỗi xảy ra khi tạo mã QR thanh toán.' : err.message
-    return res.status(500).json({ success: false, error: errorMsg })
-  }
-})
-
-// ── 1b. API Trả Ảnh Trực Tiếp QR Napas 24/7 (Miễn phí, 0ms latency) ────────────
-app.get('/api/payment/napas-qr', async (req, res) => {
-  try {
-    const { amount = 0, orderId = '', description = '' } = req.query
-    const result = await generateAiNapasQR({
-      amount: Number(amount) || 0,
-      description: description || (orderId ? `QNS ${orderId}` : ''),
-      orderId,
-    })
-
-    if (result.qrDataUrl && result.qrDataUrl.startsWith('data:image/png;base64,')) {
-      const imgBuffer = Buffer.from(result.qrDataUrl.replace(/^data:image\/png;base64,/, ''), 'base64')
-      res.writeHead(200, {
-        'Content-Type': 'image/png',
-        'Content-Length': imgBuffer.length,
-        'Cache-Control': 'public, max-age=300',
-      })
-      return res.end(imgBuffer)
-    }
-
-    return res.redirect(result.vietQrUrl)
-  } catch (err) {
+    console.error('Lỗi API /api/payment/qr:', err)
     return res.status(500).json({ success: false, error: err.message })
   }
 })
 
-// ── 1c. API Tiếp Nhận Thông Tin Đối Soát Giao Dịch Bằng AI (AI NAPAS 24/7 Matcher) ──
-app.post('/api/payment/ai-verify', submitOrderLimiter, async (req, res) => {
+// ── 1b. Endpoints Tạo QR Cũ Đã Ngừng Hoạt Động (B13 / WP4 - Trả 410 Gone) ─────────
+app.post('/api/payment/generate-qr', generateQrLimiter, (req, res) => {
+  return res.status(410).json({
+    success: false,
+    code: 'ENDPOINT_DEPRECATED',
+    error: 'Endpoint này đã ngừng hoạt động để bảo vệ an toàn giao dịch. Vui lòng sử dụng GET /api/payment/qr?orderId=...',
+  })
+})
+
+app.get('/api/payment/napas-qr', (req, res) => {
+  return res.status(410).json({
+    success: false,
+    code: 'ENDPOINT_DEPRECATED',
+    error: 'Endpoint này đã ngừng hoạt động. Vui lòng sử dụng GET /api/payment/qr?orderId=...',
+  })
+})
+
+// ── 1c. API Tiếp Nhận Email Biến Động Số Dư (Gmail + Apps Script Bridge - WP3) ──
+app.post('/api/payment/bank-email', async (req, res) => {
   try {
-    const { rawText, orderId } = req.body
-    if (!rawText) {
-      return res.status(400).json({ success: false, error: 'Thiếu nội dung tin nhắn giao dịch ngân hàng để đối soát' })
+    const { verifyBridgeHmac } = await import('./lib/gmailBridgeAuth.js')
+    const auth = verifyBridgeHmac(req)
+    if (!auth.valid) {
+      return res.status(auth.status || 401).json({ success: false, error: auth.error })
     }
 
-    const { orderPaymentStore } = await import('./lib/paymentWebhook.js')
-    const order = orderId ? orderPaymentStore.get(orderId) : null
+    const { recordBridgeHeartbeat } = await import('./lib/bridgeHealth.js')
+    recordBridgeHeartbeat()
 
-    const matchResult = parseAndMatchTransactionAI(rawText, order)
-    
-    // P0 / L-2: Chỉ ghi nhận yêu cầu đối soát CUSTOMER_CLAIMED_PAID, không tự động duyệt PAID
-    if (orderId) {
-      const confirmResult = await markOrderPaidByAI({
-        orderId,
-        amount: matchResult.parsed?.extractedAmount,
-        refNumber: matchResult.parsed?.refNumber,
-        rawText,
-      })
+    const { parseBankEmail } = await import('./lib/bankEmailParser.js')
+    const { settleBankTransaction } = await import('./lib/paymentTransactions.js')
 
-      return res.status(confirmResult.status).json({
-        ...confirmResult.data,
-        aiAnalysis: matchResult,
+    const { runId = `run_${Date.now()}`, sentAt = new Date().toISOString(), emails = [] } = req.body || {}
+
+    // Heartbeat từ Apps Script (Lô rỗng)
+    if (!Array.isArray(emails) || emails.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'Heartbeat received successfully',
+        runId,
+        processed: 0,
+        settled: 0,
       })
     }
 
-    return res.json({
+    let settledCount = 0
+    const results = []
+
+    for (const emailItem of emails) {
+      try {
+        const parsed = parseBankEmail(emailItem)
+        const settleResult = settleBankTransaction({
+          messageId: emailItem.messageId,
+          amount: parsed.amount,
+          content: parsed.content,
+          bankTime: parsed.bankTime,
+          bankRef: parsed.bankRef,
+          accountLast4: parsed.accountLast4,
+          sender: emailItem.from,
+          trust: parsed.trust,
+          matchedOrderId: parsed.matchedOrderId,
+          rawExtracted: parsed,
+          receivedAt: emailItem.internalDate ? new Date(Number(emailItem.internalDate) || Date.now()).toISOString() : sentAt,
+        })
+        if (settleResult.paid) settledCount++
+        results.push({ messageId: emailItem.messageId, outcome: settleResult.outcome })
+      } catch (itemErr) {
+        console.error(`Lỗi xử lý email ${emailItem.messageId}:`, itemErr.message)
+        results.push({ messageId: emailItem.messageId, outcome: 'ERROR', error: itemErr.message })
+      }
+    }
+
+    return res.status(200).json({
       success: true,
-      verified: false,
-      aiAnalysis: matchResult,
-      message: matchResult.verification?.reason || 'Đã phân tích giao dịch nhưng thiếu mã đơn hàng để đối soát',
+      runId,
+      processed: emails.length,
+      settled: settledCount,
+      results,
     })
   } catch (err) {
-    console.error('Lỗi ai-verify:', err)
+    console.error('Lỗi tiếp nhận email biến động số dư:', err)
     return res.status(500).json({ success: false, error: err.message })
   }
 })
 
-// ── 2. Webhook Lắng Nghe Biến Động Số Dư (SePay / Bank) ───────
+// ── 2. Webhook Lắng Nghe Biến Động Số Dư Phụ (SePay Gateway) ───────────
 app.post('/api/payment/webhook', async (req, res) => {
   const result = await handlePaymentWebhook(req)
   return res.status(result.status).json(result.data)
 })
 
-// ── 3. API Polling Trạng Thái Thanh Toán ─────────────────────
+// ── 3. API Polling Trạng Thái Thanh Toán (WP6 - Sanitize Contract) ───────────
 app.get('/api/orders/status', (req, res) => {
   const { orderId } = req.query
   const result = getOrderPaymentStatus(orderId)
   return res.json(result)
 })
 
-// ── 4. API Xác Nhận Thanh Toán & Kích Hoạt Gmail (Admin Only - G-13) ─────────────
+// ── 4. API Xác Nhận Thanh Toán Thủ Công Có Lý Do (Admin Only - G-13 / WP9) ───
 app.post('/api/payment/confirm', requireAdminAuth, submitOrderLimiter, async (req, res) => {
-  const { confirmOrderPaymentManually } = await import('./lib/paymentWebhook.js')
-  const result = await confirmOrderPaymentManually(req.body)
-  return res.status(result.status).json(result.data)
+  const { orderId, reason, note } = req.body || {}
+  if (!orderId) {
+    return res.status(400).json({ success: false, error: 'Thiếu mã đơn hàng' })
+  }
+  const { orderPersistence } = await import('./lib/orderPersistence.js')
+  const order = orderPersistence.get(orderId)
+  if (!order) {
+    return res.status(404).json({ success: false, error: `Không tìm thấy đơn hàng ${orderId}` })
+  }
+  const adminNote = String(reason || note || '').trim()
+  if (!adminNote || adminNote.length < 10) {
+    return res.status(400).json({
+      success: false,
+      error: 'Vui lòng nhập lý do/ghi chú đối soát hợp lệ (tối thiểu 10 ký tự)',
+    })
+  }
+
+  const { markOrderPaid } = await import('./lib/paymentState.js')
+  markOrderPaid(order, {
+    source: 'admin',
+    actor: 'admin_api',
+    note: adminNote,
+  })
+
+  return res.status(200).json({
+    success: true,
+    message: `Đã xác nhận thanh toán đơn hàng ${orderId}`,
+    orderId,
+    status: 'CONFIRMED',
+    paymentStatus: 'PAID',
+  })
 })
 
-// ── 4b. API Khách Hàng Báo Đã Chuyển Khoản (Client Payment Claim - Kịch bản 1) ────
-app.post('/api/payment/claim', submitOrderLimiter, async (req, res) => {
-  const { confirmOrderPaymentManually } = await import('./lib/paymentWebhook.js')
-  const result = await confirmOrderPaymentManually(req.body)
-  return res.status(result.status).json(result.data)
+// ── 4b. Các Route Khách Báo Chuyển Khoản Thủ Công Bị Vô Hiệu Hóa (WP8 - Trả 410) ─
+app.post('/api/payment/claim', (req, res) => {
+  return res.status(410).json({
+    success: false,
+    code: 'CLAIM_DISCONTINUED',
+    error: 'Quy trình báo chuyển khoản thủ công đã được thay thế bằng tự động hóa qua email biến động số dư ngân hàng. Hệ thống tự xác nhận khi tiền vào tài khoản.',
+  })
+})
+
+app.post('/api/payment/ai-verify', (req, res) => {
+  return res.status(410).json({
+    success: false,
+    code: 'AI_VERIFY_DISCONTINUED',
+    error: 'Quy trình đối soát SMS thủ công đã ngừng hoạt động. Hệ thống chuyển sang tự động hóa 100% qua email biến động số dư ngân hàng.',
+  })
 })
 
 // ── 5. Xử lý Đơn Hàng ─────────────────────────────────────────
@@ -469,7 +506,7 @@ function formatCustomerOrderLookup(order, isRedacted = false) {
     status: order.status || 'PENDING',
     isDelivered: order.status === 'DELIVERED',
     deliveredAt: order.deliveredAt || (order.status === 'DELIVERED' ? (order.updatedAt || new Date().toISOString()) : null),
-    paymentStatus: order.payment?.status || order.paymentStatus || (order.payment?.method === 'BANK_TRANSFER' ? 'PAID' : 'UNPAID'),
+    paymentStatus: order.payment?.status || order.paymentStatus || (order.payment?.method === 'BANK_TRANSFER' ? 'AWAITING_PAYMENT' : 'UNPAID'),
     payment: order.payment || {
       method: order.paymentMethod || 'COD',
       status: order.paymentStatus || 'UNPAID',
@@ -798,6 +835,57 @@ app.post('/api/admin/orders/:orderId/sync-viettelpost', requireAdminAuth, async 
   }
 })
 
+// ── 9.1c Quản lý Giao Dịch Ngân Hàng Cần Xử Lý (WP8) ──────────────────────────
+app.get('/api/admin/bridge-health', requireAdminAuth, async (req, res) => {
+  const { getBridgeHealth } = await import('./lib/bridgeHealth.js')
+  return res.json({ success: true, health: getBridgeHealth() })
+})
+
+app.get('/api/admin/payment-transactions', requireAdminAuth, async (req, res) => {
+  try {
+    const { getUnresolvedPaymentTransactions } = await import('./lib/paymentTransactions.js')
+    const transactions = getUnresolvedPaymentTransactions()
+    return res.json({ success: true, transactions })
+  } catch (err) {
+    console.error('Lỗi lấy giao dịch ngân hàng:', err)
+    return res.status(500).json({ success: false, error: err.message })
+  }
+})
+
+app.post('/api/admin/payment-transactions/:txId/resolve', requireAdminAuth, async (req, res) => {
+  try {
+    const { txId } = req.params
+    const { action, orderId, note } = req.body || {}
+    const { resolvePaymentTransaction } = await import('./lib/paymentTransactions.js')
+
+    if (action === 'ASSIGN_ORDER') {
+      if (!orderId) {
+        return res.status(400).json({ success: false, error: 'Thiếu mã đơn hàng để gán' })
+      }
+      const { assignTransactionToOrder } = await import('./lib/paymentTransactions.js')
+      const adminUser = req.adminUser?.username || 'admin'
+      const result = await assignTransactionToOrder(txId, orderId, adminUser, note)
+      return res.status(result.status).json({ success: result.ok, message: result.message || result.error })
+    }
+
+    if (action === 'IGNORE' || action === 'REFUND') {
+      const adminUser = req.adminUser?.username || 'admin'
+      const resolutionNote = String(note || (action === 'REFUND' ? 'Đã hoàn tiền' : 'Bỏ qua giao dịch')).trim()
+      resolvePaymentTransaction(txId, {
+        resolvedBy: adminUser,
+        resolutionNote,
+        outcome: action === 'REFUND' ? 'REFUNDED' : 'IGNORED',
+      })
+      return res.json({ success: true, message: `Đã cập nhật trạng thái giao dịch ${txId}` })
+    }
+
+    return res.status(400).json({ success: false, error: 'Hành động không hợp lệ' })
+  } catch (err) {
+    console.error('Lỗi xử lý giao dịch ngân hàng:', err)
+    return res.status(500).json({ success: false, error: err.message })
+  }
+})
+
 // ── 9.1b Đồng Bộ Toàn Bộ Dữ Liệu Website Lên Google Sheets (Đơn Hàng, Chi Tiết SP, Chi Tiết SP Pyjama) ──
 app.post('/api/admin/sync-sheets', requireAdminAuth, async (req, res) => {
   try {
@@ -996,6 +1084,23 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
   }
 
   isServerReady = true
+
+  // ── Khởi động Background Job quét đơn hàng quá hạn thanh toán VietQR (WP4) ──
+  if (process.env.NODE_ENV !== 'test') {
+    try {
+      const { sweepExpiredOrders } = await import('./lib/paymentState.js')
+      const { expiredCount } = sweepExpiredOrders()
+      if (expiredCount > 0) {
+        console.log(`🧹 [PAYMENT CLEANUP] Đã tự động dọn dẹp ${expiredCount} đơn hàng chuyển khoản quá hạn lúc khởi động.`)
+      }
+      const expiryInterval = setInterval(() => {
+        try { sweepExpiredOrders() } catch (err) { console.error('Lỗi quét đơn hết hạn:', err.message) }
+      }, 30000)
+      if (expiryInterval.unref) expiryInterval.unref()
+    } catch (jobErr) {
+      console.warn('Lỗi khởi động Payment Expiry Job:', jobErr.message)
+    }
+  }
 
   // ── Khởi động tiến trình tự động đồng bộ hành trình Viettel Post định kỳ (mỗi 2 phút) ──
   const VIETTEL_SYNC_INTERVAL_MS = 2 * 60 * 1000

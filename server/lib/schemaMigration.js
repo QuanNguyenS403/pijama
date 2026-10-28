@@ -90,6 +90,52 @@ export function runEnterpriseMigrations(database) {
     CREATE INDEX IF NOT EXISTS idx_audit_created ON security_audit_logs(created_at);
   `)
 
+  // 4b. BẢNG PAYMENT TRANSACTIONS (Lưu vết mọi giao dịch thanh toán ngân hàng / Webhook)
+  const txTableInfo = database.prepare("PRAGMA table_info(payment_transactions)").all()
+  if (txTableInfo.length === 0) {
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS payment_transactions (
+        id TEXT PRIMARY KEY,
+        tx_id TEXT UNIQUE NOT NULL,
+        received_at TEXT NOT NULL,
+        amount REAL NOT NULL,
+        content TEXT,
+        gateway TEXT,
+        raw_json TEXT,
+        matched_order_id TEXT,
+        outcome TEXT NOT NULL,
+        resolved_at TEXT,
+        resolved_by TEXT,
+        resolution_note TEXT,
+        created_at TEXT NOT NULL
+      );
+    `)
+  } else {
+    const colNames = txTableInfo.map((c) => c.name)
+    if (!colNames.includes('tx_id')) database.exec("ALTER TABLE payment_transactions ADD COLUMN tx_id TEXT")
+    if (!colNames.includes('received_at')) database.exec("ALTER TABLE payment_transactions ADD COLUMN received_at TEXT")
+    if (!colNames.includes('raw_json')) database.exec("ALTER TABLE payment_transactions ADD COLUMN raw_json TEXT")
+    if (!colNames.includes('matched_order_id')) database.exec("ALTER TABLE payment_transactions ADD COLUMN matched_order_id TEXT")
+    if (!colNames.includes('outcome')) database.exec("ALTER TABLE payment_transactions ADD COLUMN outcome TEXT")
+    if (!colNames.includes('resolved_at')) database.exec("ALTER TABLE payment_transactions ADD COLUMN resolved_at TEXT")
+    if (!colNames.includes('resolved_by')) database.exec("ALTER TABLE payment_transactions ADD COLUMN resolved_by TEXT")
+    if (!colNames.includes('resolution_note')) database.exec("ALTER TABLE payment_transactions ADD COLUMN resolution_note TEXT")
+    if (!colNames.includes('fingerprint')) database.exec("ALTER TABLE payment_transactions ADD COLUMN fingerprint TEXT")
+    if (!colNames.includes('message_id')) database.exec("ALTER TABLE payment_transactions ADD COLUMN message_id TEXT")
+    if (!colNames.includes('bank_time')) database.exec("ALTER TABLE payment_transactions ADD COLUMN bank_time TEXT")
+    if (!colNames.includes('bank_ref')) database.exec("ALTER TABLE payment_transactions ADD COLUMN bank_ref TEXT")
+    if (!colNames.includes('account_last4')) database.exec("ALTER TABLE payment_transactions ADD COLUMN account_last4 TEXT")
+    if (!colNames.includes('sender')) database.exec("ALTER TABLE payment_transactions ADD COLUMN sender TEXT")
+    if (!colNames.includes('trust')) database.exec("ALTER TABLE payment_transactions ADD COLUMN trust TEXT")
+  }
+  database.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_tx_id ON payment_transactions(tx_id);
+    CREATE INDEX IF NOT EXISTS idx_payment_tx_fingerprint ON payment_transactions(fingerprint);
+    CREATE INDEX IF NOT EXISTS idx_payment_tx_message_id ON payment_transactions(message_id);
+    CREATE INDEX IF NOT EXISTS idx_payment_tx_matched_order ON payment_transactions(matched_order_id);
+    CREATE INDEX IF NOT EXISTS idx_payment_tx_outcome ON payment_transactions(outcome);
+  `)
+
   // 5. ĐỒNG BỘ TƯƠNG THÍCH NGƯỢC (Backfill từ bảng accounts cũ sang users nếu có)
   try {
     const existingOldAccounts = database.prepare(`

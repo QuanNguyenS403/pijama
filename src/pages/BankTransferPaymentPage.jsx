@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link, useSearchParams, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -62,33 +62,95 @@ export default function BankTransferPaymentPage() {
 
   const [aiQrDataUrl, setAiQrDataUrl] = useState(null)
   const [bankDetails, setBankDetails] = useState(null)
+  const [bridgeHealthy, setBridgeHealthy] = useState(true)
+  const [paymentPhase, setPaymentPhase] = useState(() => {
+    if (order?.payment?.status === 'PAID') return 'PAID'
+    if (order?.payment?.status === 'CUSTOMER_CLAIMED_PAID') return 'CLAIMED'
+    if (order?.payment?.status === 'EXPIRED_TIMEOUT' || order?.status === 'CANCELLED') return 'EXPIRED'
+    return 'AWAITING'
+  })
 
-  // Countdown timer 5 phút (300 seconds)
+  // Countdown timer 10 phút (600 seconds) - Thống nhất PAYMENT_QR_TTL_SECONDS (Q-B, WP6)
   const [timeLeft, setTimeLeft] = useState(() => {
     if (order?.payment?.qrExpiresAt) {
       const remaining = Math.round((new Date(order.payment.qrExpiresAt).getTime() - Date.now()) / 1000)
-      return Math.max(0, Math.min(300, remaining))
+      return Math.max(0, Math.min(600, remaining))
     }
-    return 300
+    return 600
   })
 
-  // Tự động ghi nhận đơn quá hạn khi hết 5 phút mà chưa thanh toán (bảo toàn dữ liệu sản phẩm)
+  // Polling kiểm tra trạng thái thanh toán từ máy chủ (WP5 / WP6)
+  const checkStatus = useCallback(async (isManual = false) => {
+    if (!orderId) return
+    try {
+      if (isManual) setIsVerifying(true)
+      const res = await fetch(`/api/orders/status?orderId=${encodeURIComponent(orderId)}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.success) {
+          if (data.phase) {
+            setPaymentPhase(data.phase)
+          }
+          if (typeof data.expiresInSeconds === 'number') {
+            setTimeLeft(data.expiresInSeconds)
+          }
+          if (typeof data.bridgeHealthy === 'boolean') {
+            setBridgeHealthy(data.bridgeHealthy)
+          }
+
+          // CHỈ điều hướng sang "thành công" khi máy chủ trả PAID (Invariant I1, WP6)
+          if (data.phase === 'PAID' || data.status === 'PAID') {
+            setIsQrInvalidated(true)
+            setVerifySuccess(true)
+            if (data.order) {
+              applyOrderUpdateLocally(data.order)
+              setOrder(data.order)
+            }
+            setTimeout(() => {
+              navigate(`/dat-hang-thanh-cong?orderId=${orderId}`, {
+                state: { order: data.order || order },
+                replace: true,
+              })
+            }, 1000)
+          } else if (data.phase === 'EXPIRED' || data.status === 'EXPIRED' || data.status === 'QR_EXPIRED') {
+            setIsQrInvalidated(true)
+            setPaymentPhase('EXPIRED')
+            setOrder((currentOrder) => {
+              if (currentOrder && currentOrder.status !== 'CANCELLED') {
+                const cancelledOrder = {
+                  ...currentOrder,
+                  status: 'CANCELLED',
+                  cancelReason: 'Hết hạn thanh toán 10 phút (Mã QR hết hiệu lực)',
+                  payment: {
+                    ...(currentOrder.payment || {}),
+                    status: 'EXPIRED_TIMEOUT',
+                    isQrInvalidated: true,
+                  },
+                }
+                applyOrderUpdateLocally(cancelledOrder)
+                return cancelledOrder
+              }
+              return currentOrder
+            })
+          } else if (data.phase === 'CLAIMED' || data.status === 'CUSTOMER_CLAIMED_PAID') {
+            setPaymentPhase('CLAIMED')
+          }
+        }
+      }
+    } catch (err) {
+      // Polling silent catch
+    } finally {
+      if (isManual) setIsVerifying(false)
+    }
+  }, [orderId, order, navigate])
+
+  // Khi hết giờ trên client timer: Gọi server checkStatus() để server xác nhận hết hạn (B3, WP6)
+  // Client KHÔNG tự gán CANCELLED hay EXPIRED_TIMEOUT vào localStorage đơn phương
   useEffect(() => {
     if (timeLeft <= 0 && !isQrInvalidated && order && order.status !== 'CANCELLED') {
-      const updated = {
-        ...order,
-        status: 'CANCELLED',
-        cancelReason: 'Hết hạn thanh toán 5 phút (Mã QR hết hiệu lực)',
-        payment: {
-          ...(order.payment || {}),
-          status: 'EXPIRED_TIMEOUT',
-          isQrInvalidated: true,
-        },
-      }
-      applyOrderUpdateLocally(updated)
-      setOrder(updated)
+      checkStatus(false)
     }
-  }, [timeLeft, isQrInvalidated, order])
+  }, [timeLeft, isQrInvalidated, order, checkStatus])
 
   // Khôi phục toàn bộ sản phẩm vào giỏ hàng để khách đặt lại nhanh chóng
   const handleRestoreCartAndReorder = () => {
@@ -113,39 +175,45 @@ export default function BankTransferPaymentPage() {
   const customerName = order?.customer?.fullName || 'Quý khách'
   const customerPhone = order?.customer?.phone || ''
   const customerEmail = order?.customer?.email || ''
-  const total = order?.total || 0
+  const total = order?.total || bankDetails?.total || 0
   const discount = order?.discount || 0
   // PAY-004: Nội dung chuyển khoản chuẩn hóa chứa mã đơn để webhook đối soát
   const transferContent = `QNS ${orderId}`
-  const qrUrl = aiQrDataUrl || (total > 0
+  const qrUrl = aiQrDataUrl || bankDetails?.vietQrUrl || (total > 0
     ? `https://img.vietqr.io/image/vietcombank-1050773506-compact2.png?amount=${total}&addInfo=${encodeURIComponent('QNS ' + orderId)}&accountName=NGUYEN%20DUC%20QUAN`
     : '')
 
-  // Tự động tạo mã QR độ nét cao theo chuẩn NAPAS 24/7 nội bộ (100% miễn phí vĩnh viễn)
+  // Tự động lấy mã QR VietQR chuẩn hóa từ server (WP4 - Server-Authoritative)
   useEffect(() => {
-    if (total > 0 && orderId) {
-      fetch('/api/payment/generate-qr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: total,
-          orderId,
-          description: `QNS ${orderId}`,
-          provider: 'NAPAS_247',
-        }),
+    if (!orderId) return
+    let isMounted = true
+    fetch(`/api/payment/qr?orderId=${encodeURIComponent(orderId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => {
+        if (!isMounted || !res) return
+        if (res.qrDataUrl) {
+          setAiQrDataUrl(res.qrDataUrl)
+        }
+        if (res.accountNumber) {
+          setBankDetails({
+            bankName: res.bankCode === 'VCB' ? 'Ngân hàng Ngoại Thương Việt Nam (Vietcombank)' : res.bankCode,
+            accountNumber: res.accountNumber,
+            accountName: res.accountName,
+            description: res.description || `QNS ${orderId}`,
+            vietQrUrl: res.vietQrUrl,
+            total: res.total,
+          })
+        }
+        if (res.phase) {
+          setPaymentPhase(res.phase)
+        }
       })
-        .then((r) => r.json())
-        .then((res) => {
-          if (res?.qrDataUrl) {
-            setAiQrDataUrl(res.qrDataUrl)
-          }
-          if (res?.paymentDetails) {
-            setBankDetails(res.paymentDetails)
-          }
-        })
-        .catch(() => {})
+      .catch(() => {})
+
+    return () => {
+      isMounted = false
     }
-  }, [total, orderId])
+  }, [orderId])
 
   // Countdown effect
   useEffect(() => {
@@ -163,109 +231,33 @@ export default function BankTransferPaymentPage() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Complete Payment, Invalidate QR, and Navigate to Success Page
-  const completePaymentAndRedirect = async (existingOrderData = null, isManualClaim = false) => {
-    if (isVerifying) return
-    setIsVerifying(true)
-
-    try {
-      const currentOrder = existingOrderData || order
-      if (!currentOrder) {
-        throw new Error('Không tìm thấy thông tin đơn hàng để xác nhận')
-      }
-
-      const isPaid = existingOrderData?.payment?.status === 'PAID' || existingOrderData?.status === 'CONFIRMED'
-
-      const updatedOrder = {
-        ...currentOrder,
-        status: isPaid ? 'CONFIRMED' : 'AWAITING_PAYMENT',
-        payment: {
-          ...(currentOrder.payment || {}),
-          method: currentOrder.payment?.method || 'BANK_TRANSFER',
-          methodLabel: isPaid
-            ? 'Chuyển khoản VietQR (Đã xác thực)'
-            : 'Chuyển khoản VietQR (Khách báo đã chuyển)',
-          status: isPaid ? 'PAID' : 'CUSTOMER_CLAIMED_PAID',
-          paidAt: isPaid ? (existingOrderData?.payment?.paidAt || new Date().toISOString()) : undefined,
-          claimedAt: !isPaid ? new Date().toISOString() : undefined,
-          isQrInvalidated: isPaid,
-        },
-      }
-
-      // 1. Nếu là do khách chủ động bấm xác nhận (manual claim) -> Gửi yêu cầu lên server
-      if (isManualClaim) {
-        try {
-          const res = await fetch('/api/payment/claim', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orderId: currentOrder.orderId }),
-          })
-          const data = await res.json()
-          if (!res.ok || !data.success) {
-            throw new Error(data.error || 'Máy chủ không thể ghi nhận yêu cầu. Vui lòng liên hệ hotline 0981 753 082.')
-          }
-        } catch (apiErr) {
-          console.error('Lỗi gọi /api/payment/claim:', apiErr)
-          alert(`Không thể gửi yêu cầu xác nhận: ${apiErr.message || 'Lỗi mạng'}. Vui lòng liên hệ hotline 0981 753 082 để được kiểm tra trực tiếp.`)
-          setIsVerifying(false)
-          return
-        }
-      }
-
-      // 2. Lưu an toàn vào storage client & kho lưu trữ vĩnh viễn
-      applyOrderUpdateLocally(updatedOrder)
-
-      setVerifySuccess(true)
-      setTimeout(() => {
-        navigate(`/dat-hang-thanh-cong?orderId=${orderId}`, {
-          state: { order: updatedOrder },
-          replace: true,
-        })
-      }, 1000)
-    } catch (err) {
-      console.error('Error confirming payment:', err)
-      alert(err.message || 'Có lỗi xảy ra khi xử lý đơn hàng. Vui lòng liên hệ hotline: 0981 753 082.')
-      setIsVerifying(false)
-    }
-  }
-
-  // Polling to check order payment status from backend Webhook & keep alive across tab reopen
+  // Polling to check order payment status from backend Webhook
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
-
     if (!orderId) return
 
     let isSubscribed = true
-    const checkStatus = async () => {
-      try {
-        const res = await fetch(`/api/orders/status?orderId=${encodeURIComponent(orderId)}`)
-        if (res.ok) {
-          const data = await res.json()
-          if (!order && data.order) {
-            setOrder(data.order)
-          }
-          if (data.success && (data.status === 'PAID' || data.isQrValid === false)) {
-            if (isSubscribed) {
-              setIsQrInvalidated(true)
-              completePaymentAndRedirect(data.order)
-            }
-          }
-        }
-      } catch (err) {
-        // Polling silent catch for offline mode
-      }
-    }
 
-    // Run immediate check then every 3s
-    checkStatus()
-    const interval = setInterval(checkStatus, 3000)
+    checkStatus(false)
+    const interval = setInterval(() => {
+      if (isSubscribed) checkStatus(false)
+    }, 2000)
 
     const handleOrderEvent = (e) => {
+      if (!isSubscribed) return
       const updated = e?.detail
       if (updated && (updated.orderId === orderId || updated.id === orderId)) {
-        if (updated.paymentStatus === 'PAID' || updated.status === 'CONFIRMED' || updated.status === 'SHIPPED') {
+        if (updated.paymentStatus === 'PAID' || updated.payment?.status === 'PAID') {
           setIsQrInvalidated(true)
-          completePaymentAndRedirect(updated)
+          setVerifySuccess(true)
+          applyOrderUpdateLocally(updated)
+          setOrder(updated)
+          setTimeout(() => {
+            navigate(`/dat-hang-thanh-cong?orderId=${orderId}`, {
+              state: { order: updated },
+              replace: true,
+            })
+          }, 1000)
         }
       }
     }
@@ -277,7 +269,7 @@ export default function BankTransferPaymentPage() {
       clearInterval(interval)
       window.removeEventListener('orders_updated', handleOrderEvent)
     }
-  }, [orderId])
+  }, [orderId, checkStatus, navigate])
 
   const handleCopy = (text, fieldName) => {
     if (!text) return
@@ -410,7 +402,7 @@ export default function BankTransferPaymentPage() {
                     Cảm ơn {customerName} đã lựa chọn QuanNguyenS
                   </p>
                   <p className="text-xs sm:text-sm font-normal text-[#4A3F38] leading-relaxed">
-                    Đơn hàng đã được khởi tạo thành công. Vui lòng thanh toán theo mã QR bên dưới trong vòng <strong>5 phút</strong>. 
+                    Đơn hàng đã được khởi tạo thành công. Vui lòng thanh toán theo mã QR bên dưới trong vòng <strong>10 phút</strong>. 
                     Sau khi chuyển tiền, bạn bấm nút xác nhận để nhận email hóa đơn chính thức.
                   </p>
                 </div>
@@ -478,15 +470,30 @@ export default function BankTransferPaymentPage() {
                         Hệ thống đã khóa mã QR này để bảo vệ giao dịch và chống chuyển tiền trùng lặp.
                       </p>
                     </div>
-                  ) : timeLeft <= 0 ? (
+                  ) : paymentPhase === 'RECONCILING' ? (
+                    /* Trạng thái hết 10 phút nhưng đang trong thời gian ân hạn đối soát email ngân hàng (WP7) */
+                    <div className="p-6 bg-white border border-[#FFE082] rounded-[4px] text-center space-y-3.5 shadow-xs">
+                      <Clock className="w-10 h-10 text-[#D4AF37] mx-auto animate-pulse" />
+                      <h4 className="font-serif text-base font-bold text-[#B45309]">
+                        Mã QR Đã Hết Hạn — Hệ Thống Đang Đối Soát
+                      </h4>
+                      <p className="text-xs text-[#4A3F38] max-w-md mx-auto leading-relaxed">
+                        Thời hạn quét mã 10 phút đã kết thúc. Nếu bạn vừa hoàn tất chuyển khoản trên ứng dụng ngân hàng, hệ thống đang kiểm tra biến động số dư và sẽ <strong>tự động chuyển sang trang đặt hàng thành công ngay khi nhận được tín hiệu</strong>. Vui lòng giữ nguyên màn hình trong giây lát.
+                      </p>
+                      <div className="flex items-center justify-center gap-2 text-[11px] text-[#8C7E74] pt-1">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#631521]" />
+                        <span>Đang tự động đối soát với sao kê ngân hàng...</span>
+                      </div>
+                    </div>
+                  ) : paymentPhase === 'EXPIRED' || timeLeft <= 0 ? (
                     /* Trạng thái mã QR hết hạn 5 phút */
                     <div className="p-6 bg-white border border-[#EF9A9A] rounded-[4px] text-center space-y-3.5 shadow-xs">
                       <AlertTriangle className="w-10 h-10 text-[#C62828] mx-auto" />
                       <h4 className="font-serif text-base font-bold text-[#C62828]">
-                        Đơn hàng chưa thanh toán — Mã QR đã hết hạn hiệu lực (5 phút)
+                        Đơn hàng chưa thanh toán — Mã QR đã hết hạn hiệu lực (10 phút)
                       </h4>
                       <p className="text-xs text-[#4A3F38] max-w-md mx-auto leading-relaxed">
-                        Thời hạn thanh toán 5 phút cho mã QR này đã kết thúc. Lần đặt hàng này được ghi nhận là không thành công. 
+                        Thời hạn thanh toán 10 phút cho mã QR này đã kết thúc. Lần đặt hàng này được ghi nhận là không thành công. 
                         <strong> Toàn bộ thông tin sản phẩm của bạn vẫn được lưu trữ an toàn</strong>, bạn có thể bấm nút bên dưới để khôi phục lại giỏ hàng và đặt lại ngay.
                       </p>
                       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -663,49 +670,53 @@ export default function BankTransferPaymentPage() {
                   </div>
                 </div>
 
-                {/* Action Buttons & Manual Verification Trigger */}
+                {/* Action Buttons & Manual Verification Trigger (WP6) */}
                 <div className="space-y-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => completePaymentAndRedirect(null, true)}
-                    disabled={isVerifying || timeLeft <= 0}
-                    className="w-full bg-[#631521] text-[#FAF8F5] font-sans font-bold text-xs uppercase tracking-[0.2em] py-4 rounded-[2px] hover:bg-[#4A0D17] border border-[#D4AF37]/30 shadow-luxury transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {isVerifying ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin text-[#D4AF37]" />
-                        <span>ĐANG GỬI XÁC NHẬN CHUYỂN KHOẢN...</span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 text-[#D4AF37]" />
-                        <span>TÔI ĐÃ CHUYỂN KHOẢN THÀNH CÔNG (XÁC NHẬN)</span>
-                      </>
-                    )}
-                  </button>
+                  {/* Trạng thái Đang Chờ Xác Nhận (khi khách đã bấm báo chuyển khoản nhưng chưa PAID) */}
+                  {paymentPhase === 'CLAIMED' ? (
+                    <div className="bg-[#FAF5F0] border-2 border-[#D4AF37]/50 rounded-[4px] p-4 text-center space-y-2">
+                      <div className="flex items-center justify-center gap-2 text-[#631521] font-bold text-sm">
+                        <Clock className="w-4 h-4 text-[#D4AF37]" />
+                        <span>Đang Chờ Xác Nhận Thanh Toán</span>
+                      </div>
+                      <p className="text-xs text-[#4A3F38] leading-relaxed max-w-md mx-auto">
+                        Cửa hàng đang đối soát với ngân hàng, thường vài phút; bạn sẽ nhận email khi xác nhận xong.
+                      </p>
+                      <p className="text-[11px] text-[#8C7E74]">
+                        Hotline hỗ trợ: <strong className="text-[#631521]">0981 753 082</strong>
+                      </p>
+                    </div>
+                  ) : null}
 
-                  {/* HỆ THỐNG ĐỐI SOÁT TỰ ĐỘNG CHUẨN NAPAS 24/7 */}
-                  <div className="bg-[#FAF8F5] border border-[#E8DFD5] rounded-[3px] p-4 text-xs font-sans space-y-2 text-center">
-                    <p className="font-bold text-[#631521] uppercase tracking-wider text-[11px]">
-                      Hệ thống đối soát thanh toán tự động 24/7
-                    </p>
-                    <p className="text-[11px] text-[#4A3F38] leading-relaxed max-w-md mx-auto">
-                      Sau khi quý khách hoàn tất chuyển khoản trên ứng dụng ngân hàng, hệ thống sẽ tự động cập nhật trạng thái đơn hàng. Quý khách cũng có thể nhấn nút <strong>"TÔI ĐÃ CHUYỂN KHOẢN THÀNH CÔNG"</strong> ở trên để thông báo xác nhận ngay cho bộ phận đóng gói.
+                  {/* HƯỚNG DẪN THANH TOÁN TỰ ĐỘNG HOÀN TOÀN (WP7 - Không cần thao tác) */}
+                  <div className="bg-[#FAF5F0] border border-[#D4AF37]/50 rounded-[4px] p-4 text-center space-y-2 shadow-xs">
+                    <div className="flex items-center justify-center gap-2 text-[#631521] font-serif font-bold text-xs uppercase tracking-wider">
+                      <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+                      <span>XÁC NHẬN THANH TOÁN TỰ ĐỘNG 24/7</span>
+                    </div>
+                    <p className="text-xs text-[#4A3F38] leading-relaxed max-w-md mx-auto">
+                      Quý khách chỉ cần mở ứng dụng ngân hàng quét mã QR và chuyển khoản. 
+                      <strong> Hệ thống sẽ tự động xác nhận đơn hàng qua biến động số dư ngân hàng, bạn không cần phải bấm bất kỳ thao tác nào.</strong>
                     </p>
                   </div>
 
+                  {/* Cảnh báo khi cầu nối email đang chậm (WP7) */}
+                  {!bridgeHealthy && (
+                    <div className="p-3 bg-[#FFF8E1] border border-[#FFE082] rounded-[3px] text-xs text-[#B45309] text-center flex items-center justify-center gap-2">
+                      <AlertTriangle className="w-4 h-4 shrink-0 text-[#EA580C]" />
+                      <span>Hệ thống đối soát đang chậm; đơn sẽ được xác nhận ngay khi ngân hàng báo tiền hoặc bởi cửa hàng. Hotline 0981 753 082.</span>
+                    </div>
+                  )}
+
                   <button
                     type="button"
-                    onClick={() => window.location.reload()}
+                    onClick={() => checkStatus(true)}
+                    disabled={isVerifying}
                     className="w-full bg-white text-[#4A3F38] font-sans font-semibold text-xs py-3 rounded-[2px] border border-[#E8DFD5] hover:bg-[#FAF8F5] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <RefreshCw className="w-3.5 h-3.5 text-[#8C7E74]" />
+                    <RefreshCw className={`w-3.5 h-3.5 text-[#8C7E74] ${isVerifying ? 'animate-spin' : ''}`} />
                     <span>Kiểm tra lại trạng thái thanh toán</span>
                   </button>
-
-                  <p className="text-[0.75rem] text-[#631521] text-center font-medium">
-                    * Quý khách sau khi chuyển khoản vui lòng bấm nút xác nhận màu đỏ ở trên để hệ thống ghi nhận đơn và chuyển bạn tới trang hóa đơn.
-                  </p>
                 </div>
               </>
             )}

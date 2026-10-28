@@ -1,86 +1,134 @@
+// server/lib/paymentQrService.js
 /**
- * ==============================================================================
- * MODULE TẠO MÃ QR THANH TOÁN ĐỘNG (VIETQR / SEPAY / PAYOS)
- * Senior Backend Architecture - QuanNguyenS Ecommerce System
- * ==============================================================================
+ * Module tạo mã QR VietQR theo đơn hàng (Server-authoritative)
+ * WP4: Thay thế POST /api/payment/generate-qr và GET /api/payment/napas-qr
+ * Bất biến: Số tiền và nội dung bắt buộc lấy từ đơn trong kho lưu trữ, bỏ qua dữ liệu từ client.
  */
 
+import { orderPersistence } from './orderPersistence.js'
+import { getPaymentPhase, PAYMENT_QR_TTL_SECONDS } from './paymentState.js'
+import { generateAiNapasQR } from './aiNapasQrService.js'
+
 /**
- * 1. VIETQR GENERATOR (Chuẩn Napas247 - Quick Link & API)
- * @param {Object} params
- * @param {string} params.bankCode Mã ngân hàng (VD: 'VCB', 'ICB', 'MB', 'ACB' hoặc mã BIN 970436)
- * @param {string} params.accountNumber Số tài khoản thụ hưởng
- * @param {string} params.accountName Tên chủ tài khoản
- * @param {number} params.amount Số tiền thanh toán (VND)
- * @param {string} params.description Nội dung chuyển khoản (chứa mã đơn hàng để đối soát)
- * @param {string} [params.template='compact2'] Giao diện khung QR ('compact', 'compact2', 'qr_only', 'print')
- * @returns {Object} QR Data chứa link ảnh, raw payload và link thanh toán
+ * Lấy dữ liệu mã QR thanh toán chuẩn hóa cho một đơn hàng
+ * @param {string} orderId
+ * @param {number} [now=Date.now()]
+ * @returns {Promise<{ ok: boolean, status: number, error?: string, code?: string, data?: Object }>}
  */
-export function generateVietQRQuickLink({
-  bankCode = process.env.BANK_CODE || 'VCB',
-  accountNumber = process.env.BANK_ACCOUNT_NUMBER || '1050773506',
-  accountName = process.env.BANK_ACCOUNT_NAME || 'NGUYEN DUC QUAN',
-  amount,
-  description,
-  template = 'compact2',
-  includeAddInfo = true,
-}) {
-  const sanitizedAmount = Math.round(Number(amount) || 0)
-  const encodedDesc = encodeURIComponent(description || '')
-  const encodedName = encodeURIComponent(accountName || '')
-
-  // Link ảnh VietQR động chuẩn CDN Napas VietQR.io (nhúng addInfo để đối soát webhook tự động - PAY-004)
-  const addInfoParam = (includeAddInfo && encodedDesc) ? `&addInfo=${encodedDesc}` : ''
-  const qrImageUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-${template}.png?amount=${sanitizedAmount}${addInfoParam}&accountName=${encodedName}`
-
-  // Link Deeplink mở trực tiếp App ngân hàng hỗ trợ VietQR
-  const deeplink = `https://api.vietqr.io/${bankCode}/${accountNumber}/${sanitizedAmount}/${encodedDesc}/vietqr.jpg`
-
-  return {
-    success: true,
-    provider: 'VietQR',
-    qrImageUrl,
-    deeplink,
-    paymentDetails: {
-      bankCode,
-      accountNumber,
-      accountName,
-      amount: sanitizedAmount,
-      description,
-    },
+export async function getPaymentQrData(orderId, now = Date.now()) {
+  if (!orderId) {
+    return { ok: false, status: 400, error: 'Thiếu mã đơn hàng' }
   }
-}
 
-/**
- * 2. SEPAY QR & GATEWAY GENERATOR (Cổng SePay Tự Động Đối Soát Biến Động Số Dư)
- * @param {Object} params
- * @param {string} params.accountNumber Số tài khoản ngân hàng đã liên kết SePay
- * @param {string} params.bankName Tên ngân hàng (Vietcombank, MBBank, Techcombank,...)
- * @param {number} params.amount Số tiền cần thanh toán
- * @param {string} params.description Nội dung chuyển khoản (VD: QNS-123456)
- * @returns {Object}
- */
-export function generateSePayQR({
-  accountNumber = '1050773506',
-  bankName = 'Vietcombank',
-  amount,
-  description,
-}) {
-  const sanitizedAmount = Math.round(Number(amount) || 0)
-  const encodedDesc = encodeURIComponent(description || '')
+  const order = orderPersistence.get(orderId)
+  if (!order) {
+    return { ok: false, status: 404, error: 'Không tìm thấy đơn hàng trong hệ thống' }
+  }
 
-  // SePay QR Code API
-  const qrImageUrl = `https://qr.sepay.vn/img?acc=${accountNumber}&bank=${encodeURIComponent(bankName)}&amount=${sanitizedAmount}&des=${encodedDesc}`
+  const method = order.payment?.method || order.paymentMethod || 'COD'
+  if (method !== 'BANK_TRANSFER') {
+    return { ok: false, status: 400, error: 'Đơn hàng không sử dụng phương thức chuyển khoản VietQR' }
+  }
+
+  const phase = getPaymentPhase(order, now)
+
+  // 1. Nếu đơn hàng đã thanh toán thành công -> 410 Gone
+  if (phase === 'PAID') {
+    return {
+      ok: false,
+      status: 410,
+      code: 'ALREADY_PAID',
+      error: 'Đơn hàng này đã được xác nhận thanh toán thành công.',
+    }
+  }
+
+  // 2. Nếu đơn hàng đã hủy -> 410 Gone
+  if (phase === 'CANCELLED') {
+    return {
+      ok: false,
+      status: 410,
+      code: 'ORDER_CANCELLED',
+      error: 'Đơn hàng này đã bị hủy.',
+    }
+  }
+
+  // 3. Nếu đơn hàng đã hết hạn -> 410 Gone
+  if (phase === 'EXPIRED') {
+    return {
+      ok: false,
+      status: 410,
+      code: 'QR_EXPIRED',
+      error: 'Mã QR thanh toán cho đơn hàng này đã hết hạn hiệu lực.',
+    }
+  }
+
+  const createdAtMs = order.createdAt ? new Date(order.createdAt).getTime() : now
+  const expiresAt = order.payment?.qrExpiresAt
+    ? new Date(order.payment.qrExpiresAt).getTime()
+    : createdAtMs + PAYMENT_QR_TTL_SECONDS * 1000
+
+  // 4. Nếu đang trong giai đoạn đối soát (RECONCILING): ẩn QR, báo trạng thái
+  if (phase === 'RECONCILING') {
+    return {
+      ok: true,
+      status: 200,
+      data: {
+        success: true,
+        orderId,
+        phase: 'RECONCILING',
+        isQrValid: false,
+        total: order.total,
+        expiresAt,
+        serverNow: now,
+        message: 'Mã QR đã hết hạn hiệu lực. Hệ thống đang kiểm tra sao kê ngân hàng đối soát giao dịch.',
+      },
+    }
+  }
+
+  // 5. Pha AWAITING: Cung cấp mã QR an toàn
+  // Số tiền và nội dung LẤY TỪ SERVER, KHÔNG TIN DỮ LIỆU CLIENT
+  const canonicalBankCode = process.env.BANK_CODE || 'VCB'
+  const canonicalAccountNumber = process.env.BANK_ACCOUNT_NUMBER || '1050773506'
+  const canonicalAccountName = process.env.BANK_ACCOUNT_NAME || 'NGUYEN DUC QUAN'
+  const description = `QNS ${orderId}`
+
+  let qrDataUrl = null
+  let vietQrUrl = `https://img.vietqr.io/image/${canonicalBankCode.toLowerCase()}-${canonicalAccountNumber}-compact2.png?amount=${order.total}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(canonicalAccountName)}`
+
+  try {
+    const aiQr = await generateAiNapasQR({
+      amount: order.total,
+      description,
+      orderId,
+      bankCode: canonicalBankCode,
+      accountNumber: canonicalAccountNumber,
+      accountName: canonicalAccountName,
+    })
+    if (aiQr && aiQr.qrDataUrl) {
+      qrDataUrl = aiQr.qrDataUrl
+      vietQrUrl = aiQr.vietQrUrl || vietQrUrl
+    }
+  } catch (err) {
+    // Fallback sang vietQrUrl tĩnh nếu hàm tạo ảnh nội bộ gặp sự cố
+  }
 
   return {
-    success: true,
-    provider: 'SePay',
-    qrImageUrl,
-    paymentDetails: {
-      accountNumber,
-      bankName,
-      amount: sanitizedAmount,
+    ok: true,
+    status: 200,
+    data: {
+      success: true,
+      orderId,
+      total: order.total,
       description,
+      bankCode: canonicalBankCode,
+      accountNumber: canonicalAccountNumber,
+      accountName: canonicalAccountName,
+      vietQrUrl,
+      qrDataUrl,
+      phase: 'AWAITING',
+      isQrValid: true,
+      expiresAt,
+      serverNow: now,
     },
   }
 }
