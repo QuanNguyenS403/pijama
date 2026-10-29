@@ -163,7 +163,6 @@ export default function OrderSuccessPage() {
   const isBankTransfer = order?.payment?.method === 'BANK_TRANSFER'
   const effectivePhase = serverPhase || (
     order?.payment?.status === 'PAID' ? 'PAID' :
-    order?.payment?.status === 'CUSTOMER_CLAIMED_PAID' ? 'CLAIMED' :
     order?.payment?.status === 'EXPIRED_TIMEOUT' || order?.status === 'CANCELLED' ? 'EXPIRED' :
     'AWAITING'
   )
@@ -204,7 +203,6 @@ export default function OrderSuccessPage() {
 
             <span className="font-serif text-xs font-semibold tracking-[0.3em] text-[#D4AF37] uppercase block mb-1.5 relative z-10">
               {isBankTransfer && effectivePhase !== 'PAID' ? (
-                effectivePhase === 'CLAIMED' ? 'TIẾP NHẬN BÁO CHUYỂN KHOẢN' :
                 effectivePhase === 'EXPIRED' ? 'MÃ QR HẾT HIỆU LỰC' :
                 'CHƯA HOÀN TẤT THANH TOÁN'
               ) : (
@@ -213,7 +211,6 @@ export default function OrderSuccessPage() {
             </span>
             <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide relative z-10">
               {isBankTransfer && effectivePhase !== 'PAID' ? (
-                effectivePhase === 'CLAIMED' ? 'Đang Chờ Xác Nhận Thanh Toán' :
                 effectivePhase === 'EXPIRED' ? 'Đơn Hàng Chưa Hoàn Tất' :
                 'Đang Chờ Chuyển Khoản'
               ) : (
@@ -308,15 +305,6 @@ export default function OrderSuccessPage() {
                         </p>
                       )}
                     </div>
-                  ) : isBankTransfer && effectivePhase === 'CLAIMED' ? (
-                    <div className="bg-[#FAF5F0] border border-[#D4AF37]/60 p-4 rounded-[4px] text-xs text-[#631521] space-y-1.5 text-left shadow-xs">
-                      <p className="font-bold flex items-center gap-1.5 text-sm">
-                        <span>⏳</span> Tiếp nhận yêu cầu đối soát chuyển khoản
-                      </p>
-                      <p className="text-[#4A3F38] font-normal leading-relaxed">
-                        Đơn hàng <strong>#{order.orderId}</strong> đang chờ đối soát sao kê tài khoản ngân hàng. Bộ phận vận hành sẽ kiểm tra và chuẩn bị đóng gói gửi hàng ngay khi xác nhận tiền về.
-                      </p>
-                    </div>
                   ) : isBankTransfer && effectivePhase === 'EXPIRED' ? (
                     <div className="bg-[#FFF5F5] border border-[#EF9A9A] p-4 rounded-[4px] text-xs text-[#C62828] space-y-1.5 text-left shadow-xs">
                       <p className="font-bold flex items-center gap-1.5 text-sm">
@@ -326,7 +314,7 @@ export default function OrderSuccessPage() {
                         Thời hạn chuyển khoản cho đơn hàng <strong>#{order.orderId}</strong> đã kết thúc. Vui lòng đặt lại đơn mới hoặc liên hệ hotline 0981 753 082 để được hỗ trợ.
                       </p>
                     </div>
-                  ) : isBankTransfer && effectivePhase === 'AWAITING' ? (
+                  ) : isBankTransfer && effectivePhase !== 'PAID' ? (
                     <div className="bg-[#FFF8E1] border border-[#FFE082] p-4 rounded-[4px] text-xs text-[#B45309] space-y-1.5 text-left shadow-xs">
                       <p className="font-bold flex items-center gap-1.5 text-sm">
                         <span>⏳</span> Đơn hàng đang chờ quét mã VietQR thanh toán
@@ -489,6 +477,8 @@ export default function OrderSuccessPage() {
 
                   {/* Loyalty Points Earn Notice */}
                   {(() => {
+                    // WP8: ẩn khung "Tích lũy điểm hội viên" cho đến khi PAID hoặc COD
+                    if (isBankTransfer && effectivePhase !== 'PAID') return null
                     const estimatedSpend = Math.max(0, (order.subtotal || total - (order.shippingFee || 0)))
                     const estimatedPoints = Math.floor(estimatedSpend / 100000)
                     if (estimatedPoints <= 0) return null

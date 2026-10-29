@@ -1,21 +1,15 @@
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Sparkles,
   Gift,
-  Award,
   Clock,
-  TrendingUp,
-  AlertTriangle,
   Copy,
   Check,
-  ChevronRight,
-  ShieldCheck,
-  ArrowUpRight,
-  Lock,
-  UserCheck,
-  LogOut,
-  Info,
+  AlertTriangle,
+  AlertCircle,
+  Loader2,
+  Calendar,
 } from 'lucide-react'
 import { TierBadge, TierPill } from './LoyaltyBadges'
 import LoyaltyRegisterModal from './LoyaltyRegisterModal'
@@ -30,9 +24,19 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
   const [isRedeemOpen, setIsRedeemOpen] = useState(false)
   const [copiedCode, setCopiedCode] = useState(null)
   const [showHistory, setShowHistory] = useState(false)
+
+  // Cập nhật ngày sinh
+  const [birthDayInput, setBirthDayInput] = useState('')
+  const [birthMonthInput, setBirthMonthInput] = useState('')
+  const [birthdayLoading, setBirthdayLoading] = useState(false)
+  const [birthdayMsg, setBirthdayMsg] = useState(null)
+  const [birthdayError, setBirthdayError] = useState(null)
+
+  // Rời chương trình (Opt-out)
   const [isOptOutConfirmOpen, setIsOptOutConfirmOpen] = useState(false)
   const [optOutReason, setOptOutReason] = useState('')
   const [optOutSubmitting, setOptOutSubmitting] = useState(false)
+  const [optOutError, setOptOutError] = useState(null)
 
   const fetchLoyaltyData = async () => {
     try {
@@ -67,8 +71,46 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
     setTimeout(() => setCopiedCode(null), 2500)
   }
 
+  const handleSaveBirthday = async (e) => {
+    e?.preventDefault()
+    setBirthdayError(null)
+    setBirthdayMsg(null)
+
+    const d = parseInt(birthDayInput, 10)
+    const m = parseInt(birthMonthInput, 10)
+
+    if (!d || d < 1 || d > 31 || !m || m < 1 || m > 12) {
+      setBirthdayError('Vui lòng chọn đầy đủ ngày và tháng sinh hợp lệ.')
+      return
+    }
+
+    setBirthdayLoading(true)
+    try {
+      const res = await fetch('/api/loyalty/birthday', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ birthDay: d, birthMonth: m }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        setBirthdayError(data.error || 'Không thể lưu ngày sinh lúc này.')
+        setBirthdayLoading(false)
+        return
+      }
+
+      setBirthdayMsg(data.message || 'Đã cập nhật ngày sinh thành công!')
+      fetchLoyaltyData()
+    } catch (err) {
+      setBirthdayError('Lỗi kết nối máy chủ. Vui lòng thử lại sau.')
+    } finally {
+      setBirthdayLoading(false)
+    }
+  }
+
   const handleOptOut = async () => {
     setOptOutSubmitting(true)
+    setOptOutError(null)
     try {
       const res = await fetch('/api/loyalty/close', {
         method: 'POST',
@@ -82,10 +124,10 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
         setIsOptOutConfirmOpen(false)
         if (onRefresh) onRefresh()
       } else {
-        alert(data.error || 'Không thể đóng tài khoản hội viên.')
+        setOptOutError(data.error || 'Không thể đóng tài khoản hội viên.')
       }
     } catch (e) {
-      alert('Lỗi kết nối máy chủ.')
+      setOptOutError('Lỗi kết nối máy chủ.')
     } finally {
       setOptOutSubmitting(false)
     }
@@ -93,54 +135,45 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
 
   if (loading) {
     return (
-      <div className="bg-white p-8 rounded-[4px] border border-[#E8DFD5] shadow-xs animate-pulse">
+      <div className="bg-white p-6 sm:p-8 rounded-[4px] border border-[#E8DFD5] shadow-xs animate-pulse">
         <div className="h-6 bg-[#FAF5F0] rounded w-1/3 mb-4" />
-        <div className="h-20 bg-[#FAF8F5] rounded mb-4" />
-        <div className="h-10 bg-[#FAF5F0] rounded w-1/2" />
+        <div className="h-16 bg-[#FAF8F5] rounded mb-4" />
+        <div className="h-8 bg-[#FAF5F0] rounded w-1/2" />
       </div>
     )
   }
 
   /* ───────────────────────────────────────────────────────────── */
-  /* CASE 1: CHƯA ĐĂNG KÝ HỘI VIÊN (MỜI TỰ NGUYỆN, KHÔNG ÉP)      */
+  /* CASE 1: CHƯA ĐĂNG KÝ HỘI VIÊN (TỐI GIẢN, GỌN GÀNG, TỰ NGUYỆN)  */
   /* ───────────────────────────────────────────────────────────── */
   if (!member) {
     return (
       <>
         <div className="bg-gradient-to-br from-[#2C201A] to-[#1A1614] text-white p-6 sm:p-8 rounded-[4px] border border-[#D4AF37]/40 shadow-luxury relative overflow-hidden">
-          {/* Subtle gold glow */}
-          <div className="absolute top-0 right-0 transform translate-x-12 -translate-y-12 w-48 h-48 bg-[#D4AF37]/15 rounded-full blur-3xl pointer-events-none" />
-
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            <div className="space-y-2 max-w-xl">
+            <div className="space-y-1.5 max-w-xl">
               <div className="flex items-center gap-2">
                 <TierBadge tier="MEMBER" size="sm" />
                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D4AF37]">
-                  QuanNguyenS Privileged Club
+                  QuanNguyenS Privileged
                 </span>
               </div>
-              <h3 className="font-serif text-xl sm:text-2xl font-bold text-white">
+              <h3 className="font-serif text-lg sm:text-xl font-bold text-white">
                 Chương Trình Đặc Quyền Hội Viên
               </h3>
-              <p className="text-xs text-white/75 font-light leading-relaxed">
-                Đăng ký hoàn toàn <strong>tự nguyện</strong> qua số điện thoại xác thực OTP. Tích lũy điểm tự động cho mọi đơn hàng thành công, hưởng ưu đãi giảm giá lên đến <strong>15%</strong> và đổi điểm lấy voucher tiền mặt.
+              <p className="text-xs text-white/80 font-light leading-relaxed">
+                Tham gia miễn phí để tích điểm tự động 100k = 1 điểm, đổi điểm nhận voucher 50.000đ và hưởng ưu đãi đến 15% trọn năm.
               </p>
-              <div className="flex flex-wrap gap-4 pt-2 text-[11px] text-[#D4AF37]/90 font-medium">
-                <span>✦ 100.000đ = 1 điểm</span>
-                <span>✦ 10 điểm = Voucher 50.000đ</span>
-                <span>✦ 4 Hạng quyền lợi</span>
-                <span>✦ Quà tặng sinh nhật</span>
-              </div>
             </div>
 
             <div className="shrink-0 w-full md:w-auto">
               <button
                 type="button"
                 onClick={() => setIsRegisterOpen(true)}
-                className="w-full md:w-auto px-6 py-3.5 bg-[#631521] hover:bg-[#7D1B2A] text-white border border-[#D4AF37]/50 rounded-[2px] font-sans text-xs font-bold uppercase tracking-widest transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                className="w-full md:w-auto px-6 py-3 bg-[#631521] hover:bg-[#7D1B2A] text-white border border-[#D4AF37]/50 rounded-[2px] font-sans text-xs font-bold uppercase tracking-widest transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
               >
                 <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-                <span>Đăng Ký Hội Viên</span>
+                <span>Tham Gia Miễn Phí</span>
               </button>
             </div>
           </div>
@@ -169,28 +202,29 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
   const nextTier = member.nextTier
   const vouchers = member.vouchers || []
   const recentLedger = member.recentLedger || []
+  const hasBirthday = Boolean(member.birthDay && member.birthMonth)
 
   return (
     <>
       <div className="bg-white rounded-[4px] border border-[#E8DFD5] shadow-xs overflow-hidden">
         {/* Tier Header Strip */}
-        <div className="bg-gradient-to-r from-[#2C201A] via-[#3A2C24] to-[#2C201A] text-white p-6 sm:p-8 relative">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="bg-gradient-to-r from-[#2C201A] via-[#3A2C24] to-[#2C201A] text-white p-5 sm:p-7 relative">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
             <div className="flex items-center gap-4">
               <TierBadge tier={currentTier} size="lg" />
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-serif text-xl sm:text-2xl font-bold text-white">
+                  <h3 className="font-serif text-lg sm:text-xl font-bold text-white">
                     {member.fullName || 'Hội Viên'}
                   </h3>
                   <TierPill tier={currentTier} />
                 </div>
-                <p className="text-xs text-white/70 font-mono mt-1">
-                  SĐT: <strong>{member.phoneMasked || member.phone}</strong> · Mã TV: #{member.id.slice(0, 8)}
+                <p className="text-xs text-white/70 font-mono mt-0.5">
+                  SĐT: <strong>{member.phoneMasked || member.phone}</strong>
                 </p>
-                {member.birthDay && member.birthMonth && (
+                {hasBirthday && (
                   <p className="text-[11px] text-[#D4AF37] mt-0.5">
-                    🎂 Sinh nhật: Ngày {member.birthDay} tháng {member.birthMonth} (Đã xác thực)
+                    🎂 Sinh nhật: Ngày {member.birthDay} tháng {member.birthMonth} (Đã khóa)
                   </p>
                 )}
               </div>
@@ -210,7 +244,7 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
           </div>
 
           {/* Tier Progress Bar */}
-          <div className="mt-6 pt-5 border-t border-white/10 space-y-2">
+          <div className="mt-5 pt-4 border-t border-white/10 space-y-1.5">
             <div className="flex justify-between text-xs text-white/80">
               <span>
                 Chi tiêu 365 ngày qua:{' '}
@@ -218,7 +252,7 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
               </span>
               {nextTier ? (
                 <span>
-                  Cần thêm{' '}
+                  Còn thiếu{' '}
                   <strong className="text-[#D4AF37] font-mono">
                     {formatVND(nextTier.neededSpend)}
                   </strong>{' '}
@@ -242,9 +276,62 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
           </div>
         </div>
 
-        {/* Points & Expiry Cards */}
+        {/* Khối Bổ Sung Ngày Sinh (chỉ hiện khi chưa có ngày sinh) */}
+        {!hasBirthday && (
+          <div className="p-4 bg-[#FFFBEB] border-b border-[#FDE68A] text-xs text-[#92400E]">
+            <form onSubmit={handleSaveBirthday} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-[#B45309] shrink-0" />
+                <span>
+                  <strong>Thêm ngày sinh</strong> để nhận voucher sinh nhật hàng năm (chỉ cập nhật 1 lần):
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <select
+                  value={birthDayInput}
+                  onChange={(e) => setBirthDayInput(e.target.value)}
+                  className="px-2 py-1 bg-white border border-[#D97706] rounded-[2px] text-xs text-[#92400E]"
+                >
+                  <option value="">Ngày</option>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                    <option key={d} value={d}>
+                      Ngày {d}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={birthMonthInput}
+                  onChange={(e) => setBirthMonthInput(e.target.value)}
+                  className="px-2 py-1 bg-white border border-[#D97706] rounded-[2px] text-xs text-[#92400E]"
+                >
+                  <option value="">Tháng</option>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                    <option key={m} value={m}>
+                      Tháng {m}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  type="submit"
+                  disabled={birthdayLoading || !birthDayInput || !birthMonthInput}
+                  className="px-3 py-1 bg-[#B45309] hover:bg-[#92400E] text-white rounded-[2px] font-bold text-xs uppercase tracking-wider transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  {birthdayLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Lưu'}
+                </button>
+              </div>
+            </form>
+
+            {birthdayError && <p className="text-[#B91C1C] mt-2 font-semibold">{birthdayError}</p>}
+            {birthdayMsg && <p className="text-[#15803D] mt-2 font-semibold">{birthdayMsg}</p>}
+          </div>
+        )}
+
+        {/* Điểm Thưởng & Trạng Thái */}
         <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#E8DFD5] border-b border-[#E8DFD5] bg-[#FAF8F5]">
-          <div className="p-5">
+          <div className="p-4 sm:p-5">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#8C7E74] block mb-1">
               Điểm Thưởng Khả Dụng
             </span>
@@ -253,17 +340,17 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
                 {rewardPoints}
               </span>
               <span className="text-xs text-[#8C7E74]">
-                ≈ {formatVND(rewardPoints * 5000)} tiền mặt
+                ≈ {formatVND(rewardPoints * 5000)}
               </span>
             </div>
             <p className="text-[11px] text-[#4A3F38] mt-1">
-              Dùng để đổi voucher giảm giá khi thanh toán.
+              Quy đổi 10 điểm = Voucher 50.000đ.
             </p>
           </div>
 
-          <div className="p-5">
+          <div className="p-4 sm:p-5">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#8C7E74] block mb-1">
-              Điểm Đang Chờ Duyệt
+              Điểm Chờ Duyệt
             </span>
             <div className="flex items-baseline gap-2">
               <span className="font-serif text-2xl font-bold text-[#2C201A]">
@@ -272,45 +359,45 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
               <span className="text-xs text-[#8C7E74]">điểm</span>
             </div>
             <p className="text-[11px] text-[#4A3F38] mt-1">
-              Tự động cộng ngay khi đơn hàng chuyển sang trạng thái Đã Giao (Delivered).
+              Tự động cộng khi đơn giao thành công.
             </p>
           </div>
 
-          <div className="p-5">
+          <div className="p-4 sm:p-5">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#8C7E74] block mb-1">
-              Thời Hạn Duy Trì
+              Thời Hạn Điểm
             </span>
             <div className="flex items-center gap-1.5 text-xs text-[#1A1614] font-medium mt-1">
               <Clock className="w-4 h-4 text-[#D4AF37]" />
-              <span>365 ngày kể từ đơn đủ điều kiện gần nhất</span>
+              <span>365 ngày kể từ đơn gần nhất</span>
             </div>
             <p className="text-[11px] text-[#8C7E74] mt-1">
-              Hệ thống sẽ gửi email cảnh báo trước 30 ngày nếu có điểm sắp hết hạn.
+              Email nhắc nhở trước 30 ngày nếu có điểm sắp hết hạn.
             </p>
           </div>
         </div>
 
-        {/* Voucher Wallet Section */}
-        <div className="p-6 border-b border-[#E8DFD5]">
-          <div className="flex items-center justify-between mb-4">
+        {/* Ví Voucher Section */}
+        <div className="p-5 sm:p-6 border-b border-[#E8DFD5]">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Gift className="w-4 h-4 text-[#631521]" />
               <h4 className="font-serif text-base font-bold text-[#1A1614]">
-                Ví Voucher Hội Viên Của Bạn ({vouchers.length})
+                Ví Voucher Hội Viên ({vouchers.length})
               </h4>
             </div>
           </div>
 
           {vouchers.length === 0 ? (
             <div className="p-4 bg-[#FAF8F5] border border-dashed border-[#E8DFD5] text-center rounded-[2px] text-xs text-[#8C7E74]">
-              Bạn chưa có voucher hội viên nào. Tích lũy đủ 10 điểm để đổi ngay Voucher 50.000đ!
+              Chưa có voucher khả dụng. Hãy tích lũy đủ 10 điểm để đổi ngay Voucher 50.000đ!
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {vouchers.map((v) => (
                 <div
                   key={v.id || v.code}
-                  className={`p-3.5 rounded-[2px] border transition-all ${
+                  className={`p-3 rounded-[2px] border transition-all ${
                     v.used
                       ? 'bg-[#F9FAFB] border-[#E5E7EB] opacity-60'
                       : 'bg-[#FAF5F0] border-[#D4AF37]/50 shadow-2xs'
@@ -341,7 +428,7 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
                         {(!v.source || v.source === 'welcome') && 'Voucher ưu đãi riêng'}
                       </p>
                       {v.expires_at && (
-                        <p className="text-[10px] text-[#8C7E74] mt-1">
+                        <p className="text-[10px] text-[#8C7E74] mt-0.5">
                           Hạn dùng: {new Date(v.expires_at).toLocaleDateString('vi-VN')}
                         </p>
                       )}
@@ -374,16 +461,13 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
           )}
         </div>
 
-        {/* Ledger Points Activity Toggle */}
-        <div className="p-6 bg-[#FAF8F5] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        {/* Footer Thẻ: Lịch sử & Thoát */}
+        <div className="p-4 sm:p-5 bg-[#FAF8F5] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="text-xs text-[#4A3F38]">
             <p className="font-semibold text-[#1A1614]">Sổ cái điểm minh bạch</p>
-            <p className="text-[#8C7E74]">
-              Mọi biến động điểm được ghi nhận bất biến trong cơ sở dữ liệu.
-            </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={() => setShowHistory(!showHistory)}
@@ -394,7 +478,10 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
 
             <button
               type="button"
-              onClick={() => setIsOptOutConfirmOpen(true)}
+              onClick={() => {
+                setIsOptOutConfirmOpen(true)
+                setOptOutError(null)
+              }}
               className="text-[11px] text-[#8C7E74] hover:text-[#9B1C1C] cursor-pointer"
             >
               Rời chương trình
@@ -402,9 +489,9 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
           </div>
         </div>
 
-        {/* Expanded Ledger History Table */}
+        {/* Expanded History */}
         {showHistory && (
-          <div className="border-t border-[#E8DFD5] p-6 bg-white overflow-x-auto">
+          <div className="border-t border-[#E8DFD5] p-5 bg-white overflow-x-auto">
             {recentLedger.length === 0 ? (
               <p className="text-xs text-[#8C7E74] text-center">Chưa có giao dịch điểm nào.</p>
             ) : (
@@ -413,27 +500,26 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
                   <tr className="border-b border-[#E8DFD5] text-[#8C7E74] uppercase text-[10px] tracking-wider">
                     <th className="py-2 pr-3">Thời gian</th>
                     <th className="py-2 px-3">Loại giao dịch</th>
-                    <th className="py-2 px-3">Biến động điểm</th>
-                    <th className="py-2 px-3">Chi tiêu đủ ĐK</th>
+                    <th className="py-2 px-3">Biến động</th>
                     <th className="py-2 pl-3">Mã đơn / Diễn giải</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#F0EAE1]">
                   {recentLedger.map((row) => (
                     <tr key={row.id}>
-                      <td className="py-2.5 pr-3 text-[#8C7E74]">
+                      <td className="py-2 pr-3 text-[#8C7E74]">
                         {new Date(row.created_at).toLocaleString('vi-VN')}
                       </td>
-                      <td className="py-2.5 px-3 font-medium text-[#1A1614]">
-                        {row.type === 'EARN' && 'Tích điểm đơn hàng'}
-                        {row.type === 'REDEEM' && 'Đổi điểm lấy voucher'}
-                        {row.type === 'REVERSAL' && 'Hoàn điểm hủy đơn'}
-                        {row.type === 'EXPIRE' && 'Hết hạn điểm'}
-                        {row.type === 'ADJUST' && 'Điều chỉnh thủ công'}
-                        {row.type === 'TIER_BONUS' && 'Thưởng thăng hạng'}
+                      <td className="py-2 px-3 font-medium text-[#1A1614]">
+                        {row.type === 'EARN' && 'Tích điểm'}
+                        {row.type === 'REDEEM' && 'Đổi voucher'}
+                        {row.type === 'REVERSAL' && 'Hoàn điểm'}
+                        {row.type === 'EXPIRE' && 'Hết hạn'}
+                        {row.type === 'ADJUST' && 'Điều chỉnh'}
+                        {row.type === 'TIER_BONUS' && 'Thưởng hạng'}
                       </td>
                       <td
-                        className={`py-2.5 px-3 font-bold font-mono ${
+                        className={`py-2 px-3 font-bold font-mono ${
                           row.points_delta > 0
                             ? 'text-[#16A34A]'
                             : row.points_delta < 0
@@ -443,10 +529,7 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
                       >
                         {row.points_delta > 0 ? `+${row.points_delta}` : row.points_delta}
                       </td>
-                      <td className="py-2.5 px-3 font-mono text-[#4A3F38]">
-                        {row.spend_delta ? formatVND(row.spend_delta) : '—'}
-                      </td>
-                      <td className="py-2.5 pl-3 text-[#8C7E74]">
+                      <td className="py-2 pl-3 text-[#8C7E74]">
                         {row.order_id ? `#${row.order_id}` : ''} {row.reason || ''}
                       </td>
                     </tr>
@@ -469,7 +552,7 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
         }}
       />
 
-      {/* Opt-out Confirmation Modal */}
+      {/* Opt-out Modal an toàn (thay thế hoàn toàn alert/confirm) */}
       {isOptOutConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div className="bg-white max-w-md w-full p-6 rounded-[4px] border border-[#E8DFD5] shadow-2xl space-y-4">
@@ -477,9 +560,18 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
               <AlertTriangle className="w-5 h-5 shrink-0" />
               <h4 className="font-serif text-lg font-bold">Xác Nhận Rời Chương Trình</h4>
             </div>
+
+            {optOutError && (
+              <div className="p-3 bg-[#FDF2F2] border border-[#F8B4B4] rounded-[2px] text-xs text-[#9B1C1C] flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{optOutError}</span>
+              </div>
+            )}
+
             <p className="text-xs text-[#4A3F38] leading-relaxed">
-              Khi rời chương trình: Toàn bộ điểm thưởng hiện có và hạng quyền lợi sẽ bị hủy. Thông tin cá nhân của bạn sẽ được ẩn danh theo chính sách bảo mật dữ liệu. (Dữ liệu hóa đơn kế toán vẫn được lưu trữ theo quy định pháp luật).
+              Toàn bộ điểm thưởng hiện có và hạng quyền lợi sẽ bị hủy bỏ. Dữ liệu tài khoản của bạn sẽ được ẩn danh theo chính sách bảo vệ dữ liệu.
             </p>
+
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
                 Lý do rời chương trình (Tùy chọn)
@@ -492,11 +584,12 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
                 className="w-full p-2 text-xs bg-[#FAF8F5] border border-[#E8DFD5] rounded-[2px]"
               />
             </div>
+
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setIsOptOutConfirmOpen(false)}
-                className="px-4 py-2 border border-[#E8DFD5] text-xs font-semibold rounded-[2px] text-[#4A3F38]"
+                className="px-4 py-2 border border-[#E8DFD5] text-xs font-semibold rounded-[2px] text-[#4A3F38] cursor-pointer"
               >
                 Hủy bỏ
               </button>
@@ -504,9 +597,9 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
                 type="button"
                 disabled={optOutSubmitting}
                 onClick={handleOptOut}
-                className="px-4 py-2 bg-[#9B1C1C] hover:bg-[#7D1B1B] text-white text-xs font-bold rounded-[2px]"
+                className="px-4 py-2 bg-[#9B1C1C] hover:bg-[#7D1B1B] text-white text-xs font-bold rounded-[2px] cursor-pointer disabled:opacity-50"
               >
-                {optOutSubmitting ? 'Đang xử lý...' : 'Xác Nhận Rời Chương Trình'}
+                {optOutSubmitting ? 'Đang xử lý...' : 'Xác Nhận Rời Đi'}
               </button>
             </div>
           </div>

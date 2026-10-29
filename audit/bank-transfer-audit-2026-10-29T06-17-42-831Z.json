@@ -1,0 +1,175 @@
+{
+  "generatedAt": "2026-10-29T06:17:42.830Z",
+  "totalOrdersInSystem": 120,
+  "unpaidAdvancedFulfilment": [
+    {
+      "orderId": "QNS-REPRO-R3-1793092852597",
+      "status": "CONFIRMED",
+      "paymentStatus": "CUSTOMER_CLAIMED_PAID",
+      "total": 390000,
+      "note": "Đơn chuyển khoản chưa có trạng thái PAID nhưng đã được chuyển sang giao dịch/vận chuyển"
+    },
+    {
+      "orderId": "QNS-TR3-1793096598596",
+      "status": "SHIPPED",
+      "paymentStatus": "AWAITING_PAYMENT",
+      "total": 390000,
+      "note": "Đơn chuyển khoản chưa có trạng thái PAID nhưng đã được chuyển sang giao dịch/vận chuyển"
+    },
+    {
+      "orderId": "QNS-TR3-1793097008456",
+      "status": "SHIPPED",
+      "paymentStatus": "AWAITING_PAYMENT",
+      "total": 390000,
+      "note": "Đơn chuyển khoản chưa có trạng thái PAID nhưng đã được chuyển sang giao dịch/vận chuyển"
+    },
+    {
+      "orderId": "QNS-TR3-1793097042088",
+      "status": "SHIPPED",
+      "paymentStatus": "AWAITING_PAYMENT",
+      "total": 390000,
+      "note": "Đơn chuyển khoản chưa có trạng thái PAID nhưng đã được chuyển sang giao dịch/vận chuyển"
+    },
+    {
+      "orderId": "QNS-TR3-1793097176573",
+      "status": "SHIPPED",
+      "paymentStatus": "AWAITING_PAYMENT",
+      "total": 390000,
+      "note": "Đơn chuyển khoản chưa có trạng thái PAID nhưng đã được chuyển sang giao dịch/vận chuyển"
+    },
+    {
+      "orderId": "QNS-TR3-1793100348483",
+      "status": "SHIPPED",
+      "paymentStatus": "AWAITING_PAYMENT",
+      "total": 390000,
+      "note": "Đơn chuyển khoản chưa có trạng thái PAID nhưng đã được chuyển sang giao dịch/vận chuyển"
+    },
+    {
+      "orderId": "QNS-TR3-1793101521088",
+      "status": "SHIPPED",
+      "paymentStatus": "AWAITING_PAYMENT",
+      "total": 390000,
+      "note": "Đơn chuyển khoản chưa có trạng thái PAID nhưng đã được chuyển sang giao dịch/vận chuyển"
+    }
+  ],
+  "paidWithoutWebhookTx": [
+    {
+      "orderId": "QNS-REPRO-R4-1793092852618",
+      "status": "DELIVERED",
+      "paymentStatus": "PAID",
+      "total": 390000,
+      "paidAt": "2026-10-27T09:20:52.625Z",
+      "note": "Đơn đánh dấu PAID nhưng thiếu mã giao dịch ngân hàng (có thể do bấm nhầm hoặc DELIVER tự gán)"
+    },
+    {
+      "orderId": "QNS-REPRO-R3-1793093241255",
+      "status": "CONFIRMED",
+      "paymentStatus": "PAID",
+      "total": 390000,
+      "paidAt": "2026-10-27T09:27:21.255Z",
+      "note": "Đơn đánh dấu PAID nhưng thiếu mã giao dịch ngân hàng (có thể do bấm nhầm hoặc DELIVER tự gán)"
+    },
+    {
+      "orderId": "QNS-REPRO-R4-1793093241260",
+      "status": "DELIVERED",
+      "paymentStatus": "PAID",
+      "total": 390000,
+      "paidAt": "2026-10-27T09:27:21.264Z",
+      "note": "Đơn đánh dấu PAID nhưng thiếu mã giao dịch ngân hàng (có thể do bấm nhầm hoặc DELIVER tự gán)"
+    },
+    {
+      "orderId": "QNS-REPRO-R3-1793093310441",
+      "status": "CONFIRMED",
+      "paymentStatus": "PAID",
+      "total": 390000,
+      "paidAt": "2026-10-27T09:28:30.441Z",
+      "note": "Đơn đánh dấu PAID nhưng thiếu mã giao dịch ngân hàng (có thể do bấm nhầm hoặc DELIVER tự gán)"
+    },
+    {
+      "orderId": "QNS-REPRO-R4-1793093310446",
+      "status": "DELIVERED",
+      "paymentStatus": "PAID",
+      "total": 390000,
+      "paidAt": "2026-10-27T09:28:30.449Z",
+      "note": "Đơn đánh dấu PAID nhưng thiếu mã giao dịch ngân hàng (có thể do bấm nhầm hoặc DELIVER tự gán)"
+    },
+    {
+      "orderId": "QNS-REPRO-R3-1793093739422",
+      "status": "CONFIRMED",
+      "paymentStatus": "PAID",
+      "total": 390000,
+      "paidAt": "2026-10-27T09:35:39.422Z",
+      "note": "Đơn đánh dấu PAID nhưng thiếu mã giao dịch ngân hàng (có thể do bấm nhầm hoặc DELIVER tự gán)"
+    },
+    {
+      "orderId": "QNS-ADV-PAID-1793094736984",
+      "status": "CONFIRMED",
+      "paymentStatus": "PAID",
+      "total": 390000,
+      "note": "Đơn đánh dấu PAID nhưng thiếu mã giao dịch ngân hàng (có thể do bấm nhầm hoặc DELIVER tự gán)"
+    },
+    {
+      "orderId": "QNS-ADV-17-BT-1793094737108",
+      "status": "AWAITING_PAYMENT",
+      "paymentStatus": "PAID",
+      "total": 390000,
+      "paidAt": "2026-10-27T09:52:17.111Z",
+      "note": "Đơn đánh dấu PAID nhưng thiếu mã giao dịch ngân hàng (có thể do bấm nhầm hoặc DELIVER tự gán)"
+    },
+    {
+      "orderId": "QNS-ADV-02-PAID-1793101528490",
+      "status": "CONFIRMED",
+      "paymentStatus": "PAID",
+      "total": 390000,
+      "note": "Đơn đánh dấu PAID nhưng thiếu mã giao dịch ngân hàng (có thể do bấm nhầm hoặc DELIVER tự gán)"
+    },
+    {
+      "orderId": "QNS-ADV-05-1793101528704",
+      "status": "CONFIRMED",
+      "paymentStatus": "PAID",
+      "total": 390000,
+      "paidAt": "2026-10-27T11:45:28.704Z",
+      "note": "Đơn đánh dấu PAID nhưng thiếu mã giao dịch ngân hàng (có thể do bấm nhầm hoặc DELIVER tự gán)"
+    }
+  ],
+  "stuckAwaitingExpired": [
+    {
+      "orderId": "QNS-DEMO-AWAITING",
+      "status": "AWAITING_PAYMENT",
+      "total": 390000,
+      "customerPhone": "0981753082",
+      "qrExpiresAt": "2026-10-29T03:28:26.679Z",
+      "minutesOverdue": 169,
+      "voucherCode": null
+    },
+    {
+      "orderId": "QNS-DEMO-RECONCILING",
+      "status": "AWAITING_PAYMENT",
+      "total": 390000,
+      "customerPhone": "0981753082",
+      "qrExpiresAt": "2026-10-29T03:18:26.679Z",
+      "minutesOverdue": 179,
+      "voucherCode": null
+    }
+  ],
+  "voucherHeldByCancelled": [
+    {
+      "orderId": "QNS-854209-W18W",
+      "voucherCode": "WELCOME-LK2UGL",
+      "cancelledAt": "2026-10-27T14:03:21.038Z",
+      "cancelReason": "Hết hạn thanh toán VietQR (10 phút + 10 phút ân hạn đối soát)"
+    },
+    {
+      "orderId": "QNS-ADV-02-1793094736946",
+      "voucherCode": "QNS10",
+      "cancelledAt": "2026-10-27T09:52:16.946Z",
+      "cancelReason": "Hết hạn thanh toán 10 phút (Mã QR hết hiệu lực)"
+    },
+    {
+      "orderId": "QNS-ADV-27-1793101528921",
+      "voucherCode": "QNS10",
+      "cancelledAt": "2026-10-27T11:45:28.921Z",
+      "cancelReason": "Hết hạn thanh toán VietQR (10 phút + 10 phút ân hạn đối soát)"
+    }
+  ]
+}

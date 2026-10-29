@@ -1,7 +1,10 @@
 // server/lib/loyaltyEndpoints.js
 import { requireAdminAuth } from './adminAuth.js'
 import { logSecurityAudit } from './auditLogger.js'
-import { parseCookies, setCustomerSessionCookie, clearCustomerSessionCookie } from './customerSessionMiddleware.js'
+import { parseCookies, setCustomerSessionCookie, clearCustomerSessionCookie, verifyCsrfOrigin } from './customerSessionMiddleware.js'
+import { createRateLimiter } from './rateLimiter.js'
+import { verifyTurnstileToken } from './turnstileService.js'
+import { hashClientMetadata } from './authCrypto.js'
 import { isLoyaltyEnabled, LOYALTY_RULES, LOYALTY_TIERS } from './loyalty/loyaltyConfig.js'
 import {
   getMemberById,
@@ -85,16 +88,6 @@ function requireLoyaltyAuth(req, res, next) {
   next()
 }
 
-/**
- * Chống tấn công CSRF cho các thao tác ghi dữ liệu nhạy cảm
- */
-function verifyCsrf(req, res, next) {
-  const origin = req.headers.origin || req.headers.referer
-  if (!origin && process.env.NODE_ENV === 'production') {
-    return res.status(403).json({ success: false, error: 'Thiếu thông tin Origin của yêu cầu' })
-  }
-  next()
-}
 
 /**
  * Chống chèn công thức Excel (CSV Formula Injection)
@@ -113,13 +106,68 @@ function sanitizeCsvCell(value) {
 /**
  * Đăng ký toàn bộ API endpoints cho hệ thống Loyalty
  */
+const loyaltyOtpIpLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: 'Bạn thao tác quá nhanh. Vui lòng thử lại sau 1 phút.',
+})
+
+const loyaltyVerifyIpLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: 'Bạn thao tác quá nhanh. Vui lòng thử lại sau giây lát.',
+})
+
 export function registerLoyaltyEndpoints(app) {
   // ── 1. GỬI MÃ OTP XÁC THỰC SĐT (PUBLIC) ─────────────────────
-  app.post('/api/loyalty/phone/send-otp', async (req, res) => {
+  app.post('/api/loyalty/phone/send-otp', loyaltyOtpIpLimiter, async (req, res) => {
     try {
-      const { phone, purpose = 'enrollment' } = req.body || {}
-      const clientIp = req.ip || req.socket?.remoteAddress || ''
+      const { phone, purpose: rawPurpose = 'enrollment', turnstileToken } = req.body || {}
+      const purpose = rawPurpose === 'enroll' ? 'enrollment' : rawPurpose
+      const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || req.ip || ''
       const userAgent = req.headers['user-agent'] || ''
+
+      // Xác minh Cloudflare Turnstile Captcha
+      const captchaToken = turnstileToken || req.headers['cf-turnstile-response'] || null
+      const turnstileResult = await verifyTurnstileToken(captchaToken, clientIp)
+      if (!turnstileResult.success) {
+        return res.status(400).json({
+          success: false,
+          error: turnstileResult.error || 'Xác minh an toàn Captcha không thành công',
+        })
+      }
+
+      const db = getLoyaltyDb()
+      const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000
+      const { ipHash } = hashClientMetadata(clientIp, userAgent)
+
+      // Kiểm tra hạn mức IP trong 24h
+      const maxIpDaily = Number(process.env.LOYALTY_OTP_DAILY_LIMIT_PER_IP) || 20
+      const ipDailyCount = db.prepare('SELECT COUNT(*) as count FROM loyalty_phone_verifications WHERE ip_hash = ? AND created_at > ?').get(ipHash, oneDayAgo)?.count || 0
+      if (ipDailyCount >= maxIpDaily) {
+        return res.status(429).json({
+          success: false,
+          errorCode: 'IP_DAILY_LIMIT_EXCEEDED',
+          error: 'Địa chỉ mạng của bạn đã vượt quá giới hạn gửi mã trong ngày. Vui lòng thử lại vào ngày mai.',
+        })
+      }
+
+      // Kiểm tra trần ngân sách hệ thống trong 24h
+      const dailyBudget = Number(process.env.LOYALTY_OTP_DAILY_BUDGET_COUNT) || 200
+      const totalDailyCount = db.prepare('SELECT COUNT(*) as count FROM loyalty_phone_verifications WHERE created_at > ?').get(oneDayAgo)?.count || 0
+      if (totalDailyCount >= dailyBudget) {
+        createAlert({
+          type: 'SYSTEM_ERROR',
+          severity: 'critical',
+          title: 'Hệ thống chạm trần ngân sách gửi OTP trong ngày (Daily Budget)',
+          details: { totalDailyCount, dailyBudget },
+        })
+        return res.status(429).json({
+          success: false,
+          errorCode: 'DAILY_BUDGET_EXCEEDED',
+          error: 'Hệ thống gửi mã tạm thời bảo trì hạn mức. Quý khách vui lòng liên hệ hotline.',
+        })
+      }
 
       const result = await sendLoyaltyOtp({
         phone,
@@ -140,7 +188,7 @@ export function registerLoyaltyEndpoints(app) {
   })
 
   // ── 2. XÁC THỰC MÃ OTP (PUBLIC) ─────────────────────────────
-  app.post('/api/loyalty/phone/verify-otp', (req, res) => {
+  app.post('/api/loyalty/phone/verify-otp', loyaltyVerifyIpLimiter, (req, res) => {
     try {
       const { phone, code, purpose = 'enrollment' } = req.body || {}
       const result = verifyLoyaltyOtp({ phone, code, purpose })
@@ -157,19 +205,20 @@ export function registerLoyaltyEndpoints(app) {
   })
 
   // ── 3. ĐĂNG KÝ HỘI VIÊN MỚI (PUBLIC / VOLUNTARY) ───────────
-  app.post('/api/loyalty/enroll', verifyCsrf, async (req, res) => {
+  app.post('/api/loyalty/enroll', verifyCsrfOrigin, async (req, res) => {
     try {
       const {
         fullName,
         phone,
-        otpCode,
         email,
         birthDay,
         birthMonth,
-        consentToTerms,
-        ageConsent,
         marketingOptIn,
       } = req.body || {}
+
+      const otpCode = req.body?.otpCode || req.body?.otp
+      const consentToTerms = req.body?.consentToTerms ?? req.body?.consentTerms
+      const ageConsent = req.body?.ageConsent ?? req.body?.consentAge
 
       const clientIp = req.ip || req.socket?.remoteAddress || ''
       const userAgent = req.headers['user-agent'] || ''
@@ -215,9 +264,10 @@ export function registerLoyaltyEndpoints(app) {
   })
 
   // ── 4. ĐĂNG NHẬP HỘI VIÊN BẰNG SĐT + OTP ────────────────────
-  app.post('/api/loyalty/login', verifyCsrf, async (req, res) => {
+  app.post('/api/loyalty/login', verifyCsrfOrigin, async (req, res) => {
     try {
-      const { phone, otpCode } = req.body || {}
+      const { phone } = req.body || {}
+      const otpCode = req.body?.otpCode || req.body?.otp
       const clientIp = req.ip || req.socket?.remoteAddress || ''
       const userAgent = req.headers['user-agent'] || ''
 
@@ -266,8 +316,59 @@ export function registerLoyaltyEndpoints(app) {
     }
   })
 
+  // ── 5.1 CẬP NHẬT NGÀY SINH HỘI VIÊN (1 LẦN DUY NHẤT) ────────
+  app.patch('/api/loyalty/birthday', verifyCsrfOrigin, resolveLoyaltyMember, requireLoyaltyAuth, (req, res) => {
+    try {
+      const memberId = req.loyaltyMember.id || req.loyaltyMember.member_id
+      const current = getMemberById(memberId)
+      if (!current) {
+        return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ hội viên' })
+      }
+
+      if (current.birth_day && current.birth_month) {
+        return res.status(400).json({
+          success: false,
+          error: 'Ngày sinh đã được cập nhật trước đó và được khóa cố định theo chính sách bảo mật.',
+        })
+      }
+
+      const { birthDay, birthMonth } = req.body || {}
+      const d = Number(birthDay)
+      const m = Number(birthMonth)
+
+      if (!Number.isInteger(d) || d < 1 || d > 31) {
+        return res.status(400).json({ success: false, error: 'Ngày sinh không hợp lệ (từ 1 đến 31)' })
+      }
+      if (!Number.isInteger(m) || m < 1 || m > 12) {
+        return res.status(400).json({ success: false, error: 'Tháng sinh không hợp lệ (từ 1 đến 12)' })
+      }
+
+      const updated = updateMember(memberId, {
+        birth_day: d,
+        birth_month: m,
+      })
+
+      logSecurityAudit({
+        userId: memberId,
+        action: 'LOYALTY_SET_BIRTHDAY',
+        status: 'SUCCESS',
+        ip: req.ip,
+        details: { birthDay: d, birthMonth: m },
+      })
+
+      return res.status(200).json({
+        success: true,
+        message: 'Đã cập nhật ngày sinh thành công! Bạn sẽ nhận voucher sinh nhật vào tháng sinh.',
+        member: updated,
+      })
+    } catch (err) {
+      console.error('❌ [SET BIRTHDAY ERROR]', err)
+      return res.status(500).json({ success: false, error: 'Không thể cập nhật ngày sinh lúc này' })
+    }
+  })
+
   // ── 6. ĐỔI ĐIỂM THƯỞNG LẤY VOUCHER ─────────────────────────
-  app.post('/api/loyalty/redeem-points', verifyCsrf, resolveLoyaltyMember, requireLoyaltyAuth, (req, res) => {
+  app.post('/api/loyalty/redeem-points', verifyCsrfOrigin, resolveLoyaltyMember, requireLoyaltyAuth, (req, res) => {
     try {
       const memberId = req.loyaltyMember.id || req.loyaltyMember.member_id
       const { points = 10, orderId = null, otpCode = null, stepUpVerified = false } = req.body || {}
@@ -324,7 +425,7 @@ export function registerLoyaltyEndpoints(app) {
   })
 
   // ── 8. NHẬN ĐIỂM CHO ĐƠN HÀNG TRONG VÒNG 7 NGÀY (CLAIM) ────
-  app.post('/api/loyalty/claim-order', verifyCsrf, async (req, res) => {
+  app.post('/api/loyalty/claim-order', verifyCsrfOrigin, async (req, res) => {
     try {
       const { orderId, phone, otpCode } = req.body || {}
       if (!orderId || !phone || !otpCode) {
@@ -368,7 +469,7 @@ export function registerLoyaltyEndpoints(app) {
   })
 
   // ── 9. ĐÓNG TÀI KHOẢN VÀ ẨN DANH HÓA DỮ LIỆU CÁ NHÂN ───────
-  app.post('/api/loyalty/close', verifyCsrf, resolveLoyaltyMember, requireLoyaltyAuth, (req, res) => {
+  app.post('/api/loyalty/close', verifyCsrfOrigin, resolveLoyaltyMember, requireLoyaltyAuth, (req, res) => {
     try {
       const memberId = req.loyaltyMember.id || req.loyaltyMember.member_id
       const { reason = 'Khách hàng yêu cầu đóng tài khoản' } = req.body || {}

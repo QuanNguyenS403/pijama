@@ -188,11 +188,19 @@ export function validateEnvironment(env = process.env) {
     { name: 'REDIS_URL', isSecret: true },
     { name: 'VITE_BACKEND_URL', isSecret: false },
     { name: 'LOYALTY_ENABLED', isSecret: false },
+    { name: 'LOYALTY_OTP_PROVIDER', isSecret: false },
     { name: 'LOYALTY_PHONE_VERIFIER', isSecret: false },
     { name: 'ZALO_OA_ACCESS_TOKEN', isSecret: true },
+    { name: 'ZALO_OA_TOKEN', isSecret: true },
     { name: 'ZALO_APP_ID', isSecret: false },
     { name: 'ZALO_SECRET_KEY', isSecret: true },
     { name: 'ZALO_ZNS_TEMPLATE_OTP', isSecret: false },
+    { name: 'ZALO_OTP_TEMPLATE_ID', isSecret: false },
+    { name: 'LOYALTY_OTP_DAILY_LIMIT_PER_PHONE', isSecret: false },
+    { name: 'LOYALTY_OTP_DAILY_LIMIT_PER_IP', isSecret: false },
+    { name: 'LOYALTY_OTP_DAILY_BUDGET_COUNT', isSecret: false },
+    { name: 'LOYALTY_OTP_RESEND_COOLDOWN_SEC', isSecret: false },
+    { name: 'LOYALTY_OTP_TTL_SEC', isSecret: false },
   ]
 
   for (const spec of featureSpecs) {

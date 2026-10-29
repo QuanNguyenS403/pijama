@@ -1,19 +1,14 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ShieldCheck, Phone, CheckCircle2, AlertCircle, Loader2, Sparkles, Gift, Lock } from 'lucide-react'
+import { X, Phone, User, AlertCircle, Loader2, ShieldCheck, ArrowLeft } from 'lucide-react'
 import { TierBadge } from './LoyaltyBadges'
 
 export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initialPhone = '' }) {
   const [mode, setMode] = useState('enroll') // 'enroll' | 'login'
-  const [step, setStep] = useState(1) // 1: Info input, 2: OTP verification
+  const [step, setStep] = useState(1) // 1: Thông tin & SĐT, 2: Nhập OTP
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState(initialPhone)
-  const [birthDay, setBirthDay] = useState('')
-  const [birthMonth, setBirthMonth] = useState('')
-  const [email, setEmail] = useState('')
-  const [consentTerms, setConsentTerms] = useState(false)
-  const [consentAge, setConsentAge] = useState(false)
-  const [marketingOptIn, setMarketingOptIn] = useState(false)
+  const [combinedConsent, setCombinedConsent] = useState(false)
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -23,7 +18,7 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
     if (initialPhone) setPhone(initialPhone)
   }, [initialPhone])
 
-  // Cooldown countdown
+  // Đếm ngược cooldown gửi lại mã OTP
   useEffect(() => {
     if (resendCooldown <= 0) return
     const timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000)
@@ -48,8 +43,9 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
     e?.preventDefault()
     setError(null)
 
-    if (!phone || phone.trim().length < 9) {
-      setError('Vui lòng nhập số điện thoại hợp lệ.')
+    const cleanPhone = phone.trim()
+    if (!cleanPhone || cleanPhone.length < 9) {
+      setError('Vui lòng nhập số điện thoại di động hợp lệ.')
       return
     }
 
@@ -58,48 +54,47 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
         setError('Vui lòng nhập họ và tên của quý khách.')
         return
       }
-      if (!consentTerms) {
-        setError('Vui lòng đồng ý với Điều khoản Chương trình Hội viên.')
-        return
-      }
-      if (!consentAge) {
-        setError('Quý khách vui lòng xác nhận từ đủ 16 tuổi trở lên.')
-        return
-      }
     }
 
     setLoading(true)
     try {
+      const purpose = mode === 'enroll' ? 'enrollment' : 'login'
       const res = await fetch('/api/loyalty/phone/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone: phone.trim(),
-          purpose: mode === 'enroll' ? 'enroll' : 'login',
+          phone: cleanPhone,
+          purpose,
         }),
       })
       const data = await res.json()
       if (!res.ok || !data.success) {
-        setError(data.error || 'Không thể gửi mã OTP. Vui lòng thử lại sau.')
+        setError(data.error || 'Không thể gửi mã xác thực. Vui lòng thử lại sau.')
         setLoading(false)
         return
       }
 
       setStep(2)
-      setResendCooldown(60)
+      setResendCooldown(data.cooldownRemaining || 60)
     } catch (err) {
-      setError('Lỗi kết nối máy chủ. Vui lòng kiểm tra lại đường truyền.')
+      setError('Lỗi kết nối máy chủ. Vui lòng kiểm tra lại đường truyền internet.')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleVerifyOtp = async (e) => {
+  const handleCompleteAuth = async (e) => {
     e?.preventDefault()
     setError(null)
 
-    if (!otp || otp.trim().length !== 6) {
-      setError('Vui lòng nhập đầy đủ mã OTP 6 chữ số.')
+    const cleanOtp = otp.trim()
+    if (!cleanOtp || cleanOtp.length !== 6) {
+      setError('Vui lòng nhập đầy đủ mã xác thực 6 chữ số.')
+      return
+    }
+
+    if (mode === 'enroll' && !combinedConsent) {
+      setError('Vui lòng xác nhận đồng ý với Điều khoản và độ tuổi để tham gia.')
       return
     }
 
@@ -113,18 +108,14 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
           body: JSON.stringify({
             phone: phone.trim(),
             fullName: fullName.trim(),
-            birthDay: birthDay ? parseInt(birthDay, 10) : null,
-            birthMonth: birthMonth ? parseInt(birthMonth, 10) : null,
-            email: email ? email.trim() : null,
-            consentTerms: true,
-            consentAge: true,
-            marketingOptIn,
-            otp: otp.trim(),
+            otpCode: cleanOtp,
+            consentToTerms: true,
+            ageConsent: true,
           }),
         })
         const data = await res.json()
         if (!res.ok || !data.success) {
-          setError(data.error || 'Đăng ký không thành công. Vui lòng thử lại.')
+          setError(data.error || 'Đăng ký không thành công. Vui lòng kiểm tra lại mã xác thực.')
           setLoading(false)
           return
         }
@@ -132,19 +123,19 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
         if (onSuccess) onSuccess(data.member)
         handleClose()
       } else {
-        // Mode login
+        // Mode Đăng nhập
         const res = await fetch('/api/loyalty/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({
             phone: phone.trim(),
-            otp: otp.trim(),
+            otpCode: cleanOtp,
           }),
         })
         const data = await res.json()
         if (!res.ok || !data.success) {
-          setError(data.error || 'Đăng nhập không thành công.')
+          setError(data.error || 'Đăng nhập không thành công. Mã xác thực có thể đã hết hạn hoặc không đúng.')
           setLoading(false)
           return
         }
@@ -153,7 +144,7 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
         handleClose()
       }
     } catch (err) {
-      setError('Lỗi kết nối. Vui lòng thử lại.')
+      setError('Lỗi kết nối hệ thống. Vui lòng thử lại.')
     } finally {
       setLoading(false)
     }
@@ -166,13 +157,14 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.96 }}
-          className="bg-white w-full max-w-[430px] rounded-[4px] border border-[#D4AF37]/40 shadow-2xl overflow-hidden relative my-auto max-h-[92vh] flex flex-col"
+          className="bg-white w-full max-w-[400px] rounded-[4px] border border-[#D4AF37]/50 shadow-2xl overflow-hidden relative my-auto flex flex-col"
         >
           {/* Header */}
           <div className="bg-[#2C201A] text-white px-5 py-4 relative shrink-0">
             <button
               onClick={handleClose}
               className="absolute top-3.5 right-3.5 text-white/60 hover:text-white transition-colors cursor-pointer"
+              aria-label="Đóng"
             >
               <X className="w-4 h-4" />
             </button>
@@ -181,22 +173,17 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
               <TierBadge tier="MEMBER" size="sm" />
               <div>
                 <span className="text-[9.5px] uppercase font-bold tracking-[0.2em] text-[#D4AF37] block">
-                  QuanNguyenS Privileged Club
+                  QuanNguyenS Privileged
                 </span>
-                <h3 className="font-serif text-base sm:text-lg font-bold text-white leading-tight">
-                  {mode === 'enroll' ? 'Đăng Ký Hội Viên Thân Thiết' : 'Đăng Nhập Hội Viên'}
+                <h3 className="font-serif text-base font-bold text-white leading-tight">
+                  {mode === 'enroll' ? 'Tham Gia Hội Viên' : 'Đăng Nhập Hội Viên'}
                 </h3>
               </div>
             </div>
-            <p className="text-[11px] text-white/75 mt-1.5 font-light leading-relaxed">
-              {mode === 'enroll'
-                ? 'Tham gia hoàn toàn tự nguyện để tích điểm đơn hàng và nhận đặc quyền giảm giá đến 15%.'
-                : 'Nhập số điện thoại đã đăng ký để kiểm tra số dư điểm thưởng và ví voucher.'}
-            </p>
           </div>
 
-          {/* Body */}
-          <div className="p-4 sm:p-5 overflow-y-auto">
+          {/* Form Content */}
+          <div className="p-5">
             {error && (
               <div className="mb-4 p-3 bg-[#FDF2F2] border border-[#F8B4B4] rounded-[2px] text-xs text-[#9B1C1C] flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
@@ -205,20 +192,25 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
             )}
 
             {step === 1 ? (
-              <form onSubmit={handleSendOtp} className="space-y-3">
+              /* BƯỚC 1: NHẬP THÔNG TIN CƠ BẢN */
+              <form onSubmit={handleSendOtp} className="space-y-3.5">
                 {mode === 'enroll' && (
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
                       Họ và tên <span className="text-[#631521]">*</span>
                     </label>
-                    <input
-                      type="text"
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Ví dụ: Nguyễn Phương Mai"
-                      className="w-full px-3 py-1.5 bg-[#FAF8F5] border border-[#E8DFD5] text-xs sm:text-sm rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden"
-                    />
+                    <div className="relative">
+                      <User className="w-3.5 h-3.5 text-[#8C7E74] absolute left-3 top-2.5" />
+                      <input
+                        type="text"
+                        required
+                        autoFocus
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Ví dụ: Nguyễn Phương Mai"
+                        className="w-full pl-8 pr-3 py-2 bg-[#FAF8F5] border border-[#E8DFD5] text-xs sm:text-sm rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden"
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -230,163 +222,52 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
                     <Phone className="w-3.5 h-3.5 text-[#8C7E74] absolute left-3 top-2.5" />
                     <input
                       type="tel"
+                      inputMode="tel"
                       required
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="0901 234 567"
-                      className="w-full pl-8 pr-3 py-1.5 bg-[#FAF8F5] border border-[#E8DFD5] text-xs sm:text-sm rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden font-mono"
+                      className="w-full pl-8 pr-3 py-2 bg-[#FAF8F5] border border-[#E8DFD5] text-xs sm:text-sm rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden font-mono"
                     />
                   </div>
-                  <p className="text-[10px] text-[#8C7E74] mt-0.5">
-                    Mã OTP xác thực sẽ gửi tới số điện thoại này. Số điện thoại là chìa khóa tích và dùng điểm.
-                  </p>
                 </div>
-
-                {mode === 'enroll' && (
-                  <>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-[11px] font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
-                          Ngày sinh (Tùy chọn)
-                        </label>
-                        <select
-                          value={birthDay}
-                          onChange={(e) => setBirthDay(e.target.value)}
-                          className="w-full px-2 py-1.5 bg-[#FAF8F5] border border-[#E8DFD5] text-xs rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden"
-                        >
-                          <option value="">Ngày</option>
-                          {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                            <option key={d} value={d}>
-                              Ngày {d}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
-                          Tháng sinh (Tùy chọn)
-                        </label>
-                        <select
-                          value={birthMonth}
-                          onChange={(e) => setBirthMonth(e.target.value)}
-                          className="w-full px-2 py-1.5 bg-[#FAF8F5] border border-[#E8DFD5] text-xs rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden"
-                        >
-                          <option value="">Tháng</option>
-                          {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                            <option key={m} value={m}>
-                              Tháng {m}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <p className="text-[9.5px] text-[#8C7E74] leading-tight">
-                      🔒 Ngày sinh chỉ thu Ngày & Tháng để tặng voucher sinh nhật và được khóa cố định sau khi đăng ký.
-                    </p>
-
-                    <div>
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
-                        Email nhận thông báo (Tùy chọn)
-                      </label>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="mai.nguyen@example.com"
-                        className="w-full px-3 py-1.5 bg-[#FAF8F5] border border-[#E8DFD5] text-xs sm:text-sm rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden"
-                      />
-                    </div>
-
-                    {/* Consents - Explicitly Unchecked */}
-                    <div className="space-y-1.5 pt-1.5 border-t border-[#E8DFD5]">
-                      <label className="flex items-start gap-2 text-[11px] text-[#4A3F38] cursor-pointer leading-tight">
-                        <input
-                          type="checkbox"
-                          checked={consentTerms}
-                          onChange={(e) => setConsentTerms(e.target.checked)}
-                          className="mt-0.5 rounded-[2px] text-[#631521] focus:ring-[#631521] shrink-0"
-                        />
-                        <span>
-                          Tôi đã đọc và đồng ý với{' '}
-                          <a
-                            href="/chinh-sach?tab=loyalty"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[#631521] underline font-semibold"
-                          >
-                            Điều khoản Chương trình Hội viên
-                          </a>{' '}
-                          của QuanNguyenS. <span className="text-[#631521]">*</span>
-                        </span>
-                      </label>
-
-                      <label className="flex items-start gap-2 text-[11px] text-[#4A3F38] cursor-pointer leading-tight">
-                        <input
-                          type="checkbox"
-                          checked={consentAge}
-                          onChange={(e) => setConsentAge(e.target.checked)}
-                          className="mt-0.5 rounded-[2px] text-[#631521] focus:ring-[#631521] shrink-0"
-                        />
-                        <span>
-                          Tôi xác nhận từ <strong>đủ 16 tuổi trở lên</strong>. <span className="text-[#631521]">*</span>
-                        </span>
-                      </label>
-
-                      <label className="flex items-start gap-2 text-[11px] text-[#4A3F38] cursor-pointer leading-tight">
-                        <input
-                          type="checkbox"
-                          checked={marketingOptIn}
-                          onChange={(e) => setMarketingOptIn(e.target.checked)}
-                          className="mt-0.5 rounded-[2px] text-[#631521] focus:ring-[#631521] shrink-0"
-                        />
-                        <span>Nhận thông tin ưu đãi bộ sưu tập và quà tặng hội viên qua email.</span>
-                      </label>
-                    </div>
-                  </>
-                )}
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2.5 bg-[#631521] hover:bg-[#4A0D17] text-white rounded-[2px] text-xs font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-60"
+                  className="w-full py-2.5 mt-2 bg-[#631521] hover:bg-[#4A0D17] text-white rounded-[2px] text-xs font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-60"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <span>Tiếp Tục & Nhận Mã OTP</span>
+                    <span>Gửi Mã Xác Thực</span>
                   )}
                 </button>
 
-                <div className="text-center pt-2">
+                <div className="text-center pt-2 border-t border-[#F0EAE1]">
                   <button
                     type="button"
                     onClick={() => {
                       setMode(mode === 'enroll' ? 'login' : 'enroll')
                       setError(null)
                     }}
-                    className="text-xs text-[#631521] hover:underline font-semibold"
+                    className="text-xs text-[#631521] hover:underline font-semibold cursor-pointer"
                   >
                     {mode === 'enroll'
-                      ? 'Đã đăng ký trước đó? Đăng nhập bằng SĐT'
-                      : 'Chưa là hội viên? Đăng ký tham gia mới'}
+                      ? 'Đã là hội viên? Đăng nhập ngay'
+                      : 'Chưa có tài khoản? Tham gia miễn phí'}
                   </button>
                 </div>
               </form>
             ) : (
-              /* Step 2: OTP Verification */
-              <form onSubmit={handleVerifyOtp} className="space-y-4">
+              /* BƯỚC 2: NHẬP MÃ OTP VÀ XÁC NHẬN */
+              <form onSubmit={handleCompleteAuth} className="space-y-4">
                 <div className="p-3 bg-[#FAF5F0] border border-[#D4AF37]/50 rounded-[2px] text-xs text-[#4A3F38] text-center">
-                  Mã xác minh 6 chữ số đã được gửi tới số{' '}
-                  <strong className="text-[#631521] font-mono">{phone}</strong>.
-                  <br />
-                  Vui lòng nhập mã để hoàn tất.
+                  Mã xác thực 6 chữ số đã gửi tới số{' '}
+                  <strong className="text-[#631521] font-mono">{phone}</strong>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#4A3F38] mb-1.5 text-center">
-                    Mã xác nhận OTP (6 chữ số)
-                  </label>
                   <input
                     type="text"
                     inputMode="numeric"
@@ -401,34 +282,63 @@ export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initi
                   />
                 </div>
 
+                {mode === 'enroll' && (
+                  <div className="pt-1">
+                    <label className="flex items-start gap-2 text-[11px] text-[#4A3F38] cursor-pointer leading-tight">
+                      <input
+                        type="checkbox"
+                        checked={combinedConsent}
+                        onChange={(e) => setCombinedConsent(e.target.checked)}
+                        className="mt-0.5 rounded-[2px] text-[#631521] focus:ring-[#631521] shrink-0"
+                      />
+                      <span>
+                        Tôi đồng ý với{' '}
+                        <a
+                          href="/chinh-sach?tab=loyalty"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#631521] underline font-semibold"
+                        >
+                          Điều khoản Hội viên
+                        </a>{' '}
+                        và xác nhận từ đủ 16 tuổi trở lên. <span className="text-[#631521]">*</span>
+                      </span>
+                    </label>
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  disabled={loading || otp.length !== 6}
+                  disabled={loading || otp.length !== 6 || (mode === 'enroll' && !combinedConsent)}
                   className="w-full py-3 bg-[#631521] hover:bg-[#4A0D17] text-white rounded-[2px] text-xs font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-60"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <span>Xác Minh & {mode === 'enroll' ? 'Kích Hoạt' : 'Vào Tài Khoản'}</span>
+                    <span>{mode === 'enroll' ? 'Tham Gia Hội Viên' : 'Vào Tài Khoản'}</span>
                   )}
                 </button>
 
                 <div className="flex items-center justify-between text-xs pt-2">
                   <button
                     type="button"
-                    onClick={() => setStep(1)}
-                    className="text-[#8C7E74] hover:text-[#2C201A]"
+                    onClick={() => {
+                      setStep(1)
+                      setOtp('')
+                      setError(null)
+                    }}
+                    className="text-[#8C7E74] hover:text-[#2C201A] flex items-center gap-1 cursor-pointer"
                   >
-                    ← Đổi số điện thoại
+                    <ArrowLeft className="w-3.5 h-3.5" /> Sửa số điện thoại
                   </button>
 
                   <button
                     type="button"
                     disabled={resendCooldown > 0 || loading}
                     onClick={handleSendOtp}
-                    className="text-[#631521] font-semibold hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="text-[#631521] font-semibold hover:underline disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
-                    {resendCooldown > 0 ? `Gửi lại mã sau (${resendCooldown}s)` : 'Gửi lại mã OTP'}
+                    {resendCooldown > 0 ? `Gửi lại mã (${resendCooldown}s)` : 'Gửi lại mã OTP'}
                   </button>
                 </div>
               </form>

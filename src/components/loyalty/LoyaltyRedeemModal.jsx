@@ -36,7 +36,7 @@ export default function LoyaltyRedeemModal({ isOpen, onClose, member, onSuccess 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phone: member.phone,
-          purpose: 'redeem',
+          purpose: 'step_up_checkout',
         }),
       })
       const data = await res.json()

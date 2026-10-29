@@ -15,6 +15,7 @@ import {
   Clock,
   Lock,
   AlertTriangle,
+  Sparkles,
   Bot,
   ShoppingBag,
 } from 'lucide-react'
@@ -402,7 +403,7 @@ export default function BankTransferPaymentPage() {
                   </p>
                   <p className="text-xs sm:text-sm font-normal text-[#4A3F38] leading-relaxed">
                     Đơn hàng đã được khởi tạo thành công. Vui lòng thanh toán theo mã QR bên dưới trong vòng <strong>10 phút</strong>. 
-                    Sau khi chuyển tiền, bạn bấm nút xác nhận để nhận email hóa đơn chính thức.
+                    Quét mã bằng app ngân hàng và chuyển khoản. Hệ thống tự xác nhận, bạn không cần bấm gì.
                   </p>
                 </div>
 
@@ -412,7 +413,11 @@ export default function BankTransferPaymentPage() {
                   animate={{ opacity: 1, y: 0 }}
                   className="bg-[#FAF5F0] border-2 border-[#D4AF37]/50 rounded-[4px] p-5 sm:p-6 space-y-4 shadow-sm"
                 >
-                  <div className="flex items-center justify-end border-b border-[#E8DFD5] pb-3 flex-wrap gap-2">
+                  <div className="flex items-center justify-between border-b border-[#E8DFD5] pb-3 flex-wrap gap-2">
+                    <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#631521] flex items-center gap-1.5">
+                      <QrCode className="w-4 h-4 text-[#631521]" />
+                      Mã QR VietQR 24/7 (Giảm 10%)
+                    </span>
                     {/* Countdown Timer Badge */}
                     <div className="flex items-center gap-2">
                       <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded border ${
@@ -633,23 +638,27 @@ export default function BankTransferPaymentPage() {
                   </div>
                 </div>
 
-                {/* Action Buttons & Manual Verification Trigger (WP6) */}
+                {/* Action Buttons & Manual Verification Trigger (WP6/WP7) */}
                 <div className="space-y-3 pt-2">
-                  {/* Trạng thái Đang Chờ Xác Nhận (khi khách đã bấm báo chuyển khoản nhưng chưa PAID) */}
-                  {paymentPhase === 'CLAIMED' ? (
-                    <div className="bg-[#FAF5F0] border-2 border-[#D4AF37]/50 rounded-[4px] p-4 text-center space-y-2">
-                      <div className="flex items-center justify-center gap-2 text-[#631521] font-bold text-sm">
-                        <Clock className="w-4 h-4 text-[#D4AF37]" />
-                        <span>Đang Chờ Xác Nhận Thanh Toán</span>
-                      </div>
-                      <p className="text-xs text-[#4A3F38] leading-relaxed max-w-md mx-auto">
-                        Cửa hàng đang đối soát với ngân hàng, thường vài phút; bạn sẽ nhận email khi xác nhận xong.
-                      </p>
-                      <p className="text-[11px] text-[#8C7E74]">
-                        Hotline hỗ trợ: <strong className="text-[#631521]">0981 753 082</strong>
-                      </p>
+                  {/* HƯỚNG DẪN THANH TOÁN TỰ ĐỘNG HOÀN TOÀN (WP7 - Không cần thao tác) */}
+                  <div className="bg-[#FAF5F0] border border-[#D4AF37]/50 rounded-[4px] p-4 text-center space-y-2 shadow-xs">
+                    <div className="flex items-center justify-center gap-2 text-[#631521] font-serif font-bold text-xs uppercase tracking-wider">
+                      <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+                      <span>XÁC NHẬN THANH TOÁN TỰ ĐỘNG 24/7</span>
                     </div>
-                  ) : null}
+                    <p className="text-xs text-[#4A3F38] leading-relaxed max-w-md mx-auto">
+                      Quý khách chỉ cần mở ứng dụng ngân hàng quét mã QR và chuyển khoản. 
+                      <strong> Hệ thống sẽ tự động xác nhận đơn hàng qua biến động số dư ngân hàng, bạn không cần phải bấm bất kỳ thao tác nào.</strong>
+                    </p>
+                  </div>
+
+                  {/* Cảnh báo khi cầu nối email đang chậm (WP7) */}
+                  {!bridgeHealthy && (
+                    <div className="p-3 bg-[#FFF8E1] border border-[#FFE082] rounded-[3px] text-xs text-[#B45309] text-center flex items-center justify-center gap-2">
+                      <AlertTriangle className="w-4 h-4 shrink-0 text-[#EA580C]" />
+                      <span>Hệ thống đối soát đang chậm; đơn sẽ được xác nhận ngay khi ngân hàng báo tiền hoặc bởi cửa hàng. Hotline 0981 753 082.</span>
+                    </div>
+                  )}
 
                   <button
                     type="button"

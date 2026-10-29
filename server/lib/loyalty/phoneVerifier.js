@@ -1,5 +1,5 @@
 // server/lib/loyalty/phoneVerifier.js
-import { getLoyaltyDb, maskPhone, createAlert } from './loyaltyDb.js'
+import { getLoyaltyDb, getMemberByPhone, maskPhone, createAlert } from './loyaltyDb.js'
 import { LOYALTY_RULES } from './loyaltyConfig.js'
 import {
   generateOtpCode,
@@ -8,29 +8,28 @@ import {
   verifyOtpCode,
   hashClientMetadata,
 } from '../authCrypto.js'
-import { normalizeVietnamesePhone, isValidVietnamesePhone, isZaloConfigured } from '../smsService.js'
+import { normalizeVietnamesePhone, isValidVietnamesePhone } from '../smsService.js'
+import {
+  sendOtpViaProvider,
+  __getTestOtpForPhone,
+  __clearTestOtpStore,
+  isZaloConfigured,
+} from './otpProviders/index.js'
 
-// Lưu trữ OTP cho chế độ TEST nội bộ (chỉ test hook được đọc, tuyệt đối không trả qua API response)
-const testOtpStore = new Map()
+// Re-export test hooks cho compatibility
+export { __getTestOtpForPhone, __clearTestOtpStore }
 
-/**
- * Lấy mã OTP trong chế độ test (chỉ dùng cho unit/integration test)
- */
-export function __getTestOtpForPhone(phone) {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('CẤM gọi __getTestOtpForPhone trên môi trường production!')
-  }
-  const cleanPhone = normalizeVietnamesePhone(phone)
-  return testOtpStore.get(cleanPhone) || null
-}
-
-export function __clearTestOtpStore() {
-  testOtpStore.clear()
-}
+export const ALLOWED_PURPOSES = [
+  'enrollment',
+  'login',
+  'step_up_checkout',
+  'claim_points',
+  'change_phone',
+]
 
 /**
  * Gửi mã OTP tới số điện thoại hội viên.
- * Hỗ trợ các mục đích: 'enrollment', 'step_up_checkout', 'change_phone', 'claim_points'.
+ * Hỗ trợ các mục đích: 'enrollment', 'login', 'step_up_checkout', 'change_phone', 'claim_points'.
  */
 export async function sendLoyaltyOtp({
   phone,
@@ -43,24 +42,36 @@ export async function sendLoyaltyOtp({
   if (!cleanPhone || !isValidVietnamesePhone(cleanPhone)) {
     return {
       success: false,
+      errorCode: 'INVALID_PHONE',
       error: 'Số điện thoại không đúng định dạng di động Việt Nam hợp lệ',
     }
   }
 
-  const isProd = process.env.NODE_ENV === 'production'
-  let provider = providerOverride || (isZaloConfigured() ? 'zalo' : (isProd ? 'sms_unconfigured' : 'test'))
-
-  // Cấm hoàn toàn mock/test provider trên Production
-  if (isProd && (provider === 'test' || provider === 'mock')) {
-    createAlert({
-      type: 'OTP_FLOOD',
-      severity: 'critical',
-      title: 'Phát hiện cấu hình provider TEST trên Production',
-      details: { phone: maskPhone(cleanPhone), purpose },
-    })
+  if (!ALLOWED_PURPOSES.includes(purpose)) {
     return {
       success: false,
-      error: 'Hệ thống gửi tin xác thực chưa sẵn sàng trên máy chủ chính thức. Vui lòng liên hệ hỗ trợ.',
+      errorCode: 'INVALID_PURPOSE',
+      error: `Mục đích xác thực '${purpose}' không được chấp nhận`,
+    }
+  }
+
+  const ttlSec = Number(process.env.LOYALTY_OTP_TTL_SEC) || Math.floor(LOYALTY_RULES.OTP_TTL_MS / 1000)
+  const ttlMs = ttlSec * 1000
+  const ttlMinutes = Math.max(1, Math.round(ttlSec / 60))
+  const cooldownSec = Number(process.env.LOYALTY_OTP_RESEND_COOLDOWN_SEC) || Math.floor(LOYALTY_RULES.OTP_RESEND_COOLDOWN_MS / 1000)
+  const cooldownMs = cooldownSec * 1000
+  const dailyLimit = Number(process.env.LOYALTY_OTP_DAILY_LIMIT_PER_PHONE) || 5
+
+  // 1. Chống user enumeration đối với purpose = 'login'
+  // Nếu SĐT chưa là thành viên hoạt động: trả phản hồi trung tính 200, KHÔNG sinh mã, KHÔNG gọi provider
+  if (purpose === 'login') {
+    const member = getMemberByPhone(cleanPhone)
+    if (!member || member.status !== 'active') {
+      return {
+        success: true,
+        message: 'Nếu số điện thoại này đã tham gia hội viên, mã xác thực đã được gửi.',
+        expiresInSeconds: ttlSec,
+      }
     }
   }
 
@@ -68,25 +79,26 @@ export async function sendLoyaltyOtp({
   const now = Date.now()
   const { ipHash } = hashClientMetadata(ip, userAgent)
 
-  // 1. Kiểm tra Cooldown 60 giây giữa 2 lần gửi liên tiếp của cùng 1 SĐT
+  // 2. Kiểm tra Cooldown giữa 2 lần gửi liên tiếp của cùng 1 SĐT
   const recent = db
     .prepare(`
       SELECT * FROM loyalty_phone_verifications
       WHERE phone = ? AND created_at > ?
       ORDER BY created_at DESC LIMIT 1
     `)
-    .get(cleanPhone, now - LOYALTY_RULES.OTP_RESEND_COOLDOWN_MS)
+    .get(cleanPhone, now - cooldownMs)
 
   if (recent) {
-    const waitSeconds = Math.ceil((recent.created_at + LOYALTY_RULES.OTP_RESEND_COOLDOWN_MS - now) / 1000)
+    const waitSeconds = Math.ceil((recent.created_at + cooldownMs - now) / 1000)
     return {
       success: false,
+      errorCode: 'COOLDOWN_ACTIVE',
       error: `Vui lòng chờ ${waitSeconds} giây trước khi yêu cầu gửi lại mã mới`,
       cooldownRemaining: waitSeconds,
     }
   }
 
-  // 2. Chặn Flood: Tối đa 5 lần gửi / SĐT trong vòng 24 giờ
+  // 3. Chặn Flood: Tối đa dailyLimit lần gửi / SĐT trong vòng 24 giờ
   const oneDayAgo = now - 24 * 60 * 60 * 1000
   const dailyCount = db
     .prepare(`
@@ -95,27 +107,28 @@ export async function sendLoyaltyOtp({
     `)
     .get(cleanPhone, oneDayAgo)?.count || 0
 
-  if (dailyCount >= 10) {
+  if (dailyCount >= dailyLimit) {
     createAlert({
       type: 'OTP_FLOOD',
       severity: 'warning',
       title: `Số điện thoại yêu cầu OTP vượt giới hạn ngày: ${maskPhone(cleanPhone)}`,
-      details: { phone: maskPhone(cleanPhone), dailyCount },
+      details: { phone: maskPhone(cleanPhone), dailyCount, dailyLimit },
     })
     return {
       success: false,
+      errorCode: 'DAILY_LIMIT_EXCEEDED',
       error: 'Số điện thoại này đã vượt quá số lần yêu cầu mã trong ngày. Vui lòng thử lại vào ngày mai.',
     }
   }
 
-  // 3. Tạo mã OTP an toàn
+  // 4. Tạo mã OTP an toàn
   const code = generateOtpCode()
   const salt = generateSalt()
   const codeHash = hashOtpCode(code, salt)
-  const expiresAt = now + LOYALTY_RULES.OTP_TTL_MS
+  const expiresAt = now + ttlMs
   const id = `vcode_${now}_${Math.random().toString(36).substring(2, 8)}`
 
-  // 4. Lưu hash vào database
+  // 5. Lưu hash vào database
   db.prepare(`
     INSERT INTO loyalty_phone_verifications (
       id, phone, code_hash, salt, purpose, expires_at,
@@ -123,39 +136,35 @@ export async function sendLoyaltyOtp({
     ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?)
   `).run(id, cleanPhone, codeHash, salt, purpose, expiresAt, LOYALTY_RULES.OTP_MAX_ATTEMPTS, ipHash, now)
 
-  // 5. Gửi mã qua nhà cung cấp
-  if (provider === 'test') {
-    testOtpStore.set(cleanPhone, code)
-    console.log(`🧪 [TEST OTP] Mã gửi tới ${maskPhone(cleanPhone)}: ${code} (mục đích: ${purpose})`)
-    return {
-      success: true,
-      message: 'Mã xác thực 6 chữ số đã được gửi tới số điện thoại của bạn',
-      expiresInSeconds: Math.floor(LOYALTY_RULES.OTP_TTL_MS / 1000),
-      // TUYỆT ĐỐI KHÔNG TRẢ CODE TRONG RESPONSE KỂ CẢ TEST
-    }
-  }
+  // 6. Gửi mã qua provider thống nhất
+  const providerResult = await sendOtpViaProvider({
+    phone: cleanPhone,
+    code,
+    purpose,
+    ttlMinutes,
+    providerOverride,
+  })
 
-  if (provider === 'zalo') {
+  if (!providerResult.ok) {
+    // Xóa record vừa tạo để tránh ghost cooldown khi gửi thất bại
     try {
-      // Gọi Zalo ZNS nếu có cấu hình
-      console.log(`📱 [ZALO ZNS] Đang gửi mã OTP tới ${maskPhone(cleanPhone)}`)
-      return {
-        success: true,
-        message: 'Mã xác thực 6 chữ số đã được gửi qua tin nhắn Zalo tới số điện thoại của bạn',
-        expiresInSeconds: Math.floor(LOYALTY_RULES.OTP_TTL_MS / 1000),
-      }
-    } catch (err) {
-      console.error('❌ [ZALO OTP ERROR]', err.message)
-      return {
-        success: false,
-        error: 'Không thể gửi tin nhắn xác thực qua Zalo. Vui lòng thử lại sau giây lát.',
-      }
+      db.prepare('DELETE FROM loyalty_phone_verifications WHERE id = ?').run(id)
+    } catch (cleanupErr) {
+      console.warn('⚠️ [OTP CLEANUP ERROR]', cleanupErr.message)
+    }
+
+    return {
+      success: false,
+      errorCode: providerResult.errorCode || 'SEND_FAILED',
+      error: providerResult.error || 'Không thể gửi tin xác thực lúc này',
     }
   }
 
   return {
-    success: false,
-    error: 'Dịch vụ gửi tin xác thực hiện chưa được thiết lập trên máy chủ.',
+    success: true,
+    message: providerResult.message || 'Mã xác thực 6 chữ số đã được gửi tới số điện thoại của bạn',
+    expiresInSeconds: ttlSec,
+    // TUYỆT ĐỐI KHÔNG TRẢ CODE TRONG RESPONSE KỂ CẢ TEST
   }
 }
 
@@ -170,7 +179,16 @@ export function verifyLoyaltyOtp({ phone, code, purpose = 'enrollment' }) {
   if (!cleanPhone || !cleanCode) {
     return {
       success: false,
+      errorCode: 'MISSING_PARAMS',
       error: 'Vui lòng nhập đầy đủ số điện thoại và mã xác thực',
+    }
+  }
+
+  if (!ALLOWED_PURPOSES.includes(purpose)) {
+    return {
+      success: false,
+      errorCode: 'INVALID_PURPOSE',
+      error: `Mục đích xác thực '${purpose}' không hợp lệ`,
     }
   }
 
@@ -189,6 +207,7 @@ export function verifyLoyaltyOtp({ phone, code, purpose = 'enrollment' }) {
   if (!record) {
     return {
       success: false,
+      errorCode: 'RECORD_NOT_FOUND',
       error: 'Yêu cầu xác thực không tồn tại hoặc đã được sử dụng',
     }
   }
@@ -196,6 +215,7 @@ export function verifyLoyaltyOtp({ phone, code, purpose = 'enrollment' }) {
   if (now > record.expires_at) {
     return {
       success: false,
+      errorCode: 'OTP_EXPIRED',
       error: 'Mã xác thực đã hết hạn (hiệu lực 5 phút). Vui lòng yêu cầu mã mới.',
     }
   }
@@ -203,6 +223,7 @@ export function verifyLoyaltyOtp({ phone, code, purpose = 'enrollment' }) {
   if (record.attempts >= record.max_attempts) {
     return {
       success: false,
+      errorCode: 'MAX_ATTEMPTS_EXCEEDED',
       error: 'Bạn đã nhập sai quá số lần cho phép (5 lần). Mã này đã bị vô hiệu hóa.',
     }
   }
@@ -225,6 +246,7 @@ export function verifyLoyaltyOtp({ phone, code, purpose = 'enrollment' }) {
       return {
         success: false,
         remainingAttempts: 0,
+        errorCode: 'MAX_ATTEMPTS_EXCEEDED',
         error: 'Bạn đã nhập sai quá số lần cho phép (5 lần). Mã này đã bị hủy.',
       }
     }
@@ -232,6 +254,7 @@ export function verifyLoyaltyOtp({ phone, code, purpose = 'enrollment' }) {
     return {
       success: false,
       remainingAttempts: remaining,
+      errorCode: 'CODE_MISMATCH',
       error: `Mã xác thực không chính xác. Bạn còn lại ${remaining} lần thử.`,
     }
   }

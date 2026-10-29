@@ -6,8 +6,8 @@ export async function verifyTurnstileToken(token, clientIp = '') {
   const isEnforced = process.env.TURNSTILE_ENFORCE === 'true'
   const isProd = process.env.NODE_ENV === 'production'
 
-  // Token mock cho automated testing
-  if (token === 'mock-turnstile-token-valid' || (process.env.AUTH_TEST_MODE === 'true' && !token)) {
+  // Token mock cho automated testing (tuyệt đối không áp dụng trên production)
+  if (!isProd && (token === 'mock-turnstile-token-valid' || (process.env.AUTH_TEST_MODE === 'true' && !token))) {
     return { success: true, mocked: true }
   }
 
