@@ -5,13 +5,25 @@ import { hashClientMetadata } from './authCrypto.js'
 import { logSecurityAudit } from './auditLogger.js'
 
 const isProd = process.env.NODE_ENV === 'production'
-const JWT_SECRET_STRING = process.env.JWT_SECRET || process.env.CUSTOMER_AUTH_SECRET || (isProd ? null : 'qns-jwt-super-secret-key-at-least-32-chars-long')
 
-if (!JWT_SECRET_STRING && isProd) {
-  console.error('⛔ [CRITICAL SECURITY] JWT_SECRET chưa được cấu hình trong môi trường production!')
+/**
+ * Lấy khóa bí mật JWT an toàn theo cơ chế Fail-Closed ở Production
+ */
+export function getJwtSecretKey() {
+  const secretStr = (process.env.JWT_SECRET || process.env.CUSTOMER_AUTH_SECRET || '').trim()
+  const isProduction = process.env.NODE_ENV === 'production'
+
+  if (isProduction) {
+    if (!secretStr || secretStr.length < 32) {
+      throw new Error(
+        '⛔ [CRITICAL SECURITY] JWT_SECRET hoặc CUSTOMER_AUTH_SECRET phải được cấu hình tối thiểu 32 ký tự ngẫu nhiên trong môi trường production!'
+      )
+    }
+    return new TextEncoder().encode(secretStr)
+  }
+
+  return new TextEncoder().encode(secretStr || 'qns-dev-jwt-super-secret-key-at-least-32-chars-long')
 }
-
-const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_STRING || 'fallback-dev-jwt-secret-key-32-characters-min')
 
 const ACCESS_TOKEN_EXPIRY = '15m' // 15 phút
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 ngày
@@ -21,6 +33,7 @@ export const REFRESH_COOKIE_NAME = 'qns_refresh_token'
  * Sinh Access Token JWT ngắn hạn (15 phút)
  */
 export async function createAccessToken(user) {
+  const secret = getJwtSecretKey()
   const payload = {
     sub: user.id,
     email: user.email,
@@ -34,7 +47,7 @@ export async function createAccessToken(user) {
     .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
     .setIssuedAt()
     .setExpirationTime(ACCESS_TOKEN_EXPIRY)
-    .sign(JWT_SECRET)
+    .sign(secret)
 
   return jwt
 }
@@ -45,7 +58,8 @@ export async function createAccessToken(user) {
 export async function verifyAccessToken(token) {
   if (!token) return null
   try {
-    const { payload } = await jose.jwtVerify(token, JWT_SECRET)
+    const secret = getJwtSecretKey()
+    const { payload } = await jose.jwtVerify(token, secret)
     return payload
   } catch (err) {
     return null
@@ -218,6 +232,7 @@ export function revokeSessionByToken(rawRefreshToken) {
  * Cấu hình HttpOnly Cookie cho Refresh Token
  */
 export function setRefreshTokenCookie(res, refreshToken) {
+  const isProduction = process.env.NODE_ENV === 'production'
   const maxAgeSeconds = 30 * 24 * 60 * 60 // 30 ngày
   const flags = [
     `${REFRESH_COOKIE_NAME}=${encodeURIComponent(refreshToken)}`,
@@ -227,7 +242,7 @@ export function setRefreshTokenCookie(res, refreshToken) {
     `Max-Age=${maxAgeSeconds}`,
   ]
 
-  if (isProd) {
+  if (isProduction) {
     flags.push('Secure')
   }
 
@@ -250,6 +265,7 @@ export function setRefreshTokenCookie(res, refreshToken) {
  * Xóa Refresh Token Cookie
  */
 export function clearRefreshTokenCookie(res) {
+  const isProduction = process.env.NODE_ENV === 'production'
   const flags = [
     `${REFRESH_COOKIE_NAME}=`,
     'Path=/api/auth',
@@ -258,7 +274,7 @@ export function clearRefreshTokenCookie(res) {
     'Max-Age=0',
     'Expires=Thu, 01 Jan 1970 00:00:00 GMT',
   ]
-  if (isProd) flags.push('Secure')
+  if (isProduction) flags.push('Secure')
   const cookieStr = flags.join('; ')
   if (typeof res.append === 'function') {
     res.append('Set-Cookie', cookieStr)

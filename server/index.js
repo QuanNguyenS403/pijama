@@ -60,7 +60,7 @@ app.use(
       if (!origin) return callback(null, true)
       if (
         allowedOrigins.includes(origin) ||
-        origin.endsWith('.onrender.com') ||
+        (process.env.RENDER_EXTERNAL_URL && origin === process.env.RENDER_EXTERNAL_URL) ||
         process.env.NODE_ENV !== 'production'
       ) {
         return callback(null, true)
@@ -74,22 +74,41 @@ app.use(
 // ── BƯỚC 8: Gia cố an ninh toàn diện với Helmet ───────────────────
 app.use(
   helmet({
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
     contentSecurityPolicy:
       process.env.NODE_ENV === 'production'
         ? {
             directives: {
               defaultSrc: ["'self'"],
-              scriptSrc: ["'self'", "'unsafe-inline'", 'https://accounts.google.com', 'https://challenges.cloudflare.com'],
-              frameSrc: ["'self'", 'https://accounts.google.com', 'https://challenges.cloudflare.com'],
+              scriptSrc: [
+                "'self'",
+                "'unsafe-inline'",
+                'https://accounts.google.com',
+                'https://accounts.google.com/gsi/client',
+                'https://challenges.cloudflare.com',
+              ],
+              frameSrc: [
+                "'self'",
+                'https://accounts.google.com',
+                'https://accounts.google.com/gsi/',
+                'https://challenges.cloudflare.com',
+              ],
               connectSrc: [
                 "'self'",
                 'https://accounts.google.com',
+                'https://accounts.google.com/gsi/',
                 'https://www.googleapis.com',
                 'https://challenges.cloudflare.com',
                 'https://graph.facebook.com',
               ],
               imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
-              styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+              styleSrc: [
+                "'self'",
+                "'unsafe-inline'",
+                'https://accounts.google.com',
+                'https://accounts.google.com/gsi/style',
+                'https://fonts.googleapis.com',
+              ],
               fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'],
             },
           }

@@ -301,6 +301,7 @@ export function getApprovedReviewsByProduct(
       displayName: r.display_name,
       verifiedPurchase: Boolean(r.verified_purchase),
       source: r.source,
+      itemKey: r.item_key,
       shopReply: r.shop_reply,
       shopRepliedAt: r.shop_replied_at,
       createdAt: r.created_at,

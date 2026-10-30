@@ -1,5 +1,23 @@
 import { z } from 'zod'
 
+const COMMON_WEAK_PASSWORDS = new Set([
+  'password123',
+  '12345678',
+  '123456789',
+  '12345678a',
+  'password',
+  'admin123',
+  'qwertyuiop',
+  '11111111',
+  'quannguyen123',
+  'pijama123',
+])
+
+export function isCommonWeakPassword(password) {
+  if (!password || typeof password !== 'string') return false
+  return COMMON_WEAK_PASSWORDS.has(password.toLowerCase().trim())
+}
+
 export const RegisterDtoSchema = z.object({
   email: z
     .string()
@@ -9,8 +27,12 @@ export const RegisterDtoSchema = z.object({
   password: z
     .string()
     .min(8, 'Mật khẩu phải có tối thiểu 8 ký tự')
+    .max(72, 'Mật khẩu không được vượt quá 72 ký tự')
     .regex(/[A-Za-z]/, 'Mật khẩu phải chứa ít nhất một chữ cái')
-    .regex(/[0-9]/, 'Mật khẩu phải chứa ít nhất một chữ số'),
+    .regex(/[0-9]/, 'Mật khẩu phải chứa ít nhất một chữ số')
+    .refine((val) => !isCommonWeakPassword(val), {
+      message: 'Mật khẩu quá phổ biến và dễ đoán. Vui lòng chọn mật khẩu phức tạp hơn.',
+    }),
   fullName: z
     .string()
     .trim()
@@ -29,7 +51,8 @@ export const LoginDtoSchema = z.object({
     .email('Email không đúng định dạng'),
   password: z
     .string()
-    .min(1, 'Vui lòng nhập mật khẩu'),
+    .min(1, 'Vui lòng nhập mật khẩu')
+    .max(72, 'Mật khẩu không vượt quá 72 ký tự'),
   turnstileToken: z.string().optional().nullable(),
 })
 
@@ -69,23 +92,29 @@ export const ForgotPasswordDtoSchema = z.object({
   turnstileToken: z.string().optional().nullable(),
 })
 
-export const ResetPasswordDtoSchema = z.object({
-  resetToken: z
-    .string()
-    .trim()
-    .min(1, 'Mã phiên đặt lại mật khẩu không hợp lệ'),
-  newPassword: z
-    .string()
-    .min(8, 'Mật khẩu mới phải có tối thiểu 8 ký tự')
-    .regex(/[A-Za-z]/, 'Mật khẩu phải chứa ít nhất một chữ cái')
-    .regex(/[0-9]/, 'Mật khẩu phải chứa ít nhất một chữ số'),
-  confirmPassword: z
-    .string()
-    .min(1, 'Vui lòng xác nhận mật khẩu mới'),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: 'Mật khẩu xác nhận không trùng khớp với mật khẩu mới',
-  path: ['confirmPassword'],
-})
+export const ResetPasswordDtoSchema = z
+  .object({
+    resetToken: z
+      .string()
+      .trim()
+      .min(1, 'Mã phiên đặt lại mật khẩu không hợp lệ'),
+    newPassword: z
+      .string()
+      .min(8, 'Mật khẩu mới phải có tối thiểu 8 ký tự')
+      .max(72, 'Mật khẩu không được vượt quá 72 ký tự')
+      .regex(/[A-Za-z]/, 'Mật khẩu phải chứa ít nhất một chữ cái')
+      .regex(/[0-9]/, 'Mật khẩu phải chứa ít nhất một chữ số')
+      .refine((val) => !isCommonWeakPassword(val), {
+        message: 'Mật khẩu quá phổ biến và dễ đoán. Vui lòng chọn mật khẩu phức tạp hơn.',
+      }),
+    confirmPassword: z
+      .string()
+      .min(1, 'Vui lòng xác nhận mật khẩu mới'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Mật khẩu xác nhận không trùng khớp với mật khẩu mới',
+    path: ['confirmPassword'],
+  })
 
 export const RegisterRequestOtpDtoSchema = RegisterDtoSchema
 
@@ -108,12 +137,13 @@ export function validateBody(schema) {
   return (req, res, next) => {
     const result = schema.safeParse(req.body)
     if (!result.success) {
-      const firstError = result.error.errors[0]?.message || 'Dữ liệu đầu vào không hợp lệ'
+      const issues = result.error?.issues || result.error?.errors || []
+      const firstError = issues[0]?.message || 'Dữ liệu đầu vào không hợp lệ'
       return res.status(400).json({
         success: false,
         error: firstError,
-        details: result.error.errors.map((e) => ({
-          field: e.path.join('.'),
+        details: issues.map((e) => ({
+          field: Array.isArray(e.path) ? e.path.join('.') : String(e.path || ''),
           message: e.message,
         })),
       })

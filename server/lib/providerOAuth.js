@@ -2,26 +2,28 @@ import { google } from 'googleapis'
 
 /**
  * Xác thực Google Identity Services ID Token chính thức qua googleapis
- * Kiểm tra chữ ký số, audience, issuer, expiry và email_verified
+ * Kiểm tra chữ ký số mật mã, audience (Client ID), issuer, expiry và email_verified
+ * Tuyệt đối không fallback, không tin access token thiếu audience, không tin payload tự khai
  */
 export async function verifyGoogleIdToken(idToken, { clientIdOverride = null } = {}) {
-  const clientId = (clientIdOverride || process.env.GOOGLE_CLIENT_ID || '').trim()
+  const isProduction = process.env.NODE_ENV === 'production'
+  const isTestMode = process.env.AUTH_TEST_MODE === 'true' && !isProduction
 
-  if (!clientId && process.env.NODE_ENV === 'production') {
+  const clientId = (clientIdOverride || process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '').trim()
+
+  if (!clientId && isProduction) {
     throw new Error('GOOGLE_CLIENT_ID chưa được cấu hình trên máy chủ')
   }
 
   if (!idToken || typeof idToken !== 'string') {
-    throw new Error('Mã Google ID token không hợp lệ')
+    throw new Error('Xác thực Google ID token thất bại: Mã Google ID token không hợp lệ')
   }
 
-  // Chế độ test / local / dev token hoặc mock token (TUYỆT ĐỐI CẤM Ở PRODUCTION)
-  const isProduction = process.env.NODE_ENV === 'production'
+  // 1. Chế độ test double chuyên biệt (TUYỆT ĐỐI CẤM Ở PRODUCTION)
   const isMockToken = idToken.startsWith('mock-google-token:') || idToken.startsWith('dev-google-token:')
-
   if (isMockToken) {
-    if (isProduction) {
-      throw new Error('Chế độ mock token Google bị cấm hoàn toàn trong môi trường Production')
+    if (isProduction || !isTestMode) {
+      throw new Error('Chế độ mock token Google bị từ chối hoàn toàn')
     }
     const parts = idToken.split(':')
     const sub = parts[1] || 'google-sub-mock-123'
@@ -40,31 +42,13 @@ export async function verifyGoogleIdToken(idToken, { clientIdOverride = null } =
     }
   }
 
-  // 1. Kiểm tra nếu token là Google OAuth2 Access Token (ya29... hoặc không có 3 phần JWT)
-  if (idToken.startsWith('ya29.') || !idToken.includes('.')) {
-    try {
-      const userinfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { Authorization: `Bearer ${idToken}` },
-      })
-      if (userinfoRes.ok) {
-        const info = await userinfoRes.json()
-        if (info.email && (info.email_verified || info.verified_email !== false)) {
-          return {
-            provider: 'google',
-            sub: info.sub,
-            email: info.email.toLowerCase().trim(),
-            name: info.name || 'Quý khách Google',
-            picture: info.picture || null,
-            emailVerified: true,
-          }
-        }
-      }
-    } catch (accessErr) {
-      console.warn('Lỗi kiểm tra Google access token qua userinfo:', accessErr.message)
-    }
+  // 2. Từ chối Access Token (ya29... hoặc không có 3 phần JWT).
+  // Yêu cầu bắt buộc phải là Google ID Token có chữ ký số và aud khớp Client ID.
+  if (idToken.startsWith('ya29.') || idToken.split('.').length !== 3) {
+    throw new Error('Xác thực Google ID token thất bại: Chỉ chấp nhận Google ID Token hợp lệ (JWT 3 phần). Không chấp nhận Access Token không kiểm audience.')
   }
 
-  // 2. Xác thực Google ID Token chính thức qua googleapis OAuth2Client
+  // 3. Xác thực Google ID Token chính thức qua googleapis OAuth2Client
   const client = new google.auth.OAuth2(clientId)
   try {
     const ticket = await client.verifyIdToken({
@@ -81,40 +65,30 @@ export async function verifyGoogleIdToken(idToken, { clientIdOverride = null } =
       throw new Error('Token Google không chứa claim sub định danh người dùng')
     }
 
+    if (!payload.email) {
+      throw new Error('Token Google không chứa thông tin email người dùng')
+    }
+
     if (!payload.email_verified) {
       throw new Error('Email tài khoản Google này chưa được xác thực (email_verified: false)')
+    }
+
+    // Kiểm tra issuer
+    const validIssuers = ['accounts.google.com', 'https://accounts.google.com']
+    if (payload.iss && !validIssuers.includes(payload.iss)) {
+      throw new Error(`Issuer không hợp lệ từ token Google: ${payload.iss}`)
     }
 
     return {
       provider: 'google',
       sub: payload.sub,
-      email: payload.email,
+      email: payload.email.toLowerCase().trim(),
       name: payload.name || 'Quý khách Google',
       picture: payload.picture || null,
-      emailVerified: Boolean(payload.email_verified ?? true),
+      emailVerified: true,
     }
   } catch (err) {
-    // Giải mã dự phòng an toàn JWT payload nếu Google certificate servers gặp sự cố mạng hoặc clock skew
-    try {
-      const parts = idToken.split('.')
-      if (parts.length === 3) {
-        const raw = Buffer.from(parts[1], 'base64url').toString('utf8')
-        const p = JSON.parse(raw)
-        const isGoogleIssuer = !p.iss || p.iss.includes('accounts.google.com')
-        if (isGoogleIssuer && (p.email || p.sub)) {
-          return {
-            provider: 'google',
-            sub: p.sub || `google_${Date.now()}`,
-            email: (p.email || 'quannguyens403@gmail.com').toLowerCase().trim(),
-            name: p.name || 'Quý khách Google',
-            picture: p.picture || null,
-            emailVerified: Boolean(p.email_verified ?? true),
-          }
-        }
-      }
-    } catch (decodeErr) {
-      console.warn('Lỗi decode JWT dự phòng:', decodeErr.message)
-    }
+    // Fail-Closed: Tuyệt đối không decode giải mã dự phòng JWT không chữ ký
     throw new Error(`Xác thực Google ID token thất bại: ${err.message}`)
   }
 }
@@ -124,10 +98,11 @@ export async function verifyGoogleIdToken(idToken, { clientIdOverride = null } =
  * Kiểm tra app_id, is_valid, user_id và hạn dùng
  */
 export async function verifyFacebookAccessToken(accessToken, { appIdOverride = null, appSecretOverride = null } = {}) {
+  const isProduction = process.env.NODE_ENV === 'production'
   const appId = (appIdOverride || process.env.FACEBOOK_APP_ID || '').trim()
   const appSecret = (appSecretOverride || process.env.FACEBOOK_APP_SECRET || '').trim()
 
-  if ((!appId || !appSecret) && process.env.NODE_ENV === 'production') {
+  if ((!appId || !appSecret) && isProduction) {
     throw new Error('FACEBOOK_APP_ID hoặc FACEBOOK_APP_SECRET chưa được cấu hình trên máy chủ')
   }
 
@@ -136,7 +111,7 @@ export async function verifyFacebookAccessToken(accessToken, { appIdOverride = n
   }
 
   // Chế độ test double có kiểm soát khi chạy test tự động
-  if (process.env.AUTH_TEST_MODE === 'true' && accessToken.startsWith('mock-fb-token:')) {
+  if (process.env.AUTH_TEST_MODE === 'true' && !isProduction && accessToken.startsWith('mock-fb-token:')) {
     const parts = accessToken.split(':')
     const sub = parts[1] || 'fb-sub-mock-123'
     const email = parts[2] === 'no-email' ? null : (parts[2] || 'test-fb@example.com')
@@ -189,6 +164,6 @@ export async function verifyFacebookAccessToken(accessToken, { appIdOverride = n
     email,
     name: profile.name || 'Quý khách',
     picture: profile.picture?.data?.url || null,
-    requiresPhone: !email, // Nếu Facebook không trả email, chuyển sang xác minh phone
+    requiresPhone: !email,
   }
 }

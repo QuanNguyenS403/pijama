@@ -1,13 +1,10 @@
 /**
  * Google Identity Services (GIS) Client Helper cho QuanNguyenS
- * Chuẩn hóa tích hợp Google Identity Services (Sign In With Google & OAuth 2.0)
- * Tuân thủ nghiêm ngặt bảo mật và tương thích chặn popup của trình duyệt.
+ * Chuẩn hóa tích hợp Google Identity Services (Sign In With Google & ID Token)
+ * Tuân thủ bảo mật, không dùng access token ya29..., timeout an toàn 20 giây.
  */
 
 let cachedConfig = null
-let preloadedTokenClient = null
-let currentSuccessCb = null
-let currentErrorCb = null
 
 const DEFAULT_CLIENT_ID = '745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com'
 
@@ -34,7 +31,7 @@ export function decodeGoogleJwt(jwt) {
 }
 
 /**
- * Lấy Google Client ID một cách đồng bộ (không await để giữ user gesture context)
+ * Lấy Google Client ID một cách đồng bộ
  */
 export function getGoogleClientIdSync() {
   if (cachedConfig?.googleClientId) return cachedConfig.googleClientId
@@ -65,7 +62,7 @@ export async function getGoogleAuthConfig() {
 
 // Tự động tải trước cấu hình ở chế độ nền
 if (typeof window !== 'undefined') {
-  getGoogleAuthConfig().catch(() => {})
+  getGoogleAuthConfig().catch(() => { })
 }
 
 /**
@@ -90,147 +87,121 @@ export function waitForGoogleSdk(timeoutMs = 3000) {
 }
 
 /**
- * Khởi tạo hoặc lấy OAuth2 Token Client (dùng cho nút bấm custom nếu cần)
+ * Đăng nhập Google qua One-Tap Prompt với Timeout 20 giây và dọn dẹp an toàn
  */
-function getOrCreateTokenClient(clientId) {
-  if (typeof window === 'undefined' || !window.google?.accounts?.oauth2) return null
-  if (preloadedTokenClient) return preloadedTokenClient
-
-  try {
-    preloadedTokenClient = window.google.accounts.oauth2.initTokenClient({
-      client_id: clientId,
-      scope: 'email profile openid',
-      callback: async (tokenResponse) => {
-        if (tokenResponse?.error) {
-          console.warn('Google token callback error:', tokenResponse.error)
-          if (tokenResponse.error === 'popup_closed_by_user') {
-            if (currentErrorCb) currentErrorCb('cancelled')
-            return
-          }
-          if (currentErrorCb) currentErrorCb(tokenResponse.error)
-          return
-        }
-
-        if (tokenResponse?.access_token) {
-          let userInfo = {}
-          try {
-            const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-              headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-            })
-            if (res.ok) {
-              userInfo = await res.json()
-            }
-          } catch (fetchErr) {
-            console.warn('Không thể lấy userinfo từ client (sẽ xác thực qua backend):', fetchErr.message)
-          }
-
-          if (currentSuccessCb) {
-            await currentSuccessCb({
-              credential: tokenResponse.access_token,
-              accessToken: tokenResponse.access_token,
-              email: userInfo.email,
-              fullName: userInfo.name || 'Quý khách Google',
-              picture: userInfo.picture,
-              avatarUrl: userInfo.picture,
-              avatar_url: userInfo.picture,
-              sub: userInfo.sub,
-            })
-          }
-        }
-      },
-      error_callback: (error) => {
-        console.warn('Google OAuth error callback:', error)
-        if (error?.type === 'popup_closed') {
-          if (currentErrorCb) currentErrorCb('cancelled')
-          return
-        }
-        if (error?.type === 'popup_failed_to_open') {
-          if (currentErrorCb) currentErrorCb('popup_blocked')
-          return
-        }
-        if (currentErrorCb) currentErrorCb(error?.message || 'popup_blocked')
-      },
-    })
-  } catch (err) {
-    console.warn('Không thể khởi tạo initTokenClient:', err)
-  }
-
-  return preloadedTokenClient
-}
-
-/**
- * Đăng nhập Google kích hoạt khi click nút custom.
- * ĐẶC BIỆT QUAN TRỌNG: Hàm này thực thi ĐỒNG BỘ (không await trước khi mở popup)
- * để trình duyệt không chặn popup theo chuẩn bảo mật User Activation.
- */
-export function loginWithGoogle({ onSuccess, onError, onFallbackNeeded } = {}) {
+export function loginWithGoogle({ onSuccess, onError, onFallbackNeeded, timeoutMs = 20000 } = {}) {
   const clientId = getGoogleClientIdSync()
 
-  currentSuccessCb = onSuccess
-  currentErrorCb = (err) => {
-    if (err === 'cancelled') {
-      // Người dùng chủ động tắt popup đăng nhập -> Không hiển thị lỗi đỏ
-      if (onError) onError(null)
-      return
+  if (typeof window === 'undefined' || !window.google?.accounts?.id) {
+    if (onFallbackNeeded) {
+      onFallbackNeeded('sdk_not_loaded')
+    } else if (onError) {
+      onError('Google Identity Services chưa sẵn sàng hoặc bị chặn bởi trình duyệt.')
     }
-    if (err === 'popup_blocked' || err?.includes?.('popup') || err?.includes?.('failed to open')) {
-      if (onFallbackNeeded) onFallbackNeeded('popup_blocked')
-      else if (onError) onError('Trình duyệt đã chặn cửa sổ đăng nhập Google. Vui lòng cho phép popup để tiếp tục.')
-      return
-    }
-    if (onError) onError(typeof err === 'string' ? err : 'Đăng nhập Google thất bại.')
+    return false
   }
 
-  // 1. Thử gọi Token Client ngay trong luồng click đồng bộ
-  if (typeof window !== 'undefined' && window.google?.accounts?.oauth2) {
-    try {
-      const client = getOrCreateTokenClient(clientId)
-      if (client) {
-        client.requestAccessToken({ prompt: 'select_account' })
-        return true
-      }
-    } catch (err) {
-      console.warn('Lỗi mở Google requestAccessToken:', err)
+  let completed = false
+  let timerId = null
+
+  const cleanup = () => {
+    if (timerId) {
+      clearTimeout(timerId)
+      timerId = null
     }
   }
 
-  // 2. Thử kích hoạt One-Tap nếu có
-  if (typeof window !== 'undefined' && window.google?.accounts?.id) {
-    try {
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: async (response) => {
-          if (response?.credential && onSuccess) {
-            await onSuccess(response.credential)
+  // Khởi tạo timeout 20s phòng ngừa popup/prompt bị treo hoặc không gửi callback
+  timerId = setTimeout(() => {
+    if (completed) return
+    completed = true
+    cleanup()
+    if (onError) {
+      onError('Thời gian chờ xác thực Google đã quá hạn (20 giây). Vui lòng thử lại hoặc đăng nhập bằng Email.')
+    }
+  }, timeoutMs)
+
+  try {
+    window.google.accounts.id.initialize({
+      client_id: clientId,
+      callback: async (response) => {
+        if (completed) return
+        completed = true
+        cleanup()
+
+        try {
+          if (!response?.credential) {
+            throw new Error('Không nhận được token xác thực từ Google')
           }
-        },
-        auto_select: false,
-        cancel_on_tap_outside: true,
-      })
-      window.google.accounts.id.prompt()
-      return true
-    } catch (e) {
-      console.warn('GIS prompt error:', e)
-    }
-  }
+          const decoded = decodeGoogleJwt(response.credential)
+          if (onSuccess) {
+            await onSuccess({
+              credential: response.credential,
+              sub: decoded?.sub,
+              email: decoded?.email,
+              fullName: decoded?.name || 'Quý khách Google',
+              picture: decoded?.picture,
+              avatarUrl: decoded?.picture,
+              avatar_url: decoded?.picture,
+            })
+          }
+        } catch (err) {
+          if (onError) onError(err.message || 'Lỗi xử lý tài khoản Google')
+        }
+      },
+      auto_select: false,
+      cancel_on_tap_outside: true,
+    })
 
-  // 3. Nếu SDK chưa tải được hoặc bị chặn bởi AdBlock / Brave Shield
-  if (onFallbackNeeded) {
-    onFallbackNeeded('sdk_not_loaded')
-  } else if (onError) {
-    onError('Google Identity Services chưa sẵn sàng hoặc bị chặn bởi trình duyệt.')
+    window.google.accounts.id.prompt((notification) => {
+      if (completed) return
+
+      if (notification.isNotDisplayed()) {
+        const reason = notification.getNotDisplayedReason()
+        console.warn('GIS prompt not displayed:', reason)
+        if (reason === 'suppressed_by_user' || reason === 'opt_out_or_no_session') {
+          // One-tap bị tắt hoặc không có session, chuyển về fallback
+          completed = true
+          cleanup()
+          if (onFallbackNeeded) onFallbackNeeded('prompt_suppressed')
+          else if (onError) onError('Vui lòng sử dụng nút đăng nhập Google bên dưới hoặc đăng nhập bằng Email.')
+        }
+      } else if (notification.isSkippedMoment()) {
+        console.warn('GIS prompt skipped:', notification.getSkippedReason())
+      } else if (notification.isDismissedMoment()) {
+        const dismissReason = notification.getDismissedReason()
+        if (dismissReason === 'credential_returned') {
+          // Đã chọn tài khoản, callback sẽ được gọi
+          return
+        }
+        completed = true
+        cleanup()
+        if (dismissReason !== 'tap_outside') {
+          if (onError) onError(null) // Người dùng chủ động đóng, không báo lỗi
+        }
+      }
+    })
+
+    return true
+  } catch (err) {
+    cleanup()
+    console.warn('Lỗi gọi Google Identity Services:', err)
+    if (onError) onError(err.message || 'Đăng nhập Google thất bại.')
+    return false
   }
-  return false
 }
 
 /**
  * Gắn nút Google Sign-In chính thức của Google vào container DOM.
  * ĐÂY LÀ PHƯƠNG PHÁP CHUẨN NHẤT CỦA GOOGLE:
  * - Google tự tạo iframe nội bộ, xử lý click trực tiếp.
- * - KHÔNG BAO GIỜ BỊ CHẶN POPUP bởi trình duyệt.
+ * - Không bao giờ bị chặn popup bởi trình duyệt.
  * - Trả về Google ID Token (JWT) chuẩn bảo mật.
  */
-export async function setupGoogleSignInButton(containerElement, { onSuccess, onError, text = 'continue_with', theme = 'outline', width } = {}) {
+export async function setupGoogleSignInButton(
+  containerElement,
+  { onSuccess, onError, text = 'continue_with', theme = 'outline', width } = {}
+) {
   if (!containerElement) return { success: false, error: 'Thiếu containerElement' }
 
   const clientId = getGoogleClientIdSync()

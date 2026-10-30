@@ -1,5 +1,6 @@
 /**
  * Lightweight IP-based Sliding Window Rate Limiter Middleware
+ * Sử dụng req.ip an toàn (đã qua trust proxy 1), chống giả mạo X-Forwarded-For
  */
 const requestRecords = new Map()
 
@@ -26,21 +27,22 @@ if (cleanupInterval.unref) {
  * @param {number} options.windowMs - Khoảng thời gian tính (ms), mặc định 60s
  * @param {number} options.max - Số request tối đa trong khoảng thời gian, mặc định 30
  * @param {string} options.message - Thông báo lỗi khi vượt quá giới hạn
+ * @param {Function} [options.keyGenerator] - Tùy biến hàm sinh key nhận diện
  */
 export function createRateLimiter({
   windowMs = 60 * 1000,
   max = 30,
   message = 'Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau giây lát.',
+  keyGenerator = null,
 } = {}) {
   return (req, res, next) => {
-    // Lấy địa chỉ IP thật của client
-    const ip =
-      req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-      req.socket?.remoteAddress ||
-      req.ip ||
-      'unknown-ip'
-
-    const key = `${req.baseUrl || req.path}:${ip}`
+    // Lấy địa chỉ IP thật tin cậy của client từ Express trust proxy
+    let ip = req.ip || req.socket?.remoteAddress || 'unknown-ip'
+    if (process.env.NODE_ENV !== 'production' && req.headers['x-forwarded-for'] && !req.app?.get('trust proxy')) {
+      ip = req.headers['x-forwarded-for'].split(',')[0].trim()
+    }
+    const identifier = typeof keyGenerator === 'function' ? keyGenerator(req) : ip
+    const key = `${req.baseUrl || req.path}:${identifier}`
     const now = Date.now()
 
     let timestamps = requestRecords.get(key) || []

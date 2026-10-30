@@ -31,6 +31,7 @@ import { apiPost, setAccessToken, clearAccessToken } from '../lib/apiClient'
 import { clearLocalOrders } from '../lib/orderSync'
 import { loginWithGoogle, setupGoogleSignInButton, decodeGoogleJwt } from '../lib/googleAuth'
 import LoyaltyMemberCard from '../components/loyalty/LoyaltyMemberCard'
+import { TurnstileWidget } from '../components/auth/TurnstileWidget'
 
 const formatVND = (amount) => Number(amount || 0).toLocaleString('vi-VN') + 'đ'
 
@@ -55,6 +56,7 @@ export default function AccountPage() {
   const [updatingPrefs, setUpdatingPrefs] = useState(false)
   const [authError, setAuthError] = useState(null)
   const [authSubmitting, setAuthSubmitting] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
   const [isGisButtonMounted, setIsGisButtonMounted] = useState(false)
   const [authMode, setAuthMode] = useState('login') // 'login' | 'register' | 'verify_register_otp' | 'forgot' | 'verify_otp' | 'reset_password'
   const [authEmail, setAuthEmail] = useState('')
@@ -111,16 +113,20 @@ export default function AccountPage() {
       setAuthSubmitting(true)
       setAuthError(null)
       const credStr = typeof credential === 'string' ? credential : credential?.credential
-      const decoded = typeof credStr === 'string' ? decodeGoogleJwt(credStr) : null
+      if (!credStr) {
+        setAuthError('Không nhận được mã xác thực hợp lệ từ Google.')
+        setAuthSubmitting(false)
+        return
+      }
+      const decoded = decodeGoogleJwt(credStr)
       const payload = {
-        credential: credStr || (credential?.email ? `mock-google-token:sub:${credential.email}:${encodeURIComponent(credential.fullName || '')}` : ''),
+        credential: credStr,
         email: decoded?.email || credential?.email,
         fullName: decoded?.name || credential?.fullName || credential?.name,
         sub: decoded?.sub || credential?.sub,
         avatarUrl: decoded?.picture || credential?.picture,
         picture: decoded?.picture || credential?.picture,
         marketingOptIn: true,
-        ...(typeof credential === 'object' ? credential : {}),
       }
       const res = await fetch('/api/auth/google', {
         method: 'POST',
@@ -218,6 +224,7 @@ export default function AccountPage() {
           password: authPassword,
           fullName: authFullName.trim(),
           marketingOptIn: true,
+          turnstileToken: turnstileToken || undefined,
         })
         const data = await res.json()
         if (!res.ok || !data.success) {
@@ -252,6 +259,7 @@ export default function AccountPage() {
         const res = await apiPost('/api/auth/login', {
           email: authEmail.trim(),
           password: authPassword,
+          turnstileToken: turnstileToken || undefined,
         })
         const data = await res.json()
 
@@ -490,11 +498,27 @@ export default function AccountPage() {
 
   useEffect(() => {
     fetchSession()
+    const handleAuthChanged = (e) => {
+      const newUser = e.detail?.user || null
+      if (newUser) {
+        setUser(newUser)
+        fetchUserOrders()
+      } else {
+        setUser(null)
+        setOrders([])
+        setVoucher(null)
+      }
+    }
+    window.addEventListener('customer_auth_changed', handleAuthChanged)
+    return () => {
+      window.removeEventListener('customer_auth_changed', handleAuthChanged)
+    }
   }, [])
 
   useEffect(() => {
     let mounted = true
-    if (!user && googleButtonRef.current) {
+    if (!user && (authMode === 'login' || authMode === 'register') && googleButtonRef.current) {
+      setIsGisButtonMounted(false)
       setupGoogleSignInButton(googleButtonRef.current, {
         onSuccess: handleGoogleCredential,
         onError: (err) => {
@@ -511,7 +535,7 @@ export default function AccountPage() {
     return () => {
       mounted = false
     }
-  }, [user])
+  }, [user, authMode])
 
   // 3. Xử lý Đăng xuất
   const handleLogout = async () => {
@@ -692,6 +716,7 @@ export default function AccountPage() {
                     </p>
                   </div>
 
+                  <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken('')} />
                   <button
                     type="submit"
                     disabled={authSubmitting}
@@ -771,6 +796,7 @@ export default function AccountPage() {
                     />
                   </div>
 
+                  <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken('')} />
                   <button
                     type="submit"
                     disabled={authSubmitting}

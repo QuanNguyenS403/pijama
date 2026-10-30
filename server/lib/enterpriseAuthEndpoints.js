@@ -16,15 +16,37 @@ import { verifyTurnstileToken } from './turnstileService.js'
 import { logSecurityAudit } from './auditLogger.js'
 import { parseCookies, setCustomerSessionCookie, clearCustomerSessionCookie } from './customerSessionMiddleware.js'
 import { sendVerificationCodeEmail, sendWelcomeVoucherEmail, sendPasswordResetOtpEmail } from './emailAccount.js'
-import { createWelcomeVoucher, createCustomerSession } from './accountDb.js'
+import { createWelcomeVoucher, createCustomerSession, revokeAllAccountSessions, generateSessionToken } from './accountDb.js'
 
 /**
  * Đăng ký bộ API Xác thực Chuẩn Doanh nghiệp (Enterprise Auth Endpoints)
  */
 export function registerEnterpriseAuthEndpoints(app) {
-  // Helper lấy Client IP
-  const getClientIp = (req) =>
-    req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || req.ip || '127.0.0.1'
+  // Helper lấy Client IP tin cậy từ Express trust proxy
+  const getClientIp = (req) => {
+    if (process.env.NODE_ENV === 'production') {
+      return req.ip || req.socket?.remoteAddress || '127.0.0.1'
+    }
+    if (req.headers['x-forwarded-for'] && !req.app?.get('trust proxy')) {
+      return req.headers['x-forwarded-for'].split(',')[0].trim()
+    }
+    return req.ip || req.socket?.remoteAddress || '127.0.0.1'
+  }
+
+  // Helper băm mã OTP bằng HMAC-SHA256 với salt
+  const hashOtp = (code, salt) => {
+    return crypto.createHmac('sha256', salt).update(String(code).trim()).digest('hex')
+  }
+
+  // Helper so sánh mã OTP bằng constant-time comparison
+  const verifyOtpTimingSafe = (inputCode, storedHash, salt) => {
+    if (!inputCode || !storedHash || !salt) return false
+    const computed = hashOtp(inputCode, salt)
+    const a = Buffer.from(computed, 'hex')
+    const b = Buffer.from(storedHash, 'hex')
+    if (a.length !== b.length) return false
+    return crypto.timingSafeEqual(a, b)
+  }
 
   // Helper lấy User-Agent
   const getUserAgent = (req) => req.headers['user-agent'] || 'Unknown-Client'
@@ -34,6 +56,14 @@ export function registerEnterpriseAuthEndpoints(app) {
     const ip = getClientIp(req)
     const userAgent = getUserAgent(req)
     const { email, password, fullName, phone, marketingOptIn, turnstileToken } = req.validatedBody
+
+    // Chặn đăng ký trực tiếp không xác thực email ở production (F-M1)
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({
+        success: false,
+        error: 'Đăng ký tài khoản yêu cầu xác thực email. Vui lòng gửi yêu cầu mã xác nhận qua /api/auth/register/request-otp.',
+      })
+    }
 
     try {
       // A. Rate limiting (tối đa 5 lần đăng ký / 10 phút / IP)
@@ -231,10 +261,13 @@ export function registerEnterpriseAuthEndpoints(app) {
       // D. Băm mật khẩu bằng Argon2id
       const passwordHash = await hashPassword(password)
 
-      // E. Tạo mã OTP ngẫu nhiên 6 chữ số
-      const code = Math.floor(100000 + Math.random() * 900000).toString()
+      // E. Tạo mã OTP ngẫu nhiên 6 chữ số bằng CSPRNG (crypto.randomInt)
+      const code = crypto.randomInt(100000, 999999).toString()
+      const salt = crypto.randomBytes(16).toString('hex')
+      const codeHash = hashOtp(code, salt)
+      const isTestMode = process.env.AUTH_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production'
 
-      // F. Lưu dữ liệu đăng ký tạm vào cache trong 10 phút (600 giây)
+      // F. Lưu dữ liệu đăng ký tạm vào cache trong 10 phút (600 giây) kèm băm mã an toàn
       const cacheKey = `pending_reg:${email.toLowerCase()}`
       await cacheSet(
         cacheKey,
@@ -244,9 +277,11 @@ export function registerEnterpriseAuthEndpoints(app) {
           passwordHash,
           phone: phone || null,
           marketingOptIn: Boolean(marketingOptIn),
-          code,
+          codeHash,
+          salt,
           attempts: 0,
           createdAt: Date.now(),
+          ...(isTestMode && { code }),
         }),
         600
       )
@@ -257,7 +292,6 @@ export function registerEnterpriseAuthEndpoints(app) {
       } catch (eErr) {
         console.error('Lỗi khi gửi email xác thực đăng ký:', eErr)
       }
-      console.log(`[QNS-REG-OTP] Mã xác nhận đăng ký cho ${email}: ${code}`)
 
       logSecurityAudit({
         action: 'REGISTER_OTP_SENT',
@@ -311,8 +345,20 @@ export function registerEnterpriseAuthEndpoints(app) {
         })
       }
 
-      if (String(data.code).trim() !== String(code).trim()) {
+      const isMatch = data.codeHash && data.salt
+        ? verifyOtpTimingSafe(code, data.codeHash, data.salt)
+        : String(data.code || '').trim() === String(code).trim()
+
+      if (!isMatch) {
         data.attempts = (data.attempts || 0) + 1
+        if (data.attempts >= 5) {
+          await cacheDel(cacheKey)
+          logSecurityAudit({ action: 'REGISTER_OTP_LOCKED', status: 'BLOCKED', ip, userAgent, details: { email } })
+          return res.status(429).json({
+            success: false,
+            error: 'Bạn đã nhập sai mã xác nhận quá 5 lần. Mã đã bị khóa, vui lòng yêu cầu mã mới.',
+          })
+        }
         await cacheSet(cacheKey, JSON.stringify(data), 600)
         logSecurityAudit({
           action: 'REGISTER_OTP_WRONG',
@@ -475,6 +521,16 @@ export function registerEnterpriseAuthEndpoints(app) {
         return res.status(400).json({ success: false, error: turnstileCheck.error })
       }
 
+      // Giới hạn tốc độ theo Email chống credential stuffing (F-M7)
+      const emailRl = await checkRateLimit(`login_email:${email.toLowerCase()}`, 5, 300)
+      if (!emailRl.allowed) {
+        logSecurityAudit({ action: 'LOGIN_EMAIL_RATE_LIMITED', status: 'BLOCKED', ip, userAgent, details: { email } })
+        return res.status(429).json({
+          success: false,
+          error: `Tài khoản tạm thời bị giới hạn đăng nhập do thử sai nhiều lần. Vui lòng thử lại sau ${emailRl.retryAfter} giây.`,
+        })
+      }
+
       const db = getDb()
       const user = db.prepare(`
         SELECT id, email, password_hash, full_name, role, status, avatar_url, verified
@@ -484,6 +540,10 @@ export function registerEnterpriseAuthEndpoints(app) {
 
       if (!user) {
         logSecurityAudit({ action: 'LOGIN_USER_NOT_FOUND', status: 'FAILURE', ip, userAgent, details: { email } })
+        // Timing side-channel mitigation (F-M6): hash một chuỗi giả để giữ thời gian phản hồi đồng nhất
+        try {
+          await verifyPassword('dummy_timing_pad_password_123', '$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHQ$dHVtum15aGFzaGZvcnRpbWluZ3Byb3RlY3Rpb24')
+        } catch (_) {}
         return res.status(401).json({
           success: false,
           error: 'Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.',
@@ -494,11 +554,11 @@ export function registerEnterpriseAuthEndpoints(app) {
         return res.status(403).json({ success: false, error: 'Tài khoản của bạn đã bị tạm ngưng hoạt động.' })
       }
 
-      // Nếu tài khoản được tạo qua Google OAuth và chưa đặt mật khẩu
+      // Nếu tài khoản được tạo qua Google OAuth và chưa đặt mật khẩu (F-M6 chống dò nguồn đăng ký)
       if (!user.password_hash) {
-        return res.status(400).json({
+        return res.status(401).json({
           success: false,
-          error: 'Tài khoản này được đăng ký qua Google. Vui lòng nhấn "Đăng nhập bằng Google".',
+          error: 'Email hoặc mật khẩu không chính xác. Nếu quý khách đã đăng ký bằng Google, vui lòng chọn Tiếp tục với Google.',
         })
       }
 
@@ -523,8 +583,7 @@ export function registerEnterpriseAuthEndpoints(app) {
 
       // D. Cấp Access Token + Refresh Token (BƯỚC 4 Token Rotation)
       const tokens = await createSessionAndTokens(user, { ip, userAgent })
-      setRefreshTokenCookie(res, tokens.refreshToken)
-      setCustomerSessionCookie(res, tokens.refreshToken)
+      const sessionToken = generateSessionToken()
 
       // Đồng bộ sang accounts và customer_sessions
       db.prepare(`
@@ -555,10 +614,12 @@ export function registerEnterpriseAuthEndpoints(app) {
 
       createCustomerSession({
         accountId: user.id,
-        token: tokens.refreshToken,
+        token: sessionToken,
         ip,
         userAgent,
       })
+      setCustomerSessionCookie(res, sessionToken)
+      setRefreshTokenCookie(res, tokens.refreshToken)
 
       logSecurityAudit({ userId: user.id, action: 'LOGIN_SUCCESS', status: 'SUCCESS', ip, userAgent })
 
@@ -646,12 +707,28 @@ export function registerEnterpriseAuthEndpoints(app) {
       return res.status(400).json({ success: false, error: turnstileCheck.error })
     }
 
-    // Sinh OTP 6 chữ số
+    // Sinh OTP 6 chữ số bằng CSPRNG và băm an toàn
     const otpCode = crypto.randomInt(100000, 999999).toString()
+    const salt = crypto.randomBytes(16).toString('hex')
+    const codeHash = hashOtp(otpCode, salt)
+    const isTestMode = process.env.AUTH_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production'
 
     // Lưu vào Redis / Memory Cache với TTL 5 phút (300 giây)
-    const cacheKey = `otp:${purpose}:${email}`
-    await cacheSet(cacheKey, otpCode, 300)
+    const cacheKey = `otp:${purpose}:${email.toLowerCase()}`
+    if (isTestMode) {
+      await cacheSet(cacheKey, otpCode, 300)
+    } else {
+      await cacheSet(
+        cacheKey,
+        JSON.stringify({
+          codeHash,
+          salt,
+          attempts: 0,
+          createdAt: Date.now(),
+        }),
+        300
+      )
+    }
 
     try {
       await sendVerificationCodeEmail({
@@ -683,21 +760,67 @@ export function registerEnterpriseAuthEndpoints(app) {
     const ip = getClientIp(req)
     const { email, code, purpose } = req.validatedBody
 
-    const cacheKey = `otp:${purpose}:${email}`
-    const storedOtp = await cacheGet(cacheKey)
+    // Giới hạn tốc độ thử mã theo IP (tối đa 20 lần / 5 phút / IP)
+    const rlIp = await checkRateLimit(`otp_verify:${ip}`, 20, 300)
+    if (!rlIp.allowed) {
+      return res.status(429).json({
+        success: false,
+        error: `Bạn đã thử xác minh quá nhiều lần. Vui lòng chờ ${rlIp.retryAfter} giây.`,
+      })
+    }
 
-    if (!storedOtp) {
+    const cacheKey = `otp:${purpose}:${email.toLowerCase()}`
+    const rawData = await cacheGet(cacheKey)
+
+    if (!rawData) {
       return res.status(400).json({
         success: false,
         error: 'Mã xác minh OTP đã hết hạn hoặc không tồn tại. Vui lòng yêu cầu mã mới.',
       })
     }
 
-    if (String(storedOtp).trim() !== String(code).trim()) {
-      logSecurityAudit({ action: 'OTP_INVALID', status: 'FAILURE', ip, details: { email, purpose } })
+    let data
+    try {
+      if (typeof rawData === 'object' && rawData !== null) {
+        data = rawData
+      } else if (typeof rawData === 'string' && rawData.trim().startsWith('{')) {
+        data = JSON.parse(rawData)
+      } else {
+        data = { code: String(rawData), attempts: 0 }
+      }
+    } catch (_) {
+      data = { code: String(rawData), attempts: 0 }
+    }
+
+    // Chặn brute-force sau quá 5 lần nhập sai
+    if ((data.attempts || 0) >= 5) {
+      await cacheDel(cacheKey)
+      logSecurityAudit({ action: 'OTP_LOCKED', status: 'BLOCKED', ip, details: { email, purpose } })
+      return res.status(429).json({
+        success: false,
+        error: 'Bạn đã nhập sai mã xác nhận quá 5 lần. Mã đã bị khóa, vui lòng yêu cầu mã mới.',
+      })
+    }
+
+    const isMatch = data.codeHash && data.salt
+      ? verifyOtpTimingSafe(code, data.codeHash, data.salt)
+      : String(data.code || '').trim() === String(code).trim()
+
+    if (!isMatch) {
+      data.attempts = (data.attempts || 0) + 1
+      if (data.attempts >= 5) {
+        await cacheDel(cacheKey)
+        logSecurityAudit({ action: 'OTP_LOCKED', status: 'BLOCKED', ip, details: { email, purpose } })
+        return res.status(429).json({
+          success: false,
+          error: 'Bạn đã nhập sai mã xác nhận quá 5 lần. Mã đã bị khóa, vui lòng yêu cầu mã mới.',
+        })
+      }
+      await cacheSet(cacheKey, JSON.stringify(data), 300)
+      logSecurityAudit({ action: 'OTP_INVALID', status: 'FAILURE', ip, details: { email, purpose, attempts: data.attempts } })
       return res.status(400).json({
         success: false,
-        error: 'Mã OTP không chính xác. Vui lòng kiểm tra lại 6 chữ số nhận được.',
+        error: `Mã OTP không chính xác. Bạn còn ${5 - data.attempts} lần thử.`,
       })
     }
 
@@ -707,6 +830,7 @@ export function registerEnterpriseAuthEndpoints(app) {
     const db = getDb()
     const now = new Date().toISOString()
     db.prepare('UPDATE users SET verified = 1, verified_at = ? WHERE LOWER(email) = ?').run(now, email)
+    db.prepare('UPDATE accounts SET verified = 1, updated_at = ? WHERE LOWER(email) = ?').run(now, email)
 
     logSecurityAudit({ action: 'OTP_VERIFIED', status: 'SUCCESS', ip, details: { email, purpose } })
 
@@ -748,18 +872,34 @@ export function registerEnterpriseAuthEndpoints(app) {
           userAgent,
           details: { email },
         })
-        return res.status(404).json({
-          success: false,
-          error: 'Địa chỉ email này chưa được đăng ký tài khoản tại QuanNguyenS.',
+        // Anti-enumeration: Phản hồi trung tính 200, không tiết lộ tài khoản có tồn tại hay không
+        return res.json({
+          success: true,
+          message: `Nếu địa chỉ email ${email} tồn tại trong hệ thống, mã xác nhận 6 chữ số đã được gửi đến hộp thư của bạn.`,
+          email,
+          expiresIn: 600,
         })
       }
 
-      // Sinh OTP 6 chữ số
+      // Sinh OTP 6 chữ số bằng CSPRNG và băm an toàn
       const otpCode = crypto.randomInt(100000, 999999).toString()
+      const salt = crypto.randomBytes(16).toString('hex')
+      const codeHash = hashOtp(otpCode, salt)
+      const isTestMode = process.env.AUTH_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production'
 
       // Lưu vào cache với TTL 10 phút (600 giây) kèm attempts: 0
       const cacheKey = `otp:reset_password:${email}`
-      await cacheSet(cacheKey, JSON.stringify({ code: otpCode, attempts: 0 }), 600)
+      await cacheSet(
+        cacheKey,
+        JSON.stringify({
+          codeHash,
+          salt,
+          attempts: 0,
+          createdAt: Date.now(),
+          ...(isTestMode && { code: otpCode }),
+        }),
+        600
+      )
 
       // Gửi email qua Gmail
       try {
@@ -771,9 +911,6 @@ export function registerEnterpriseAuthEndpoints(app) {
       } catch (mailErr) {
         console.warn('⚠️ [GMAIL NOT SENT] Lỗi gửi email OTP đặt lại mật khẩu:', mailErr.message)
       }
-
-      // Log mã ra terminal để phục vụ dev/test/fallback an toàn
-      console.log(`🔑 [PASSWORD RESET OTP] Mã xác nhận gửi tới ${user.email}: ${otpCode}`)
 
       logSecurityAudit({
         userId: user.id,
@@ -836,8 +973,20 @@ export function registerEnterpriseAuthEndpoints(app) {
         })
       }
 
-      if (String(data.code).trim() !== String(code).trim()) {
+      const isMatch = data.codeHash && data.salt
+        ? verifyOtpTimingSafe(code, data.codeHash, data.salt)
+        : String(data.code || '').trim() === String(code).trim()
+
+      if (!isMatch) {
         data.attempts = (data.attempts || 0) + 1
+        if (data.attempts >= 5) {
+          await cacheDel(cacheKey)
+          logSecurityAudit({ action: 'PASSWORD_RESET_OTP_LOCKED', status: 'BLOCKED', ip, userAgent, details: { email } })
+          return res.status(429).json({
+            success: false,
+            error: 'Bạn đã nhập sai mã quá 5 lần. Mã đã bị khóa, vui lòng yêu cầu mã mới.',
+          })
+        }
         await cacheSet(cacheKey, JSON.stringify(data), 600)
         logSecurityAudit({
           action: 'PASSWORD_RESET_OTP_WRONG',
@@ -909,12 +1058,15 @@ export function registerEnterpriseAuthEndpoints(app) {
       // Cập nhật users
       db.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?').run(passwordHash, now, user.id)
 
-      // Thu hồi các phiên đăng nhập cũ để bảo đảm an toàn
+      // Thu hồi toàn bộ phiên đăng nhập cũ ở cả hai hệ bảng (F-M9)
       try {
         db.prepare('UPDATE enterprise_sessions SET is_revoked = 1, revoked_at = ? WHERE user_id = ?').run(now, user.id)
       } catch (_) {}
+      revokeAllAccountSessions(user.id)
+      clearCustomerSessionCookie(res)
+      clearRefreshTokenCookie(res)
 
-      // Xóa resetToken sau khi dùng
+      // Xóa resetToken ngay sau khi dùng để bảo đảm chỉ sử dụng đúng 1 lần (Single-use token)
       await cacheDel(`reset_token:${resetToken}`)
 
       logSecurityAudit({

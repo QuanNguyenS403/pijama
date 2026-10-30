@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { X, Lock, Mail, User, Eye, EyeOff, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react'
 import { apiPost, setAccessToken } from '../../lib/apiClient'
 import { loginWithGoogle, decodeGoogleJwt } from '../../lib/googleAuth'
+import { TurnstileWidget } from './TurnstileWidget'
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [activeTab, setActiveTab] = useState('login') // 'login' | 'register'
@@ -11,6 +12,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [marketingOptIn, setMarketingOptIn] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
   const googleBtnRef = useRef(null)
@@ -82,10 +84,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       onFallbackNeeded: (reason) => {
         if (reason === 'popup_blocked') {
           setErrorMsg('Trình duyệt đã chặn cửa sổ đăng nhập Google. Vui lòng cho phép popup để tiếp tục.')
-        } else if (email.trim()) {
-          handleGoogleCredential({ email: email.trim(), fullName: fullName.trim() || 'Quý khách Google' })
         } else {
-          setErrorMsg('Vui lòng nhập email của bạn vào ô trên để tiếp tục đăng nhập.')
+          setErrorMsg('Google Identity Services chưa sẵn sàng. Vui lòng thử lại hoặc đăng nhập bằng Email/Mật khẩu bên trên.')
         }
       },
     })
@@ -120,6 +120,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         const res = await apiPost('/api/auth/login', {
           email: email.trim(),
           password,
+          turnstileToken: turnstileToken || undefined,
         })
         const data = await res.json()
 
@@ -149,6 +150,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           password,
           fullName: fullName.trim(),
           marketingOptIn,
+          turnstileToken: turnstileToken || undefined,
         })
         const data = await res.json()
 
@@ -358,6 +360,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               </label>
             )}
 
+            <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken('')} />
             <button
               type="submit"
               disabled={isLoading}

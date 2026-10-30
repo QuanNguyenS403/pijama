@@ -1,7 +1,12 @@
 import fs from 'fs'
 import path from 'path'
+import { fileURLToPath } from 'url'
 import dotenv from 'dotenv'
 import crypto from 'crypto'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const projectRoot = path.resolve(__dirname, '../..')
 
 /**
  * Nạp thông minh biến môi trường từ .env, .env.development, .env.local
@@ -9,7 +14,7 @@ import crypto from 'crypto'
  */
 export function loadEnvironment(rootDir = process.cwd()) {
   const envFiles = ['.env', '.env.development', '.env.local']
-  const candidateDirs = [rootDir, path.resolve(rootDir, 'pijama')]
+  const candidateDirs = Array.from(new Set([rootDir, path.resolve(rootDir, 'pijama'), projectRoot]))
   for (const dir of candidateDirs) {
     for (const file of envFiles) {
       const fullPath = path.resolve(dir, file)

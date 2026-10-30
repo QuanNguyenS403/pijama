@@ -63,6 +63,39 @@ function useColumnCount() {
 function ReviewCard({ review, idx, onOpenPhoto }) {
   const photo = review.photos?.[0] || review.photo || null
 
+  const formattedDate = useMemo(() => {
+    const rawDate = review.createdAt || review.date
+    if (!rawDate) return ''
+    try {
+      const d = new Date(rawDate)
+      if (isNaN(d.getTime())) return ''
+      return d.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+    } catch {
+      return ''
+    }
+  }, [review.createdAt, review.date])
+
+  const variantLabel = useMemo(() => {
+    if (review.itemKey && (review.itemKey.startsWith('Size ') || review.itemKey.includes(' · '))) {
+      return review.itemKey
+    }
+    if (review.size) {
+      return `Size ${review.size}${review.color ? ` · ${review.color}` : ''}`
+    }
+    if (review.itemKey?.includes('-')) {
+      const parts = review.itemKey.split('-')
+      const last = parts[parts.length - 1]
+      if (['S', 'M', 'L', 'XL'].includes(last?.toUpperCase())) {
+        return `Size ${last.toUpperCase()}`
+      }
+    }
+    return null
+  }, [review.itemKey, review.size, review.color])
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -104,10 +137,20 @@ function ReviewCard({ review, idx, onOpenPhoto }) {
           </span>
         </div>
 
-        {/* Star Rating */}
-        <div className="my-0.5">
+        {/* Star Rating & Date */}
+        <div className="flex items-center justify-between gap-2 my-0.5">
           <StarRating rating={review.rating} size="xs" onDark={false} />
+          {formattedDate && (
+            <span className="text-[11px] text-neutral-400 font-sans tracking-tight">{formattedDate}</span>
+          )}
         </div>
+
+        {/* Product Variant (Size / Color) */}
+        {variantLabel && (
+          <div className="text-[11px] text-neutral-500 font-sans">
+            Phân loại: <span className="text-neutral-700 font-medium">{variantLabel}</span>
+          </div>
+        )}
 
         {/* Review Text */}
         <p className="font-sans text-xs sm:text-[13px] font-normal text-neutral-700 leading-relaxed break-words">

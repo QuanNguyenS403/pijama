@@ -27,6 +27,7 @@ export function getDb() {
   if (!db) {
     db = new Database(dbPath)
     db.pragma('journal_mode = WAL')
+    db.pragma('busy_timeout = 5000')
     initSchema(db)
     migrateSchema(db)
     runEnterpriseMigrations(db)
@@ -494,7 +495,11 @@ export function updateAccountEmail(id, email) {
   if (!id || !email) return null
   const database = getDb()
   const now = new Date().toISOString()
-  database.prepare('UPDATE accounts SET email = ?, updated_at = ? WHERE id = ?').run(email, now, id)
+  const cleanEmail = email.toLowerCase().trim()
+  database.prepare('UPDATE accounts SET email = ?, updated_at = ? WHERE id = ?').run(cleanEmail, now, id)
+  try {
+    database.prepare('UPDATE users SET email = ?, updated_at = ? WHERE id = ?').run(cleanEmail, now, id)
+  } catch (_) {}
   return findAccountById(id)
 }
 
@@ -1078,5 +1083,183 @@ export function getOrdersByPhoneFromDb(phone, database = getDb()) {
   }
 }
 
+/**
+ * Hợp nhất tài khoản OAuth (Google / Facebook) và Users trong 1 Transaction nguyên tử
+ * Khắc phục triệt để lỗi H3 (xung đột ID giữa accounts và users) và F-G3 (pre-hijack)
+ */
+export function upsertUnifiedOAuthAccount({
+  provider = 'google',
+  subject,
+  email,
+  fullName = 'Quý khách',
+  avatarUrl = null,
+  marketingOptIn = false,
+}) {
+  if (!subject && !email) {
+    throw new Error('Thiếu thông tin định danh (subject hoặc email)')
+  }
+
+  const database = getDb()
+  const cleanEmail = email ? email.toLowerCase().trim() : null
+  const now = new Date().toISOString()
+
+  return database.transaction(() => {
+    // 1. Tìm tài khoản hiện có qua identity mapping hoặc provider id
+    let account = null
+    if (subject) {
+      account = findAccountByIdentity(provider, subject)
+      if (!account && provider === 'google') {
+        account = findAccountByGoogleId(subject)
+      } else if (!account && provider === 'facebook') {
+        account = findAccountByFacebookId(subject)
+      }
+    }
+
+    // 2. Tìm qua email trong accounts hoặc users nếu chưa tìm thấy qua identity
+    let existingUser = null
+    if (cleanEmail) {
+      existingUser = database.prepare('SELECT * FROM users WHERE LOWER(email) = ?').get(cleanEmail)
+    }
+    if (!existingUser && account) {
+      existingUser = database.prepare('SELECT * FROM users WHERE id = ?').get(account.id)
+    }
+    if (!account && cleanEmail) {
+      account = findAccountByEmail(cleanEmail)
+    }
+    if (!account && existingUser) {
+      account = findAccountById(existingUser.id)
+    }
+
+    // Xác định ID duy nhất dùng chung cho cả 2 bảng
+    let userId = null
+    let isNewAccount = false
+    let preHijackMitigated = false
+
+    if (account) {
+      userId = account.id
+    } else if (existingUser) {
+      userId = existingUser.id
+    } else {
+      isNewAccount = true
+      userId = generateId('acc')
+    }
+
+    // 3. Xử lý F-G3: Pre-hijack mitigation
+    // Nếu tài khoản cũ đăng ký bằng email+mật khẩu nhưng chưa verify, nay chính chủ xác thực qua OAuth
+    // -> Vô hiệu hóa mật khẩu cũ và thu hồi toàn bộ session cũ của kẻ tấn công!
+    if (existingUser && existingUser.verified === 0 && existingUser.password_hash) {
+      database.prepare('UPDATE users SET password_hash = NULL, updated_at = ? WHERE id = ?').run(now, userId)
+      revokeAllAccountSessions(userId)
+      try {
+        database.prepare('UPDATE enterprise_sessions SET is_revoked = 1, revoked_at = ? WHERE user_id = ?').run(now, userId)
+      } catch (_) {}
+      preHijackMitigated = true
+    }
+
+    // 4. Đồng bộ / Upsert bảng accounts
+    const existingAccountRow = database.prepare('SELECT * FROM accounts WHERE id = ?').get(userId)
+    if (!existingAccountRow) {
+      database.prepare(`
+        INSERT INTO accounts (id, method, google_id, facebook_id, phone, email, full_name, avatar_url, verified, marketing_email_opt_in, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 'active', ?, ?)
+      `).run(
+        userId,
+        provider,
+        provider === 'google' ? subject : null,
+        provider === 'facebook' ? subject : null,
+        existingUser?.phone || null,
+        cleanEmail,
+        fullName || existingUser?.full_name || 'Quý khách',
+        avatarUrl || existingUser?.avatar_url || null,
+        marketingOptIn ? 1 : 0,
+        existingUser?.created_at || now,
+        now
+      )
+    } else {
+      database.prepare(`
+        UPDATE accounts SET
+          full_name = coalesce(?, full_name),
+          avatar_url = coalesce(?, avatar_url),
+          email = coalesce(?, email),
+          google_id = CASE WHEN ? = 'google' THEN ? ELSE google_id END,
+          facebook_id = CASE WHEN ? = 'facebook' THEN ? ELSE facebook_id END,
+          verified = 1,
+          updated_at = ?
+        WHERE id = ?
+      `).run(
+        fullName,
+        avatarUrl,
+        cleanEmail,
+        provider, subject,
+        provider, subject,
+        now,
+        userId
+      )
+    }
+
+    // 5. Đồng bộ / Upsert bảng users
+    if (!existingUser) {
+      database.prepare(`
+        INSERT INTO users (id, email, full_name, avatar_url, phone, role, status, verified, verified_at, marketing_email_opt_in, created_at, updated_at)
+        VALUES (?, ?, ?, ?, NULL, 'customer', 'active', 1, ?, ?, ?, ?)
+      `).run(
+        userId,
+        cleanEmail,
+        fullName || 'Quý khách',
+        avatarUrl,
+        now,
+        marketingOptIn ? 1 : 0,
+        now,
+        now
+      )
+    } else {
+      database.prepare(`
+        UPDATE users SET
+          email = coalesce(?, email),
+          full_name = coalesce(?, full_name),
+          avatar_url = coalesce(?, avatar_url),
+          verified = 1,
+          verified_at = coalesce(verified_at, ?),
+          last_login_at = ?,
+          updated_at = ?
+        WHERE id = ?
+      `).run(
+        cleanEmail,
+        fullName || existingUser.full_name,
+        avatarUrl || existingUser.avatar_url,
+        now,
+        now,
+        now,
+        existingUser.id
+      )
+    }
+
+    // 6. Lưu mapping identity
+    if (subject) {
+      database.prepare(`
+        INSERT OR IGNORE INTO account_identities (id, account_id, provider, provider_subject, email, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(`ident_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`, userId, provider, subject, cleanEmail, now)
+
+      database.prepare(`
+        INSERT OR IGNORE INTO enterprise_accounts (id, user_id, provider, provider_account_id, email, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(`eacc_${Date.now()}_${String(subject).slice(-6)}`, userId, provider, subject, cleanEmail, now, now)
+    }
+
+    const finalAccount = findAccountById(userId)
+    const voucher = createWelcomeVoucher(userId)
+
+    return {
+      account: finalAccount,
+      userId,
+      isNewAccount,
+      preHijackMitigated,
+      voucher,
+    }
+  })()
+}
+
 export { generateSessionToken } from './authCrypto.js'
+
 

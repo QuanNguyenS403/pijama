@@ -1,5 +1,7 @@
+import crypto from 'crypto'
 import { createRateLimiter } from './rateLimiter.js'
 import {
+  upsertUnifiedOAuthAccount,
   createAccount,
   findAccountById,
   findAccountByGoogleId,
@@ -107,16 +109,16 @@ export function registerAuthEndpoints(app) {
 
   // ── 1. Kiểm tra trạng thái cấu hình của hệ thống xác thực ────────
   app.get('/api/auth/config', (req, res) => {
-    const googleClientId = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com').trim()
-    const facebookAppId = (process.env.FACEBOOK_APP_ID || '').trim()
     const isProd = process.env.NODE_ENV === 'production'
-    const isTestMode = process.env.AUTH_TEST_MODE === 'true' || !isProd
+    const isTestMode = process.env.AUTH_TEST_MODE === 'true' && !isProd
+    const googleClientId = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '').trim()
+    const facebookAppId = (process.env.FACEBOOK_APP_ID || '').trim()
 
     res.json({
       success: true,
-      googleEnabled: true,
-      googleClientId: googleClientId || '745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com',
-      facebookEnabled: Boolean(facebookAppId) || (!isProd && isTestMode),
+      googleEnabled: Boolean(googleClientId) || isTestMode,
+      googleClientId: googleClientId || (isTestMode ? 'test-google-client-id.apps.googleusercontent.com' : null),
+      facebookEnabled: Boolean(facebookAppId) || isTestMode,
       facebookAppId: facebookAppId || null,
       phoneEnabled: false,
       requireOAuthVerification: isProd && !isTestMode,
@@ -134,136 +136,63 @@ export function registerAuthEndpoints(app) {
   // ── 3. Đăng nhập / Đăng ký qua Google (OAuth) ───────────────────
   app.post('/api/auth/google', oauthRateLimiter, async (req, res) => {
     try {
-      const bodyEmail = req.body.email || req.body.mail || ''
-      const bodyFullName = req.body.fullName || req.body.name || req.body.displayName || ''
-      const bodySub = req.body.sub || req.body.id || req.body.userId || ''
-      const bodyAvatarUrl =
-        req.body.avatarUrl ||
-        req.body.picture?.data?.url ||
-        (typeof req.body.picture === 'string' ? req.body.picture : null)
-      const credentialInput = req.body.credential
+      const credential = req.body.credential
       const marketingOptIn = req.body.marketingOptIn
-      const isTestMode = process.env.AUTH_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production'
+      const isProd = process.env.NODE_ENV === 'production'
+      const isTestMode = process.env.AUTH_TEST_MODE === 'true' && !isProd
 
-      let credential = credentialInput
-      // P0 / SEC-02 / L-1: Bắt buộc phải có Google ID token (credential).
-      // Chỉ cho phép mock fallback trong môi trường test chuyên biệt khi có cờ AUTH_TEST_MODE='true' và không phải production.
-      if (!credential || typeof credential !== 'string' || !credential.trim()) {
-        if (isTestMode && (bodyEmail || bodySub)) {
-          credential = `mock-google-token:${bodySub || 'google_' + Date.now()}:${bodyEmail}:${encodeURIComponent(bodyFullName || 'Google Test User')}`
-        } else {
-          return res.status(400).json({
-            success: false,
-            error: 'Thiếu Google ID token (credential) hợp lệ',
-          })
-        }
+      let effectiveCredential = credential
+      if (!effectiveCredential && isTestMode && req.body.email) {
+        const testSub = req.body.sub || (`mock-sub-` + crypto.createHash('md5').update(req.body.email).digest('hex').slice(0, 12))
+        effectiveCredential = `mock-google-token:${testSub}:${req.body.email}:${encodeURIComponent(req.body.fullName || req.body.name || 'Test User')}`
+      }
+
+      if (!effectiveCredential || typeof effectiveCredential !== 'string' || !effectiveCredential.trim()) {
+        return res.status(400).json({
+          success: false,
+          error: 'Thiếu Google ID token (credential) hợp lệ',
+        })
       }
 
       let googleUser = null
       try {
-        googleUser = await verifyGoogleIdToken(credential)
+        googleUser = await verifyGoogleIdToken(effectiveCredential)
       } catch (tokenErr) {
-        let jwtSub = bodySub
-        let jwtEmail = bodyEmail
-        let jwtName = bodyFullName
-        let jwtPicture = bodyAvatarUrl
-
-        try {
-          const parts = (credential || '').split('.')
-          if (parts.length === 3) {
-            const raw = Buffer.from(parts[1], 'base64url').toString('utf8')
-            const p = JSON.parse(raw)
-            if (p.sub) jwtSub = jwtSub || p.sub
-            if (p.email) jwtEmail = jwtEmail || p.email
-            if (p.name) jwtName = jwtName || p.name
-            if (p.picture) jwtPicture = jwtPicture || p.picture
-          }
-        } catch (_) {}
-
-        if (jwtEmail || jwtSub) {
-          console.warn('⚠️ [GOOGLE FALLBACK] Chấp nhận thông tin Google từ token:', tokenErr.message)
-          googleUser = {
-            provider: 'google',
-            sub: jwtSub || `google_${Date.now()}`,
-            email: (jwtEmail || 'quannguyens403@gmail.com').toLowerCase().trim(),
-            name: jwtName || 'Quý khách Google',
-            picture: jwtPicture || null,
-            emailVerified: true,
-          }
-        } else {
-          console.warn('⛔ [GOOGLE AUTH REJECTED] Xác thực Google token thất bại:', tokenErr.message)
-          return res.status(401).json({
-            success: false,
-            error: 'Xác thực Google ID token không thành công: ' + tokenErr.message,
-          })
-        }
+        console.warn('⛔ [GOOGLE AUTH REJECTED] Xác thực Google token thất bại:', tokenErr.message)
+        return res.status(401).json({
+          success: false,
+          error: 'Xác thực Google ID token không thành công: ' + tokenErr.message,
+        })
       }
 
       const email = googleUser.email?.toLowerCase().trim() || null
       const googleSub = googleUser.sub
-      const customerName = (googleUser.name && googleUser.name.trim()) || 'Quý khách Google'
-      const avatarUrl = googleUser.picture || bodyAvatarUrl || null
+      const customerName = googleUser.name?.trim() || 'Quý khách Google'
+      const avatarUrl = googleUser.picture || null
 
-      if (!email && !googleSub) {
-        return res.status(400).json({ success: false, error: 'Không lấy được thông tin định danh từ tài khoản Google' })
-      }
-
-      // ── TÌM HOẶC TẠO TÀI KHOẢN KHÁCH HÀNG RIÊNG TRÊN WEBSITE ──
-      let account = null
-      if (googleSub) {
-        account = findAccountByIdentity('google', googleSub) || findAccountByGoogleId(googleSub)
-      }
-      if (!account && email) {
-        account = findAccountByEmail(email)
-      }
-
-      const isNewAccount = !account
-      const optIn = Boolean(marketingOptIn)
-
-      if (isNewAccount) {
-        // 1. Tạo tài khoản riêng trên website, đồng bộ ảnh đại diện logo Google
-        account = createAccount({
-          method: 'google',
-          google_id: googleSub,
-          email,
-          full_name: customerName,
-          avatar_url: avatarUrl,
-          verified: 1,
-          marketing_email_opt_in: optIn ? 1 : 0,
+      if (!email || !googleSub) {
+        return res.status(400).json({
+          success: false,
+          error: 'Không lấy được thông tin định danh email/sub từ tài khoản Google',
         })
-      } else {
-        // 2. Nếu đã có tài khoản, cập nhật tên và ảnh logo Google mới nhất
-        account = updateAccountProfile(account.id, {
-          fullName: customerName,
-          avatarUrl: avatarUrl || account.avatar_url,
-          email: account.email || email,
-        })
-        if (googleSub) {
-          linkIdentityToAccount({
-            accountId: account.id,
-            provider: 'google',
-            subject: googleSub,
-            email,
-          })
-        }
-        account = markAccountVerified(account.id, { marketingOptIn: optIn })
       }
 
-      // Cấp đúng 1 Welcome Voucher cho tài khoản (10% + Freeship)
-      const voucher = createWelcomeVoucher(account.id)
+      // HỢP NHẤT TÀI KHOẢN VÀ BẢO ĐẢM TOÀN VẸN TRONG TRANSACTION
+      const { account, userId, isNewAccount, preHijackMitigated, voucher } = upsertUnifiedOAuthAccount({
+        provider: 'google',
+        subject: googleSub,
+        email,
+        fullName: customerName,
+        avatarUrl,
+        marketingOptIn: Boolean(marketingOptIn),
+      })
 
-      // Thông tin kết nối & thiết bị phục vụ thông báo bảo mật
-      const clientIp =
-        req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-        req.socket?.remoteAddress ||
-        req.ip ||
-        'Không xác định'
+      const clientIp = req.ip || req.socket?.remoteAddress || '127.0.0.1'
       const clientUserAgent = req.headers['user-agent'] || ''
       const timeStr = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
 
-      // ── GỬI EMAIL THÔNG BÁO CHO KHÁCH HÀNG & CHỦ SHOP ──
+      // Gửi email thông báo cho khách hàng và chủ shop
       if (isNewAccount) {
-        // [1] Khách hàng mới: Gửi email Chúc mừng đăng ký tài khoản Google thành công + Voucher 10%
         if (account.email) {
           sendGoogleRegisterSuccessEmail({
             to: account.email,
@@ -275,11 +204,10 @@ export function registerAuthEndpoints(app) {
           }).catch((err) => console.warn('⚠️ Gửi email đăng ký Google tới khách hàng lỗi:', err.message))
         }
 
-        // [2] Báo cho Chủ shop: Có thành viên mới đăng ký tài khoản Google
         sendOwnerGoogleAuthNotification({
           action: 'REGISTER',
           customerName: account.full_name || customerName,
-          email: account.email || email || '',
+          email: account.email || email,
           googleSub,
           timeStr,
           ip: clientIp,
@@ -287,7 +215,6 @@ export function registerAuthEndpoints(app) {
           voucherCode: voucher?.code || '',
         }).catch((err) => console.warn('⚠️ Gửi email báo chủ shop (Đăng ký Google) lỗi:', err.message))
       } else {
-        // [1] Khách hàng cũ đăng nhập lại: Gửi email Thông báo đăng nhập Google thành công (Security Notice)
         if (account.email) {
           sendGoogleLoginNotificationEmail({
             to: account.email,
@@ -298,11 +225,10 @@ export function registerAuthEndpoints(app) {
           }).catch((err) => console.warn('⚠️ Gửi email bảo mật đăng nhập Google tới khách hàng lỗi:', err.message))
         }
 
-        // [2] Báo cho Chủ shop: Có khách hàng đăng nhập lại bằng Google
         sendOwnerGoogleAuthNotification({
           action: 'LOGIN',
           customerName: account.full_name || customerName,
-          email: account.email || email || '',
+          email: account.email || email,
           googleSub,
           timeStr,
           ip: clientIp,
@@ -310,7 +236,7 @@ export function registerAuthEndpoints(app) {
         }).catch((err) => console.warn('⚠️ Gửi email báo chủ shop (Đăng nhập Google) lỗi:', err.message))
       }
 
-      // ── PHÁT HÀNH OPAQUE SESSION TOKEN & HTTPONLY COOKIE ──
+      // Phát hành Opaque Session Token riêng cho cookie qns_session
       const cookies = parseCookies(req.headers.cookie)
       const oldToken = cookies[HOST_COOKIE_NAME] || cookies[COOKIE_NAME]
       if (oldToken) {
@@ -319,51 +245,27 @@ export function registerAuthEndpoints(app) {
 
       const sessionToken = generateSessionToken()
       createCustomerSession({
-        accountId: account.id,
+        accountId: userId,
         token: sessionToken,
-        ip: req.ip,
-        userAgent: req.headers['user-agent'] || '',
+        ip: clientIp,
+        userAgent: clientUserAgent,
       })
-
       setCustomerSessionCookie(res, sessionToken)
 
-      // ── ĐỒNG BỘ ENTERPRISE USERS & CẤP TOKEN ROTATION (BƯỚC 4 & BƯỚC 5) ──
-      const db = getDb()
-      const now = new Date().toISOString()
-      try {
-        const currentAvatar = account.avatar_url || avatarUrl || null
-        db.prepare(`
-          INSERT INTO users (id, email, full_name, avatar_url, phone, role, status, verified, verified_at, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, 'customer', 'active', 1, ?, ?, ?)
-          ON CONFLICT(id) DO UPDATE SET full_name = excluded.full_name, avatar_url = coalesce(excluded.avatar_url, users.avatar_url), updated_at = excluded.updated_at
-        `).run(account.id, account.email, account.full_name, currentAvatar, account.phone, now, account.created_at, now)
-
-        if (currentAvatar) {
-          db.prepare('UPDATE users SET avatar_url = ? WHERE id = ?').run(currentAvatar, account.id)
-        }
-
-        db.prepare(`
-          INSERT OR IGNORE INTO enterprise_accounts (id, user_id, provider, provider_account_id, email, created_at, updated_at)
-          VALUES (?, ?, 'google', ?, ?, ?, ?)
-        `).run(`eacc_${Date.now()}_${googleSub.slice(-6)}`, account.id, googleSub, account.email, now, now)
-      } catch (syncErr) {
-        console.warn('⚠️ Lỗi sync enterprise user:', syncErr.message)
-      }
-
-      const currentAvatar = account.avatar_url || avatarUrl || null
+      // Cấp Access Token + Refresh Token (Refresh token lưu riêng tại Path=/api/auth)
       const userTokens = await createSessionAndTokens(
-        { id: account.id, email: account.email, full_name: account.full_name, role: 'customer', avatar_url: currentAvatar },
-        { ip: req.ip, userAgent: req.headers['user-agent'] || '' }
+        { id: userId, email: account.email, full_name: account.full_name, role: 'customer', avatar_url: account.avatar_url },
+        { ip: clientIp, userAgent: clientUserAgent }
       )
       setRefreshTokenCookie(res, userTokens.refreshToken)
 
       logSecurityAudit({
-        userId: account.id,
+        userId,
         action: isNewAccount ? 'REGISTER_GOOGLE_SUCCESS' : 'LOGIN_GOOGLE_SUCCESS',
         status: 'SUCCESS',
-        ip: req.ip,
-        userAgent: req.headers['user-agent'] || '',
-        details: { email: account.email, googleSub },
+        ip: clientIp,
+        userAgent: clientUserAgent,
+        details: { email: account.email, googleSub, preHijackMitigated },
       })
 
       return res.json({
@@ -373,139 +275,111 @@ export function registerAuthEndpoints(app) {
         expiresIn: userTokens.expiresIn,
         account: {
           id: account.id,
-          fullName: account.full_name,
-          name: account.full_name,
           email: account.email,
-          phone: account.phone,
-          avatarUrl: currentAvatar || '',
-          avatar_url: currentAvatar || '',
-          verified: true,
+          fullName: account.full_name,
+          full_name: account.full_name,
+          avatarUrl: account.avatar_url,
+          avatar_url: account.avatar_url,
+          phone: account.phone || '',
+          verified: Boolean(account.verified),
+          status: account.status || 'active',
           marketingEmailOptIn: Boolean(account.marketing_email_opt_in),
-          createdAt: account.created_at,
         },
         user: {
           id: account.id,
-          fullName: account.full_name,
-          name: account.full_name,
           email: account.email,
-          phone: account.phone,
-          avatarUrl: currentAvatar || '',
-          avatar_url: currentAvatar || '',
+          fullName: account.full_name,
+          full_name: account.full_name,
+          avatarUrl: account.avatar_url,
+          avatar_url: account.avatar_url,
+          phone: account.phone || '',
+          role: 'customer',
+          verified: Boolean(account.verified),
         },
-        voucher: {
-          code: voucher.code,
-          discountPercent: voucher.discount_percent,
-          freeShipping: Boolean(voucher.free_shipping),
-          used: Boolean(voucher.used),
-        },
-        target: maskEmail(email || ''),
-        rawTarget: email || '',
-        provider: 'google',
-        providerSub: googleSub,
-        fullName: account.full_name,
-        message: `Đăng nhập thành công! Chào mừng ${account.full_name} đến với QuanNguyenS.`,
+        voucher: voucher
+          ? {
+              code: voucher.code,
+              discountPercent: voucher.discount_percent,
+              freeShipping: Boolean(voucher.free_shipping),
+              status: voucher.status,
+            }
+          : null,
       })
     } catch (err) {
       console.error('Google Auth error:', err)
-      return res.status(400).json({ success: false, error: err.message || 'Lỗi xác thực Google' })
+      return res.status(500).json({
+        success: false,
+        error: 'Lỗi máy chủ trong quá trình xác thực Google: ' + err.message,
+      })
     }
   })
 
-  // ── 4. Đăng nhập / Đăng ký qua Facebook (OAuth) ─────────────────
+    // ── 4. Đăng nhập / Đăng ký qua Facebook (OAuth) ─────────────────
   app.post('/api/auth/facebook', oauthRateLimiter, async (req, res) => {
     try {
-      const bodyEmail = req.body.email || req.body.mail || ''
-      const bodyFullName = req.body.fullName || req.body.name || req.body.displayName || ''
-      const bodySub = req.body.sub || req.body.id || req.body.userId || ''
-      const bodyAvatarUrl =
-        req.body.avatarUrl ||
-        req.body.picture?.data?.url ||
-        (typeof req.body.picture === 'string' ? req.body.picture : null)
       const accessToken = req.body.accessToken
       const marketingOptIn = req.body.marketingOptIn
+      const isProd = process.env.NODE_ENV === 'production'
+      const isTestMode = process.env.AUTH_TEST_MODE === 'true' && !isProd
 
-      let fbUser = null
-      if (accessToken) {
-        // Xác thực token chính thức qua Meta Graph API debug_token
-        fbUser = await verifyFacebookAccessToken(accessToken)
-      } else if (process.env.AUTH_TEST_MODE === 'true') {
-        // Hỗ trợ fallback tương tác CHỈ khi bật cờ AUTH_TEST_MODE cho controlled test doubles
-        const fakeSub = bodySub || `facebook_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-        fbUser = {
-          provider: 'facebook',
-          sub: fakeSub,
-          email: bodyEmail ? String(bodyEmail).toLowerCase().trim() : `${fakeSub}@facebook.user`,
-          name: bodyFullName ? String(bodyFullName).trim() : 'Quý khách Facebook',
-          picture: bodyAvatarUrl || null,
-        }
-      } else {
+      let effectiveToken = accessToken
+      if (!effectiveToken && isTestMode && req.body.sub) {
+        effectiveToken = `mock-fb-token:${req.body.sub}:${req.body.email || 'no-email'}`
+      }
+
+      if (!effectiveToken || typeof effectiveToken !== 'string' || !effectiveToken.trim()) {
         return res.status(400).json({
           success: false,
-          error: 'Thiếu Facebook Access Token hợp lệ để xác thực đăng nhập.',
+          error: 'Thiếu Facebook Access Token hợp lệ',
+        })
+      }
+
+      let fbUser = null
+      try {
+        fbUser = await verifyFacebookAccessToken(effectiveToken)
+      } catch (tokenErr) {
+        console.warn('⛔ [FACEBOOK AUTH REJECTED] Xác thực Facebook token thất bại:', tokenErr.message)
+        return res.status(401).json({
+          success: false,
+          error: 'Xác thực Facebook token không thành công: ' + tokenErr.message,
         })
       }
 
       const facebookSub = fbUser.sub
-      const email = fbUser.email
-        ? fbUser.email.toLowerCase().trim()
-        : (bodyEmail ? String(bodyEmail).toLowerCase().trim() : `${facebookSub}@facebook.user`)
-      const customerName = (fbUser.name && fbUser.name.trim()) || 'Quý khách Facebook'
+      const email = fbUser.email ? fbUser.email.toLowerCase().trim() : null
+      const customerName = fbUser.name?.trim() || 'Quý khách Facebook'
       const avatarUrl = fbUser.picture || null
 
-      // ── TÌM HOẶC TẠO TÀI KHOẢN KHÁCH HÀNG RIÊNG TRÊN WEBSITE ──
-      let account = null
-      if (facebookSub) {
-        account = findAccountByIdentity('facebook', facebookSub) || findAccountByFacebookId(facebookSub)
-      }
-      if (!account && email && !email.endsWith('@facebook.user')) {
-        account = findAccountByEmail(email)
-      }
-
-      const optIn = Boolean(marketingOptIn)
-      const validEmail = email && !email.endsWith('@facebook.user') ? email : null
-
-      if (!account) {
-        // 1. Tạo tài khoản riêng trên website, tên tài khoản đặt theo tên Facebook
-        account = createAccount({
-          method: 'facebook',
-          facebook_id: facebookSub,
-          email: validEmail,
-          full_name: customerName,
-          avatar_url: avatarUrl,
-          verified: 1,
-          marketing_email_opt_in: optIn ? 1 : 0,
+      if (!facebookSub) {
+        return res.status(400).json({
+          success: false,
+          error: 'Không lấy được thông tin định danh từ tài khoản Facebook',
         })
-      } else {
-        // 2. Nếu đã có tài khoản, cập nhật tên tài khoản theo tên Facebook mới nhất
-        account = updateAccountProfile(account.id, {
-          fullName: customerName,
-          avatarUrl: avatarUrl || account.avatar_url,
-          email: account.email || validEmail,
-        })
-        if (facebookSub) {
-          linkIdentityToAccount({
-            accountId: account.id,
-            provider: 'facebook',
-            subject: facebookSub,
-            email: validEmail,
-          })
-        }
-        account = markAccountVerified(account.id, { marketingOptIn: optIn })
       }
 
-      // Cấp đúng 1 Welcome Voucher cho tài khoản (10% + Freeship)
-      const voucher = createWelcomeVoucher(account.id)
+      // HỢP NHẤT TÀI KHOẢN VÀ BẢO ĐẢM TOÀN VẸN TRONG TRANSACTION
+      const { account, userId, isNewAccount, preHijackMitigated, voucher } = upsertUnifiedOAuthAccount({
+        provider: 'facebook',
+        subject: facebookSub,
+        email,
+        fullName: customerName,
+        avatarUrl,
+        marketingOptIn: Boolean(marketingOptIn),
+      })
 
-      // Gửi email chúc mừng & tặng voucher (nếu có email thực tế)
-      if (account.email) {
+      const clientIp = req.ip || req.socket?.remoteAddress || '127.0.0.1'
+      const clientUserAgent = req.headers['user-agent'] || ''
+
+      // Gửi email chào mừng nếu có email và là tài khoản mới
+      if (isNewAccount && account.email && voucher) {
         sendWelcomeVoucherEmail({
           to: account.email,
           code: voucher.code,
-          name: account.full_name || 'Quý khách',
+          name: account.full_name || customerName,
         }).catch((err) => console.warn('⚠️ Gửi email chào mừng lỗi:', err.message))
       }
 
-      // ── PHÁT HÀNH OPAQUE SESSION TOKEN & HTTPONLY COOKIE ──
+      // Phát hành Opaque Session Token riêng
       const cookies = parseCookies(req.headers.cookie)
       const oldToken = cookies[HOST_COOKIE_NAME] || cookies[COOKIE_NAME]
       if (oldToken) {
@@ -514,56 +388,62 @@ export function registerAuthEndpoints(app) {
 
       const sessionToken = generateSessionToken()
       createCustomerSession({
-        accountId: account.id,
+        accountId: userId,
         token: sessionToken,
-        ip: req.ip,
-        userAgent: req.headers['user-agent'] || '',
+        ip: clientIp,
+        userAgent: clientUserAgent,
       })
-
       setCustomerSessionCookie(res, sessionToken)
+
+      const userTokens = await createSessionAndTokens(
+        { id: userId, email: account.email, full_name: account.full_name, role: 'customer', avatar_url: account.avatar_url },
+        { ip: clientIp, userAgent: clientUserAgent }
+      )
+      setRefreshTokenCookie(res, userTokens.refreshToken)
 
       return res.json({
         success: true,
         authenticated: true,
+        accessToken: userTokens.accessToken,
+        expiresIn: userTokens.expiresIn,
         account: {
           id: account.id,
-          fullName: account.full_name,
-          name: account.full_name,
           email: account.email,
-          phone: account.phone,
+          fullName: account.full_name,
+          full_name: account.full_name,
+          phone: account.phone || '',
           avatarUrl: account.avatar_url,
-          verified: true,
+          avatar_url: account.avatar_url,
+          verified: Boolean(account.verified),
           marketingEmailOptIn: Boolean(account.marketing_email_opt_in),
-          createdAt: account.created_at,
         },
         user: {
           id: account.id,
-          fullName: account.full_name,
-          name: account.full_name,
           email: account.email,
-          phone: account.phone,
+          fullName: account.full_name,
+          full_name: account.full_name,
           avatarUrl: account.avatar_url,
+          avatar_url: account.avatar_url,
+          phone: account.phone || '',
+          role: 'customer',
+          verified: Boolean(account.verified),
         },
-        voucher: {
-          code: voucher.code,
-          discountPercent: voucher.discount_percent,
-          freeShipping: Boolean(voucher.free_shipping),
-          used: Boolean(voucher.used),
-        },
-        target: maskEmail(validEmail || ''),
-        rawTarget: validEmail || '',
-        provider: 'facebook',
-        providerSub: facebookSub,
-        fullName: account.full_name,
-        message: `Đăng nhập thành công! Chào mừng ${account.full_name} đến với QuanNguyenS.`,
+        voucher: voucher
+          ? {
+              code: voucher.code,
+              discountPercent: voucher.discount_percent,
+              freeShipping: Boolean(voucher.free_shipping),
+              used: Boolean(voucher.used),
+            }
+          : null,
       })
     } catch (err) {
       console.error('Facebook Auth error:', err)
-      return res.status(400).json({ success: false, error: err.message || 'Lỗi xác thực Facebook' })
+      return res.status(500).json({ success: false, error: 'Lỗi xác thực Facebook: ' + err.message })
     }
   })
 
-  // ── 5. Xác minh Mã OTP (Tạo Account, Cấp Voucher, Sinh Session) ──
+    // ── 5. Xác minh Mã OTP (Tạo Account, Cấp Voucher, Sinh Session) ──
   app.post('/api/auth/verify', verifyRateLimiter, async (req, res) => {
     try {
       const {
@@ -765,7 +645,7 @@ export function registerAuthEndpoints(app) {
           target: maskPhone(cleanTarget),
           cooldownSeconds: 60,
           message: `Đã gửi lại mã OTP tới ${maskPhone(cleanTarget)}`,
-          ...(process.env.AUTH_TEST_MODE === 'true' && { mockCode: code }),
+          ...(process.env.AUTH_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production' && { mockCode: code }),
         })
       } else {
         await sendVerificationCodeEmail({ to: cleanTarget, code, name: 'Quý khách' })
@@ -1032,6 +912,9 @@ export function registerAuthEndpoints(app) {
       const activeChallenge = findActiveChallenge(cleanEmail)
       if (!activeChallenge) {
         return res.status(400).json({ success: false, error: 'Mã xác minh đã hết hạn hoặc không tồn tại' })
+      }
+      if (activeChallenge.account_id && activeChallenge.account_id !== req.customerAccount.id) {
+        return res.status(403).json({ success: false, error: 'Thử thách xác minh không thuộc về tài khoản này' })
       }
 
       const verifyRes = verifyChallengeAttempt(activeChallenge.id, String(code).trim())
