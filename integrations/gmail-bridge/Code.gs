@@ -1,7 +1,7 @@
 /**
- * QNS VietQR Gmail Bridge — Google Apps Script (WP12)
+ * QNS VietQR Gmail Bridge — Google Apps Script (WP12 - v2.0 Siêu Bền Vững / High-Resilience)
  * Cầu nối đọc email biến động số dư ngân hàng và báo lên máy chủ QuanNguyenS
- * Thiết kế: Nhẹ, an toàn, không lưu trữ thông tin nhạy cảm, chạy định kỳ mỗi 1 phút
+ * Thiết kế: Nhẹ, an toàn, tự phục hồi khi mạng chập chờn, chống crash hạ tầng Google
  */
 
 // Vector kiểm thử HMAC cố định để kiểm tra tính tương thích giữa Apps Script và Node.js máy chủ
@@ -90,6 +90,45 @@ function saveProcessedMessageIds(ids) {
 }
 
 /**
+ * Tìm kiếm thư an toàn có cơ chế thử lại (Chống micro-outage của Google Apps Script)
+ */
+function safeGmailSearch(query, start, max) {
+  for (var attempt = 1; attempt <= 2; attempt++) {
+    try {
+      return GmailApp.search(query, start, max);
+    } catch (err) {
+      Logger.log('⚠️ safeGmailSearch lần ' + attempt + ' gặp lỗi hạ tầng Google: ' + err.toString());
+      if (attempt < 2) {
+        Utilities.sleep(1500);
+      }
+    }
+  }
+  return [];
+}
+
+/**
+ * Gửi HTTP request an toàn có cơ chế Retry & Graceful Fallback
+ * Ngăn chặn tuyệt đối việc mạng chập chờn / timeout làm sập script khiến Google gửi email báo lỗi
+ */
+function safeFetchWithRetry(url, options, maxRetries) {
+  var retries = maxRetries || 2;
+  for (var attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return UrlFetchApp.fetch(url, options);
+    } catch (netErr) {
+      Logger.log('⚠️ safeFetch kết nối máy chủ lần ' + attempt + '/' + retries + ' thất bại: ' + netErr.toString());
+      if (attempt < retries) {
+        Utilities.sleep(2000 * attempt);
+      } else {
+        Logger.log('⚠️ Máy chủ tạm thời chưa phản hồi sau ' + retries + ' lần thử. Bỏ qua lượt này êm đẹp.');
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Hàm chạy thử nghiệm (Dry-Run): Đọc thư và in số lượng, KHÔNG gửi dữ liệu lên server
  */
 function dryRun() {
@@ -98,7 +137,7 @@ function dryRun() {
   Logger.log('Người gửi ngân hàng: ' + config.bankSender);
 
   var query = 'from:' + config.bankSender + ' newer_than:2d';
-  var threads = GmailApp.search(query, 0, 5);
+  var threads = safeGmailSearch(query, 0, 5);
   Logger.log('Tìm thấy ' + threads.length + ' luồng thư ngân hàng trong 2 ngày qua.');
 
   for (var i = 0; i < threads.length; i++) {
@@ -113,14 +152,18 @@ function dryRun() {
 
 /**
  * Hàm chính thực thi bởi Time-Driven Trigger mỗi 1 phút
+ * Được bọc bảo vệ đa tầng (Multi-layer Fault Tolerance): Không bao giờ throw fatal exception
  */
 function syncBankEmails() {
-  // Khóa chống chạy chồng (Concurrency Lock)
+  // 1. Khóa chống chạy chồng (Concurrency Lock)
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(5000)) {
     Logger.log('⚠️ Đang có lượt quét trước chạy, bỏ qua lượt này để tránh trùng lặp.');
     return;
   }
+
+  var startTime = Date.now();
+  var MAX_SAFE_RUNTIME_MS = 40000; // Giới hạn tối đa 40s (tránh bị Google ngắt kết nối ở mốc 130s)
 
   try {
     var config = getBridgeConfig();
@@ -135,36 +178,75 @@ function syncBankEmails() {
       processedIdSet[processedIds[i]] = true;
     }
 
-    // Tìm thư mới của ngân hàng trong vòng 1 ngày qua
+    // 2. Tìm thư mới của ngân hàng trong vòng 1 ngày qua (có cơ chế chống lỗi Google)
     var query = 'from:' + config.bankSender + ' newer_than:1d';
-    var threads = GmailApp.search(query, 0, 10);
+    var threads = safeGmailSearch(query, 0, 10);
     var candidateEmails = [];
 
     for (var t = 0; t < threads.length; t++) {
-      var messages = threads[t].getMessages();
+      // Bảo vệ thời gian: Nếu xử lý quá 40s, ngắt vòng lặp an toàn
+      if (Date.now() - startTime > MAX_SAFE_RUNTIME_MS) {
+        Logger.log('⏳ Đạt ngưỡng thời gian an toàn (40s). Tạm dừng quét tiếp để gửi lô thư đã gom.');
+        break;
+      }
+
+      var messages = [];
+      try {
+        messages = threads[t].getMessages();
+      } catch (msgListErr) {
+        Logger.log('⚠️ Không lấy được danh sách thư của thread ' + t + ': ' + msgListErr.toString());
+        continue;
+      }
+
       for (var m = 0; m < messages.length; m++) {
         var msg = messages[m];
-        var msgId = msg.getId();
+        var msgId = '';
+        try {
+          msgId = msg.getId();
+        } catch (e) {
+          continue;
+        }
 
         if (processedIdSet[msgId]) {
           continue;
         }
 
         // Cắt thân thư tối đa 20KB để tiết kiệm băng thông và bảo mật
-        var rawBody = msg.getPlainBody() || '';
-        var bodySnippet = rawBody.substring(0, 20480);
+        var bodySnippet = '';
+        try {
+          var rawBody = msg.getPlainBody() || '';
+          bodySnippet = rawBody.substring(0, 20480);
+        } catch (bodyErr) {
+          Logger.log('⚠️ Không đọc được plain body của thư ' + msgId + ': ' + bodyErr.toString());
+        }
 
-        // Lấy header Authentication-Results từ raw content
-        var rawContent = msg.getRawContent() || '';
-        var authResultsMatch = rawContent.match(/Authentication-Results:\s*([^\r\n]+(?:\r?\n\s+[^\r\n]+)*)/i);
-        var authResults = authResultsMatch ? authResultsMatch[1].replace(/\r?\n\s+/g, ' ') : '';
+        // Lấy header Authentication-Results từ raw content (Bọc try-catch riêng để chống tràn bộ nhớ / timeout)
+        var authResults = '';
+        try {
+          var rawContent = msg.getRawContent() || '';
+          var authResultsMatch = rawContent.match(/Authentication-Results:\s*([^\r\n]+(?:\r?\n\s+[^\r\n]+)*)/i);
+          authResults = authResultsMatch ? authResultsMatch[1].replace(/\r?\n\s+/g, ' ') : '';
+        } catch (rawErr) {
+          Logger.log('⚠️ Không đọc được rawContent của thư ' + msgId + ' (thư quá lớn hoặc lỗi kết nối): ' + rawErr.toString());
+        }
+
+        var internalDate = Date.now();
+        var fromHeader = '';
+        var subjectHeader = '';
+        try {
+          internalDate = msg.getDate().getTime();
+          fromHeader = msg.getFrom();
+          subjectHeader = msg.getSubject();
+        } catch (metaErr) {
+          Logger.log('⚠️ Không đọc được metadata của thư ' + msgId);
+        }
 
         candidateEmails.push({
           messageId: msgId,
-          internalDate: msg.getDate().getTime(),
-          from: msg.getFrom(),
+          internalDate: internalDate,
+          from: fromHeader,
           authResults: authResults,
-          subject: msg.getSubject(),
+          subject: subjectHeader,
           bodyText: bodySnippet
         });
 
@@ -172,11 +254,13 @@ function syncBankEmails() {
           break;
         }
       }
+
       if (candidateEmails.length >= config.maxBatchSize) {
         break;
       }
     }
 
+    // 3. Chuẩn bị payload và ký số HMAC-SHA256
     var timestamp = Math.floor(Date.now() / 1000);
     var runId = 'gas_' + Date.now();
     var payload = {
@@ -199,28 +283,37 @@ function syncBankEmails() {
       muteHttpExceptions: true
     };
 
-    var response = UrlFetchApp.fetch(config.endpoint, options);
-    var statusCode = response.getResponseCode();
-    var responseText = response.getContentText();
+    // 4. Gửi dữ liệu qua hàm safeFetchWithRetry bảo vệ
+    var response = safeFetchWithRetry(config.endpoint, options, 2);
 
-    if (statusCode >= 200 && statusCode < 300) {
-      if (candidateEmails.length > 0) {
-        Logger.log('✅ Đã gửi thành công ' + candidateEmails.length + ' thư ngân hàng lên máy chủ. HTTP ' + statusCode);
-        // Đánh dấu các messageId đã gửi thành công
-        for (var k = 0; k < candidateEmails.length; k++) {
-          processedIds.push(candidateEmails[k].messageId);
+    if (response) {
+      var statusCode = response.getResponseCode();
+      var responseText = response.getContentText();
+
+      if (statusCode >= 200 && statusCode < 300) {
+        if (candidateEmails.length > 0) {
+          Logger.log('✅ Đã gửi thành công ' + candidateEmails.length + ' thư ngân hàng lên máy chủ. HTTP ' + statusCode);
+          for (var k = 0; k < candidateEmails.length; k++) {
+            processedIds.push(candidateEmails[k].messageId);
+          }
+          saveProcessedMessageIds(processedIds);
+        } else {
+          Logger.log('💓 Heartbeat gửi thành công. Không có thư ngân hàng mới.');
         }
-        saveProcessedMessageIds(processedIds);
       } else {
-        Logger.log('💓 Heartbeat gửi thành công. Không có thư ngân hàng mới.');
+        Logger.log('⚠️ Máy chủ phản hồi trạng thái: HTTP ' + statusCode + ' | ' + responseText);
       }
     } else {
-      Logger.log('⚠️ Máy chủ phản hồi lỗi: HTTP ' + statusCode + ' | ' + responseText);
+      Logger.log('ℹ️ Kết nối máy chủ tạm gián đoạn. Các thư mới sẽ được giữ lại để gửi ở lượt quét kế tiếp.');
     }
   } catch (err) {
-    Logger.log('❌ Lỗi thực thi syncBankEmails: ' + err.toString());
+    // Bắt mọi ngoại lệ cấp cao nhất để Google Apps Script không đánh dấu là FAILED
+    Logger.log('❌ Lỗi ngoại lệ trong syncBankEmails (đã được ngăn chặn an toàn): ' + err.toString());
   } finally {
-    lock.releaseLock();
+    try {
+      lock.releaseLock();
+    } catch (lockErr) {
+      // Bỏ qua lỗi release lock nếu có
+    }
   }
 }
-

@@ -61,16 +61,18 @@ Bấm **Lưu thuộc tính tập lệnh**.
 2. Bấm **Chạy (Run)**.
 3. Xem nhật ký: Apps Script sẽ tìm kiếm các email biến động số dư trong 2 ngày qua và in thông tin xem trước (ID, thời gian, tiêu đề) mà KHÔNG gửi dữ liệu lên máy chủ.
 
-### Bước 7: Kích Hoạt Bộ Lập Lịch Tự Động (Triggers)
+### Bước 7: Kích Hoạt Bộ Lập Lịch Tự Động (Triggers) & Cài Đặt Thông Báo Lỗi
 1. Ở thanh menu bên trái, bấm vào biểu tượng đồng hồ **Kích hoạt (Triggers)**.
-2. Bấm nút **+ Thêm trình kích hoạt (+ Add Trigger)** ở góc dưới bên phải.
+2. Bấm nút **+ Thêm trình kích hoạt (+ Add Trigger)** ở góc dưới bên phải (hoặc bấm vào hình chiếc bút để chỉnh sửa trigger `syncBankEmails` hiện có).
 3. Thiết lập các thông số chính xác như sau:
    - **Chọn hàm chạy:** `syncBankEmails`
    - **Chọn bản triển khai:** `Head`
    - **Chọn nguồn sự kiện:** `Dựa trên thời gian (Time-driven)`
    - **Chọn loại trình kích hoạt:** `Hẹn giờ theo phút (Minutes timer)`
    - **Chọn khoảng thời gian tính bằng phút:** `Mỗi phút (Every minute)`
-   - **Cài đặt thông báo lỗi:** `Hàng ngày` (hoặc `Ngay lập tức` nếu muốn nhận mail khi có lỗi)
+   - **Cài đặt thông báo lỗi (Failure notification settings):** Chọn **`Hàng ngày (Daily)`** hoặc **`Hàng tuần (Weekly)`** (hoặc `Không bao giờ`).
+     > [!NOTE]
+     > **Lý do kỹ thuật quan trọng:** Do script chạy liên tục 1,440 lần/ngày, nếu để chế độ "Ngay lập tức" (Immediately), chỉ cần 1 micro-hiccup bất kỳ của mạng Google trong ngày (kể cả khi script tự động thử lại thành công ngay sau đó) thì Gmail vẫn gửi thư báo lỗi. Chọn **Hàng ngày** giúp bạn không bị làm phiền bởi các lỗi tạm thời của hạ tầng đám mây.
 4. Bấm **Lưu (Save)**.
 
 ---

@@ -235,7 +235,7 @@ export default function ProductAccordion({ product }) {
 
   return (
     <div className="border-t border-[#E8DFD5]">
-      <Accordion items={items} />
+      <Accordion items={items} allowMultiple={true} />
     </div>
   )
 }
