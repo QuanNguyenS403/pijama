@@ -73,7 +73,7 @@ Tại trang cấu hình Web Service trên Render, cuộn xuống mục **Environ
 | `BANK_ACCOUNT_NUMBER` | `1050773506` | Số tài khoản nhận tiền |
 | `BANK_ACCOUNT_NAME` | `NGUYEN DUC QUAN` | Tên chủ tài khoản |
 | `SHOP_NAME` | `QuanNguyenS` | Tên thương hiệu |
-| `SHOP_PHONE` | `0981753082` | Hotline cửa hàng |
+| `SHOP_PHONE` | `0973 486 218` | Hotline cửa hàng |
 | `SHOP_ADDRESS` | `Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội` | Địa chỉ shop |
 | `GOOGLE_SHEET_ID` | `[ID Google Sheets của bạn]` | Bảng tính lưu trữ đơn hàng |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | `[Email service account]` | Google Cloud Service Account |
@@ -82,7 +82,10 @@ Tại trang cấu hình Web Service trên Render, cuộn xuống mục **Environ
 | `VITE_GOOGLE_CLIENT_ID` | `745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com` | Client ID cho Frontend |
 | `TURNSTILE_SECRET_KEY` | `0x4AAAAAAFXbUZTWy-tGC4zUAtfGxzU07q4` | Chống bot spam đặt hàng Cloudflare |
 | `VITE_TURNSTILE_SITE_KEY` | `0x4AAAAAAFXbURX5lj6_klfx` | Site key hiển thị CAPTCHA vô hình |
-| `SEPAY_WEBHOOK_API_KEY` | `[Mã API SePay của bạn]` | Key xác thực biến động số dư SePay |
+| `GMAIL_BRIDGE_SECRET` | `d9eb659e06d32f5e46ed778472a072fc7d1f7fb201e3b03bb6ed899e5c36ea44` | Khóa bí mật ký số HMAC bảo mật cho cầu nối Gmail Apps Script (`QNS_SECRET`) |
+| `BANK_EMAIL_ALLOWED_SENDERS` | `vietcombank@vietcombank.com.vn,ibanking@vietcombank.com.vn` | Danh sách email ngân hàng Vietcombank hợp lệ |
+| `BANK_EMAIL_AUTO_SETTLE` | `true` | Tự động xác nhận đơn hàng khi tiền về khớp 100% |
+| `SEPAY_WEBHOOK_API_KEY` | `[Mã API SePay của bạn]` | Key xác thực biến động số dư SePay (tùy chọn dự phòng) |
 
 > 💡 **Mẹo:** Bạn có thể mở file `.env.local` trên máy tính của bạn, copy chính xác các giá trị bạn đang dùng và dán vào Render.
 > Dự án đã được tối ưu: Biến `APP_URL` và `ALLOWED_ORIGINS` sẽ **tự động nhận diện** tên miền Render cấp (`https://qns-clothes.onrender.com`), bạn không cần phải tự cấu hình lại!

@@ -56,7 +56,7 @@ test('Reviews System: Toàn bộ quy trình Đánh Giá Thật Tự Động Phê
 
     // 2. TEST: Đơn hàng được ghi nhận đồng bộ vào Database SQLite (orders table)
     const testOrderId = `QNS-REV-ORDER-${Date.now()}`
-    const testPhone = '0981753082'
+    const testPhone = '0973 486 218'
     const testOrder = {
       orderId: testOrderId,
       status: 'CONFIRMED', // Mua hàng thành công

@@ -135,7 +135,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
       if (sizeAdvice.needsHandoff) {
         return {
           reply: `Dạ ${sizeAdvice.reason}`,
-          quickReplies: ['Chat Zalo chủ shop', 'Gọi Hotline 0981753082', 'Xem các mẫu'],
+          quickReplies: ['Chat Zalo chủ shop', 'Gọi Hotline 0973 486 218', 'Xem các mẫu'],
           handoff: {
             active: true,
             zalo: liveFacts.zaloLink,

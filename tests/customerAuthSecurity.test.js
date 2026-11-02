@@ -423,7 +423,7 @@ test('Marketing Audience: Chỉ gửi cho tài khoản verified + có email + op
 
 test('SEC-01 Regression: Không thể bypass xác thực quyền sở hữu đơn hàng bằng 1-2 chữ số đuôi SĐT', async () => {
   const { normalizeVietnamesePhone } = await import('../server/lib/smsService.js')
-  const customerPhone = '0981753082'
+  const customerPhone = '0973 486 218'
   const cleanCustomerPhone = normalizeVietnamesePhone(customerPhone)
 
   // Kẻ tấn công thử số 1-2 chữ số
@@ -434,7 +434,7 @@ test('SEC-01 Regression: Không thể bypass xác thực quyền sở hữu đơ
   }
 
   // Khách hàng thực sự nhập số điện thoại hợp lệ (10 chữ số hoặc 9 chữ số chuẩn)
-  const fullPhone = normalizeVietnamesePhone('0981753082')
+  const fullPhone = normalizeVietnamesePhone('0973 486 218')
   const isFullAuthorized = Boolean(fullPhone && cleanCustomerPhone && fullPhone.length >= 9 && (fullPhone === cleanCustomerPhone || cleanCustomerPhone.endsWith(fullPhone)))
   assert.equal(isFullAuthorized, true, 'Khách hàng nhập đúng đầy đủ SĐT phải được xác thực')
 })

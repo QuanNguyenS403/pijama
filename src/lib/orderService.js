@@ -58,7 +58,7 @@ export async function submitOrder(orderPayload) {
       success: false,
       orderId: orderPayload.orderId,
       error: error.message || 'Không thể kết nối đến máy chủ xử lý đơn hàng.',
-      message: error.message || 'Không thể kết nối đến máy chủ xử lý đơn hàng. Vui lòng thử lại hoặc gọi Hotline 0981 753 082.',
+      message: error.message || 'Không thể kết nối đến máy chủ xử lý đơn hàng. Vui lòng thử lại hoặc gọi Hotline 0973 486 218.',
       order: null,
       isOfflineFallback: false,
     }

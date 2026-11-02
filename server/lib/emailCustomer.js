@@ -202,7 +202,7 @@ export const buildBankTransferEmailHTML = (order) => {
     <div class="contact-section">
       <p class="contact-text">Cần hỗ trợ thanh toán hoặc xác nhận đơn gấp?</p>
       <div class="contact-links">
-        <a href="tel:0981753082">📞 Hotline: 0981 753 082</a>
+        <a href="tel:0973 486 218">📞 Hotline: 0973 486 218</a>
         <a href="mailto:quannguyens403@gmail.com">✉️ Email hỗ trợ</a>
       </div>
     </div>
@@ -214,7 +214,7 @@ export const buildBankTransferEmailHTML = (order) => {
     <div class="footer-tagline">Style to be lived in</div>
     <div class="footer-info">
       Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội<br>
-      0981 753 082 · quannguyens403@gmail.com
+      0973 486 218 · quannguyens403@gmail.com
     </div>
   </div>
 
@@ -516,7 +516,7 @@ export const buildCODEmailHTML = (order) => {
     <p class="body-text">
       Chúng tôi đã nhận được đơn hàng của bạn và đang chuẩn bị xử lý.
       Bạn có thể theo dõi thông tin đơn hàng bên dưới.
-      Mọi thắc mắc, hãy liên hệ qua số <strong>0981 753 082</strong>.
+      Mọi thắc mắc, hãy liên hệ qua số <strong>0973 486 218</strong>.
     </p>
 
     <!-- THÔNG TIN ĐƠN -->
@@ -615,7 +615,7 @@ export const buildCODEmailHTML = (order) => {
     <div class="contact-section">
       <p class="contact-text">Cần hỗ trợ? Chúng tôi luôn sẵn sàng giúp bạn.</p>
       <div class="contact-links">
-        <a href="tel:0981753082">📞 0981 753 082</a>
+        <a href="tel:0973 486 218">📞 0973 486 218</a>
         <a href="mailto:quannguyens403@gmail.com">✉️ Email hỗ trợ</a>
       </div>
     </div>
@@ -627,7 +627,7 @@ export const buildCODEmailHTML = (order) => {
     <div class="footer-tagline">Style to be lived in</div>
     <div class="footer-info">
       Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội<br>
-      0981 753 082 · quannguyens403@gmail.com
+      0973 486 218 · quannguyens403@gmail.com
     </div>
   </div>
 
@@ -810,7 +810,7 @@ export const buildPaidEmailHTML = (order) => {
     <div class="contact-section">
       <p class="contact-text">Cần hỗ trợ sau mua? Chúng tôi luôn sẵn sàng.</p>
       <div class="contact-links">
-        <a href="tel:0981753082">📞 0981 753 082</a>
+        <a href="tel:0973 486 218">📞 0973 486 218</a>
         <a href="mailto:quannguyens403@gmail.com">✉️ Email hỗ trợ</a>
       </div>
     </div>
@@ -821,7 +821,7 @@ export const buildPaidEmailHTML = (order) => {
     <div class="footer-tagline">Style to be lived in</div>
     <div class="footer-info">
       Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội<br>
-      0981 753 082 · quannguyens403@gmail.com
+      0973 486 218 · quannguyens403@gmail.com
     </div>
   </div>
 

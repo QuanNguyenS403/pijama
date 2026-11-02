@@ -45,7 +45,7 @@ Tất cả sản phẩm đều được dệt may từ chất liệu lụa satin
 
 Hãy ghé thăm website quannguyens.com ngay hôm nay để khám phá và chọn cho mình bộ Sleepwear hoàn hảo nhất!
 
-Nếu bạn có bất kỳ câu hỏi nào về bảng size hoặc chất liệu, đừng ngần ngại liên hệ hotline 0981 753 082 để được tư vấn tận tâm.`
+Nếu bạn có bất kỳ câu hỏi nào về bảng size hoặc chất liệu, đừng ngần ngại liên hệ hotline 0973 486 218 để được tư vấn tận tâm.`
   )
 
   const [confirmModalOpen, setConfirmModalOpen] = useState(false)
@@ -428,7 +428,7 @@ Nếu bạn có bất kỳ câu hỏi nào về bảng size hoặc chất liệu
                   {/* Footer preview */}
                   <div className="bg-[#F5EFE6] p-5 text-center text-xs text-[#8C7E74] border-t border-[#E8DFD5] space-y-1">
                     <p className="font-semibold text-[#631521]">QuanNguyenS — Style to be lived in</p>
-                    <p>Hotline: 0981 753 082 · Amber Riverside, 622 Minh Khai, Hà Nội</p>
+                    <p>Hotline: 0973 486 218 · Amber Riverside, 622 Minh Khai, Hà Nội</p>
                     <p className="text-[10.5px] text-[#A89F91] mt-2">
                       Bạn nhận được thông báo này vì đã đăng ký thành viên tại website QuanNguyenS.
                     </p>

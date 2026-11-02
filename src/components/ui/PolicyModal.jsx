@@ -142,11 +142,11 @@ export default function PolicyModal({ isOpen, onClose, initialPolicy = 'privacy'
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 <a
-                  href="tel:0981753082"
+                  href="tel:0973 486 218"
                   className="inline-flex items-center gap-1.5 bg-[#631521] text-[#FAF8F5] hover:bg-[#4A0D17] px-4 py-2 rounded-[2px] font-sans text-xs font-bold uppercase tracking-wider transition-all"
                 >
                   <Phone className="w-3.5 h-3.5 text-[#D4AF37]" />
-                  <span>0981 753 082</span>
+                  <span>0973 486 218</span>
                 </a>
                 <a
                   href="mailto:quannguyens403@gmail.com"

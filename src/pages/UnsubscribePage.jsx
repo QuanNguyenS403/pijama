@@ -99,7 +99,7 @@ export default function UnsubscribePage() {
               </p>
 
               <p className="text-xs text-[#8C7E74]">
-                Nếu cần hỗ trợ thêm, vui lòng liên hệ hotline 0981 753 082.
+                Nếu cần hỗ trợ thêm, vui lòng liên hệ hotline 0973 486 218.
               </p>
 
               <div className="pt-4">

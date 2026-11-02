@@ -11,9 +11,9 @@ export default function HandoffCard({ handoff, recentConversation = '', onSubmit
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
-  const zaloUrl = handoff?.zalo || 'https://zalo.me/0981753082'
-  const telUrl = handoff?.tel || 'tel:0981753082'
-  const phoneDisplay = handoff?.phoneDisplay || '0981 753 082'
+  const zaloUrl = handoff?.zalo || 'https://zalo.me/0973 486 218'
+  const telUrl = handoff?.tel || 'tel:0973 486 218'
+  const phoneDisplay = handoff?.phoneDisplay || '0973 486 218'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -21,7 +21,7 @@ export default function HandoffCard({ handoff, recentConversation = '', onSubmit
 
     const cleanPhone = phone.trim().replace(/[\s.-]/g, '')
     if (!/^(?:0|\+84)(?:3[2-9]|5[2689]|7[06-9]|8[1-9]|9[0-9])[0-9]{7}$/.test(cleanPhone)) {
-      setErrorMessage('Vui lòng nhập số điện thoại Việt Nam gồm 10 số (ví dụ 0981753082)')
+      setErrorMessage('Vui lòng nhập số điện thoại Việt Nam gồm 10 số (ví dụ 0973 486 218)')
       return
     }
 
@@ -47,7 +47,7 @@ export default function HandoffCard({ handoff, recentConversation = '', onSubmit
         setErrorMessage(data.error || 'Có lỗi xảy ra, vui lòng thử lại hoặc gọi hotline trực tiếp.')
       }
     } catch (err) {
-      setErrorMessage('Không thể kết nối máy chủ. Vui lòng gọi trực tiếp hotline 0981 753 082 ạ!')
+      setErrorMessage('Không thể kết nối máy chủ. Vui lòng gọi trực tiếp hotline 0973 486 218 ạ!')
     } finally {
       setIsSubmitting(false)
     }
@@ -130,7 +130,7 @@ export default function HandoffCard({ handoff, recentConversation = '', onSubmit
               <input
                 type="tel"
                 required
-                placeholder="Số điện thoại (bắt buộc, ví dụ: 0981753082)"
+                placeholder="Số điện thoại (bắt buộc, ví dụ: 0973 486 218)"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 maxLength={15}

@@ -28,8 +28,8 @@ test('Policy Integrity: Đối chiếu các hằng số vận hành giữa chín
 
   // 3. Số điện thoại hotline
   assert.ok(
-    shippingText.includes('0981753082'),
-    'Chính sách giao hàng phải có hotline 0981753082'
+    shippingText.includes('0973 486 218'),
+    'Chính sách giao hàng phải có hotline 0973 486 218'
   )
 })
 

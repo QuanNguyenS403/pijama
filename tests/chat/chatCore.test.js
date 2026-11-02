@@ -7,9 +7,9 @@ import { guardOutput } from '../../server/lib/chat/outputGuard.js'
 import { processTier0Intent, detectHandoffSignal, detectOutOfScope } from '../../server/lib/chat/intents.js'
 
 test('scrubPII: Lọc sạch số điện thoại Việt Nam 10 số và email', () => {
-  const input = 'Xin chào, số điện thoại của tôi là 0981753082 và email ducquan@gmail.com, gọi cho tôi nhé'
+  const input = 'Xin chào, số điện thoại của tôi là 0973 486 218 và email ducquan@gmail.com, gọi cho tôi nhé'
   const scrubbed = scrubPII(input)
-  assert.ok(!scrubbed.includes('0981753082'), 'Không được còn số điện thoại')
+  assert.ok(!scrubbed.includes('0973 486 218'), 'Không được còn số điện thoại')
   assert.ok(!scrubbed.includes('ducquan@gmail.com'), 'Không được còn email')
   assert.ok(scrubbed.includes('[SĐT]'), 'Phải chứa placeholder [SĐT]')
   assert.ok(scrubbed.includes('[EMAIL]'), 'Phải chứa placeholder [EMAIL]')

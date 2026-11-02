@@ -15,12 +15,10 @@ import {
   Truck,
   ArrowRight,
   Ban,
-  Loader2,
   AlertCircle,
 } from 'lucide-react'
 import { formatVND, getCarrierTrackingUrl, PAYMENT_METHODS } from '../../data/checkoutConfig'
 import { syncBatchOrders, getSavedOrders } from '../../lib/orderSync'
-import ViettelPostTracker from '../shipping/ViettelPostTracker'
 
 // Order Timeline Stepper Component
 function OrderTrackingTimeline({ status, isVietQR, cancelReason }) {
@@ -144,23 +142,12 @@ function OrderTrackingTimeline({ status, isVietQR, cancelReason }) {
 }
 
 export default function OrdersHistoryDrawer({ isOpen, onClose }) {
-  const [activeTab, setActiveTab] = useState('LOCAL') // 'LOCAL' or 'ONLINE_LOOKUP'
   const [orders, setOrders] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
   const [copiedKey, setCopiedKey] = useState(null)
   const [expandedQrOrderId, setExpandedQrOrderId] = useState(null)
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [syncToast, setSyncToast] = useState(null)
-
-  // Online Lookup & Viettel Post Tracking State
-  const [lookupQuery, setLookupQuery] = useState('')
-  const [isLookingUp, setIsLookingUp] = useState(false)
-  const [lookupResults, setLookupResults] = useState(null)
-  const [liveTrackingResult, setLiveTrackingResult] = useState(null)
-  const [lookupError, setLookupError] = useState(null)
-  const [expandedTrackingOrderId, setExpandedTrackingOrderId] = useState(null)
-  const [cardTrackingData, setCardTrackingData] = useState({})
-  const [loadingTrackingOrderId, setLoadingTrackingOrderId] = useState(null)
 
   // Load orders with account-level isolation:
   // If user is authenticated, load their official orders from server (/api/auth/my-orders).
@@ -232,92 +219,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
     setTimeout(() => setCopiedKey(null), 2000)
   }
 
-  // Bật/tắt xem trực tiếp lộ trình Viettel Post của từng đơn hàng
-  const handleToggleInlineTracking = async (order) => {
-    const orderId = order.orderId || order.id
-    if (expandedTrackingOrderId === orderId) {
-      setExpandedTrackingOrderId(null)
-      return
-    }
-
-    setExpandedTrackingOrderId(orderId)
-    if (!cardTrackingData[orderId]) {
-      setLoadingTrackingOrderId(orderId)
-      try {
-        const code = order.trackingCode || order.trackingNumber || orderId
-        const res = await fetch(`/api/shipping/viettelpost/track?query=${encodeURIComponent(code)}`)
-        const data = await res.json()
-        if (data.success) {
-          setCardTrackingData((prev) => ({ ...prev, [orderId]: data }))
-        }
-      } catch (e) {
-        console.warn('Tracking fetch error:', e)
-      } finally {
-        setLoadingTrackingOrderId(null)
-      }
-    }
-  }
-
-  // Handle Online Nationwide Lookup & Viettel Post Track
-  const handleOnlineLookup = async (e) => {
-    if (e) e.preventDefault()
-    const q = lookupQuery.trim()
-    if (!q) {
-      setLookupError('Vui lòng nhập chính xác Mã vận đơn (Tracking code) đã được cấp tại mục "Đơn hàng của bạn".')
-      return
-    }
-
-    const cleanQ = q.toLowerCase()
-
-    // Chặn nếu người dùng nhập nhầm SĐT hoặc Mã đơn QNS
-    if (/^0[0-9]{8,10}$/.test(cleanQ)) {
-      setLookupError('Mục này chỉ tra cứu bằng Mã vận đơn (Tracking code), không tra cứu bằng Số điện thoại. Vui lòng kiểm tra mã vận đơn tại mục "Đơn hàng của bạn".')
-      return
-    }
-    if (cleanQ.startsWith('qns-')) {
-      setLookupError('Mục này chỉ tra cứu bằng Mã vận đơn (Tracking code), không tra cứu bằng Mã đơn hàng. Vui lòng mở mục "Đơn hàng của bạn" để lấy mã vận đơn khi đơn đã được bàn giao cho shipper.')
-      return
-    }
-
-    // Kiểm tra mã vận đơn trong các đơn hàng của khách hiện có trên thiết bị
-    const myOrders = orders || []
-    const stored = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
-    const allKnownOrders = [...myOrders, ...stored]
-    const matchedLocalOrder = allKnownOrders.find((o) => {
-      const track = String(o.trackingCode || o.trackingNumber || '').toLowerCase().trim()
-      return track && (track === cleanQ || track === cleanQ.replace(/\s+/g, ''))
-    })
-
-    setIsLookingUp(true)
-    setLookupError(null)
-    setLookupResults(null)
-    setLiveTrackingResult(null)
-
-    try {
-      const res = await fetch(`/api/shipping/viettelpost/track?trackingCode=${encodeURIComponent(q)}&strictTrackingOnly=true`)
-      const trackData = await res.json()
-
-      if (trackData && trackData.success) {
-        setLiveTrackingResult(trackData)
-        if (matchedLocalOrder) {
-          setLookupResults([matchedLocalOrder])
-        } else if (trackData.order) {
-          setLookupResults([trackData.order])
-        }
-      } else {
-        setLookupError(
-          trackData?.error ||
-          `Mã vận đơn "${q}" không tồn tại hoặc chưa được cấp cho bất kỳ đơn hàng nào. Vui lòng kiểm tra lại tại mục "Đơn hàng của bạn".`
-        )
-      }
-    } catch (err) {
-      setLookupError('Có lỗi xảy ra khi kết nối máy chủ tra cứu hành trình Viettel Post.')
-    } finally {
-      setIsLookingUp(false)
-    }
-  }
-
-  // Filtered orders for Local Tab
+  // Filtered orders
   const filteredOrders = useMemo(() => {
     let result = orders
 
@@ -376,7 +278,7 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                 </div>
                 <div>
                   <h2 className="font-serif text-base sm:text-lg font-bold tracking-wide flex items-center gap-2">
-                    Lịch Sử & Theo Dõi Đơn Hàng
+                    Đơn Hàng Của Bạn
                     {orders.length > 0 && (
                       <span className="text-[11px] font-sans font-semibold bg-[#D4AF37] text-[#2C201A] px-2 py-0.5 rounded-full">
                         {orders.length}
@@ -395,31 +297,6 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
               </button>
             </div>
 
-            {/* Sub-Header Tabs */}
-            <div className="flex border-b border-[#E8DFD5] bg-white text-xs font-sans">
-              <button
-                onClick={() => setActiveTab('LOCAL')}
-                className={`flex-1 py-3 px-4 text-center font-bold tracking-wide transition-colors cursor-pointer border-b-2 ${
-                  activeTab === 'LOCAL'
-                    ? 'border-[#631521] text-[#631521] bg-[#FAF5F0]/50'
-                    : 'border-transparent text-[#8C7E74] hover:text-[#1A1614]'
-                }`}
-              >
-                Đơn hàng của bạn ({orders.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('ONLINE_LOOKUP')}
-                className={`flex-1 py-3 px-4 text-center font-bold tracking-wide transition-colors cursor-pointer border-b-2 flex items-center justify-center gap-1.5 ${
-                  activeTab === 'ONLINE_LOOKUP'
-                    ? 'border-[#631521] text-[#631521] bg-[#FAF5F0]/50'
-                    : 'border-transparent text-[#8C7E74] hover:text-[#1A1614]'
-                }`}
-              >
-                <Truck className="w-3.5 h-3.5 text-[#EE0033]" />
-                Theo dõi đơn hàng
-              </button>
-            </div>
-
             {/* Sync Notification Banner */}
             <AnimatePresence>
               {syncToast && (
@@ -435,180 +312,116 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
               )}
             </AnimatePresence>
 
-            {/* TAB 1: LOCAL ORDERS */}
-            {activeTab === 'LOCAL' && (
-              <>
-                {/* Search & Filter Bar */}
-                {orders.length > 0 && (
-                  <div className="p-4 bg-white border-b border-[#E8DFD5] space-y-2.5">
-                    <div className="relative">
-                      <Search className="w-4 h-4 text-[#8C7E74] absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Tìm theo Mã đơn (QNS-...) hoặc Số điện thoại..."
-                        className="w-full pl-9 pr-8 py-2 bg-[#FAF8F5] border border-[#E8DFD5] rounded-[3px] text-base sm:text-xs text-[#1A1614] placeholder-[#8C7E74] focus:outline-none focus:border-[#631521] focus:bg-white transition-colors"
-                      />
-                      {searchQuery && (
-                        <button
-                          onClick={() => setSearchQuery('')}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8C7E74] hover:text-[#1A1614] text-xs"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Filter chips */}
-                    <div className="flex items-center gap-2 text-[11px] font-sans flex-wrap">
-                      <span className="text-[#8C7E74]">Lọc:</span>
-                      <button
-                        onClick={() => setStatusFilter('ALL')}
-                        className={`px-2.5 py-1 rounded-[2px] border transition-colors cursor-pointer ${
-                          statusFilter === 'ALL'
-                            ? 'bg-[#631521] text-white border-[#631521] font-semibold'
-                            : 'bg-[#FAF8F5] text-[#4A3F38] border-[#E8DFD5] hover:bg-white'
-                        }`}
-                      >
-                        Tất cả ({orders.length})
-                      </button>
-                      <button
-                        onClick={() => setStatusFilter('DELIVERED')}
-                        className={`px-2.5 py-1 rounded-[2px] border transition-colors cursor-pointer ${
-                          statusFilter === 'DELIVERED'
-                            ? 'bg-[#2E7D32] text-white border-[#2E7D32] font-semibold'
-                            : 'bg-[#FAF8F5] text-[#2E7D32] border-[#C8E6C9] hover:bg-white'
-                        }`}
-                      >
-                        Đã giao ({orders.filter((o) => o.status === 'DELIVERED' || o.isDelivered).length})
-                      </button>
-                      <button
-                        onClick={() => setStatusFilter('SHIPPED')}
-                        className={`px-2.5 py-1 rounded-[2px] border transition-colors cursor-pointer ${
-                          statusFilter === 'SHIPPED'
-                            ? 'bg-[#631521] text-white border-[#631521] font-semibold'
-                            : 'bg-[#FAF8F5] text-[#4A3F38] border-[#E8DFD5] hover:bg-white'
-                        }`}
-                      >
-                        Đang giao ({orders.filter((o) => o.status === 'SHIPPED').length})
-                      </button>
-                      <button
-                        onClick={() => setStatusFilter('AWAITING_PAYMENT')}
-                        className={`px-2.5 py-1 rounded-[2px] border transition-colors cursor-pointer ${
-                          statusFilter === 'AWAITING_PAYMENT'
-                            ? 'bg-[#1967D2] text-white border-[#1967D2] font-semibold'
-                            : 'bg-[#FAF8F5] text-[#1967D2] border-[#AECBFA] hover:bg-white'
-                        }`}
-                      >
-                        Chờ VietQR ({orders.filter((o) => o.status === 'AWAITING_PAYMENT').length})
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Body / Order List */}
-                <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 pdp-scrollbar">
-                  {orders.length === 0 ? (
-                    /* Empty state */
-                    <div className="flex flex-col items-center justify-center text-center py-16 px-4">
-                      <div className="w-16 h-16 rounded-full bg-[#FAF5F0] border border-[#E8DFD5] flex items-center justify-center text-[#8C7E74] mb-4">
-                        <Package className="w-8 h-8 stroke-[1.5]" />
-                      </div>
-                      <h3 className="font-serif text-lg font-bold text-[#1A1614] mb-1.5">
-                        Chưa có đơn hàng nào trong danh sách
-                      </h3>
-                      <p className="text-xs text-[#8C7E74] max-w-xs mb-6 font-normal leading-relaxed">
-                        Bạn có thể chuyển sang mục <strong>"Theo dõi đơn hàng"</strong> để theo dõi lộ trình vận chuyển bưu phẩm Viettel Post hoặc tìm lại đơn đã đặt.
-                      </p>
-                      <button
-                        onClick={onClose}
-                        className="inline-flex items-center gap-2 bg-[#631521] text-white font-sans font-bold text-xs uppercase tracking-[0.15em] px-6 py-3 rounded-[2px] hover:bg-[#4A0D17] border border-[#D4AF37]/30 transition-all shadow-sm"
-                      >
-                        <span>Khám Phá Bộ Sưu Tập</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : filteredOrders.length === 0 ? (
-                    /* No search result */
-                    <div className="text-center py-12 text-[#8C7E74] text-xs">
-                      <p>Không tìm thấy đơn hàng phù hợp với từ khóa "<strong>{searchQuery}</strong>".</p>
-                      <button
-                        onClick={() => {
-                          setSearchQuery('')
-                          setStatusFilter('ALL')
-                        }}
-                        className="mt-3 text-[#631521] font-semibold underline"
-                      >
-                        Xem lại tất cả đơn
-                      </button>
-                    </div>
-                  ) : (
-                    /* Order Cards */
-                    filteredOrders.map((order) => renderOrderCard(order))
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* TAB 2: THEO DÕI ĐƠN HÀNG (VIETTEL POST DIRECT INTEGRATION) */}
-            {activeTab === 'ONLINE_LOOKUP' && (
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 pdp-scrollbar">
-                <div className="bg-white p-5 rounded-[4px] border border-[#E8DFD5] space-y-3 shadow-xs">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-serif text-sm font-bold text-[#1A1614] uppercase tracking-wider flex items-center gap-2">
-                      <Truck className="w-4 h-4 text-[#EE0033]" />
-                      Theo Dõi Đơn Hàng
-                    </h3>
-                  </div>
-
-                  <p className="text-xs text-[#4A3F38] font-normal leading-relaxed">
-                    Mục này chỉ dành để tra cứu chính xác <strong>Mã vận đơn (Tracking code)</strong> đã được cấp tại mục <strong>Đơn hàng của bạn</strong> để theo dõi trực tiếp hành trình đơn hàng trên website:
-                  </p>
-
-                  <form onSubmit={handleOnlineLookup} className="flex gap-2 pt-1">
-                    <input
-                      type="text"
-                      value={lookupQuery}
-                      onChange={(e) => setLookupQuery(e.target.value)}
-                      placeholder="Nhập chính xác Mã vận đơn đã được cấp (ví dụ: VT123456789)..."
-                      className="flex-1 px-3.5 py-2.5 bg-[#FAF8F5] border border-[#E8DFD5] rounded-[3px] text-base sm:text-xs text-[#1A1614] focus:outline-none focus:border-[#631521] focus:bg-white"
-                    />
+            {/* Search & Filter Bar */}
+            {orders.length > 0 && (
+              <div className="p-4 bg-white border-b border-[#E8DFD5] space-y-2.5">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-[#8C7E74] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Tìm theo Mã đơn (QNS-...) hoặc Số điện thoại..."
+                    className="w-full pl-9 pr-8 py-2 bg-[#FAF8F5] border border-[#E8DFD5] rounded-[3px] text-base sm:text-xs text-[#1A1614] placeholder-[#8C7E74] focus:outline-none focus:border-[#631521] focus:bg-white transition-colors"
+                  />
+                  {searchQuery && (
                     <button
-                      type="submit"
-                      disabled={isLookingUp}
-                      className="bg-[#631521] text-white px-5 py-2.5 rounded-[3px] font-sans font-bold text-xs uppercase tracking-wider hover:bg-[#4A0D17] transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shrink-0"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8C7E74] hover:text-[#1A1614] text-xs"
                     >
-                      {isLookingUp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                      <span>Theo Dõi</span>
+                      ✕
                     </button>
-                  </form>
-
-                  {lookupError && (
-                    <p className="text-xs text-[#C62828] bg-[#FFEBEE] p-2.5 rounded border border-[#FFCDD2]">
-                      {lookupError}
-                    </p>
                   )}
                 </div>
 
-                {/* Kết quả Tra cứu trực tiếp hành trình Viettel Post */}
-                {liveTrackingResult && (
-                  <div className="space-y-2">
-                    <ViettelPostTracker trackingData={liveTrackingResult} />
-                  </div>
-                )}
-
-                {/* Lookup Results */}
-                {lookupResults && lookupResults.length > 0 && (
-                  <div className="space-y-4">
-                    <p className="text-xs font-semibold text-[#631521]">
-                      Đơn hàng tương ứng ({lookupResults.length}):
-                    </p>
-                    {lookupResults.map((order) => renderOrderCard(order))}
-                  </div>
-                )}
+                {/* Filter chips */}
+                <div className="flex items-center gap-2 text-[11px] font-sans flex-wrap">
+                  <span className="text-[#8C7E74]">Lọc:</span>
+                  <button
+                    onClick={() => setStatusFilter('ALL')}
+                    className={`px-2.5 py-1 rounded-[2px] border transition-colors cursor-pointer ${
+                      statusFilter === 'ALL'
+                        ? 'bg-[#631521] text-white border-[#631521] font-semibold'
+                        : 'bg-[#FAF8F5] text-[#4A3F38] border-[#E8DFD5] hover:bg-white'
+                    }`}
+                  >
+                    Tất cả ({orders.length})
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter('DELIVERED')}
+                    className={`px-2.5 py-1 rounded-[2px] border transition-colors cursor-pointer ${
+                      statusFilter === 'DELIVERED'
+                        ? 'bg-[#2E7D32] text-white border-[#2E7D32] font-semibold'
+                        : 'bg-[#FAF8F5] text-[#2E7D32] border-[#C8E6C9] hover:bg-white'
+                    }`}
+                  >
+                    Đã giao ({orders.filter((o) => o.status === 'DELIVERED' || o.isDelivered).length})
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter('SHIPPED')}
+                    className={`px-2.5 py-1 rounded-[2px] border transition-colors cursor-pointer ${
+                      statusFilter === 'SHIPPED'
+                        ? 'bg-[#631521] text-white border-[#631521] font-semibold'
+                        : 'bg-[#FAF8F5] text-[#4A3F38] border-[#E8DFD5] hover:bg-white'
+                    }`}
+                  >
+                    Đang giao ({orders.filter((o) => o.status === 'SHIPPED').length})
+                  </button>
+                  <button
+                    onClick={() => setStatusFilter('AWAITING_PAYMENT')}
+                    className={`px-2.5 py-1 rounded-[2px] border transition-colors cursor-pointer ${
+                      statusFilter === 'AWAITING_PAYMENT'
+                        ? 'bg-[#1967D2] text-white border-[#1967D2] font-semibold'
+                        : 'bg-[#FAF8F5] text-[#1967D2] border-[#AECBFA] hover:bg-white'
+                    }`}
+                  >
+                    Chờ VietQR ({orders.filter((o) => o.status === 'AWAITING_PAYMENT').length})
+                  </button>
+                </div>
               </div>
             )}
+
+            {/* Body / Order List */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 pdp-scrollbar">
+              {orders.length === 0 ? (
+                /* Empty state */
+                <div className="flex flex-col items-center justify-center text-center py-16 px-4">
+                  <div className="w-16 h-16 rounded-full bg-[#FAF5F0] border border-[#E8DFD5] flex items-center justify-center text-[#8C7E74] mb-4">
+                    <Package className="w-8 h-8 stroke-[1.5]" />
+                  </div>
+                  <h3 className="font-serif text-lg font-bold text-[#1A1614] mb-1.5">
+                    Chưa có đơn hàng nào trong danh sách
+                  </h3>
+                  <p className="text-xs text-[#8C7E74] max-w-xs mb-6 font-normal leading-relaxed">
+                    Khi bạn đặt hàng, thông tin đơn hàng và hành trình vận chuyển sẽ xuất hiện tại đây.
+                  </p>
+                  <button
+                    onClick={onClose}
+                    className="inline-flex items-center gap-2 bg-[#631521] text-white font-sans font-bold text-xs uppercase tracking-[0.15em] px-6 py-3 rounded-[2px] hover:bg-[#4A0D17] border border-[#D4AF37]/30 transition-all shadow-sm"
+                  >
+                    <span>Khám Phá Bộ Sưu Tập</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : filteredOrders.length === 0 ? (
+                /* No search result */
+                <div className="text-center py-12 text-[#8C7E74] text-xs">
+                  <p>Không tìm thấy đơn hàng phù hợp với từ khóa "<strong>{searchQuery}</strong>".</p>
+                  <button
+                    onClick={() => {
+                      setSearchQuery('')
+                      setStatusFilter('ALL')
+                    }}
+                    className="mt-3 text-[#631521] font-semibold underline"
+                  >
+                    Xem lại tất cả đơn
+                  </button>
+                </div>
+              ) : (
+                /* Order Cards */
+                filteredOrders.map((order) => renderOrderCard(order))
+              )}
+            </div>
 
           </motion.aside>
         </>
@@ -619,6 +432,8 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
   // Render individual Order Card
   function renderOrderCard(order) {
     const isVietQR = order.payment?.method === 'BANK_TRANSFER'
+    const isExpandedQr = expandedQrOrderId === order.orderId
+    const transferContent = order.orderId
     const bankInfo = PAYMENT_METHODS.find((m) => m.value === 'BANK_TRANSFER')?.bankInfo || {
       bankCode: 'VCB',
       accountNumber: '1050773506',
@@ -875,11 +690,11 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
         <div className="px-3.5 py-2.5 bg-white border-t border-[#E8DFD5] flex items-center justify-between text-[11px] text-[#8C7E74] flex-wrap gap-2">
           <span>Hỗ trợ đơn hàng:</span>
           <a
-            href="tel:0981753082"
+            href="tel:0973 486 218"
             className="text-[#631521] hover:underline font-medium flex items-center gap-1"
           >
             <Phone className="w-3 h-3" />
-            0981 753 082
+            0973 486 218
           </a>
         </div>
       </div>

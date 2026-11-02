@@ -147,6 +147,7 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
         { label: 'Giới thiệu', href: '#section-dark-contrast', scroll: true },
         { label: 'Chính Sách', href: '/chinh-sach' },
         { label: 'Liên Hệ', href: '#section-footer', scroll: true },
+        { label: 'Ưu Đãi Hội Viên', href: '/hoi-vien' },
       ]
     : [
         { label: 'Trang Chủ', href: '/' },
@@ -154,6 +155,7 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
         { label: 'Giới thiệu', href: '/' },
         { label: 'Chính Sách', href: '/chinh-sach' },
         { label: 'Liên Hệ', href: '/' },
+        { label: 'Ưu Đãi Hội Viên', href: '/hoi-vien' },
       ]
 
   const handleLogoClick = (e) => {
@@ -251,7 +253,7 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
 
           {/* Nav + actions */}
           <div className="flex items-center gap-4 lg:gap-8">
-            <nav className="hidden md:flex items-center space-x-8" aria-label="Menu điều hướng chính">
+            <nav className="hidden md:flex items-center space-x-5 lg:space-x-7 xl:space-x-8" aria-label="Menu điều hướng chính">
               {navLinks.map((link) => (
                 <Link
                   key={link.label}
@@ -352,9 +354,9 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
               {/* Order Tracking & Tracking Code Input Button */}
               <button
                 onClick={() => setOrdersDrawerOpen(true)}
-                aria-label={`Theo dõi đơn hàng & Nhập mã tracking — ${ordersCount} đơn`}
+                aria-label={`Đơn hàng của bạn — ${ordersCount} đơn`}
                 className="relative hidden sm:flex text-white/85 hover:text-[#D4AF37] transition-colors p-1 cursor-pointer items-center justify-center"
-                title="Theo dõi đơn hàng & Nhập mã tracking"
+                title="Đơn hàng của bạn"
               >
                 <Package className="w-5 h-5" />
                 {ordersCount > 0 && (

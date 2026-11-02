@@ -247,7 +247,7 @@ export default function OrderSuccessPage() {
                   Không tìm thấy dữ liệu đơn hàng
                 </h2>
                 <p className="text-xs sm:text-sm font-normal text-[#4A3F38] max-w-md mx-auto leading-relaxed">
-                  Không tìm thấy thông tin đơn hàng trên thiết bị này. Vui lòng kiểm tra lại trong mục <strong>Đơn Hàng Đã Đặt</strong> hoặc liên hệ hotline <strong>0981 753 082</strong> để được hỗ trợ kiểm tra trực tiếp.
+                  Không tìm thấy thông tin đơn hàng trên thiết bị này. Vui lòng kiểm tra lại trong mục <strong>Đơn Hàng Đã Đặt</strong> hoặc liên hệ hotline <strong>0973 486 218</strong> để được hỗ trợ kiểm tra trực tiếp.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2 max-w-md mx-auto">
                   <button
@@ -311,7 +311,7 @@ export default function OrderSuccessPage() {
                         <span>⚠️</span> Mã QR thanh toán đã hết hạn hiệu lực
                       </p>
                       <p className="text-[#4A3F38] font-normal leading-relaxed">
-                        Thời hạn chuyển khoản cho đơn hàng <strong>#{order.orderId}</strong> đã kết thúc. Vui lòng đặt lại đơn mới hoặc liên hệ hotline 0981 753 082 để được hỗ trợ.
+                        Thời hạn chuyển khoản cho đơn hàng <strong>#{order.orderId}</strong> đã kết thúc. Vui lòng đặt lại đơn mới hoặc liên hệ hotline 0973 486 218 để được hỗ trợ.
                       </p>
                     </div>
                   ) : isBankTransfer && effectivePhase !== 'PAID' ? (
@@ -573,7 +573,7 @@ export default function OrderSuccessPage() {
             <div className="text-center pt-4 border-t border-[#E8DFD5] text-xs text-[#8C7E74] space-y-1">
               <p>Cần hỗ trợ chỉnh sửa đơn hàng hoặc đổi địa chỉ? Vui lòng liên hệ:</p>
               <p className="font-medium text-[#4A3F38]">
-                Hotline: <a href="tel:0981753082" className="text-[#631521] hover:underline">0981 753 082</a> · Email:{' '}
+                Hotline: <a href="tel:0973 486 218" className="text-[#631521] hover:underline">0973 486 218</a> · Email:{' '}
                 <a href="mailto:quannguyens403@gmail.com" className="text-[#631521] hover:underline">quannguyens403@gmail.com</a>
               </p>
             </div>

@@ -5,22 +5,22 @@ import { getDb } from '../../server/lib/accountDb.js'
 import { generateChatResponse, getTodayRequestCount } from '../../server/lib/chat/providerManager.js'
 
 test('Handoff: Kiểm tra định dạng số điện thoại Việt Nam hợp lệ', () => {
-  assert.equal(isValidVnPhone('0981753082'), true)
-  assert.equal(isValidVnPhone('+84981753082'), true)
+  assert.equal(isValidVnPhone('0973 486 218'), true)
+  assert.equal(isValidVnPhone('+84973486218'), true)
   assert.equal(isValidVnPhone('0398765432'), true)
   assert.equal(isValidVnPhone('0771234567'), true)
 
   // Không hợp lệ
   assert.equal(isValidVnPhone('12345'), false)
   assert.equal(isValidVnPhone('0123456789'), false) // Đầu 01 cũ
-  assert.equal(isValidVnPhone('abc0981753082'), false)
+  assert.equal(isValidVnPhone('abc0973 486 218'), false)
   assert.equal(isValidVnPhone(''), false)
 })
 
 test('Handoff: Lưu trữ yêu cầu gọi lại vào SQLite thành công', async () => {
   const result = await createHandoffRequest({
     name: 'Chị Mai',
-    phone: '0981753082',
+    phone: '0973486218',
     topic: 'Tư vấn may đo riêng',
     preferredTime: 'Sau 17h chiều',
     recentConversation: 'Khách hỏi có nhận may đo theo số đo không',
@@ -33,7 +33,7 @@ test('Handoff: Lưu trữ yêu cầu gọi lại vào SQLite thành công', asyn
   const row = database.prepare('SELECT * FROM chat_handoffs WHERE id = ?').get(result.handoffId)
   assert.ok(row, 'Bản ghi phải tồn tại trong SQLite')
   assert.equal(row.customer_name, 'Chị Mai')
-  assert.equal(row.phone, '0981753082')
+  assert.equal(row.phone, '0973486218')
   assert.equal(row.status, 'pending')
 })
 

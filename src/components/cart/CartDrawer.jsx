@@ -69,10 +69,10 @@ export default function CartDrawer({ isOpen, onClose }) {
                       window.dispatchEvent(new CustomEvent('open_orders_drawer'))
                     }}
                     className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-sans font-medium text-[#631521] bg-[#631521]/10 hover:bg-[#631521]/15 hover:text-[#8B2635] rounded-full transition-colors border border-[#631521]/20 cursor-pointer"
-                    title="Theo dõi đơn hàng & Nhập mã vận đơn (Tracking Code)"
+                    title="Đơn hàng của bạn"
                   >
                     <Package className="w-3.5 h-3.5 text-[#631521]" />
-                    <span>Theo dõi đơn</span>
+                    <span>Đơn hàng</span>
                   </button>
                 </div>
                 <div className="flex items-center gap-3 mt-0.5">

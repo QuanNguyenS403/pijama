@@ -38,7 +38,7 @@ export default function QuickConsultationWidget() {
 
             <div className="space-y-2">
               <a
-                href="https://zalo.me/0981753082"
+                href="https://zalo.me/0973 486 218"
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center justify-center gap-2 w-full bg-[#0068FF] text-white font-sans text-xs font-bold py-2.5 px-3 rounded-[2px] hover:bg-[#0052cc] transition-colors shadow-xs"
@@ -48,11 +48,11 @@ export default function QuickConsultationWidget() {
               </a>
 
               <a
-                href="tel:0981753082"
+                href="tel:0973 486 218"
                 className="flex items-center justify-center gap-2 w-full bg-[#631521] text-[#FAF8F5] font-sans text-xs font-bold py-2.5 px-3 rounded-[2px] hover:bg-[#4A0D17] transition-colors shadow-xs"
               >
                 <Phone className="w-4 h-4 text-[#D4AF37]" />
-                Gọi Hotline: 0981 753 082
+                Gọi Hotline: 0973 486 218
               </a>
             </div>
           </motion.div>

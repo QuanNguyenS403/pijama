@@ -115,7 +115,7 @@ test('P0 / G-09: PAY-001 Bank Transfer Initial Status is AWAITING_PAYMENT', asyn
     orderId: testOrderId,
     customer: {
       fullName: 'Nguyễn Văn A',
-      phone: '0981753082',
+      phone: '0973 486 218',
       email: 'customer@example.com',
     },
     items: [
@@ -163,7 +163,7 @@ test('P0 / G-10 & G-11 & G-12: PAY-002 Webhook Validation, Unknown Order Reject 
       method: 'BANK_TRANSFER',
       status: 'AWAITING_PAYMENT',
     },
-    customer: { email: 'wh-customer@example.com', phone: '0981753082' },
+    customer: { email: 'wh-customer@example.com', phone: '0973 486 218' },
   }
   orderPersistence.set(validOrderId, testOrder)
 
@@ -353,7 +353,7 @@ test('P0 / G-16: INV-001 Stock Validation Anti-Bypass, Aggregation & Variant Che
 
 test('P0 / G-04 & G-05 & G-06: SEC-002 Order Tracking, Lookup and Cancel Proof of Ownership', () => {
   const orderId = `QNS-OWNER-TEST-${Date.now()}`
-  const phone = '0981753082'
+  const phone = '0973 486 218'
   const trackingToken = generateTrackingToken(orderId, phone)
 
   assert.ok(trackingToken)

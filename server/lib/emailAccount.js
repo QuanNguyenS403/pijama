@@ -2,7 +2,7 @@ import { getTransporter } from './emailConfig.js'
 import { generateUnsubscribeToken } from './authCrypto.js'
 
 const SHOP_NAME = process.env.SHOP_NAME || 'QuanNguyenS'
-const SHOP_PHONE = process.env.SHOP_PHONE || '0981 753 082'
+const SHOP_PHONE = process.env.SHOP_PHONE || '0973 486 218'
 const SHOP_ADDRESS = process.env.SHOP_ADDRESS || 'Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội'
 const APP_URL = process.env.APP_URL || process.env.CLIENT_ORIGIN || 'http://localhost:3000'
 

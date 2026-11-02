@@ -276,13 +276,13 @@ export default function CheckoutPage() {
         throw new Error(
           result?.error ||
           result?.message ||
-          'Không thể kết nối đến máy chủ xử lý đơn hàng. Vui lòng thử lại hoặc liên hệ Hotline: 0981 753 082.'
+          'Không thể kết nối đến máy chủ xử lý đơn hàng. Vui lòng thử lại hoặc liên hệ Hotline: 0973 486 218.'
         )
       }
     } catch (err) {
       console.error('Checkout error:', err)
       setSubmitError(
-        err.message || 'Có lỗi xảy ra trong quá trình đặt hàng. Vui lòng thử lại hoặc gọi 0981 753 082.'
+        err.message || 'Có lỗi xảy ra trong quá trình đặt hàng. Vui lòng thử lại hoặc gọi 0973 486 218.'
       )
     } finally {
       setIsSubmitting(false)
@@ -394,7 +394,7 @@ export default function CheckoutPage() {
                           value={formData.phone}
                           onChange={(e) => handleInputChange('phone', e.target.value)}
                           onBlur={() => handleBlur('phone')}
-                          placeholder="0981 753 082"
+                          placeholder="0973 486 218"
                           className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
                             errors.phone && touched.phone
                               ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'

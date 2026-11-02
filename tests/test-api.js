@@ -31,7 +31,7 @@ async function runApiTests() {
     const phoneRes = await fetch(`${baseUrl}/api/auth/phone/send-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: '0981753082' }),
+      body: JSON.stringify({ phone: '0973 486 218' }),
     })
     console.log('Phone OTP status:', phoneRes.status)
     if (phoneRes.status !== 410) throw new Error('Phone OTP should be disabled with status 410')
@@ -76,7 +76,7 @@ async function runApiTests() {
       orderId: `QNS-TEST-${Date.now()}`,
       customer: {
         fullName: 'Nguyễn Đức Quân',
-        phone: '0981753082',
+        phone: '0973 486 218',
         email: 'quannguyens403@gmail.com',
         accountId: googleData.account.id,
       },

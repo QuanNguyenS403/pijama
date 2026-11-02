@@ -91,7 +91,7 @@ function maskEmail(email) {
   return `${user.slice(0, 3)}***@${domain}`
 }
 
-// Helper: Mask phone (0981753082 -> 098***3082)
+// Helper: Mask phone (0973 486 218 -> 097***6218)
 function maskPhone(phone) {
   if (!phone || phone.length < 7) return phone || ''
   return `${phone.slice(0, 3)}***${phone.slice(-3)}`

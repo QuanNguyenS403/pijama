@@ -18,7 +18,7 @@ test('SEC-03 / L-2: POST /api/payment/ai-verify tuyệt đối không tự ý đ
     customer: {
       fullName: 'Khách Test AI',
       email: 'khachtest@gmail.com',
-      phone: '0981753082',
+      phone: '0973 486 218',
     },
   }
 

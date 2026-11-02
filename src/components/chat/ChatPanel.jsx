@@ -119,9 +119,9 @@ export default function ChatPanel({ isOpen, onClose }) {
           'Dạ em hiểu ạ! Em xin phép kết nối anh/chị ngay cùng chủ shop QuanNguyenS để được hỗ trợ chu đáo nhất qua Zalo, gọi điện trực tiếp hoặc để lại số điện thoại em xin liên hệ lại ngay nhé ạ.',
         handoff: {
           active: true,
-          zalo: 'https://zalo.me/0981753082',
-          tel: 'tel:0981753082',
-          phoneDisplay: '0981 753 082',
+          zalo: 'https://zalo.me/0973 486 218',
+          tel: 'tel:0973 486 218',
+          phoneDisplay: '0973 486 218',
         },
         time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
       }
@@ -179,12 +179,12 @@ export default function ChatPanel({ isOpen, onClose }) {
             id: `msg_b_err_${Date.now()}`,
             role: 'assistant',
             content:
-              'Dạ em sẵn sàng hỗ trợ anh/chị chọn size, xem mẫu hoặc kết nối ngay cùng chủ shop QuanNguyenS qua Zalo (0981 753 082) nhé ạ!',
+              'Dạ em sẵn sàng hỗ trợ anh/chị chọn size, xem mẫu hoặc kết nối ngay cùng chủ shop QuanNguyenS qua Zalo (0973 486 218) nhé ạ!',
             handoff: {
               active: true,
-              zalo: 'https://zalo.me/0981753082',
-              tel: 'tel:0981753082',
-              phoneDisplay: '0981 753 082',
+              zalo: 'https://zalo.me/0973 486 218',
+              tel: 'tel:0973 486 218',
+              phoneDisplay: '0973 486 218',
             },
             time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
           },
@@ -197,12 +197,12 @@ export default function ChatPanel({ isOpen, onClose }) {
           id: `msg_b_net_err_${Date.now()}`,
           role: 'assistant',
           content:
-            'Dạ mạng có chút chập chờn, anh/chị có thể bấm Chat Zalo hoặc gọi hotline 0981 753 082 để chủ shop hỗ trợ ngay tức thì nhé ạ!',
+            'Dạ mạng có chút chập chờn, anh/chị có thể bấm Chat Zalo hoặc gọi hotline 0973 486 218 để chủ shop hỗ trợ ngay tức thì nhé ạ!',
           handoff: {
             active: true,
-            zalo: 'https://zalo.me/0981753082',
-            tel: 'tel:0981753082',
-            phoneDisplay: '0981 753 082',
+            zalo: 'https://zalo.me/0973 486 218',
+            tel: 'tel:0973 486 218',
+            phoneDisplay: '0973 486 218',
           },
           time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
         },

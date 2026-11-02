@@ -30,7 +30,7 @@ describe('Loyalty PhoneVerifier & Enrollment', () => {
     // 1. Thiếu consentToTerms
     const resNoConsent = validateEnrollmentInput({
       fullName: 'Quan Nguyen',
-      phone: '0981753082',
+      phone: '0973 486 218',
       consentToTerms: false,
       ageConsent: true,
     })
@@ -40,7 +40,7 @@ describe('Loyalty PhoneVerifier & Enrollment', () => {
     // 2. Thiếu ageConsent
     const resNoAge = validateEnrollmentInput({
       fullName: 'Quan Nguyen',
-      phone: '0981753082',
+      phone: '0973 486 218',
       consentToTerms: true,
       ageConsent: false,
     })
@@ -60,14 +60,14 @@ describe('Loyalty PhoneVerifier & Enrollment', () => {
     // 4. Hợp lệ hoàn toàn
     const resValid = validateEnrollmentInput({
       fullName: 'Quan Nguyen',
-      phone: '+84 981 753 082',
+      phone: '+84 973 486 218',
       birthDay: 16,
       birthMonth: 10,
       consentToTerms: true,
       ageConsent: true,
     })
     assert.equal(resValid.isValid, true)
-    assert.equal(resValid.cleanPhone, '0981753082')
+    assert.equal(resValid.cleanPhone, '0973 486 218')
   })
 
   it('PhoneVerifier: Gửi OTP, không trả mã trong response, xác thực thành công', async () => {

@@ -121,6 +121,6 @@ export async function sendOtpViaProvider({
     ok: false,
     provider: 'sms_unconfigured',
     errorCode: 'PROVIDER_UNCONFIGURED',
-    error: 'Dịch vụ gửi tin xác thực hiện chưa được thiết lập trên máy chủ. Vui lòng liên hệ hotline: 0981 753 082.',
+    error: 'Dịch vụ gửi tin xác thực hiện chưa được thiết lập trên máy chủ. Vui lòng liên hệ hotline: 0973 486 218.',
   }
 }

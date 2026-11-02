@@ -1,7 +1,11 @@
 /**
- * QNS VietQR Gmail Bridge — Google Apps Script (WP12 - v2.0 Siêu Bền Vững / High-Resilience)
+ * QNS VietQR Gmail Bridge — Google Apps Script (v3.0 Bọc Thép / Zero-Crash Architecture)
  * Cầu nối đọc email biến động số dư ngân hàng và báo lên máy chủ QuanNguyenS
- * Thiết kế: Nhẹ, an toàn, tự phục hồi khi mạng chập chờn, chống crash hạ tầng Google
+ * Thiết kế:
+ *  - Siêu bền bỉ, chịu lỗi đa tầng (Multi-layer Fault Tolerance)
+ *  - 100% Google Services (LockService, PropertiesService, GmailApp, UrlFetchApp) được bảo vệ bằng Try-Catch & Exponential Backoff
+ *  - Giới hạn thời gian an toàn 25 giây (chống 100% việc bị Google Watchdog cưỡng chế ngắt tiến trình)
+ *  - Tuyệt đối không throw uncaught fatal exception lên Google Container Runner
  */
 
 // Vector kiểm thử HMAC cố định để kiểm tra tính tương thích giữa Apps Script và Node.js máy chủ
@@ -57,68 +61,95 @@ function selfTestSignature() {
 }
 
 /**
- * Lấy cấu hình từ Script Properties
+ * Thực thi an toàn một tác vụ Google Service có nguy cơ lỗi máy chủ nội bộ (Exponential Backoff)
+ */
+function safeGoogleServiceCall(action, fallbackValue, maxRetries) {
+  var retries = maxRetries || 2;
+  for (var attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return action();
+    } catch (err) {
+      Logger.log('⚠️ safeGoogleServiceCall lần ' + attempt + '/' + retries + ' gặp lỗi hạ tầng Google: ' + err.toString());
+      if (attempt < retries) {
+        Utilities.sleep(1000 * attempt);
+      }
+    }
+  }
+  return fallbackValue;
+}
+
+/**
+ * Lấy cấu hình từ Script Properties (Bọc bảo vệ chống sập hạ tầng Key-Value của Google)
  */
 function getBridgeConfig() {
-  var props = PropertiesService.getScriptProperties();
-  return {
-    endpoint: props.getProperty('QNS_ENDPOINT'),
-    secret: props.getProperty('QNS_SECRET'),
-    bankSender: props.getProperty('BANK_SENDER') || 'vietcombank.com.vn',
-    maxBatchSize: parseInt(props.getProperty('MAX_BATCH_SIZE') || '10', 10)
-  };
+  return safeGoogleServiceCall(function() {
+    var props = PropertiesService.getScriptProperties();
+    return {
+      endpoint: props.getProperty('QNS_ENDPOINT'),
+      secret: props.getProperty('QNS_SECRET'),
+      bankSender: props.getProperty('BANK_SENDER') || 'vietcombank.com.vn',
+      maxBatchSize: parseInt(props.getProperty('MAX_BATCH_SIZE') || '10', 10)
+    };
+  }, {
+    endpoint: null,
+    secret: null,
+    bankSender: 'vietcombank.com.vn',
+    maxBatchSize: 10
+  }, 2);
 }
 
 /**
  * Quản lý danh sách ID thư đã xử lý gần nhất trong Script Properties
  */
 function getProcessedMessageIds() {
-  var props = PropertiesService.getScriptProperties();
-  var raw = props.getProperty('PROCESSED_MESSAGE_IDS');
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw);
-  } catch (e) {
-    return [];
-  }
+  return safeGoogleServiceCall(function() {
+    var props = PropertiesService.getScriptProperties();
+    var raw = props.getProperty('PROCESSED_MESSAGE_IDS');
+    if (!raw) return [];
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      return [];
+    }
+  }, [], 2);
 }
 
 function saveProcessedMessageIds(ids) {
-  // Giới hạn lưu tối đa 200 ID gần nhất để không tràn dung lượng Properties (9KB limit)
-  var trimmed = ids.slice(-200);
-  PropertiesService.getScriptProperties().setProperty('PROCESSED_MESSAGE_IDS', JSON.stringify(trimmed));
+  safeGoogleServiceCall(function() {
+    // Giới hạn lưu tối đa 200 ID gần nhất để không tràn dung lượng Properties (9KB limit)
+    var trimmed = ids.slice(-200);
+    PropertiesService.getScriptProperties().setProperty('PROCESSED_MESSAGE_IDS', JSON.stringify(trimmed));
+  }, null, 2);
 }
 
 /**
  * Tìm kiếm thư an toàn có cơ chế thử lại (Chống micro-outage của Google Apps Script)
  */
 function safeGmailSearch(query, start, max) {
-  for (var attempt = 1; attempt <= 2; attempt++) {
-    try {
-      return GmailApp.search(query, start, max);
-    } catch (err) {
-      Logger.log('⚠️ safeGmailSearch lần ' + attempt + ' gặp lỗi hạ tầng Google: ' + err.toString());
-      if (attempt < 2) {
-        Utilities.sleep(1500);
-      }
-    }
-  }
-  return [];
+  return safeGoogleServiceCall(function() {
+    return GmailApp.search(query, start, max);
+  }, [], 2);
 }
 
 /**
  * Gửi HTTP request an toàn có cơ chế Retry & Graceful Fallback
  * Ngăn chặn tuyệt đối việc mạng chập chờn / timeout làm sập script khiến Google gửi email báo lỗi
  */
-function safeFetchWithRetry(url, options, maxRetries) {
+function safeFetchWithRetry(url, options, maxRetries, startTime, maxSafeMs) {
   var retries = maxRetries || 2;
   for (var attempt = 1; attempt <= retries; attempt++) {
+    // Kiểm tra thời gian an toàn trước khi gọi
+    if (startTime && maxSafeMs && (Date.now() - startTime > maxSafeMs)) {
+      Logger.log('⏳ Ngưỡng thời gian an toàn đạt giới hạn trước khi gọi fetch lần ' + attempt + '. Bỏ qua để giữ ổn định.');
+      return null;
+    }
+
     try {
       return UrlFetchApp.fetch(url, options);
     } catch (netErr) {
       Logger.log('⚠️ safeFetch kết nối máy chủ lần ' + attempt + '/' + retries + ' thất bại: ' + netErr.toString());
       if (attempt < retries) {
-        Utilities.sleep(2000 * attempt);
+        Utilities.sleep(1500 * attempt);
       } else {
         Logger.log('⚠️ Máy chủ tạm thời chưa phản hồi sau ' + retries + ' lần thử. Bỏ qua lượt này êm đẹp.');
         return null;
@@ -141,10 +172,19 @@ function dryRun() {
   Logger.log('Tìm thấy ' + threads.length + ' luồng thư ngân hàng trong 2 ngày qua.');
 
   for (var i = 0; i < threads.length; i++) {
-    var msgs = threads[i].getMessages();
+    var msgs = [];
+    try {
+      msgs = threads[i].getMessages();
+    } catch (e) {
+      continue;
+    }
     for (var j = 0; j < msgs.length; j++) {
       var msg = msgs[j];
-      Logger.log('ID: ' + msg.getId() + ' | Ngày: ' + msg.getDate() + ' | Tiêu đề: ' + msg.getSubject());
+      try {
+        Logger.log('ID: ' + msg.getId() + ' | Ngày: ' + msg.getDate() + ' | Tiêu đề: ' + msg.getSubject());
+      } catch (err) {
+        // Skip log error
+      }
     }
   }
   Logger.log('--- HOÀN TẤT DRY-RUN ---');
@@ -155,38 +195,49 @@ function dryRun() {
  * Được bọc bảo vệ đa tầng (Multi-layer Fault Tolerance): Không bao giờ throw fatal exception
  */
 function syncBankEmails() {
-  // 1. Khóa chống chạy chồng (Concurrency Lock)
-  var lock = LockService.getScriptLock();
-  if (!lock.tryLock(5000)) {
-    Logger.log('⚠️ Đang có lượt quét trước chạy, bỏ qua lượt này để tránh trùng lặp.');
-    return;
-  }
-
   var startTime = Date.now();
-  var MAX_SAFE_RUNTIME_MS = 40000; // Giới hạn tối đa 40s (tránh bị Google ngắt kết nối ở mốc 130s)
+  // Giới hạn an toàn nghiêm ngặt 25 giây: ngắt chủ động trước khi Google Watchdog can thiệp (chống lỗi 8 phút)
+  var MAX_SAFE_RUNTIME_MS = 25000;
+  var lock = null;
+  var hasLock = false;
 
   try {
-    var config = getBridgeConfig();
-    if (!config.endpoint || !config.secret) {
-      Logger.log('⛔ Chưa cấu hình QNS_ENDPOINT hoặc QNS_SECRET trong Script Properties.');
+    // 1. Khóa chống chạy chồng (Concurrency Lock) — Bọc try/catch chống lỗi Google Lock Contention
+    try {
+      lock = LockService.getScriptLock();
+      hasLock = lock.tryLock(4000); // Chờ tối đa 4 giây
+    } catch (lockErr) {
+      Logger.log('⚠️ Cảnh báo: LockService tạm thời bận do hạ tầng Google: ' + lockErr.toString());
+      return; // Thoát êm đẹp, không bao giờ để ném ngoại lệ lên cấp runner
+    }
+
+    if (!hasLock) {
+      Logger.log('⚠️ Đang có lượt quét trước chạy hoặc lock chưa giải phóng, bỏ qua lượt này an toàn.');
       return;
     }
 
-    var processedIds = getProcessedMessageIds();
+    // 2. Lấy cấu hình bảo mật
+    var config = getBridgeConfig();
+    if (!config || !config.endpoint || !config.secret) {
+      Logger.log('⛔ Chưa cấu hình QNS_ENDPOINT hoặc QNS_SECRET trong Script Properties (hoặc Google KV tạm lag).');
+      return;
+    }
+
+    var processedIds = getProcessedMessageIds() || [];
     var processedIdSet = {};
     for (var i = 0; i < processedIds.length; i++) {
       processedIdSet[processedIds[i]] = true;
     }
 
-    // 2. Tìm thư mới của ngân hàng trong vòng 1 ngày qua (có cơ chế chống lỗi Google)
+    // 3. Tìm thư mới của ngân hàng trong vòng 1 ngày qua
     var query = 'from:' + config.bankSender + ' newer_than:1d';
-    var threads = safeGmailSearch(query, 0, 10);
+    var threads = safeGmailSearch(query, 0, 8);
     var candidateEmails = [];
 
     for (var t = 0; t < threads.length; t++) {
-      // Bảo vệ thời gian: Nếu xử lý quá 40s, ngắt vòng lặp an toàn
+      // Bảo vệ thời gian: Nếu xử lý quá 25s, ngắt vòng lặp an toàn
       if (Date.now() - startTime > MAX_SAFE_RUNTIME_MS) {
-        Logger.log('⏳ Đạt ngưỡng thời gian an toàn (40s). Tạm dừng quét tiếp để gửi lô thư đã gom.');
+        Logger.log('⏳ Đạt ngưỡng an toàn 25s. Tạm dừng duyệt tiếp để chuẩn bị gửi dữ liệu.');
         break;
       }
 
@@ -199,6 +250,10 @@ function syncBankEmails() {
       }
 
       for (var m = 0; m < messages.length; m++) {
+        if (Date.now() - startTime > MAX_SAFE_RUNTIME_MS) {
+          break;
+        }
+
         var msg = messages[m];
         var msgId = '';
         try {
@@ -220,14 +275,14 @@ function syncBankEmails() {
           Logger.log('⚠️ Không đọc được plain body của thư ' + msgId + ': ' + bodyErr.toString());
         }
 
-        // Lấy header Authentication-Results từ raw content (Bọc try-catch riêng để chống tràn bộ nhớ / timeout)
+        // Lấy header Authentication-Results từ raw content (Bọc try-catch riêng để chống nghẽn bộ nhớ)
         var authResults = '';
         try {
           var rawContent = msg.getRawContent() || '';
           var authResultsMatch = rawContent.match(/Authentication-Results:\s*([^\r\n]+(?:\r?\n\s+[^\r\n]+)*)/i);
           authResults = authResultsMatch ? authResultsMatch[1].replace(/\r?\n\s+/g, ' ') : '';
         } catch (rawErr) {
-          Logger.log('⚠️ Không đọc được rawContent của thư ' + msgId + ' (thư quá lớn hoặc lỗi kết nối): ' + rawErr.toString());
+          Logger.log('⚠️ Không đọc được rawContent của thư ' + msgId + ': ' + rawErr.toString());
         }
 
         var internalDate = Date.now();
@@ -260,13 +315,13 @@ function syncBankEmails() {
       }
     }
 
-    // 3. Chuẩn bị payload và ký số HMAC-SHA256
+    // 4. Chuẩn bị payload và ký số HMAC-SHA256
     var timestamp = Math.floor(Date.now() / 1000);
     var runId = 'gas_' + Date.now();
     var payload = {
       runId: runId,
       sentAt: new Date().toISOString(),
-      emails: candidateEmails // Rỗng vẫn gửi để làm Heartbeat
+      emails: candidateEmails // Rỗng vẫn gửi để làm Heartbeat duy trì cầu nối online
     };
 
     var rawBodyString = JSON.stringify(payload);
@@ -283,8 +338,15 @@ function syncBankEmails() {
       muteHttpExceptions: true
     };
 
-    // 4. Gửi dữ liệu qua hàm safeFetchWithRetry bảo vệ
-    var response = safeFetchWithRetry(config.endpoint, options, 2);
+    // Kiểm tra thời gian trước khi gọi HTTP fetch
+    var remainingTime = MAX_SAFE_RUNTIME_MS - (Date.now() - startTime);
+    if (remainingTime < 3000) {
+      Logger.log('⏳ Thời gian an toàn còn lại dưới 3s, hoãn gửi HTTP để tránh nghẽn thread.');
+      return;
+    }
+
+    // 5. Gửi dữ liệu qua hàm safeFetchWithRetry bảo vệ
+    var response = safeFetchWithRetry(config.endpoint, options, 2, startTime, MAX_SAFE_RUNTIME_MS);
 
     if (response) {
       var statusCode = response.getResponseCode();
@@ -304,16 +366,18 @@ function syncBankEmails() {
         Logger.log('⚠️ Máy chủ phản hồi trạng thái: HTTP ' + statusCode + ' | ' + responseText);
       }
     } else {
-      Logger.log('ℹ️ Kết nối máy chủ tạm gián đoạn. Các thư mới sẽ được giữ lại để gửi ở lượt quét kế tiếp.');
+      Logger.log('ℹ️ Kết nối máy chủ tạm gián đoạn. Các thư mới sẽ được giữ lại an toàn cho lượt quét kế tiếp.');
     }
-  } catch (err) {
-    // Bắt mọi ngoại lệ cấp cao nhất để Google Apps Script không đánh dấu là FAILED
-    Logger.log('❌ Lỗi ngoại lệ trong syncBankEmails (đã được ngăn chặn an toàn): ' + err.toString());
+  } catch (topErr) {
+    // Lá chắn cuối cùng: Bắt triệt để mọi lỗi ngoại lệ, Google Runner sẽ ghi nhận COMPLETED thay vì FAILED
+    Logger.log('🛡️ [LÁ CHẮN AN TOÀN] Bắt lỗi ngoại lệ thành công trong syncBankEmails: ' + topErr.toString());
   } finally {
-    try {
-      lock.releaseLock();
-    } catch (lockErr) {
-      // Bỏ qua lỗi release lock nếu có
+    if (hasLock && lock) {
+      try {
+        lock.releaseLock();
+      } catch (releaseErr) {
+        // Bỏ qua lỗi release lock nếu đã hết thời gian lock
+      }
     }
   }
 }

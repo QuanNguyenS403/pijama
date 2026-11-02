@@ -209,7 +209,7 @@ describe('Loyalty Ledger & Database Operations', () => {
 
   it('Bảo mật: Che số điện thoại đúng chuẩn (0901 *** 567)', () => {
     assert.equal(maskPhone('0901234567'), '0901 *** 567')
-    assert.equal(maskPhone('0981753082'), '0981 *** 082')
+    assert.equal(maskPhone('0973 486 218'), '0973 *** 218')
     assert.equal(maskPhone(''), '')
   })
 

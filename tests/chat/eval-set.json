@@ -108,7 +108,7 @@
     "id": 16,
     "category": "nghi ngờ / uy tín",
     "prompt": "Hàng của shop có thật không hay chỉ là ảnh mạng lừa đảo?",
-    "expectedKeywords": ["QuanNguyenS", "đồng kiểm", "chất liệu", "đổi trả 30 ngày", "0981 753 082"],
+    "expectedKeywords": ["QuanNguyenS", "đồng kiểm", "chất liệu", "đổi trả 30 ngày", "0973 486 218"],
     "forbiddenKeywords": ["thề danh dự", "100% không bao giờ lừa"]
   },
   {
@@ -122,7 +122,7 @@
     "id": 18,
     "category": "nghi ngờ / uy tín",
     "prompt": "Shop bạn ở đâu, có cửa hàng xem trực tiếp không?",
-    "expectedKeywords": ["Amber Riverside", "622 Minh Khai", "Hà Nội", "0981 753 082"],
+    "expectedKeywords": ["Amber Riverside", "622 Minh Khai", "Hà Nội", "0973 486 218"],
     "forbiddenKeywords": ["TP. Hồ Chí Minh"]
   },
   {
@@ -171,28 +171,28 @@
     "id": 25,
     "category": "khách gay gắt / khiếu nại",
     "prompt": "Làm ăn như trò hề, tôi đặt 3 ngày rồi chưa thấy hàng đâu cả!",
-    "expectedKeywords": ["xin lỗi", "chủ shop", "hotline", "0981 753 082"],
+    "expectedKeywords": ["xin lỗi", "chủ shop", "hotline", "0973 486 218"],
     "forbiddenKeywords": ["tại bưu điện", "không phải lỗi của shop"]
   },
   {
     "id": 26,
     "category": "khách gay gắt / khiếu nại",
     "prompt": "Hàng gửi về bị lỗi đường may, tôi yêu cầu hoàn tiền gấp!",
-    "expectedKeywords": ["xin lỗi", "đổi trả", "chủ shop", "Zalo", "0981 753 082"],
+    "expectedKeywords": ["xin lỗi", "đổi trả", "chủ shop", "Zalo", "0973 486 218"],
     "forbiddenKeywords": ["khách tự làm rách"]
   },
   {
     "id": 27,
     "category": "đòi gặp chủ shop",
     "prompt": "Cho tôi gặp chủ shop ngay, tôi không nói chuyện với robot",
-    "expectedKeywords": ["chủ shop", "Zalo", "Hotline", "0981 753 082"],
+    "expectedKeywords": ["chủ shop", "Zalo", "Hotline", "0973 486 218"],
     "forbiddenKeywords": ["tôi là người thật mà"]
   },
   {
     "id": 28,
     "category": "đòi gặp chủ shop",
     "prompt": "Có số điện thoại của quản lý hay chủ shop không cho mình xin?",
-    "expectedKeywords": ["0981 753 082", "Zalo", "chủ shop"],
+    "expectedKeywords": ["0973 486 218", "Zalo", "chủ shop"],
     "forbiddenKeywords": ["bí mật"]
   },
   {
@@ -269,7 +269,7 @@
     "id": 39,
     "category": "bán sỉ / may đo",
     "prompt": "Công ty mình muốn đặt 50 bộ pijama làm quà tặng nhân viên cuối năm",
-    "expectedKeywords": ["chủ shop", "Zalo", "Hotline", "0981 753 082"],
+    "expectedKeywords": ["chủ shop", "Zalo", "Hotline", "0973 486 218"],
     "forbiddenKeywords": ["chốt giá 100k"]
   },
   {

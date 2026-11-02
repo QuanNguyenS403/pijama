@@ -1,4 +1,4 @@
-# Hướng Dẫn Cài Đặt và Vận Hành QNS VietQR Gmail Bridge
+# Hướng Dẫn Cài Đặt và Vận Hành QNS VietQR Gmail Bridge (v3.0 Bọc Thép)
 
 Cầu nối tự động đọc email biến động số dư ngân hàng bằng **Google Apps Script** và gửi tín hiệu xác nhận thanh toán an toàn về máy chủ **QuanNguyenS**.
 
@@ -20,25 +20,24 @@ Cầu nối tự động đọc email biến động số dư ngân hàng bằng
 
 ### Bước 1: Chuẩn bị hòm thư Gmail nhận biến động số dư
 > [!IMPORTANT]
-> **Khuyến nghị an toàn:** Sử dụng một tài khoản Gmail riêng biệt (ví dụ: `quannguyentop1lux@gmail.com` hoặc mailbox riêng) chỉ dùng để nhận email biến động số dư từ ngân hàng.
-> Tuyệt đối không dùng chung với hộp thư cá nhân nhạy cảm khác.
+> **Tài khoản Gmail chạy bridge chuẩn hóa:** Sử dụng chính tài khoản Gmail chuyên dụng của shop: **`quannguyens403@gmail.com`** (đã cấu hình trong `.env` để nhận email biến động số dư Vietcombank và phát thông báo cho shop).
+> Mọi thao tác Apps Script và cấp quyền OAuth đều thực hiện trên tài khoản này.
 
-### Bước 2: Tạo dự án Apps Script mới
+### Bước 2: Mở hoặc Tạo dự án Apps Script
 1. Truy cập [script.google.com](https://script.google.com/) bằng tài khoản Gmail nói trên.
-2. Bấm nút **Dự án mới (New Project)**.
-3. Đổi tên dự án thành: `QNS-VietQR-Bank-Bridge`.
+2. Mở dự án hiện tại (ví dụ: `QNS-Banking` hoặc `QNS-VietQR-Bank-Bridge`).
 
-### Bước 3: Dán mã nguồn và cấu hình Manifest
-1. Tại file `Mã.gs` (hoặc `Code.gs`): Xóa sạch nội dung cũ, copy toàn bộ nội dung từ file [`integrations/gmail-bridge/Code.gs`](file:///d:/QNS%20Clothes/pijama/integrations/gmail-bridge/Code.gs) dán vào và nhấn `Ctrl + S` để lưu.
+### Bước 3: Dán mã nguồn v3.0 và cấu hình Manifest
+1. Tại file `Code.gs` (hoặc `Mã.gs`): Xóa sạch nội dung cũ, copy toàn bộ nội dung từ file [`integrations/gmail-bridge/Code.gs`](file:///d:/QNS%20Clothes/pijama/integrations/gmail-bridge/Code.gs) dán vào và nhấn `Ctrl + S` để lưu.
 2. Vào **Cài đặt dự án (Project Settings)** (biểu tượng bánh răng bên trái) -> Tích chọn **"Hiển thị tệp kê khai 'appsscript.json' trong trình chỉnh sửa"**.
 3. Quay lại trình soạn thảo code, mở file `appsscript.json`, thay thế toàn bộ bằng nội dung file [`integrations/gmail-bridge/appsscript.json`](file:///d:/QNS%20Clothes/pijama/integrations/gmail-bridge/appsscript.json) và lưu lại.
 
 ### Bước 4: Cấu hình Tham Số Bí Mật (Script Properties)
-Vào **Cài đặt dự án (Project Settings)** -> cuộn xuống mục **Các thuộc tính tập lệnh (Script Properties)** -> Bấm **Chỉnh sửa thuộc tính tập lệnh (Edit script properties)** và thêm 4 thuộc tính sau:
+Vào **Cài đặt dự án (Project Settings)** -> cuộn xuống mục **Các thuộc tính tập lệnh (Script Properties)** -> Bấm **Chỉnh sửa thuộc tính tập lệnh (Edit script properties)** và kiểm tra 4 thuộc tính sau:
 
 | Tên thuộc tính (Property) | Giá trị mẫu | Giải thích |
 |---|---|---|
-| `QNS_ENDPOINT` | `https://api.quannguyens.vn/api/payment/bank-email` | URL nhận webhook trên máy chủ QNS (khi test local có thể dùng URL HTTPS ngrok) |
+| `QNS_ENDPOINT` | `https://api.quannguyens.vn/api/payment/bank-email` | URL nhận webhook trên máy chủ QNS (khi test local có thể dùng URL HTTPS ngrok/tunnel) |
 | `QNS_SECRET` | *(chuỗi bí mật ngẫu nhiên dài >= 32 ký tự)* | Khóa bí mật ký số HMAC, **phải trùng khớp** với `GMAIL_BRIDGE_SECRET` trong file `.env` của server QNS |
 | `BANK_SENDER` | `vietcombank.com.vn` | Tên miền hoặc địa chỉ email gửi biến động số dư của ngân hàng (mặc định VCB) |
 | `MAX_BATCH_SIZE` | `10` | Số lượng email tối đa đọc và gửi trong một lượt (mặc định 10) |
@@ -49,7 +48,7 @@ Bấm **Lưu thuộc tính tập lệnh**.
 1. Quay lại file `Code.gs`.
 2. Trên thanh công cụ, tại ô chọn hàm cần chạy, chọn hàm `selfTestSignature`.
 3. Bấm **Chạy (Run)**.
-4. Lần đầu chạy, Google sẽ yêu cầu cấp quyền: Bấm **Xem lại quyền** -> Chọn tài khoản Google của bạn -> Bấm **Nâng cao (Advanced)** -> Bấm **Chuyển đến QNS-VietQR-Bank-Bridge (không an toàn)** -> Bấm **Cho phép (Allow)**.
+4. Lần đầu chạy, Google sẽ yêu cầu cấp quyền: Bấm **Xem lại quyền** -> Chọn tài khoản Google của bạn -> Bấm **Nâng cao (Advanced)** -> Bấm **Chuyển đến... (không an toàn)** -> Bấm **Cho phép (Allow)**.
 5. Xem Nhật ký thực thi (Execution log): Khi thấy thông báo:
    ```text
    ✅ TEST CHỮ KÝ THÀNH CÔNG: Chữ ký Apps Script khớp 100% với chuẩn Node.js máy chủ.
@@ -61,7 +60,7 @@ Bấm **Lưu thuộc tính tập lệnh**.
 2. Bấm **Chạy (Run)**.
 3. Xem nhật ký: Apps Script sẽ tìm kiếm các email biến động số dư trong 2 ngày qua và in thông tin xem trước (ID, thời gian, tiêu đề) mà KHÔNG gửi dữ liệu lên máy chủ.
 
-### Bước 7: Kích Hoạt Bộ Lập Lịch Tự Động (Triggers) & Cài Đặt Thông Báo Lỗi
+### Bước 7: Kích Hoạt Trình Kích Hoạt Tự Động (Triggers) & Cài Đặt Thông Báo Lỗi Chuẩn
 1. Ở thanh menu bên trái, bấm vào biểu tượng đồng hồ **Kích hoạt (Triggers)**.
 2. Bấm nút **+ Thêm trình kích hoạt (+ Add Trigger)** ở góc dưới bên phải (hoặc bấm vào hình chiếc bút để chỉnh sửa trigger `syncBankEmails` hiện có).
 3. Thiết lập các thông số chính xác như sau:
@@ -70,9 +69,9 @@ Bấm **Lưu thuộc tính tập lệnh**.
    - **Chọn nguồn sự kiện:** `Dựa trên thời gian (Time-driven)`
    - **Chọn loại trình kích hoạt:** `Hẹn giờ theo phút (Minutes timer)`
    - **Chọn khoảng thời gian tính bằng phút:** `Mỗi phút (Every minute)`
-   - **Cài đặt thông báo lỗi (Failure notification settings):** Chọn **`Hàng ngày (Daily)`** hoặc **`Hàng tuần (Weekly)`** (hoặc `Không bao giờ`).
-     > [!NOTE]
-     > **Lý do kỹ thuật quan trọng:** Do script chạy liên tục 1,440 lần/ngày, nếu để chế độ "Ngay lập tức" (Immediately), chỉ cần 1 micro-hiccup bất kỳ của mạng Google trong ngày (kể cả khi script tự động thử lại thành công ngay sau đó) thì Gmail vẫn gửi thư báo lỗi. Chọn **Hàng ngày** giúp bạn không bị làm phiền bởi các lỗi tạm thời của hạ tầng đám mây.
+   - **Cài đặt thông báo lỗi (Failure notification settings):** Chọn **`Không bao giờ thông báo (Never)`** (hoặc `Hàng tuần - Weekly`).
+     > [!TIP]
+     > **Lý do kỹ thuật quan trọng:** Do script chạy liên tục 1,440 lần/ngày, Google Apps Script đôi khi gặp micro-hiccup nội bộ (vài giây) của hạ tầng đám mây Google. Script v3.0 đã tự động bắt lỗi và thử lại êm đẹp ở phút kế tiếp mà không mất mát giao dịch nào. Đổi cài đặt thông báo sang **Không bao giờ** hoặc **Hàng tuần** sẽ loại bỏ triệt để các email thông báo phiền toái gửi về hòm thư của bạn.
 4. Bấm **Lưu (Save)**.
 
 ---

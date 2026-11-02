@@ -54,8 +54,8 @@ Dành cho trường hợp khách chuyển khoản qua ngân hàng khác, nộp t
 ## 3. Hướng Dẫn Xử Lý Sự Cố Kỹ Thuật (Troubleshooting)
 
 ### Sự cố 1: Huy hiệu Bridge báo Đỏ (Mất tín hiệu > 5 phút)
-1. Đăng nhập vào [script.google.com](https://script.google.com/) bằng tài khoản Gmail chạy bridge (`quannguyentop1lux@gmail.com`).
-2. Mở dự án `QNS-VietQR-Bank-Bridge` -> Chọn tab **Kích hoạt (Triggers)**.
+1. Đăng nhập vào [script.google.com](https://script.google.com/) bằng đúng tài khoản Gmail chạy bridge của shop: **`quannguyens403@gmail.com`**.
+2. Mở dự án `QNS-Banking` (hoặc `QNS-VietQR-Bank-Bridge`) -> Chọn tab **Kích hoạt (Triggers)**.
 3. Kiểm tra xem trigger `syncBankEmails` có bị tắt hoặc báo lỗi không:
    - Nếu báo lỗi ủy quyền (Authorization): Bấm **Chạy (Run)** hàm `selfTestSignature` để cấp lại quyền OAuth.
    - Nếu trigger bị mất: Tạo lại trigger hẹn giờ mỗi 1 phút theo hướng dẫn cài đặt.
@@ -75,6 +75,14 @@ Dành cho trường hợp khách chuyển khoản qua ngân hàng khác, nộp t
 3. Trên Google Apps Script:
    - Cập nhật thuộc tính `QNS_SECRET` thành khóa bí mật mới.
 4. Sau 24 giờ khi đã ổn định, xóa bỏ dòng `GMAIL_BRIDGE_SECRET_PREV` khỏi file `.env` server.
+
+### Sự cố 4: Nhận Email Thông Báo Lỗi từ Google Apps Script ("We're sorry, a server error occurred")
+Khi nhận được email thông báo định kỳ của Google báo script `QNS-Banking` (hoặc `QNS-VietQR-Bank-Bridge`) chạy `syncBankEmails` thất bại:
+1. **Bản chất kỹ thuật:** Do script chạy định kỳ 1 phút/lần (1,440 lần/ngày), nếu tỷ lệ thành công là 99.86% (1,438/1,440), Google vẫn gửi email báo cáo tổng kết ngày nếu có 1-2 lần micro-outage từ hạ tầng Google Cloud (thời gian timeout RPC của Google).
+2. **Cách khắc phục triệt để:**
+   - Mở `script.google.com` -> Mở dự án `QNS-Banking` (hoặc `QNS-VietQR-Bank-Bridge`).
+   - Cập nhật file `Code.gs` lên bản **v3.0 Bọc Thép** (chặn timeout ở 25s, bọc toàn bộ LockService và PropertiesService bằng Exponential Backoff).
+   - Vào mục **Kích hoạt (Triggers)** -> Bấm vào cây bút chỉnh sửa trigger `syncBankEmails` -> Tại mục **Cài đặt thông báo lỗi (Failure notification settings)**: Chuyển sang **"Không bao giờ thông báo" (Never)** hoặc **"Hàng tuần" (Weekly)**.
 
 ---
 

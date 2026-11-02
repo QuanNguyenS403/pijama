@@ -149,7 +149,7 @@ export function guardOutput(rawReply, { activeVoucherCodes = ['QNS10'] } = {}) {
     return {
       isValid: false,
       sanitizedReply:
-        'Dạ hiện tại QuanNguyenS có chương trình ưu đãi giảm 10% cho đơn chuyển khoản VietQR, và miễn phí vận chuyển toàn quốc cho đơn từ 500.000đ. Để biết thêm mã ưu đãi riêng hoặc tư vấn chi tiết, anh/chị có thể nhắn trực tiếp qua Zalo chủ shop (0981 753 082) nhé!',
+        'Dạ hiện tại QuanNguyenS có chương trình ưu đãi giảm 10% cho đơn chuyển khoản VietQR, và miễn phí vận chuyển toàn quốc cho đơn từ 500.000đ. Để biết thêm mã ưu đãi riêng hoặc tư vấn chi tiết, anh/chị có thể nhắn trực tiếp qua Zalo chủ shop (0973 486 218) nhé!',
       violations,
     }
   }

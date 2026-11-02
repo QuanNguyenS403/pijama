@@ -130,7 +130,7 @@ app.use(customerSessionMiddleware)
 const submitOrderLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 phút
   max: 15, // Tối đa 15 đơn hàng / 15 phút / IP
-  message: 'Bạn đã đặt đơn quá nhiều lần liên tiếp. Vui lòng chờ ít phút hoặc gọi hotline 0981 753 082.',
+  message: 'Bạn đã đặt đơn quá nhiều lần liên tiếp. Vui lòng chờ ít phút hoặc gọi hotline 0973 486 218.',
 })
 
 const generateQrLimiter = createRateLimiter({
@@ -396,7 +396,7 @@ const orderSubmitHandler = async (req, res) => {
     console.error('Server error on /api/orders/submit:', error)
     return res.status(500).json({
       success: false,
-      error: 'Lỗi máy chủ khi xử lý đơn hàng. Vui lòng liên hệ: 0981 753 082',
+      error: 'Lỗi máy chủ khi xử lý đơn hàng. Vui lòng liên hệ: 0973 486 218',
     })
   }
 }
@@ -749,7 +749,7 @@ app.post('/api/orders/cancel-request', async (req, res) => {
     if (order.status !== 'PENDING' && order.status !== 'AWAITING_PAYMENT') {
       return res.status(400).json({
         success: false,
-        error: `Đơn hàng đang ở trạng thái ${order.status}, không thể hủy tự động. Vui lòng liên hệ hotline 0981 753 082.`,
+        error: `Đơn hàng đang ở trạng thái ${order.status}, không thể hủy tự động. Vui lòng liên hệ hotline 0973 486 218.`,
       })
     }
 
@@ -1052,7 +1052,7 @@ app.use((err, req, res, next) => {
   const isProd = process.env.NODE_ENV === 'production'
   return res.status(status).json({
     success: false,
-    error: isProd ? 'Đã có lỗi xảy ra trên hệ thống. Vui lòng liên hệ hotline: 0981 753 082' : (err.message || 'Lỗi máy chủ'),
+    error: isProd ? 'Đã có lỗi xảy ra trên hệ thống. Vui lòng liên hệ hotline: 0973 486 218' : (err.message || 'Lỗi máy chủ'),
   })
 })
 

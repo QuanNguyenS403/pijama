@@ -174,7 +174,7 @@ export const policiesData = {
         content: [
           'QuanNguyenS làm thủ tục gửi hàng cho tất cả đơn hàng trong vòng 24h kể từ khi xác nhận đặt hàng.',
           'Trong trường hợp cần gấp, khách hàng có thể liên hệ với Hotline để thay đổi thời gian gửi hàng.',
-          'Điện Thoại: 0981753082',
+          'Điện Thoại: 0973 486 218',
         ],
       },
     ],

@@ -38,7 +38,7 @@ function checkChatEnabled(req, res, next) {
   if (process.env.CHAT_ENABLED === 'false') {
     return res.status(503).json({
       success: false,
-      error: 'Tính năng trợ lý ảo tạm thời tắt để bảo trì. Quý khách vui lòng liên hệ hotline 0981 753 082 ạ!',
+      error: 'Tính năng trợ lý ảo tạm thời tắt để bảo trì. Quý khách vui lòng liên hệ hotline 0973 486 218 ạ!',
       enabled: false,
     })
   }
@@ -170,7 +170,7 @@ router.post('/', checkChatEnabled, chatLimiter, async (req, res) => {
     return res.json({
       success: true,
       reply:
-        'Dạ em sẵn sàng hỗ trợ anh/chị chọn size, xem mẫu hoặc kết nối ngay cùng chủ shop QuanNguyenS qua Zalo (0981 753 082) nhé ạ!',
+        'Dạ em sẵn sàng hỗ trợ anh/chị chọn size, xem mẫu hoặc kết nối ngay cùng chủ shop QuanNguyenS qua Zalo (0973 486 218) nhé ạ!',
       quickReplies: ['Tư vấn chọn size', 'Gặp chủ shop'],
       handoff: {
         active: true,
@@ -208,7 +208,7 @@ router.post('/handoff', checkChatEnabled, handoffLimiter, async (req, res) => {
     console.error('🚨 [HANDOFF ROUTE ERROR]:', err)
     return res.status(500).json({
       success: false,
-      error: 'Không thể tiếp nhận yêu cầu lúc này. Quý khách vui lòng gọi trực tiếp hotline 0981 753 082 ạ!',
+      error: 'Không thể tiếp nhận yêu cầu lúc này. Quý khách vui lòng gọi trực tiếp hotline 0973 486 218 ạ!',
     })
   }
 })

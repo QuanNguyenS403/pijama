@@ -376,7 +376,7 @@ export default function BankTransferPaymentPage() {
                   Không tìm thấy dữ liệu đơn hàng
                 </h2>
                 <p className="text-xs sm:text-sm font-normal text-[#4A3F38] max-w-md mx-auto leading-relaxed">
-                  Không tìm thấy thông tin thanh toán cho mã đơn này trên thiết bị. Vui lòng kiểm tra lại trong mục <strong>Đơn Hàng Đã Đặt</strong> hoặc liên hệ hotline <strong>0981 753 082</strong> để được hỗ trợ kiểm tra trực tiếp.
+                  Không tìm thấy thông tin thanh toán cho mã đơn này trên thiết bị. Vui lòng kiểm tra lại trong mục <strong>Đơn Hàng Đã Đặt</strong> hoặc liên hệ hotline <strong>0973 486 218</strong> để được hỗ trợ kiểm tra trực tiếp.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2 max-w-md mx-auto">
                   <button
@@ -656,7 +656,7 @@ export default function BankTransferPaymentPage() {
                   {!bridgeHealthy && (
                     <div className="p-3 bg-[#FFF8E1] border border-[#FFE082] rounded-[3px] text-xs text-[#B45309] text-center flex items-center justify-center gap-2">
                       <AlertTriangle className="w-4 h-4 shrink-0 text-[#EA580C]" />
-                      <span>Hệ thống đối soát đang chậm; đơn sẽ được xác nhận ngay khi ngân hàng báo tiền hoặc bởi cửa hàng. Hotline 0981 753 082.</span>
+                      <span>Hệ thống đối soát đang chậm; đơn sẽ được xác nhận ngay khi ngân hàng báo tiền hoặc bởi cửa hàng. Hotline 0973 486 218.</span>
                     </div>
                   )}
 
@@ -677,7 +677,7 @@ export default function BankTransferPaymentPage() {
             <div className="text-center pt-4 border-t border-[#E8DFD5] text-xs text-[#8C7E74] space-y-1">
               <p>Cần hỗ trợ chỉnh sửa đơn hàng hoặc đổi địa chỉ? Vui lòng liên hệ:</p>
               <p className="font-medium text-[#4A3F38]">
-                Hotline: <a href="tel:0981753082" className="text-[#631521] hover:underline">0981 753 082</a> · Email:{' '}
+                Hotline: <a href="tel:0973 486 218" className="text-[#631521] hover:underline">0973 486 218</a> · Email:{' '}
                 <a href="mailto:quannguyens403@gmail.com" className="text-[#631521] hover:underline">quannguyens403@gmail.com</a>
               </p>
             </div>

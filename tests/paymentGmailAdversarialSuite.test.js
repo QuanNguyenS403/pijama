@@ -71,7 +71,7 @@ test('Item 1: Tạo đơn VietQR -> AWAITING_PAYMENT, expiresAt = createdAt + 60
     orderId,
     total: 390000,
     status: 'AWAITING_PAYMENT',
-    customer: { fullName: 'Nguyen Van A', phone: '0981753082', email: 'customer@example.com' },
+    customer: { fullName: 'Nguyen Van A', phone: '0973 486 218', email: 'customer@example.com' },
     createdAt: new Date(now).toISOString(),
     payment: {
       method: 'BANK_TRANSFER',

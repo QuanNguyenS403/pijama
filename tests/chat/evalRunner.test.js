@@ -62,7 +62,7 @@ test('Bộ đánh giá hội thoại tiếng Việt (≥40 câu từ eval-set.js
     if (item.category === 'đòi gặp chủ shop' || item.category === 'khách gay gắt / khiếu nại' || item.category === 'bán sỉ / may đo') {
       const mentionsOwner =
         handoffActive ||
-        finalReply.includes('0981 753 082') ||
+        finalReply.includes('0973 486 218') ||
         finalReply.includes('chủ shop') ||
         finalReply.includes('Zalo')
       if (!mentionsOwner) {

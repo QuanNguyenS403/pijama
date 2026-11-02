@@ -48,7 +48,7 @@ Trong kịch bản khách hàng đạt hạng cao nhất (**Kim Cương - Diamon
 | **3. SMS/ZNS Flooding** | Kẻ xấu viết bot spam SĐT lạ để làm cạn tiền Zalo OA của shop. | **3 Lớp Rate Limiting:** Cooldown 60s/SĐT, trần 5 tin/ngày/SĐT, trần 20 tin/ngày/IP, trần 200 tin/ngày toàn server. |
 | **4. Dò quét thành viên (User Enumeration)** | Kẻ xấu gửi OTP đăng nhập để xem số điện thoại nào đã là hội viên. | **Phản hồi trung tính (Neutral Response):** Endpoint `POST /api/loyalty/phone/send-otp` khi gửi với mục đích `login` cho số chưa đăng ký sẽ trả về `200 OK` với thông báo trung tính, không lưu record và không gọi gửi tin ZNS. |
 | **5. Rút điểm âm qua việc hủy đơn** | Khách nhận hàng -> nhận điểm -> đổi voucher xài ngay -> rồi trả hàng hoàn tiền. | **Sổ cái điểm Append-Only & Khóa số dư:** Sổ cái `loyalty_ledger` ghi nhận lịch sử bất biến. Khi hoàn tiền, hệ thống trừ đúng số điểm đã cấp. Nếu số dư điểm khả dụng không đủ, hệ thống ghi nhận và khấu trừ vào giá trị hoàn tiền đơn hàng. |
-| **6. Chiếm đoạt mã OTP trong quá trình truyền** | Đánh cắp mã xác thực qua response API hoặc log hệ thống. | **Fail-Closed & Không lộ mã:** Máy chủ tuyệt đối không trả mã OTP trong JSON response kể cả môi trường dev/test. Trên Production, các test/mock provider bị cấm tiệt; mọi số điện thoại đều được che (masking: `0981 *** 082`). |
+| **6. Chiếm đoạt mã OTP trong quá trình truyền** | Đánh cắp mã xác thực qua response API hoặc log hệ thống. | **Fail-Closed & Không lộ mã:** Máy chủ tuyệt đối không trả mã OTP trong JSON response kể cả môi trường dev/test. Trên Production, các test/mock provider bị cấm tiệt; mọi số điện thoại đều được che (masking: `0973 *** 218`). |
 
 ---
 

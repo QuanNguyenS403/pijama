@@ -91,7 +91,7 @@ Họa tiết Sọc Hồng (Pink Stripe) biểu trưng cho năng lượng Hỏa �
       "Hạn chế sử dụng máy sấy nóng và ủi ở nhiệt độ thích hợp.",
     ],
 
-    returnPolicy: "Hỗ trợ đổi trả trong 30 ngày — Áp dụng theo chính sách đổi trả & cam kết chất lượng QuanNguyenS — Liên hệ hotline 0981 753 082",
+    returnPolicy: "Hỗ trợ đổi trả trong 30 ngày — Áp dụng theo chính sách đổi trả & cam kết chất lượng QuanNguyenS — Liên hệ hotline 0973 486 218",
 
     highlights: [
       "Họa tiết Sọc Hồng năng lượng Hỏa — ấm áp, dịu dàng, tràn đầy sinh khí như nắng sớm",
@@ -208,7 +208,7 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
       "Không ngâm bột giặt có chất tẩy mạnh để tránh loang màu vải.",
       "Hạn chế sử dụng máy sấy nóng và ủi ở nhiệt độ thích hợp.",
     ],
-    returnPolicy: 'Hỗ trợ đổi trả trong 30 ngày — Áp dụng theo chính sách đổi trả & cam kết chất lượng QuanNguyenS — Liên hệ hotline 0981 753 082',
+    returnPolicy: 'Hỗ trợ đổi trả trong 30 ngày — Áp dụng theo chính sách đổi trả & cam kết chất lượng QuanNguyenS — Liên hệ hotline 0973 486 218',
     highlights: [
       'Họa tiết Caro Navy năng lượng Thủy — tĩnh tại, sâu lắng, mang lại cảm giác an yên như mặt nước lặng',
       'Cổ V thanh lịch, viền tương phản nổi bật tôn dáng cổ và xương quai xanh',
@@ -301,7 +301,7 @@ Họa tiết Sọc Nâu mocha (Brown Stripe) đại diện cho năng lượng h�
       "Không ngâm bột giặt có chất tẩy mạnh để tránh loang màu vải.",
       "Hạn chế sử dụng máy sấy nóng và ủi ở nhiệt độ thích hợp.",
     ],
-    returnPolicy: 'Hỗ trợ đổi trả trong 30 ngày — Áp dụng theo chính sách đổi trả & cam kết chất lượng QuanNguyenS — Liên hệ hotline 0981 753 082',
+    returnPolicy: 'Hỗ trợ đổi trả trong 30 ngày — Áp dụng theo chính sách đổi trả & cam kết chất lượng QuanNguyenS — Liên hệ hotline 0973 486 218',
     highlights: [
       'Họa tiết Sọc Nâu năng lượng Thổ — vững chãi, ấm áp, mang lại cảm giác bình yên như trở về nhà',
       'Chất vải Tencel thượng hạng — độ rủ thướt tha, mềm mướt và thoáng khí vượt trội',

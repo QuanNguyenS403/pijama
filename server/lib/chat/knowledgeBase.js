@@ -136,7 +136,7 @@ function buildKnowledgeChunks() {
       'Trường hợp hoàn tiền dựa trên sự hài lòng chịu phí xử lý môi trường 15%, phí vận chuyển ban đầu không được hoàn lại, và chi phí gửi hàng trả lại do khách hàng chi trả.',
       'Hàng hóa bị hư hỏng hoặc thiếu do vận chuyển: Khách hàng cần liên hệ trong vòng 24 giờ kể từ khi nhận hàng kèm hình ảnh minh chứng để được gửi bù ngay lập tức.',
       'Chỉnh sửa và hủy đơn: Hỗ trợ chỉnh sửa hoặc hủy đơn trong vòng 1 giờ đầu tiên sau khi đặt hàng.',
-      'Hotline tiếp nhận đổi trả: 0981 753 082 hoặc Email: quannguyens403@gmail.com.',
+      'Hotline tiếp nhận đổi trả: 0973 486 218 hoặc Email: quannguyens403@gmail.com.',
     ].join(' '),
     keywords: 'doi tra hoan tien tra hang bao hanh 30 ngay 15% loi rach hu hong huy don',
   })
@@ -165,12 +165,12 @@ function buildKnowledgeChunks() {
       'Thương hiệu: QuanNguyenS — Thời trang sleepwear cao cấp định vị Style To Be Lived In ("Every girls deserve QuanNguyenS\'s Sleepwear").',
       'Slogan chính: "Style To Be Lived In".',
       'Địa chỉ: Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hai Bà Trưng, Hà Nội.',
-      'Hotline & Zalo tư vấn 24/7: 0981 753 082.',
-      'Link chat Zalo trực tiếp: https://zalo.me/0981753082.',
+      'Hotline & Zalo tư vấn 24/7: 0973 486 218.',
+      'Link chat Zalo trực tiếp: https://zalo.me/0973 486 218.',
       'Email: quannguyens403@gmail.com.',
       'Website chính thức: https://quannguyens.com.',
     ].join(' '),
-    keywords: 'dia chi quannguyens amber riverside minh khai ha noi hotline zalo 0981753082 email lien he',
+    keywords: 'dia chi quannguyens amber riverside minh khai ha noi hotline zalo 0973 486 218 email lien he',
   })
 
   // 6. Chunks Hướng dẫn Tra cứu Đơn hàng

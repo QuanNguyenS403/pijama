@@ -32,7 +32,7 @@
 | `BANK_ACCOUNT_NUMBER` | Server | Không | Số tài khoản ngân hàng nhận tiền | Tài khoản ngân hàng của Quan | Chuỗi số tài khoản |
 | `BANK_ACCOUNT_NAME` | Server | Không | Tên chủ tài khoản ngân hàng | Tài khoản ngân hàng của Quan | Chữ in hoa không dấu (`NGUYEN DUC QUAN`) |
 | `SHOP_NAME` | Server | Không | Tên thương hiệu hiển thị trên email/QR | Tự đặt (`QuanNguyenS`) | Chuỗi văn bản |
-| `SHOP_PHONE` | Server | Không | Hotline hỗ trợ khách hàng | Hotline shop (`0981753082`) | Số điện thoại chuẩn |
+| `SHOP_PHONE` | Server | Không | Hotline hỗ trợ khách hàng | Hotline shop (`0973 486 218`) | Số điện thoại chuẩn |
 | `SHOP_ADDRESS` | Server | Không | Địa chỉ kho xuất hàng (tính phí ship) | Địa chỉ xưởng/kho | Dùng làm gốc tọa độ tính khoảng cách ship |
 
 ---

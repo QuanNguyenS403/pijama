@@ -253,7 +253,7 @@ export function processTier0Intent(message, context = {}) {
       intentName: 'ORDER_LOOKUP',
       reply:
         'Dạ để bảo mật thông tin cá nhân và đơn hàng của anh/chị, em không thể truy vấn trực tiếp chi tiết đơn hàng trong khung chat này. Anh/chị có thể dễ dàng kiểm tra:\n• Link tra cứu trực tiếp trong Email xác nhận đặt hàng.\n• Hoặc vào mục "Tài Khoản" tại website https://quannguyens.com/tai-khoan để xem hành trình Viettel Post.\nNếu cần hỗ trợ gấp, em xin phép kết nối ngay cùng chủ shop nhé ạ!',
-      quickReplies: ['Gặp chủ shop', 'Gọi Hotline 0981753082'],
+      quickReplies: ['Gặp chủ shop', 'Gọi Hotline 0973 486 218'],
       handoff: {
         active: true,
         zalo: liveFacts.zaloLink,

@@ -305,7 +305,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                     href="#forgot"
                     onClick={(e) => {
                       e.preventDefault()
-                      alert('Vui lòng liên hệ hotline 0981 753 082 hoặc đăng nhập bằng tài khoản Google đã liên kết.')
+                      alert('Vui lòng liên hệ hotline 0973 486 218 hoặc đăng nhập bằng tài khoản Google đã liên kết.')
                     }}
                     className="text-[10.5px] text-[#631521] hover:underline"
                   >

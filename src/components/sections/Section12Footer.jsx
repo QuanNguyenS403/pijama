@@ -134,8 +134,8 @@ export default function Section12Footer() {
                 </div>
                 <div className="flex items-center gap-2.5">
                   <Phone className="w-4 h-4 text-[#D4AF37] shrink-0" />
-                  <a href="tel:0981753082" className="hover:text-[#D4AF37] transition-colors">
-                    xxxxxxxxx (Hỗ trợ 24/7)
+                  <a href="tel:0973 486 218" className="hover:text-[#D4AF37] transition-colors">
+                    0973 486 218 (Hỗ trợ 24/7)
                   </a>
                 </div>
                 <div className="flex items-center gap-2.5">

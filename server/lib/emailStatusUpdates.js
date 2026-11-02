@@ -75,7 +75,7 @@ const renderFooter = () => `
     <div class="footer-tag">Style to be lived in</div>
     <div class="footer-info">
       Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội<br>
-      0981 753 082 · quannguyens403@gmail.com
+      0973 486 218 · quannguyens403@gmail.com
     </div>
   </div>
 `
@@ -156,7 +156,7 @@ export const sendConfirmedEmail = async (order) => {
 
     <div class="contact">
       <p>Câu hỏi về đơn hàng? Liên hệ ngay:</p>
-      <a href="tel:0981753082">📞 0981 753 082</a>
+      <a href="tel:0973 486 218">📞 0973 486 218</a>
       <a href="mailto:quannguyens403@gmail.com">✉️ Email</a>
     </div>
   </div>
@@ -275,7 +275,7 @@ export const sendShippedEmail = async (order, { trackingNumber } = {}) => {
           : '• Đơn hàng đã thanh toán — không cần chuẩn bị thêm tiền mặt<br>'
         }
         • Kiểm tra kỹ sản phẩm trước khi ký nhận<br>
-        • Nếu hàng bị hỏng hoặc sai — từ chối nhận và liên hệ ngay: <strong>0981 753 082</strong>
+        • Nếu hàng bị hỏng hoặc sai — từ chối nhận và liên hệ ngay: <strong>0973 486 218</strong>
       </div>
     </div>
 
@@ -288,7 +288,7 @@ export const sendShippedEmail = async (order, { trackingNumber } = {}) => {
 
     <div class="contact">
       <p>Cần hỗ trợ về đơn hàng đang giao?</p>
-      <a href="tel:0981753082">📞 0981 753 082</a>
+      <a href="tel:0973 486 218">📞 0973 486 218</a>
       <a href="mailto:quannguyens403@gmail.com">✉️ Email</a>
     </div>
   </div>
@@ -375,7 +375,7 @@ export const sendCancelledEmail = async (order, { reason } = {}) => {
         số tiền <strong>${vnd(order.total)}</strong> sẽ được hoàn lại
         trong vòng <strong>3–7 ngày làm việc</strong> tùy theo ngân hàng/ví của bạn.
         <br><br>
-        Nếu sau 7 ngày chưa nhận được — vui lòng liên hệ: <strong>0981 753 082</strong>
+        Nếu sau 7 ngày chưa nhận được — vui lòng liên hệ: <strong>0973 486 218</strong>
       </div>
     </div>` : ''}
 
@@ -404,7 +404,7 @@ export const sendCancelledEmail = async (order, { reason } = {}) => {
 
     <div class="contact">
       <p>Thắc mắc về việc hủy đơn? Liên hệ chúng tôi:</p>
-      <a href="tel:0981753082">📞 0981 753 082</a>
+      <a href="tel:0973 486 218">📞 0973 486 218</a>
       <a href="mailto:quannguyens403@gmail.com">✉️ Email</a>
     </div>
   </div>
