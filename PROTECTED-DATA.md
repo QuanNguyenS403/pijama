@@ -19,7 +19,7 @@
 ### 1. Catalog Sản Phẩm, Giá Bán & Tồn Kho Gốc
 - **File:** `src/data/products.js`
 - **Lý do khóa:** Đã chốt chính xác 3 sản phẩm chủ đạo trong BST Thu Đông 2026:
-  1. **THE DAYBREAK SET** (`the-classic-set` · Sọc Hồng · Hành Hỏa) — Giá niêm yết: 390.000đ (Gốc 490.000đ, Giảm 20%)
+  1. **THE DAYBREAK SET** (`the-classic-set` · Sọc Hồng · Hành Hỏa) — Giá niêm yết gốc: 490.000đ (Không áp dụng giảm giá)
   2. **THE STILLWATER SET** (`the-cafe-look` · Caro Navy · Hành Thủy) — Giá niêm yết: 550.000đ
   3. **THE HEARTH SET** (`the-evening-edit` · Sọc Nâu · Hành Thổ) — Giá niêm yết: 750.000đ
   Kèm theo thông số bảng size chuẩn hóa (S/M), mã màu swatch, cấu trúc thư viện ảnh `.jpg` và dữ liệu tồn kho khởi tạo.

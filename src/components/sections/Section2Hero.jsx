@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import heroSlide01 from '../../assets/images/hero-slide-01.jpg'
 import heroSlide02 from '../../assets/images/hero-slide-02.jpg'
@@ -14,6 +15,7 @@ const slides = [
     headline: 'Ấm Áp Như\nBuổi Sáng Đầu Tiên',
     sub: 'Chất liệu sọc nâu, phom dáng suông phóng khoáng — từ giường ngủ đến hiên nhà.',
     align: 'left',
+    link: '/san-pham/the-evening-edit',
   },
   {
     id: 2,
@@ -23,6 +25,7 @@ const slides = [
     headline: 'Tĩnh Lặng,\nSâu Lắng',
     sub: 'Caro navy tinh tế với viền trắng tương phản — vẻ đẹp điềm tĩnh mà không kém phần tinh tế.',
     align: 'right',
+    link: '/san-pham/the-cafe-look',
   },
   {
     id: 3,
@@ -32,21 +35,24 @@ const slides = [
     headline: 'Bình Minh\nNhẹ Nhàng',
     sub: 'Sọc hồng nhẹ nhàng, dáng rộng thoải mái — phong cách buổi sáng bạn mong chờ.',
     align: 'left',
+    link: '/san-pham/the-classic-set',
   },
   {
     id: 4,
     src: heroSlide04,
-    alt: "Bộ sưu tập sleepwear QuanNguyenS — Every girls deserve QuanNguyenS's Sleepwear",
+    alt: "Bộ sưu tập sleepwear QuanNguyenS — Every girl deserves QuanNguyenS Sleepwear",
     eyebrow: 'BỘ SƯU TẬP 2026',
-    headline: "Every girls deserve\nQuanNguyenS's Sleepwear",
+    headline: "Every girl deserves\nQuanNguyenS Sleepwear",
     sub: 'Ba thiết kế. Một phong cách. Chất liệu tự nhiên chuẩn xuất khẩu châu Âu.',
     align: 'left',
+    link: '#section-products',
   },
 ]
 
 const INTERVAL_MS = 5500
 
 export default function Section2Hero() {
+  const navigate = useNavigate()
   const [current, setCurrent] = useState(0)
   const [paused, setPaused] = useState(false)
 
@@ -144,7 +150,15 @@ export default function Section2Hero() {
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => scrollTo('#section-products')}
+                    onClick={() => {
+                      if (currentSlide.link?.startsWith('#')) {
+                        scrollTo(currentSlide.link)
+                      } else if (currentSlide.link) {
+                        navigate(currentSlide.link)
+                      } else {
+                        scrollTo('#section-products')
+                      }
+                    }}
                     className="inline-flex items-center justify-center gap-2 bg-[#FAF8F5] hover:bg-[#D4AF37] text-[#1A1614] font-sans text-[11px] sm:text-xs font-bold tracking-[0.18em] px-5 sm:px-7 py-2.5 sm:py-3.5 rounded-[2px] transition-all duration-200 uppercase cursor-pointer active:scale-[0.98] focus:outline-none shadow-luxury"
                     aria-label="Khám phá bộ sưu tập"
                   >

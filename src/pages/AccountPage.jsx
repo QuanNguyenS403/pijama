@@ -238,6 +238,9 @@ export default function AccountPage() {
         if (!res.ok || !data.success) {
           throw new Error(data.error || 'Không thể gửi lại mã xác nhận')
         }
+        if (data.registered === false) {
+          throw new Error(`Email "${authEmail.trim()}" chưa được đăng ký trong hệ thống.`)
+        }
         setResendCooldown(60)
         setToast({ productName: 'Đã gửi lại mã xác nhận đến Gmail!', id: Date.now() })
       }
@@ -345,6 +348,10 @@ export default function AccountPage() {
 
         if (!res.ok || !data.success) {
           throw new Error(data.error || 'Không thể gửi mã xác nhận')
+        }
+
+        if (data.registered === false) {
+          throw new Error(`Email "${authEmail.trim()}" chưa được đăng ký trong hệ thống. Quý khách vui lòng kiểm tra lại địa chỉ email hoặc chọn Đăng ký.`)
         }
 
         setAuthMode('verify_otp')
@@ -487,7 +494,10 @@ export default function AccountPage() {
         data = text ? JSON.parse(text) : null
       } catch (e) {}
       if (data && data.success && Array.isArray(data.orders)) {
-        setOrders(data.orders)
+        const validOrders = data.orders.filter(
+          (o) => o.status !== 'CANCELLED' && o.paymentStatus !== 'EXPIRED_TIMEOUT'
+        )
+        setOrders(validOrders)
       } else {
         setOrders([])
       }
@@ -1089,7 +1099,7 @@ export default function AccountPage() {
                           />
                         </svg>
                         <span className="group-hover:text-[#631521] transition-colors">
-                          {authSubmitting ? 'Đang kết nối Google...' : 'Tiếp tục sử dụng dịch vụ bằng Google'}
+                          {authSubmitting ? 'Đang kết nối Google...' : 'Tiếp tục với Google'}
                         </span>
                       </button>
                     )}

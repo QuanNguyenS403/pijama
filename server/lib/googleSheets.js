@@ -472,6 +472,18 @@ export const searchOrdersByIdsFromSheet = async (orderIds = []) => {
 // ── Cập nhật trạng thái đơn hàng trên Google Sheet ───────────────
 export const updateOrderStatusInSheet = async (orderId, newStatus, note = '', trackingCode = '', carrier = '') => {
   try {
+    if (!orderId) return
+    const idStr = String(orderId).trim()
+    // Bỏ qua các đơn kiểm thử (Adversarial test, Unit test, Mock) để tránh log spam và lãng phí API Google Sheets
+    if (
+      idStr.startsWith('QNS-ADV-') ||
+      idStr.startsWith('TEST-') ||
+      idStr.startsWith('QNS-VTTEST-') ||
+      idStr.includes('-TEST-')
+    ) {
+      return
+    }
+
     const auth = getAuth()
     const sheets = google.sheets({ version: 'v4', auth })
     const spreadsheetId = process.env.GOOGLE_SHEET_ID

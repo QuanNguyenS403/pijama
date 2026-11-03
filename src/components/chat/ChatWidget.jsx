@@ -53,7 +53,7 @@ export default function ChatWidget() {
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleToggle}
-            aria-label="Mở trợ lý ảo tư vấn"
+            aria-label="Mở trợ lý tư vấn"
             className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-[#D4AF37] bg-[#631521] shadow-luxury hover:shadow-2xl transition-all cursor-pointer group overflow-hidden flex items-center justify-center"
           >
             <img

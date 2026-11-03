@@ -792,6 +792,12 @@ export function registerAuthEndpoints(app) {
       const accountPhone = req.customerAccount.phone ? String(req.customerAccount.phone).trim() : ''
 
       const userOrders = allOrders.filter((o) => {
+        // Loại bỏ triệt để đơn hàng bị hủy hoặc hết hạn thanh toán theo yêu cầu
+        const isCancelled = String(o?.status || '').toUpperCase() === 'CANCELLED'
+        const isExpired = String(o?.paymentStatus || '').toUpperCase() === 'EXPIRED_TIMEOUT' ||
+                          String(o?.payment?.status || '').toUpperCase() === 'EXPIRED_TIMEOUT'
+        if (isCancelled || isExpired) return false
+
         // NGUYÊN TẮC CÁCH LY TUYỆT ĐỐI (SEC-ISOLATION):
         // Nếu đơn hàng đã được gắn với một tài khoản cụ thể (o.customer?.accountId):
         // CHỈ cho phép hiển thị nếu đúng là accountId của phiên đăng nhập hiện tại!

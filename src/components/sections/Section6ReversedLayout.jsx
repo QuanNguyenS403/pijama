@@ -59,7 +59,7 @@ export default function Section6ReversedLayout() {
             transition={{ duration: 0.7, delay: 0.2 }}
             className="lg:col-span-7 order-1 lg:order-2 flex flex-col justify-center"
           >
-            <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#D4AF37] uppercase block mb-3">
+            <span className="font-sans text-sm font-semibold tracking-[0.25em] text-[#D4AF37] uppercase block mb-3">
               LIFESTYLE
             </span>
 

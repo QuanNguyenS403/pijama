@@ -217,7 +217,7 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
               <div
                 className="absolute inset-y-0 w-1/4 sm:w-1/5 bg-gradient-to-r from-transparent via-white/85 to-transparent pointer-events-none animate-gold-shimmer"
               />
-              <div className="relative z-10 flex items-center justify-center gap-2 text-white font-serif tracking-[0.16em] sm:tracking-[0.22em] uppercase text-xs sm:text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">
+              <div className="relative z-10 flex items-center justify-center gap-2 text-white font-sans tracking-[0.16em] sm:tracking-[0.22em] uppercase text-xs sm:text-[13px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]">
                 <span>Freeship với đơn hàng trên 500k</span>
               </div>
             </div>

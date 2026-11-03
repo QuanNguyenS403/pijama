@@ -1,15 +1,8 @@
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
-import heroCampaignImg from '../../assets/images/hero-campaign.jpg'
-import lifestyleNightImg from '../../assets/images/lifestyle-night.jpg'
 
 export default function Section3FeaturedProducts() {
   const navigate = useNavigate()
-
-  const scrollTo = (id) => {
-    const elem = document.querySelector(id)
-    if (elem) elem.scrollIntoView({ behavior: 'smooth' })
-  }
 
   const handleProductAction = (product) => {
     navigate(`/san-pham/${product.slug}`)
@@ -20,54 +13,25 @@ export default function Section3FeaturedProducts() {
       id: 'classic-set',
       slug: 'the-classic-set',
       name: 'THE DAYBREAK SET',
-      subtitle: 'Sọc Hồng · Năng Lượng Hỏa',
-      color: 'Sọc Hồng · Năng lượng Hỏa ấm áp',
-      desc: 'Sọc hồng rạng rỡ như nắng sớm mai.\nChất liệu tự nhiên thoáng khí, viền trắng tinh tế.\nKhởi đầu ngày mới tràn đầy sinh khí.',
       image: '/images/classic-set-pink-main.jpg',
-      badge: 'MỚI RA MẮT',
-      preOrderBadge: 'Pre-order',
-      swatches: [
-        {
-          type: 'stripe',
-          bg: `repeating-linear-gradient(0deg, #EFAEA0 0px, #EFAEA0 2px, #FFFFFF 2px, #FFFFFF 4px)`,
-          label: 'Sọc Hồng (Hành Hỏa)',
-        },
-      ],
+      price: 490000,
+      originalPrice: null,
     },
     {
       id: 'cafe-look',
       slug: 'the-cafe-look',
       name: 'THE STILLWATER SET',
-      subtitle: 'Caro Navy · Năng Lượng Thủy',
-      color: 'Caro Navy · Năng lượng Thủy tĩnh tại',
-      desc: 'Họa tiết Caro Navy trầm lắng, an yên như mặt nước lặng.\nCổ V thanh lịch cùng viền phối sắc nét.\nMặc thẳng từ nhà đến quán café sáng.',
       image: '/images/classic-set-navy-main.jpg',
-      badge: 'BÁN CHẠY NHẤT',
-      swatches: [
-        {
-          type: 'plaid',
-          bg: `repeating-linear-gradient(0deg, rgba(245, 225, 164, 0.6) 0px, rgba(245, 225, 164, 0.6) 1px, #222636 1px, #222636 4px), repeating-linear-gradient(90deg, rgba(245, 225, 164, 0.6) 0px, rgba(245, 225, 164, 0.6) 1px, transparent 1px, transparent 4px)`,
-          color: '#222636',
-          label: 'Caro Navy (Hành Thủy)',
-        },
-      ],
+      price: 550000,
+      originalPrice: null,
     },
     {
       id: 'evening-edit',
       slug: 'the-evening-edit',
       name: 'THE HEARTH SET',
-      subtitle: 'Sọc Nâu · Năng Lượng Thổ',
-      color: 'Sọc Nâu · Năng lượng Thổ vững chãi',
-      desc: 'Sọc Nâu mocha ấm áp — cảm giác "về nhà" nuôi dưỡng năng lượng.\nDáng wide-leg buông rủ thượng hạng.\nSang trọng tuyệt đối cho những buổi tối chill.',
       image: '/images/classic-set-brown-main.jpg',
-      badge: 'PHIÊN BẢN GIỚI HẠN',
-      swatches: [
-        {
-          type: 'stripe',
-          bg: `repeating-linear-gradient(90deg, #5C3A21 0px, #5C3A21 2px, #FFFFFF 2px, #FFFFFF 3px, #5C3A21 3px, #5C3A21 5px)`,
-          label: 'Sọc Nâu (Hành Thổ)',
-        },
-      ],
+      price: 750000,
+      originalPrice: null,
     },
   ]
 
@@ -80,7 +44,7 @@ export default function Section3FeaturedProducts() {
       <div id="section-products" className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-10">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
-          <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
+          <span className="font-sans text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
             BỘ SƯU TẬP MỚI NHẤT
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#1A1614] tracking-tight">
@@ -108,67 +72,28 @@ export default function Section3FeaturedProducts() {
                   alt={product.name}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
-                {/* Badge Left */}
-                {product.badge && (
-                  <div className="absolute top-3 left-3 bg-[#631521] text-white text-[10px] font-sans font-bold tracking-wider px-2.5 py-1 rounded-[2px] uppercase shadow-sm">
-                    {product.badge}
-                  </div>
-                )}
-                {/* Pre-order Badge Right */}
-                {product.preOrderBadge && (
-                  <div className="absolute top-3 right-3 bg-[#D4AF37] text-[#1A1614] text-[10px] font-sans font-bold tracking-wider px-2.5 py-1 rounded-[2px] uppercase shadow-sm">
-                    {product.preOrderBadge}
-                  </div>
-                )}
               </div>
 
               {/* Info */}
-              <div className="p-4 sm:p-5 flex flex-col flex-grow justify-between bg-white">
-                <div>
-                  <h3 className="font-serif text-lg sm:text-xl font-bold text-[#1A1614] leading-snug group-hover:text-[#631521] transition-colors">
-                    {product.name}
-                  </h3>
-                  <span className="text-[11px] font-sans text-[#8C7E74] block mt-0.5">{product.color}</span>
-                  <p className="font-sans text-sm text-[#4A3F38] italic mt-2 leading-relaxed whitespace-pre-line">
-                    "{product.desc}"
-                  </p>
+              <div className="p-4 sm:p-5 flex flex-col bg-white">
+                <h3 className="font-serif text-lg sm:text-xl font-bold text-[#1A1614] leading-snug group-hover:text-[#631521] transition-colors">
+                  {product.name}
+                </h3>
 
-                  {/* Swatches */}
-                  {product.swatches && (
-                    <div className="flex items-center gap-2 mt-2.5 pt-1.5">
-                      {product.swatches.map((sw, sIdx) => (
-                        <span
-                          key={sIdx}
-                          title={sw.label}
-                          className="w-4 h-4 border border-[#E8DFD5] shadow-xs inline-block"
-                          style={{
-                            borderRadius: sw.type === 'solid' ? '50%' : '0px',
-                            background: sw.bg || sw.color,
-                            backgroundColor: sw.color,
-                          }}
-                        />
-                      ))}
-                    </div>
+                <div className="mt-2 flex items-baseline gap-2">
+                  <span className="font-serif text-lg sm:text-xl font-bold text-[#631521]">
+                    {product.price ? product.price.toLocaleString('vi-VN') + 'đ' : ''}
+                  </span>
+                  {product.originalPrice && (
+                    <span className="font-sans text-xs text-[#8C7E74] line-through">
+                      {product.originalPrice.toLocaleString('vi-VN')}đ
+                    </span>
                   )}
-                </div>
-
-                <div className="mt-3.5 pt-3 border-t border-[#F5F0EB]">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleProductAction(product)
-                    }}
-                    className="w-full inline-flex items-center justify-center bg-[#2C201A] hover:bg-[#631521] text-white font-sans text-xs font-bold tracking-wider px-4 py-2 rounded-[2px] transition-colors uppercase cursor-pointer"
-                  >
-                    {'CHI TIẾT\u00a0'}
-                  </button>
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
-
       </div>
     </section>
   )

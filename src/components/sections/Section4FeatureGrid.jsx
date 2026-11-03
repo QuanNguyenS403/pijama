@@ -42,7 +42,7 @@ export default function Section4FeatureGrid() {
       <div className="max-w-[1160px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10">
-          <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
+          <span className="font-sans text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
             ƯU ĐÃI ĐỘC QUYỀN
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#1A1614] tracking-tight">

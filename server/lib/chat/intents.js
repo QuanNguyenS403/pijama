@@ -112,7 +112,7 @@ export function processTier0Intent(message, context = {}) {
       handled: true,
       intentName: 'OUT_OF_SCOPE',
       reply:
-        'Dạ em là trợ lý ảo chuyên về trang phục sleepwear cao cấp và dịch vụ của QuanNguyenS, nên em chưa hỗ trợ được chủ đề ngoài thời trang rồi ạ. Em rất sẵn lòng hỗ trợ anh/chị về mẫu mã, chất liệu hoặc chọn size vừa vặn nhé!',
+        'Dạ em là trợ lý chuyên về trang phục sleepwear cao cấp và dịch vụ của QuanNguyenS, nên em chỉ hỗ trợ các câu hỏi liên quan đến sản phẩm của shop thôi ạ. Em rất sẵn lòng hỗ trợ anh/chị về mẫu mã, chất liệu hoặc chọn size vừa vặn nhé!',
       quickReplies: ['Xem các mẫu Sleepwear', 'Tư vấn chọn size', 'Phí ship & Ưu đãi'],
       usedTier: 'tier-0',
     }
@@ -127,7 +127,7 @@ export function processTier0Intent(message, context = {}) {
       handled: true,
       intentName: 'GREETING',
       reply:
-        'Dạ em chào anh/chị ạ! Em là Trợ lý ảo của QuanNguyenS. Em rất vui được hỗ trợ anh/chị chọn size chuẩn vóc dáng, tìm hiểu chất liệu các bộ sleepwear hoặc các ưu đãi đang áp dụng. Anh/chị đang quan tâm đến bộ sleepwear cho dịp nào ạ?',
+        'Dạ em chào anh/chị ạ! Em là Trợ lý của QuanNguyenS. Em rất vui được hỗ trợ anh/chị chọn size chuẩn vóc dáng, tìm hiểu chất liệu các bộ sleepwear hoặc các ưu đãi tốt nhất đang áp dụng ạ. Anh/chị đang quan tâm đến mẫu sleepwear cho dịp nào để em tư vấn nhé?',
       quickReplies: ['Tư vấn chọn size', 'Xem 3 mẫu Sleepwear', 'Ưu đãi & Freeship', 'Gặp chủ shop'],
       usedTier: 'tier-0',
     }
@@ -234,7 +234,7 @@ export function processTier0Intent(message, context = {}) {
       handled: true,
       intentName: 'STORE_INFO',
       reply:
-        `Dạ xưởng may và không gian trưng bày của QuanNguyenS tọa lạc tại:\n📍 ${liveFacts.shopAddress}.\n📞 Hotline/Zalo tư vấn 24/7: ${liveFacts.hotline}.\nWebsite: https://quannguyens.com\n\nShop hỗ trợ giao hàng tận nơi trên toàn quốc và đồng kiểm khi nhận hàng ạ!`,
+        `Dạ xưởng may và không gian trưng bày của QuanNguyenS tọa lạc tại:\n📍 ${liveFacts.shopAddress}.\n📞 Hotline/Zalo tư vấn: ${liveFacts.hotline}.\nWebsite: https://quannguyens.com\n\nShop hỗ trợ giao hàng tận nơi trên toàn quốc và đồng kiểm khi nhận hàng ạ!`,
       quickReplies: ['Chat Zalo', 'Gọi Hotline', 'Xem 3 mẫu sleepwear'],
       usedTier: 'tier-0',
     }

@@ -141,7 +141,11 @@ export default function AdminOrdersPage() {
         throw new Error(`Lỗi kết nối máy chủ (${res.status})`)
       }
       const data = await res.json()
-      setOrders(data.orders || [])
+      // LOẠI BỎ TRIỆT ĐỂ: Các đơn hàng bị hủy do hết hạn hoặc do admin hủy (Yêu cầu người dùng)
+      const validOrders = (data.orders || []).filter(
+        (o) => o.status !== 'CANCELLED' && o.paymentStatus !== 'EXPIRED_TIMEOUT'
+      )
+      setOrders(validOrders)
       setTotal(data.total   || 0)
       setLastUpdated(new Date().toLocaleTimeString('vi-VN'))
     } catch (err) {
@@ -237,19 +241,25 @@ export default function AdminOrdersPage() {
       setActionModal(null)
       setActionInput('')
 
-      // Cập nhật ngay lập tức xuống client storage và phát sự kiện đồng bộ khách hàng
-      if (data.order) {
+      // Nếu thao tác hủy đơn: Loại bỏ hoàn toàn khỏi danh sách hiển thị của Admin
+      if (action === 'CANCEL' || data.order?.status === 'CANCELLED' || data.order?.isDeleted) {
+        if (data.order) broadcastOrderUpdateClient(data.order)
+        setOrders((prev) => prev.filter((o) => (o.orderId || o.id) !== orderId))
+        if (selectedOrder?.orderId === orderId || selectedOrder?.id === orderId) {
+          setSelectedOrder(null)
+        }
+      } else if (data.order) {
         broadcastOrderUpdateClient(data.order)
 
         // Cập nhật optimistic vào danh sách orders hiện tại
         setOrders((prev) =>
           prev.map((o) => ((o.orderId || o.id) === orderId ? data.order : o))
         )
-      }
 
-      // Cập nhật selectedOrder nếu đang mở xem
-      if (selectedOrder?.orderId === orderId || selectedOrder?.id === orderId) {
-        setSelectedOrder(data.order)
+        // Cập nhật selectedOrder nếu đang mở xem
+        if (selectedOrder?.orderId === orderId || selectedOrder?.id === orderId) {
+          setSelectedOrder(data.order)
+        }
       }
 
       // Tải lại dữ liệu trang admin để đảm bảo thứ tự

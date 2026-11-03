@@ -86,7 +86,7 @@ export default function Section12Footer() {
             </div>
 
             <div className="text-sm font-sans text-white/70 max-w-sm text-center lg:text-right leading-relaxed">
-              Every girls deserve QuanNguyenS Pyjama
+              Every girl deserves QuanNguyenS Pyjama
             </div>
           </div>
 
@@ -135,7 +135,7 @@ export default function Section12Footer() {
                 <div className="flex items-center gap-2.5">
                   <Phone className="w-4 h-4 text-[#D4AF37] shrink-0" />
                   <a href="tel:0973 486 218" className="hover:text-[#D4AF37] transition-colors">
-                    0973 486 218 (Hỗ trợ 24/7)
+                    0973 486 218
                   </a>
                 </div>
                 <div className="flex items-center gap-2.5">

@@ -1,3 +1,4 @@
+import useCartStore from '../store/cartStore'
 // src/lib/orderSync.js
 // Quản lý đồng bộ trạng thái đơn hàng thời gian thực giữa Admin và Khách hàng
 // NGUYÊN TẮC BẢO MẬT: Tuyệt đối không tự ý xóa nội dung đơn hàng (sản phẩm, giá tiền, địa chỉ) khi đơn hoàn tất hoặc nhận hàng thành công.
@@ -33,6 +34,111 @@ export function clearLocalOrders() {
  * @param {string} [options.filterAccountId] - Nếu truyền, chỉ lấy các đơn của accountId này
  * @param {boolean} [options.excludeAccountOrders] - Nếu true, chỉ lấy đơn khách ẩn danh (không có accountId)
  */
+
+/**
+ * Khôi phục toàn bộ sản phẩm của đơn hàng bị hủy vào giỏ hàng của khách hàng (Zustand cartStore)
+ */
+export function restoreOrderItemsToCart(order) {
+  if (!order) return
+  const rawItems = (Array.isArray(order.items) && order.items.length > 0)
+    ? order.items
+    : (Array.isArray(order.cartItems) ? order.cartItems : [])
+  if (!rawItems || rawItems.length === 0) return
+
+  try {
+    const addItem = useCartStore.getState().addItem
+    const currentItems = useCartStore.getState().items || []
+
+    rawItems.forEach((item) => {
+      const itemId = item.id || item.productId || item.slug
+      if (!itemId) return
+      const alreadyInCart = currentItems.some((ci) => (ci.id || ci.productId || ci.slug) === itemId)
+      if (!alreadyInCart) {
+        addItem({
+          id: itemId,
+          name: item.name || item.productName || 'Thiết kế QNS',
+          price: Number(item.price || item.unitPrice || 0),
+          quantity: Math.max(1, Number(item.quantity || 1)),
+          variant: item.variant || item.color || '',
+          image: item.image || item.productImage || '',
+          slug: item.slug || item.productId || '',
+        })
+      }
+    })
+  } catch (err) {
+    console.warn('Lỗi khôi phục giỏ hàng:', err)
+  }
+}
+
+/**
+ * Xóa một đơn hàng bị hủy hoặc hết hạn khỏi localStorage của khách hàng và khôi phục giỏ hàng
+ */
+export function purgeCancelledOrderLocally(orderId) {
+  if (typeof window === 'undefined' || !orderId) return
+  try {
+    const active = JSON.parse(localStorage.getItem(ACTIVE_ORDERS_KEY) || '[]')
+    const foundOrder = active.find((o) => (o.orderId || o.id) === orderId)
+    if (foundOrder) restoreOrderItemsToCart(foundOrder)
+
+    const filteredActive = active.filter((o) => (o.orderId || o.id) !== orderId)
+    localStorage.setItem(ACTIVE_ORDERS_KEY, JSON.stringify(filteredActive))
+
+    const archive = JSON.parse(localStorage.getItem(PERMANENT_ORDERS_KEY) || '[]')
+    const foundArchive = archive.find((o) => (o.orderId || o.id) === orderId)
+    if (foundArchive && !foundOrder) restoreOrderItemsToCart(foundArchive)
+
+    const filteredArchive = archive.filter((o) => (o.orderId || o.id) !== orderId)
+    localStorage.setItem(PERMANENT_ORDERS_KEY, JSON.stringify(filteredArchive))
+
+    const latest = JSON.parse(sessionStorage.getItem('latest_order') || 'null')
+    if (latest && (latest.orderId || latest.id) === orderId) {
+      sessionStorage.removeItem('latest_order')
+    }
+
+    window.dispatchEvent(new CustomEvent('orders_updated', { detail: { orderId, isDeleted: true } }))
+  } catch (e) {
+    console.warn('Lỗi khi xóa đơn hủy cục bộ:', e)
+  }
+}
+
+/**
+ * Quét dọn toàn bộ các đơn hàng đã bị hủy hoặc hết hạn thanh toán khỏi localStorage
+ */
+export function purgeCancelledOrdersFromStorage() {
+  if (typeof window === 'undefined') return
+  try {
+    const isCancelledOrExpired = (o) => {
+      const isCancelled = String(o?.status || '').toUpperCase() === 'CANCELLED'
+      const isExpired = String(o?.paymentStatus || '').toUpperCase() === 'EXPIRED_TIMEOUT' ||
+                        String(o?.payment?.status || '').toUpperCase() === 'EXPIRED_TIMEOUT' ||
+                        String(o?.status || '').toUpperCase() === 'EXPIRED_TIMEOUT'
+      return isCancelled || isExpired
+    }
+
+    const active = JSON.parse(localStorage.getItem(ACTIVE_ORDERS_KEY) || '[]')
+    if (Array.isArray(active)) {
+      active.forEach((o) => {
+        if (isCancelledOrExpired(o)) restoreOrderItemsToCart(o)
+      })
+      const cleanedActive = active.filter((o) => !isCancelledOrExpired(o))
+      if (cleanedActive.length !== active.length) {
+        localStorage.setItem(ACTIVE_ORDERS_KEY, JSON.stringify(cleanedActive))
+      }
+    }
+
+    const archive = JSON.parse(localStorage.getItem(PERMANENT_ORDERS_KEY) || '[]')
+    if (Array.isArray(archive)) {
+      archive.forEach((o) => {
+        if (isCancelledOrExpired(o)) restoreOrderItemsToCart(o)
+      })
+      const cleanedArchive = archive.filter((o) => !isCancelledOrExpired(o))
+      if (cleanedArchive.length !== archive.length) {
+        localStorage.setItem(PERMANENT_ORDERS_KEY, JSON.stringify(cleanedArchive))
+      }
+    }
+  } catch (e) {}
+}
+
 export function getSavedOrders({ filterAccountId = null, excludeAccountOrders = false } = {}) {
   if (typeof window === 'undefined') return []
   try {
@@ -78,6 +184,19 @@ export function getSavedOrders({ filterAccountId = null, excludeAccountOrders = 
       mergedList = mergedList.filter((o) => !o?.customer?.accountId)
     }
 
+    // LOẠI BỎ HOÀN TOÀN: Đơn hàng bị hủy do hết hạn VietQR hoặc do admin hủy (Yêu cầu người dùng)
+    mergedList = mergedList.filter((o) => {
+      const isCancelled = String(o?.status || '').toUpperCase() === 'CANCELLED'
+      const isExpired = String(o?.paymentStatus || '').toUpperCase() === 'EXPIRED_TIMEOUT' ||
+                        String(o?.payment?.status || '').toUpperCase() === 'EXPIRED_TIMEOUT' ||
+                        String(o?.status || '').toUpperCase() === 'EXPIRED_TIMEOUT'
+      if (isCancelled || isExpired) {
+        restoreOrderItemsToCart(o)
+        return false
+      }
+      return true
+    })
+
     // Sắp xếp đơn mới nhất lên đầu
     mergedList.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
     return mergedList
@@ -98,6 +217,17 @@ export function applyOrderUpdateLocally(updatedOrder) {
   if (!orderId) return null
 
   try {
+    const isCancelled = String(updatedOrder.status || '').toUpperCase() === 'CANCELLED'
+    const isExpired = String(updatedOrder.paymentStatus || '').toUpperCase() === 'EXPIRED_TIMEOUT' ||
+                      String(updatedOrder.payment?.status || '').toUpperCase() === 'EXPIRED_TIMEOUT' ||
+                      String(updatedOrder.status || '').toUpperCase() === 'EXPIRED_TIMEOUT'
+
+    // Nếu đơn hàng bị hủy hoặc hết hạn hoặc bị xóa: Loại bỏ khỏi hệ thống phía khách hàng & khôi phục giỏ hàng
+    if (isCancelled || isExpired || updatedOrder.isDeleted) {
+      purgeCancelledOrderLocally(orderId)
+      return null
+    }
+
     // 1. Đọc kho lưu trữ hiện tại
     const stored = getSavedOrders()
     let foundIndex = stored.findIndex((o) => (o.orderId || o.id) === orderId)

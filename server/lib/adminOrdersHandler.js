@@ -187,7 +187,14 @@ export async function getAdminOrders(params = {}) {
     // Ignore Google Sheets fetch errors in admin list
   }
 
-  let list = Array.from(ordersMap.values()).map(formatAdminOrder)
+  let list = Array.from(ordersMap.values())
+    .filter((o) => {
+      const isCancelled = String(o.status || '').toUpperCase() === 'CANCELLED'
+      const isExpired = String(o.paymentStatus || '').toUpperCase() === 'EXPIRED_TIMEOUT' ||
+                        String(o.payment?.status || '').toUpperCase() === 'EXPIRED_TIMEOUT'
+      return !isCancelled && !isExpired
+    })
+    .map(formatAdminOrder)
 
   // Sort newest first: newest order appears at the top
   list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -444,6 +451,27 @@ export async function handleAdminOrderAction(orderId, payload = {}) {
   if (action === 'CANCEL') {
     order.cancelReason = reason || 'Admin hủy đơn'
     order.cancelledAt = new Date().toISOString()
+    order.status = 'CANCELLED'
+
+    if (order.voucherCode) {
+      try {
+        releaseVoucher(order.voucherCode, orderId)
+      } catch {}
+    }
+
+    // Loại bỏ hoàn toàn đơn hàng khỏi hệ thống lưu trữ backend theo yêu cầu
+    orderPersistence.delete(orderId)
+
+    broadcastOrderUpdate({ orderId, status: 'CANCELLED', isDeleted: true })
+
+    return {
+      status: 200,
+      data: {
+        success: true,
+        message: `Đã hủy và loại bỏ đơn hàng #${orderId} khỏi toàn bộ hệ thống.`,
+        order: { orderId, status: 'CANCELLED', isDeleted: true },
+      },
+    }
   }
 
   order.updatedAt = new Date().toISOString()

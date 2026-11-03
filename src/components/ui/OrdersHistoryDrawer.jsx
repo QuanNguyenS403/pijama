@@ -18,26 +18,14 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { formatVND, getCarrierTrackingUrl, PAYMENT_METHODS } from '../../data/checkoutConfig'
-import { syncBatchOrders, getSavedOrders } from '../../lib/orderSync'
+import { syncBatchOrders, getSavedOrders, purgeCancelledOrdersFromStorage, restoreOrderItemsToCart } from '../../lib/orderSync'
 
 // Order Timeline Stepper Component
 function OrderTrackingTimeline({ status, isVietQR, cancelReason }) {
   const normalizedStatus = String(status || 'PENDING').toUpperCase()
 
-  if (normalizedStatus === 'CANCELLED') {
-    return (
-      <div className="py-2.5 px-3 bg-[#FFEBEE] border border-[#FFCDD2] rounded-[3px] space-y-1 text-xs text-[#C62828] font-sans">
-        <div className="flex items-center gap-2">
-          <Ban className="w-4 h-4 text-[#C62828] shrink-0" />
-          <span className="font-semibold">Đơn hàng này đã bị hủy.</span>
-        </div>
-        {cancelReason && (
-          <p className="text-[11px] text-[#B71C1C] pl-6 font-normal">
-            Lý do: {cancelReason}
-          </p>
-        )}
-      </div>
-    )
+  if (normalizedStatus === 'CANCELLED' || normalizedStatus === 'EXPIRED_TIMEOUT') {
+    return null
   }
 
   if (normalizedStatus === 'CUSTOMER_CLAIMED_PAID') {
@@ -154,18 +142,36 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
   // If user is guest, only load local guest orders (exclude any orders that belong to accounts).
   const loadOrders = async () => {
     try {
+      // Dọn dẹp các đơn bị hủy khỏi bộ nhớ và khôi phục vào giỏ hàng
+      purgeCancelledOrdersFromStorage()
+
+      const filterValidOrders = (list) => {
+        if (!Array.isArray(list)) return []
+        return list.filter((o) => {
+          const isCancelled = String(o?.status || '').toUpperCase() === 'CANCELLED'
+          const isExpired = String(o?.paymentStatus || '').toUpperCase() === 'EXPIRED_TIMEOUT' ||
+                            String(o?.payment?.status || '').toUpperCase() === 'EXPIRED_TIMEOUT' ||
+                            String(o?.status || '').toUpperCase() === 'EXPIRED_TIMEOUT'
+          if (isCancelled || isExpired) {
+            restoreOrderItemsToCart(o)
+            return false
+          }
+          return true
+        })
+      }
+
       // 1. Kiểm tra nếu có phiên đăng nhập của tài khoản
       const authRes = await fetch('/api/auth/my-orders', { credentials: 'include' }).catch(() => null)
       if (authRes && authRes.ok) {
         const authData = await authRes.json()
         if (authData.success && Array.isArray(authData.orders)) {
-          setOrders(authData.orders)
+          setOrders(filterValidOrders(authData.orders))
           return
         }
       }
       // 2. Với khách vãng lai (Guest): chỉ hiển thị đơn không gắn accountId của tài khoản khác
       const stored = getSavedOrders({ excludeAccountOrders: true })
-      setOrders(Array.isArray(stored) ? stored : [])
+      setOrders(filterValidOrders(stored))
     } catch (e) {
       console.error('Error loading orders:', e)
       const stored = getSavedOrders({ excludeAccountOrders: true })

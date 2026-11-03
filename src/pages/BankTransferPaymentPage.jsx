@@ -23,7 +23,7 @@ import Header from '../components/layout/Header'
 import Section12Footer from '../components/sections/Section12Footer'
 import CartDrawer from '../components/cart/CartDrawer'
 import { formatVND } from '../data/checkoutConfig'
-import { applyOrderUpdateLocally, getSavedOrders } from '../lib/orderSync'
+import { applyOrderUpdateLocally, getSavedOrders, restoreOrderItemsToCart, purgeCancelledOrderLocally } from '../lib/orderSync'
 import useCartStore from '../store/cartStore'
 
 export default function BankTransferPaymentPage() {
@@ -102,6 +102,7 @@ export default function BankTransferPaymentPage() {
           if (data.phase === 'PAID' || data.status === 'PAID') {
             setIsQrInvalidated(true)
             setVerifySuccess(true)
+            useCartStore.getState().clearCart()
             if (data.order) {
               applyOrderUpdateLocally(data.order)
               setOrder(data.order)
@@ -115,23 +116,9 @@ export default function BankTransferPaymentPage() {
           } else if (data.phase === 'EXPIRED' || data.status === 'EXPIRED' || data.status === 'QR_EXPIRED') {
             setIsQrInvalidated(true)
             setPaymentPhase('EXPIRED')
-            setOrder((currentOrder) => {
-              if (currentOrder && currentOrder.status !== 'CANCELLED') {
-                const cancelledOrder = {
-                  ...currentOrder,
-                  status: 'CANCELLED',
-                  cancelReason: 'Hết hạn thanh toán 10 phút (Mã QR hết hiệu lực)',
-                  payment: {
-                    ...(currentOrder.payment || {}),
-                    status: 'EXPIRED_TIMEOUT',
-                    isQrInvalidated: true,
-                  },
-                }
-                applyOrderUpdateLocally(cancelledOrder)
-                return cancelledOrder
-              }
-              return currentOrder
-            })
+            // Tự động khôi phục sản phẩm vào giỏ hàng & loại bỏ đơn hủy khỏi danh sách lưu trữ
+            restoreOrderItemsToCart(order)
+            purgeCancelledOrderLocally(orderId)
           } else if (data.phase === 'CLAIMED' || data.status === 'CUSTOMER_CLAIMED_PAID') {
             setPaymentPhase('CLAIMED')
           }
@@ -340,7 +327,7 @@ export default function BankTransferPaymentPage() {
               <QrCode className="w-8 h-8 text-[#631521]" />
             </motion.div>
 
-            <span className="font-serif text-xs font-semibold tracking-[0.3em] text-[#D4AF37] uppercase block mb-1.5 relative z-10">
+            <span className="font-sans text-xs font-semibold tracking-[0.3em] text-[#D4AF37] uppercase block mb-1.5 relative z-10">
               CỔNG THANH TOÁN VIETQR NAPAS 24/7
             </span>
             <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide relative z-10">
@@ -414,7 +401,7 @@ export default function BankTransferPaymentPage() {
                   className="bg-[#FAF5F0] border-2 border-[#D4AF37]/50 rounded-[4px] p-5 sm:p-6 space-y-4 shadow-sm"
                 >
                   <div className="flex items-center justify-between border-b border-[#E8DFD5] pb-3 flex-wrap gap-2">
-                    <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#631521] flex items-center gap-1.5">
+                    <span className="font-sans text-xs font-bold uppercase tracking-wider text-[#631521] flex items-center gap-1.5">
                       <QrCode className="w-4 h-4 text-[#631521]" />
                       Mã QR VietQR 24/7 (Giảm 10%)
                     </span>
@@ -569,7 +556,7 @@ export default function BankTransferPaymentPage() {
                 {/* BOX 2: TÓM TẮT ĐƠN HÀNG */}
                 <div className="bg-[#FAF5F0] rounded-[3px] border border-[#E8DFD5] p-5 sm:p-6 space-y-4">
                   <div className="flex items-center justify-between border-b border-[#E8DFD5] pb-3">
-                    <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#631521]">
+                    <span className="font-sans text-xs font-bold uppercase tracking-wider text-[#631521]">
                       Tóm Tắt Đơn Hàng
                     </span>
                     <span className="text-xs font-mono text-[#8C7E74]">

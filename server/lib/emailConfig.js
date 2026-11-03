@@ -16,6 +16,9 @@ export const getTransporter = () => {
       user,
       pass, // Google App Password (16 ký tự viết liền, không dấu cách)
     },
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 10000,
   })
 }
 

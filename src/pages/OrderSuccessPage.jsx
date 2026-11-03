@@ -15,7 +15,7 @@ import {
 import Header from '../components/layout/Header'
 import Section12Footer from '../components/sections/Section12Footer'
 import { formatVND } from '../data/checkoutConfig'
-import { getSavedOrders } from '../lib/orderSync'
+import { getSavedOrders, restoreOrderItemsToCart, purgeCancelledOrderLocally } from '../lib/orderSync'
 import ViettelPostTracker from '../components/shipping/ViettelPostTracker'
 
 export default function OrderSuccessPage() {
@@ -105,6 +105,10 @@ export default function OrderSuccessPage() {
             if (data.phase) setServerPhase(data.phase)
             if (data.order) {
               setOrder((prev) => ({ ...(prev || {}), ...data.order }))
+              if (data.order.status === 'CANCELLED' || data.order.paymentStatus === 'EXPIRED_TIMEOUT' || data.phase === 'EXPIRED') {
+                restoreOrderItemsToCart(data.order)
+                purgeCancelledOrderLocally(orderId)
+              }
             }
           }
         })
@@ -201,7 +205,7 @@ export default function OrderSuccessPage() {
               )}
             </motion.div>
 
-            <span className="font-serif text-xs font-semibold tracking-[0.3em] text-[#D4AF37] uppercase block mb-1.5 relative z-10">
+            <span className="font-sans text-xs font-semibold tracking-[0.3em] text-[#D4AF37] uppercase block mb-1.5 relative z-10">
               {isBankTransfer && effectivePhase !== 'PAID' ? (
                 effectivePhase === 'EXPIRED' ? 'MÃ QR HẾT HIỆU LỰC' :
                 'CHƯA HOÀN TẤT THANH TOÁN'
@@ -369,7 +373,7 @@ export default function OrderSuccessPage() {
                 <div className="bg-[#FAF5F0] rounded-[3px] border border-[#E8DFD5] p-5 sm:p-6 space-y-4">
                   <div className="flex items-center justify-between border-b border-[#E8DFD5] pb-3 flex-wrap gap-2">
                     <div>
-                      <span className="font-serif text-xs font-bold uppercase tracking-wider text-[#631521]">
+                      <span className="font-sans text-xs font-bold uppercase tracking-wider text-[#631521]">
                         Tóm Tắt Đơn Hàng
                       </span>
                       <span className="text-xs font-mono text-[#8C7E74] ml-3">

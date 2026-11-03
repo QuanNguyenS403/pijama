@@ -47,7 +47,7 @@ export default function CartPage() {
       <main className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 py-10 md:py-14">
         {/* Heading */}
         <div className="mb-10">
-          <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
+          <span className="font-sans text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
             GIỎ HÀNG CỦA BẠN
           </span>
           <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#1A1614] tracking-tight">

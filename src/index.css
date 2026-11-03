@@ -48,34 +48,86 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
-  /* ── Toàn bộ website (trừ heading) mặc định sử dụng font chữ Inter ── */
+  /* ── ĐỒNG BỘ TOÀN DIỆN NỘI DUNG, MÔ TẢ, PHỤ ĐỀ TRÊN TOÀN BỘ WEBSITE THÀNH FONT INTER ── */
   *,
   *::before,
   *::after {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
-  /* ── CHỈ CÁC THẺ HEADING (h1, h2, h3, h4, h5, h6) HOẶC .font-heading MỚI DÙNG FONT SERIF (Cormorant Garamond) ── */
+  /* Bắt buộc toàn bộ thẻ nội dung, mô tả, phụ đề, bảng biểu, form sử dụng font Inter */
+  p,
+  span,
+  a,
+  li,
+  td,
+  th,
+  label,
+  input,
+  textarea,
+  select,
+  button,
+  blockquote,
+  small,
+  strong,
+  b,
+  em,
+  caption,
+  figcaption,
+  .font-sans,
+  .font-sans * {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+
+  /* Bất kỳ thẻ nội dung, mô tả, phụ đề nào dù có gắn class font-serif cũng đồng bộ bắt buộc sang Inter */
+  p.font-serif,
+  p.font-serif *,
+  span.font-serif,
+  span.font-serif *,
+  a.font-serif,
+  a.font-serif *,
+  li.font-serif,
+  li.font-serif *,
+  td.font-serif,
+  td.font-serif *,
+  th.font-serif,
+  th.font-serif *,
+  div.font-serif:not(.font-heading):not(h1 *):not(h2 *):not(h3 *):not(h4 *):not(h5 *):not(h6 *),
+  div.font-serif:not(.font-heading):not(h1 *):not(h2 *):not(h3 *):not(h4 *):not(h5 *):not(h6 *) *,
+  strong.font-serif,
+  strong.font-serif *,
+  em.font-serif,
+  em.font-serif * {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+
+  /* CHỈ CÁC THẺ TIÊU ĐỀ HEADING (h1, h2, h3, h4, h5, h6) HOẶC .font-heading MỚI DÙNG FONT SERIF (Cormorant Garamond) */
   h1,
   h2,
   h3,
   h4,
   h5,
   h6,
+  h1:not(.font-sans),
+  h2:not(.font-sans),
+  h3:not(.font-sans),
+  h4:not(.font-sans),
+  h5:not(.font-sans),
+  h6:not(.font-sans),
   .font-heading,
   .heading-serif {
     font-family: 'Cormorant Garamond', Georgia, Cambria, 'Times New Roman', serif !important;
   }
 
-  /* Các phần tử con nằm trong heading thừa hưởng font serif của heading */
-  h1 *,
-  h2 *,
-  h3 *,
-  h4 *,
-  h5 *,
-  h6 *,
-  .font-heading *,
-  .heading-serif * {
+  /* Các phần tử con nằm trong heading thừa hưởng font serif của heading, trừ khi mang class font-sans */
+  h1 *:not(.font-sans),
+  h2 *:not(.font-sans),
+  h3 *:not(.font-sans),
+  h4 *:not(.font-sans),
+  h5 *:not(.font-sans),
+  h6 *:not(.font-sans),
+  .font-heading *:not(.font-sans),
+  .heading-serif *:not(.font-sans) {
     font-family: inherit !important;
   }
 

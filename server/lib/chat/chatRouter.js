@@ -16,6 +16,7 @@ import { guardOutput } from './outputGuard.js'
 import { buildSystemPrompt } from './persona.js'
 import { generateChatResponse } from './providerManager.js'
 import { createHandoffRequest } from './handoff.js'
+import { createFeedbackSubmission } from './feedback.js'
 
 const router = express.Router()
 
@@ -33,12 +34,19 @@ const handoffLimiter = createRateLimiter({
   message: 'Bạn đã gửi yêu cầu liên hệ gần đây. Shop đã ghi nhận và sẽ liên hệ sớm nhất ạ!',
 })
 
+// Rate limiter cho Form Góp ý & Khiếu nại: Tối đa 5 yêu cầu / 10 phút / IP
+const feedbackLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  max: 5,
+  message: 'Bạn đã gửi ý kiến gần đây. Ban Quản Trị QuanNguyenS đã ghi nhận và đang xử lý chu đáo ạ!',
+})
+
 // Middleware kiểm tra công tắc khẩn cấp CHAT_ENABLED
 function checkChatEnabled(req, res, next) {
   if (process.env.CHAT_ENABLED === 'false') {
     return res.status(503).json({
       success: false,
-      error: 'Tính năng trợ lý ảo tạm thời tắt để bảo trì. Quý khách vui lòng liên hệ hotline 0973 486 218 ạ!',
+      error: 'Tính năng trợ lý trực tuyến tạm thời tắt để bảo trì. Quý khách vui lòng liên hệ hotline 0973 486 218 ạ!',
       enabled: false,
     })
   }
@@ -209,6 +217,37 @@ router.post('/handoff', checkChatEnabled, handoffLimiter, async (req, res) => {
     return res.status(500).json({
       success: false,
       error: 'Không thể tiếp nhận yêu cầu lúc này. Quý khách vui lòng gọi trực tiếp hotline 0973 486 218 ạ!',
+    })
+  }
+})
+
+/**
+ * POST /api/chat/feedback
+ * Tiếp nhận ý kiến đóng góp, phàn nàn / khiếu nại hoặc yêu cầu đặc biệt từ khách hàng
+ */
+router.post('/feedback', checkChatEnabled, feedbackLimiter, async (req, res) => {
+  try {
+    const { feedbackType, name, phone, email, orderId, content } = req.body || {}
+
+    const result = await createFeedbackSubmission({
+      feedbackType,
+      name,
+      phone,
+      email,
+      orderId,
+      content,
+    })
+
+    if (!result.success) {
+      return res.status(400).json(result)
+    }
+
+    return res.json(result)
+  } catch (err) {
+    console.error('🚨 [FEEDBACK ROUTE ERROR]:', err)
+    return res.status(500).json({
+      success: false,
+      error: 'Không thể tiếp nhận ý kiến lúc này. Quý khách vui lòng gọi trực tiếp hotline 0973 486 218 để được hỗ trợ tức thì ạ!',
     })
   }
 })

@@ -16,7 +16,7 @@ import { verifyTurnstileToken } from './turnstileService.js'
 import { logSecurityAudit } from './auditLogger.js'
 import { parseCookies, setCustomerSessionCookie, clearCustomerSessionCookie } from './customerSessionMiddleware.js'
 import { sendVerificationCodeEmail, sendWelcomeVoucherEmail, sendPasswordResetOtpEmail } from './emailAccount.js'
-import { createWelcomeVoucher, createCustomerSession, revokeAllAccountSessions, generateSessionToken } from './accountDb.js'
+import { createWelcomeVoucher, createCustomerSession, revokeAllAccountSessions, generateSessionToken, findUserForPasswordReset, syncUserToSupabase } from './accountDb.js'
 
 /**
  * Đăng ký bộ API Xác thực Chuẩn Doanh nghiệp (Enterprise Auth Endpoints)

@@ -12,7 +12,7 @@ export default function SectionAppPurpose() {
       <div className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 relative z-10">
         {/* Header */}
         <div className="text-center max-w-4xl mx-auto mb-14">
-          <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
+          <span className="font-sans text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
             VỀ ỨNG DỤNG & NỀN TẢNG THỜI TRANG QUANNGUYENS
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#1A1614] tracking-tight">

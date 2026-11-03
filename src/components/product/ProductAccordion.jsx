@@ -73,7 +73,7 @@ export default function ProductAccordion({ product }) {
             <div className="overflow-x-auto border border-[#E8DFD5] rounded-[3px] shadow-xs">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-[#FAF5F0] border-b border-[#E8DFD5] text-[#631521] font-serif font-bold uppercase tracking-wider">
+                  <tr className="bg-[#FAF5F0] border-b border-[#E8DFD5] text-[#631521] font-sans font-bold uppercase tracking-wider">
                     <th className="py-2.5 px-3">Size</th>
                     {hasWeight && <th className="py-2.5 px-3">Cân Nặng</th>}
                     {hasHeight && <th className="py-2.5 px-3">Chiều Cao</th>}

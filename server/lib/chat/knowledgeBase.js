@@ -181,7 +181,7 @@ function buildKnowledgeChunks() {
     text: [
       'Để tra cứu tình trạng đơn hàng, quý khách có thể kiểm tra email xác nhận đơn hàng chứa link tra cứu trực tiếp.',
       'Hoặc đăng nhập vào mục "Tài Khoản" tại https://quannguyens.com/tai-khoan để xem lịch sử đơn hàng và mã bưu vận Viettel Post kèm link theo dõi.',
-      'Chatbot trợ lý ảo không tự ý đọc hoặc chỉnh sửa thông tin đơn hàng vì lý do bảo mật quyền riêng tư.',
+      'Trợ lý QuanNguyenS không tự ý đọc hoặc chỉnh sửa thông tin đơn hàng trong khung chat vì lý do bảo mật quyền riêng tư.',
     ].join(' '),
     keywords: 'tra cuu don hang o dau kiem tra don hanh trinh viettel post ma don link',
   })

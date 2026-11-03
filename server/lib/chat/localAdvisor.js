@@ -371,7 +371,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
   // Fallback thân thiện, luôn hỗ trợ khách nhiệt tình
   return {
     reply:
-      'Dạ em là Trợ lý ảo thời trang của QuanNguyenS (phong cách Style To Be Lived In — "Every girls deserve QuanNguyenS\'s Sleepwear"). Em rất vui được hỗ trợ anh/chị chọn size vừa vặn theo chiều cao/cân nặng, tư vấn chất liệu các mẫu sleepwear (Daybreak Sọc Hồng, Stillwater Caro Navy, Hearth Sọc Nâu Tencel) hoặc thông tin ưu đãi và giao nhận của shop ạ.\n\nAnh/chị đang quan tâm đến bộ sleepwear cho dịp nào ạ?',
+      'Dạ em là Trợ lý tư vấn của QuanNguyenS. Em rất vui được hỗ trợ anh/chị chọn size vừa vặn theo chiều cao/cân nặng, tư vấn chất liệu 3 bộ sleepwear (Daybreak Sọc Hồng, Stillwater Caro Navy, Hearth Sọc Nâu) hoặc các ưu đãi tốt nhất hôm nay ạ.\n\nAnh/chị đang quan tâm đến bộ sleepwear cho dịp nào để em tư vấn nhé ạ?',
     quickReplies: ['Xem 3 mẫu Sleepwear', 'Tư vấn chọn size', 'Ưu đãi & Freeship', 'Gặp chủ shop'],
   }
 }

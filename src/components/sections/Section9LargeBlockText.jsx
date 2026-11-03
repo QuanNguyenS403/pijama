@@ -25,7 +25,7 @@ export default function Section9LargeBlockText() {
 
           {/* Main headline */}
           <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold text-white tracking-tight leading-[1.08] mb-4 sm:mb-5">
-            Every girls deserve QuanNguyenS's Sleepwear
+            Every girl deserves QuanNguyenS Sleepwear
           </h2>
 
           <div className="w-24 h-[2px] bg-[#D4AF37] mx-auto mb-5 sm:mb-6" />

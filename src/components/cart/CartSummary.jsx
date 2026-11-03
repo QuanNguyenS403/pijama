@@ -58,7 +58,7 @@ export default function CartSummary({
       />
 
       <div className={isDrawer ? 'p-4 sm:p-5 space-y-2.5' : 'p-5 sm:p-6 space-y-3.5'}>
-        <span className="font-serif text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
+        <span className="font-sans text-sm font-semibold tracking-[0.25em] text-[#631521] uppercase block mb-2">
           TỔNG ĐƠN HÀNG
         </span>
 

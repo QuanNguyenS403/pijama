@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { getSupabase } from './supabaseClient.js'
-import { upsertOrderToDb, getOrderFromDb } from './accountDb.js'
+import { upsertOrderToDb, getOrderFromDb, deleteOrderFromDb } from './accountDb.js'
 import { handleOrderDeliveredHook, handleOrderCancelledHook } from './loyalty/orderHook.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -69,14 +69,27 @@ function loadFromDisk() {
     if (fs.existsSync(STORE_FILE)) {
       const data = JSON.parse(fs.readFileSync(STORE_FILE, 'utf-8') || '[]')
       if (Array.isArray(data)) {
+        let purgedCount = 0
         data.forEach((order) => {
           if (order && order.orderId) {
+            const isCancelled = String(order.status || '').toUpperCase() === 'CANCELLED'
+            const isExpired = String(order.paymentStatus || '').toUpperCase() === 'EXPIRED_TIMEOUT' ||
+                              String(order.payment?.status || '').toUpperCase() === 'EXPIRED_TIMEOUT'
+            if (isCancelled || isExpired) {
+              purgedCount++
+              try { deleteOrderFromDb(order.orderId) } catch {}
+              return
+            }
             ordersMap.set(order.orderId, order)
             try {
               upsertOrderToDb(order)
             } catch {}
           }
         })
+        if (purgedCount > 0) {
+          saveToDisk()
+          console.log(`🧹 [PERSISTENCE] Đã loại bỏ ${purgedCount} đơn bị hủy/hết hạn khỏi hệ thống lưu trữ disk.`)
+        }
       }
       console.log(`📦 [PERSISTENCE] Đã khôi phục ${ordersMap.size} đơn hàng từ disk và đồng bộ vào Database SQLite.`)
     }
@@ -243,12 +256,20 @@ export const orderPersistence = {
       return false
     }
     const res = ordersMap.delete(orderId)
+    try {
+      deleteOrderFromDb(orderId)
+    } catch {}
     if (res) saveToDisk()
     return res
   },
 
   getAll() {
-    return Array.from(ordersMap.values())
+    return Array.from(ordersMap.values()).filter((order) => {
+      const isCancelled = String(order?.status || '').toUpperCase() === 'CANCELLED'
+      const isExpired = String(order?.paymentStatus || '').toUpperCase() === 'EXPIRED_TIMEOUT' ||
+                        String(order?.payment?.status || '').toUpperCase() === 'EXPIRED_TIMEOUT'
+      return !isCancelled && !isExpired
+    })
   },
 
   findByQuery(query) {

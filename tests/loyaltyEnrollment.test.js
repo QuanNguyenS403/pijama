@@ -67,7 +67,7 @@ describe('Loyalty PhoneVerifier & Enrollment', () => {
       ageConsent: true,
     })
     assert.equal(resValid.isValid, true)
-    assert.equal(resValid.cleanPhone, '0973 486 218')
+    assert.equal(resValid.cleanPhone, '0973486218')
   })
 
   it('PhoneVerifier: Gửi OTP, không trả mã trong response, xác thực thành công', async () => {

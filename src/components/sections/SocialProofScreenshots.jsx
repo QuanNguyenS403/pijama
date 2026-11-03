@@ -18,7 +18,7 @@ const facebookThreads = [
       avatar: 'HT',
       avatarBg: '#631521',
       time: '3 ngày',
-      text: 'Chuẩn luôn chị ơi! Em cũng vừa chốt bộ thứ 3 màu Sage xanh cốm. Vải mềm rủ tự nhiên giặt máy không lo nhăn xù, mặc đi dạo xuống sảnh chung cư vừa tiện vừa lịch sự.',
+      text: 'Chuẩn luôn chị ơi! Em cũng vừa chốt bộ thứ 3 màu Sọc Nâu mocha. Vải mềm rủ tự nhiên giặt máy không lo nhăn xù, mặc đi dạo xuống sảnh chung cư vừa tiện vừa lịch sự.',
       likes: 128,
       reactions: ['love'],
     },
@@ -322,11 +322,18 @@ export default function SocialProofScreenshots() {
 
           {/* Infinite Loop Track (Chuyển động liên tục từ phải qua trái, không dừng) */}
           <div className="animate-reviews-marquee flex items-stretch gap-4 sm:gap-5 pl-2">
-            {marqueeThreads.map((item, index) => (
+            {facebookThreads.map((item, index) => (
               <FacebookCommentScreenshotCard
-                key={`${item.id}-${index}`}
+                key={`orig-${item.id}-${index}`}
                 item={item}
               />
+            ))}
+            {facebookThreads.map((item, index) => (
+              <div key={`clone-${item.id}-${index}`} aria-hidden="true" className="contents">
+                <FacebookCommentScreenshotCard
+                  item={item}
+                />
+              </div>
             ))}
           </div>
         </div>

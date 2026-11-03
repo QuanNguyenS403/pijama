@@ -5,6 +5,7 @@ import crypto from 'crypto'
 import { fileURLToPath } from 'url'
 import { hashOtpCode, generateSalt, verifyOtpCode, hashSessionToken, hashClientMetadata } from './authCrypto.js'
 import { runEnterpriseMigrations } from './schemaMigration.js'
+import { getSupabase, isSupabaseConfigured } from './supabaseClient.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -1062,6 +1063,19 @@ export function upsertOrderToDb(order, database = getDb()) {
   }
 }
 
+export function deleteOrderFromDb(orderId, database = getDb()) {
+  if (!orderId) return false
+  try {
+    database.prepare('DELETE FROM payment_transactions WHERE order_id = ?').run(orderId)
+    const stmt = database.prepare('DELETE FROM orders WHERE order_id = ?')
+    const result = stmt.run(orderId)
+    return result.changes > 0
+  } catch (err) {
+    console.warn(`⚠️ [DB ORDER DELETE ERROR] Không thể xóa đơn ${orderId} khỏi DB:`, err.message)
+    return false
+  }
+}
+
 export function getOrderFromDb(orderId, database = getDb()) {
   if (!orderId) return null
   try {
@@ -1263,3 +1277,167 @@ export function upsertUnifiedOAuthAccount({
 export { generateSessionToken } from './authCrypto.js'
 
 
+
+
+/**
+ * Tra cứu người dùng toàn diện cho quy trình Quên mật khẩu
+ * Thứ tự: users (SQLite) -> accounts (SQLite) -> users (Supabase Cloud)
+ */
+export async function findUserForPasswordReset(email, database = getDb()) {
+  const cleanEmail = (email || '').trim().toLowerCase()
+  if (!cleanEmail || !cleanEmail.includes('@')) return null
+
+  // 1. Kiểm tra bảng users trong SQLite
+  let user = database.prepare('SELECT id, email, full_name, password_hash, role, status FROM users WHERE LOWER(email) = ?').get(cleanEmail)
+  if (user) return user
+
+  // 2. Kiểm tra bảng accounts trong SQLite (ví dụ tài khoản Google hoặc tài khoản cũ)
+  const acc = database.prepare('SELECT id, email, full_name, avatar_url, phone, verified, created_at FROM accounts WHERE LOWER(email) = ?').get(cleanEmail)
+  if (acc) {
+    const now = new Date().toISOString()
+    database.prepare(`
+      INSERT INTO users (id, email, password_hash, full_name, avatar_url, phone, role, status, verified, verified_at, created_at, updated_at)
+      VALUES (?, ?, NULL, ?, ?, ?, 'customer', 'active', ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET email = excluded.email, full_name = excluded.full_name
+    `).run(
+      acc.id,
+      acc.email,
+      acc.full_name || 'Quý khách',
+      acc.avatar_url || null,
+      acc.phone || null,
+      acc.verified ? 1 : 0,
+      acc.created_at || now,
+      acc.created_at || now,
+      now
+    )
+    return database.prepare('SELECT id, email, full_name, password_hash, role, status FROM users WHERE LOWER(email) = ?').get(cleanEmail)
+  }
+
+  // 3. Tra cứu trên Supabase Cloud (dành cho môi trường đám mây như Render Free Tier khi SQLite trống)
+  if (isSupabaseConfigured()) {
+    try {
+      const client = getSupabase()
+      if (client) {
+        const { data: sbUser } = await client.from('users').select('*').ilike('email', cleanEmail).maybeSingle()
+        if (sbUser) {
+          const now = new Date().toISOString()
+          database.prepare(`
+            INSERT INTO users (id, email, password_hash, full_name, avatar_url, phone, role, status, verified, verified_at, marketing_email_opt_in, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+              email = excluded.email,
+              password_hash = COALESCE(excluded.password_hash, users.password_hash),
+              full_name = excluded.full_name,
+              updated_at = excluded.updated_at
+          `).run(
+            sbUser.id,
+            sbUser.email,
+            sbUser.password_hash,
+            sbUser.full_name || 'Quý khách',
+            sbUser.avatar_url,
+            sbUser.phone,
+            sbUser.role || 'customer',
+            sbUser.status || 'active',
+            sbUser.verified ? 1 : 0,
+            sbUser.verified_at,
+            sbUser.marketing_email_opt_in || 0,
+            sbUser.created_at || now,
+            sbUser.updated_at || now
+          )
+          return database.prepare('SELECT id, email, full_name, password_hash, role, status FROM users WHERE LOWER(email) = ?').get(cleanEmail)
+        }
+      }
+    } catch (sbErr) {
+      console.warn('⚠️ [SUPABASE LOOKUP] Lỗi tra cứu tài khoản trên Supabase:', sbErr.message)
+    }
+  }
+
+  return null
+}
+
+/**
+ * Đồng bộ toàn bộ người dùng từ Supabase Cloud về SQLite khi khởi động máy chủ
+ */
+export async function syncUsersFromSupabase(database = getDb()) {
+  if (!isSupabaseConfigured()) return 0
+  const client = getSupabase()
+  if (!client) return 0
+
+  try {
+    const { data, error } = await client.from('users').select('*')
+    if (error) {
+      console.warn('⚠️ [SUPABASE SYNC] Lỗi tải users từ Supabase:', error.message)
+      return 0
+    }
+    if (!data || data.length === 0) return 0
+
+    const stmt = database.prepare(`
+      INSERT INTO users (id, email, password_hash, full_name, avatar_url, phone, role, status, verified, verified_at, marketing_email_opt_in, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        email = excluded.email,
+        password_hash = COALESCE(excluded.password_hash, users.password_hash),
+        full_name = excluded.full_name,
+        avatar_url = COALESCE(excluded.avatar_url, users.avatar_url),
+        phone = COALESCE(excluded.phone, users.phone),
+        verified = excluded.verified,
+        updated_at = excluded.updated_at
+    `)
+
+    const insertMany = database.transaction((rows) => {
+      for (const r of rows) {
+        stmt.run(
+          r.id,
+          r.email,
+          r.password_hash,
+          r.full_name || 'Khách hàng',
+          r.avatar_url,
+          r.phone,
+          r.role || 'customer',
+          r.status || 'active',
+          r.verified ? 1 : 0,
+          r.verified_at,
+          r.marketing_email_opt_in || 0,
+          r.created_at,
+          r.updated_at
+        )
+      }
+    })
+
+    insertMany(data)
+    return data.length
+  } catch (err) {
+    console.warn('⚠️ [SUPABASE SYNC] Ngoại lệ khi đồng bộ users từ Supabase:', err.message)
+    return 0
+  }
+}
+
+/**
+ * Đẩy một người dùng lên Supabase Cloud khi tạo mới hoặc cập nhật mật khẩu
+ */
+export async function syncUserToSupabase(user) {
+  if (!isSupabaseConfigured() || !user || !user.id) return
+  const client = getSupabase()
+  if (!client) return
+
+  try {
+    const now = new Date().toISOString()
+    await client.from('users').upsert({
+      id: user.id,
+      email: user.email,
+      password_hash: user.password_hash || null,
+      full_name: user.full_name || user.fullName || 'Khách hàng',
+      avatar_url: user.avatar_url || user.avatarUrl || null,
+      phone: user.phone || null,
+      role: user.role || 'customer',
+      status: user.status || 'active',
+      verified: user.verified ? 1 : 0,
+      verified_at: user.verified_at || null,
+      marketing_email_opt_in: user.marketing_email_opt_in || user.marketingOptIn ? 1 : 0,
+      created_at: user.created_at || now,
+      updated_at: user.updated_at || now,
+    }, { onConflict: 'id' })
+  } catch (err) {
+    console.warn('⚠️ [SUPABASE SYNC] Lỗi khi lưu user lên Supabase:', err.message)
+  }
+}

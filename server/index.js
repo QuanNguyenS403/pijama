@@ -756,7 +756,8 @@ app.post('/api/orders/cancel-request', async (req, res) => {
     order.status = 'CANCELLED'
     order.cancelReason = reason
     order.cancelledAt = new Date().toISOString()
-    orderPersistence.set(orderId, order)
+    // Loại bỏ hoàn toàn đơn hàng khỏi hệ thống lưu trữ backend theo yêu cầu
+    orderPersistence.delete(orderId)
 
     if (order.voucherCode) {
       releaseVoucher(order.voucherCode, orderId)
@@ -1100,6 +1101,20 @@ const server = app.listen(PORT, '0.0.0.0', async () => {
   } catch (emailErr) {
     emailStatus = { ready: false, error: emailErr.message }
     console.warn('⚠️ SMTP Email warning:', emailErr.message)
+  }
+
+  // ── Đồng bộ người dùng từ Supabase Cloud vào SQLite khi khởi động (DATA-PERSISTENCE) ──
+  try {
+    const { isSupabaseConfigured } = await import('./lib/supabaseClient.js')
+    if (isSupabaseConfigured()) {
+      const { syncUsersFromSupabase } = await import('./lib/accountDb.js')
+      const syncedCount = await syncUsersFromSupabase()
+      if (syncedCount > 0) {
+        console.log(`👥 [SUPABASE SYNC] Đã tự động đồng bộ ${syncedCount} tài khoản người dùng từ Supabase Cloud vào SQLite.`)
+      }
+    }
+  } catch (syncErr) {
+    console.warn('⚠️ [SUPABASE SYNC] Không thể đồng bộ tài khoản người dùng từ Supabase:', syncErr.message)
   }
 
   isServerReady = true

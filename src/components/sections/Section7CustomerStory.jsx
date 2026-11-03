@@ -25,7 +25,7 @@ export default function Section7CustomerStory() {
             <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-[1.12] mb-4">
               SỨ MỆNH
               <span className="block text-[#D4AF37] italic font-normal mt-1 text-2xl sm:text-3xl">
-                Every girls deserve QuanNguyenS's Sleepwear
+                Every girl deserves QuanNguyenS Sleepwear
               </span>
             </h2>
 

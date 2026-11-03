@@ -30,18 +30,59 @@ export default function CheckoutPage() {
   const { items, subtotal, shippingFee, clearCart } = useCart()
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
 
+  // Khôi phục thông tin khách hàng từ lần trước để tránh phải điền lại từ đầu
+  const getInitialFormData = () => {
+    try {
+      const savedInfo = localStorage.getItem('qns_checkout_customer_info')
+      if (savedInfo) {
+        const parsed = JSON.parse(savedInfo)
+        if (parsed && typeof parsed === 'object') {
+          return {
+            fullName: parsed.fullName || '',
+            phone: parsed.phone || '',
+            email: parsed.email || '',
+            address: parsed.address || '',
+            ward: parsed.ward || '',
+            district: parsed.district || '',
+            city: parsed.city || 'Hà Nội',
+            paymentMethod: parsed.paymentMethod || 'COD',
+            note: parsed.note || '',
+          }
+        }
+      }
+      const savedAcc = localStorage.getItem('qns_customer_account')
+      if (savedAcc) {
+        const acc = JSON.parse(savedAcc)
+        if (acc && typeof acc === 'object') {
+          return {
+            fullName: acc.fullName || '',
+            phone: acc.phone || '',
+            email: acc.email || '',
+            address: acc.address || '',
+            ward: acc.ward || '',
+            district: acc.district || '',
+            city: acc.city || 'Hà Nội',
+            paymentMethod: 'COD',
+            note: '',
+          }
+        }
+      }
+    } catch {}
+    return {
+      fullName: '',
+      phone: '',
+      email: '',
+      address: '',
+      ward: '',
+      district: '',
+      city: 'Hà Nội',
+      paymentMethod: 'COD',
+      note: '',
+    }
+  }
+
   // Form State
-  const [formData, setFormData] = useState({
-    fullName: '',
-    phone: '',
-    email: '',
-    address: '',
-    ward: '',
-    district: '',
-    city: 'Hà Nội',
-    paymentMethod: 'COD',
-    note: '',
-  })
+  const [formData, setFormData] = useState(getInitialFormData)
 
   // Validation errors & touched state
   const [touched, setTouched] = useState({})
@@ -131,7 +172,13 @@ export default function CheckoutPage() {
 
   // Handle Input Changes
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    setFormData((prev) => {
+      const next = { ...prev, [field]: value }
+      try {
+        localStorage.setItem('qns_checkout_customer_info', JSON.stringify(next))
+      } catch {}
+      return next
+    })
     // If field was already touched, validate in real-time
     if (touched[field]) {
       const validator = validators[field]
@@ -259,8 +306,16 @@ export default function CheckoutPage() {
           console.error(err)
         }
 
-        // 3. Xóa giỏ hàng
-        clearCart()
+        // Lưu thông tin khách hàng và danh sách sản phẩm để bảo lưu nếu đơn bị hủy
+        try {
+          localStorage.setItem('qns_checkout_customer_info', JSON.stringify(formData))
+          localStorage.setItem('qns_last_ordered_items', JSON.stringify(items))
+        } catch {}
+
+        // 3. Xóa giỏ hàng: Đối với COD xóa ngay, đối với Chuyển khoản (VietQR) bảo lưu giỏ hàng cho đến khi thanh toán thành công
+        if (formData.paymentMethod !== 'BANK_TRANSFER') {
+          clearCart()
+        }
 
         // 4. Chuyển hướng theo phương thức thanh toán
         if (formData.paymentMethod === 'BANK_TRANSFER') {
@@ -308,7 +363,7 @@ export default function CheckoutPage() {
             <ChevronLeft className="w-4 h-4" /> Quay lại giỏ hàng
           </Link>
 
-          <span className="font-serif text-xs tracking-[0.2em] text-[#631521] uppercase hidden sm:flex items-center gap-1.5 font-semibold">
+          <span className="font-sans text-xs tracking-[0.2em] text-[#631521] uppercase hidden sm:flex items-center gap-1.5 font-semibold">
             <Lock className="w-3.5 h-3.5 text-[#631521]" />
             {"\n"}
           </span>
@@ -697,7 +752,7 @@ export default function CheckoutPage() {
                           const displayNames = preOrderNames.length > 0 ? preOrderNames.join(' & ') : 'sản phẩm Đặt Trước'
                           return (
                             <p className="text-[#4A3F38] leading-relaxed">
-                              &nbsp;Toàn bộ sản phẩm PRE-ORDER sẽ được chuẩn bị và giao trong 10–14 ngày.
+                              &nbsp;Toàn bộ sản phẩm PRE-ORDER sẽ được chuẩn bị và giao trong 7–10 ngày làm việc.
                             </p>
                           )
                         })()}
@@ -742,7 +797,7 @@ export default function CheckoutPage() {
                               </p>
                               {isItemPreOrder && (
                                 <span className="inline-block font-sans text-[10px] font-bold text-[#631521] bg-[#FAF5F0] border border-[#D4AF37]/60 px-1.5 py-0.5 rounded-[2px] mt-1">
-                                  ⏱ Đặt trước (giao 10-14 ngày)
+                                  ⏱ Đặt trước (giao 7-10 ngày làm việc)
                                 </span>
                               )}
                             </div>

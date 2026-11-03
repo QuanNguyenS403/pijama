@@ -2,8 +2,8 @@ import React, { useEffect, useRef } from 'react'
 
 /**
  * Cloudflare Turnstile Captcha Widget
- * Tự động tải script Cloudflare và render widget bảo vệ form đăng ký/đăng nhập
- * Chỉ hiển thị khi có biến môi trường VITE_TURNSTILE_SITE_KEY
+ * Tự động tải script Cloudflare và chạy ngầm (invisible) bảo vệ form đăng ký/đăng nhập
+ * Ẩn hoàn toàn trên giao diện Frontend nhưng vẫn duy trì xác thực và sinh token ngầm
  */
 export function TurnstileWidget({ onVerify, onError, onExpire }) {
   const containerRef = useRef(null)
@@ -33,7 +33,7 @@ export function TurnstileWidget({ onVerify, onError, onExpire }) {
               if (isMounted && onExpire) onExpire()
             },
             theme: 'light',
-            size: 'flexible',
+            size: 'invisible',
           })
         } catch (_) {}
       }
@@ -79,8 +79,24 @@ export function TurnstileWidget({ onVerify, onError, onExpire }) {
   if (!siteKey) return null
 
   return (
-    <div className="w-full my-2 flex justify-center">
-      <div ref={containerRef} className="turnstile-container min-h-[65px]" />
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        width: 1,
+        height: 1,
+        padding: 0,
+        margin: -1,
+        overflow: 'hidden',
+        clip: 'rect(0, 0, 0, 0)',
+        whiteSpace: 'nowrap',
+        border: 0,
+        opacity: 0,
+        pointerEvents: 'none',
+        zIndex: -9999,
+      }}
+    >
+      <div ref={containerRef} className="turnstile-container" />
     </div>
   )
 }

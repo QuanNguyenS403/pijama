@@ -1,10 +1,80 @@
 import { getTransporter } from './emailConfig.js'
 import { generateUnsubscribeToken } from './authCrypto.js'
+import crypto from 'crypto'
+import { loadEnvironment } from './envCheck.js'
 
 const SHOP_NAME = process.env.SHOP_NAME || 'QuanNguyenS'
 const SHOP_PHONE = process.env.SHOP_PHONE || '0973 486 218'
 const SHOP_ADDRESS = process.env.SHOP_ADDRESS || 'Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội'
 const APP_URL = process.env.APP_URL || process.env.CLIENT_ORIGIN || 'http://localhost:3000'
+
+/**
+ * Bộ phát email bọc thép (Multi-Transport Resilient Email Dispatcher)
+ * 1. Tự động kiểm tra nạp biến môi trường
+ * 2. Thử gửi qua Nodemailer SMTP với timeout 8s
+ * 3. Nếu SMTP bị chặn cổng (như trên Render Free Tier), tự động kích hoạt HTTPS Google Apps Script Bridge (Port 443)
+ */
+async function dispatchEmail(mailOptions) {
+  try {
+    loadEnvironment()
+  } catch (_) {}
+
+  let smtpError = null
+
+  // 1. Thử gửi trực tiếp qua Nodemailer SMTP
+  try {
+    const transporter = getTransporter()
+    return await dispatchEmail(mailOptions)
+  } catch (err) {
+    smtpError = err
+    console.warn('⚠️ [SMTP DIRECT WARNING] Gửi email qua SMTP gặp lỗi hoặc bị chặn cổng:', err.message)
+  }
+
+  // 2. Fallback: Google Apps Script Web App qua HTTPS (Port 443 - không bao giờ bị Render chặn)
+  const bridgeUrl = (process.env.GMAIL_APP_SCRIPT_URL || process.env.GMAIL_BRIDGE_WEBHOOK_URL || '').trim()
+  if (bridgeUrl && bridgeUrl.startsWith('https://')) {
+    try {
+      console.log('🔄 Đang kích hoạt Google Apps Script HTTPS Bridge để gửi email qua Port 443...')
+      const secret = (process.env.GMAIL_BRIDGE_SECRET || '').trim()
+      const timestamp = Math.floor(Date.now() / 1000)
+      const payload = {
+        action: 'SEND_EMAIL',
+        to: mailOptions.to,
+        subject: mailOptions.subject,
+        html: mailOptions.html,
+        fromName: mailOptions.from ? mailOptions.from.replace(/<.*>/, '').replace(/"/g, '').trim() : SHOP_NAME,
+      }
+      const rawBody = JSON.stringify(payload)
+      const signature = secret ? crypto.createHmac('sha256', `${timestamp}.${rawBody}`).digest('hex') : ''
+
+      const res = await fetch(bridgeUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(signature && {
+            'X-QNS-Timestamp': String(timestamp),
+            'X-QNS-Signature': signature,
+          }),
+        },
+        body: rawBody,
+        signal: AbortSignal.timeout(10000),
+      })
+
+      if (res.ok) {
+        const resData = await res.json().catch(() => ({}))
+        if (resData.success) {
+          console.log('✅ [HTTPS BRIDGE] Đã gửi email thành công qua Google Apps Script Web App!')
+          return { messageId: `bridge_${Date.now()}`, response: '250 Sent via Apps Script Bridge' }
+        }
+      }
+    } catch (bridgeErr) {
+      console.warn('⚠️ Lỗi gửi email qua Google Apps Script Bridge:', bridgeErr.message)
+    }
+  }
+
+  throw smtpError || new Error('Không thể gửi email qua SMTP hoặc HTTPS Bridge')
+}
+
 
 /**
  * Gửi mã xác minh 6 số (chống tài khoản rác cho Google / Facebook / Email)
@@ -97,7 +167,7 @@ export async function sendVerificationCodeEmail({ to, code, name = 'Quý khách'
     </html>
   `
 
-  return transporter.sendMail({
+  return dispatchEmail({
     from: `"${SHOP_NAME}" <${user}>`,
     to,
     subject: `[${SHOP_NAME}] Mã xác minh tài khoản của bạn: ${code}`,
@@ -197,7 +267,7 @@ export async function sendWelcomeVoucherEmail({ to, code, name = 'Quý khách' }
     </html>
   `
 
-  return transporter.sendMail({
+  return dispatchEmail({
     from: `"${SHOP_NAME}" <${user}>`,
     to,
     subject: `🎁 [${SHOP_NAME}] Chúc mừng bạn nhận Voucher Chào Mừng 10% + Miễn Phí Vận Chuyển (${code})`,
@@ -281,7 +351,7 @@ export async function sendBroadcastEmail({ to, subject, contentHtml, broadcastTy
     </html>
   `
 
-  return transporter.sendMail({
+  return dispatchEmail({
     from: `"${SHOP_NAME}" <${user}>`,
     to,
     subject: `[${SHOP_NAME}] ${subject}`,
@@ -421,7 +491,7 @@ export async function sendGoogleRegisterSuccessEmail({
     </html>
   `
 
-  return transporter.sendMail({
+  return dispatchEmail({
     from: `"${SHOP_NAME}" <${user}>`,
     to,
     subject: `🎉 [${SHOP_NAME}] Chúc mừng bạn đã đăng ký tài khoản Google thành công — Nhận Voucher 10%`,
@@ -640,7 +710,7 @@ export async function sendGoogleLoginNotificationEmail({
     </html>
   `
 
-  return transporter.sendMail({
+  return dispatchEmail({
     from: `"${SHOP_NAME}" <${user}>`,
     to,
     subject: `Theo dõi dữ liệu trong Tài khoản Google của bạn`,
@@ -750,7 +820,7 @@ export async function sendOwnerGoogleAuthNotification({
     </html>
   `
 
-  return transporter.sendMail({
+  return dispatchEmail({
     from: `"${SHOP_NAME} Hệ Thống" <${user}>`,
     to: ownerEmail,
     subject,
@@ -849,7 +919,7 @@ export async function sendPasswordResetOtpEmail({ to, code, name = 'Quý khách'
     </html>
   `
 
-  return transporter.sendMail({
+  return dispatchEmail({
     from: `"${SHOP_NAME}" <${user}>`,
     to,
     subject: `[${SHOP_NAME}] Mã xác nhận đặt lại mật khẩu: ${code}`,

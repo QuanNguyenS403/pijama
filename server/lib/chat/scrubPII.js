@@ -6,7 +6,7 @@
  */
 
 // Regex nhận diện số điện thoại Việt Nam (10 số, đầu số 03, 05, 07, 08, 09 hoặc +84)
-const VN_PHONE_REGEX = /(?:\+84|84|0)(?:3[2-9]|5[2689]|7[06-9]|8[1-9]|9[0-9])[\s.-]?[0-9]{3}[\s.-]?[0-9]{4}\b/g
+const VN_PHONE_REGEX = /(?:\+84|84|0)(?:3[2-9]|5[2689]|7[06-9]|8[1-9]|9[0-9])(?:[\s.-]?[0-9]){7}\b/g
 
 // Regex nhận diện email tiêu chuẩn
 const EMAIL_REGEX = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g

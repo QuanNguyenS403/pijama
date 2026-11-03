@@ -381,3 +381,49 @@ function syncBankEmails() {
     }
   }
 }
+
+
+/**
+ * Webhook nhận yêu cầu gửi email từ máy chủ QuanNguyenS qua HTTPS (Port 443)
+ * Giúp vượt qua 100% rào cản firewall chặn cổng SMTP (465/587) trên các nền tảng đám mây như Render Free Tier.
+ */
+function doPost(e) {
+  try {
+    var rawBody = (e && e.postData && e.postData.contents) ? e.postData.contents : '{}';
+    var data = JSON.parse(rawBody);
+    var config = getBridgeConfig();
+
+    // Xác thực HMAC signature từ máy chủ nếu có cấu hình bí mật
+    var signature = (e && e.parameter && e.parameter.sig) || (e && e.headers && (e.headers['X-QNS-Signature'] || e.headers['x-qns-signature']));
+    var timestamp = (e && e.parameter && e.parameter.ts) || (e && e.headers && (e.headers['X-QNS-Timestamp'] || e.headers['x-qns-timestamp']));
+
+    if (config.secret && signature && timestamp) {
+      var expected = computeHmacSignature(rawBody, config.secret, timestamp);
+      if (signature !== expected) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'Chữ ký HMAC không hợp lệ' })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+
+    if (data.action === 'SEND_EMAIL') {
+      var to = data.to;
+      var subject = data.subject;
+      var htmlBody = data.html;
+      var fromName = data.fromName || 'QuanNguyenS';
+
+      if (!to || !subject || !htmlBody) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'Thiếu trường to, subject hoặc html' })).setMimeType(ContentService.MimeType.JSON);
+      }
+
+      GmailApp.sendEmail(to, subject, '', {
+        htmlBody: htmlBody,
+        name: fromName
+      });
+
+      return ContentService.createTextOutput(JSON.stringify({ success: true, message: 'Đã gửi email thành công qua Gmail Native Bridge' })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'Action không hỗ trợ' })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() })).setMimeType(ContentService.MimeType.JSON);
+  }
+}

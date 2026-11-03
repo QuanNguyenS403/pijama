@@ -21,7 +21,13 @@ const formatVND = (amount) => Number(amount || 0).toLocaleString('vi-VN') + 'đ'
 export default function LoyaltyPage() {
   const [cartOpen, setCartOpen] = useState(false)
   const [isRegisterOpen, setIsRegisterOpen] = useState(false)
-  const [activeFaq, setActiveFaq] = useState(null)
+  const [openFaqs, setOpenFaqs] = useState([])
+
+  const toggleFaq = (idx) => {
+    setOpenFaqs((prev) =>
+      prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx]
+    )
+  }
   const [viewMode, setViewMode] = useState('table') // 'table' | 'cards'
 
   useEffect(() => {
@@ -173,7 +179,7 @@ export default function LoyaltyPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-[#2C201A] font-sans antialiased selection:bg-[#631521] selection:text-white">
+    <div className="min-h-screen bg-[#FAF8F5] text-[#2C201A] font-sans antialiased selection:bg-[#631521] selection:text-white overflow-x-hidden">
       <Header onOpenCart={() => setCartOpen(true)} />
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
 
@@ -183,7 +189,7 @@ export default function LoyaltyPage() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[360px] bg-[#D4AF37]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-[#631521]/30 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="max-w-[1240px] mx-auto px-4 sm:px-6 relative z-10 text-center">
+        <div className="max-w-[1380px] mx-auto px-4 sm:px-8 lg:px-12 relative z-10 text-center">
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
@@ -198,7 +204,7 @@ export default function LoyaltyPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-[1.15] max-w-4xl mx-auto"
+            className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight leading-[1.15] max-w-5xl mx-auto"
           >
             Đặc Quyền Hội Viên
             <span className="block text-[#D4AF37] italic font-normal text-2xl sm:text-4xl lg:text-5xl mt-2 font-serif">
@@ -210,7 +216,7 @@ export default function LoyaltyPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-sm sm:text-base text-white/80 max-w-2xl mx-auto mt-4 font-light leading-relaxed"
+            className="text-sm sm:text-base lg:text-lg text-white/85 max-w-3xl mx-auto mt-4 font-light leading-relaxed"
           >
             Mỗi lựa chọn gắn bó cùng QuanNguyenS đều được trân trọng. Tích lũy điểm thưởng tự động, tận hưởng mức giảm đến <strong>15%</strong> trọn năm và những món quà kỷ niệm độc quyền.
           </motion.p>
@@ -241,13 +247,13 @@ export default function LoyaltyPage() {
       </section>
 
       {/* ─── TIERS COMPARISON SECTION (HỆ THỐNG BẢNG SO SÁNH QUYỀN LỢI) ─── */}
-      <section id="bang-so-sanh-quyen-loi" className="py-16 md:py-24 max-w-[1240px] mx-auto px-4 sm:px-6">
+      <section id="bang-so-sanh-quyen-loi" className="py-16 md:py-24 max-w-[1380px] mx-auto px-4 sm:px-8 lg:px-10">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
           <div className="text-center sm:text-left">
-            <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#631521] block mb-1">
+            <span className="text-xs sm:text-sm font-bold uppercase tracking-[0.2em] text-[#631521] block mb-1.5">
               Hạng Bậc & Quyền Lợi
             </span>
-            <h2 className="font-serif text-2xl sm:text-4xl font-bold text-[#1A1614]">
+            <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-bold text-[#1A1614]">
               Bảng So Sánh Đặc Quyền 4 Hạng
             </h2>
           </div>
@@ -286,24 +292,24 @@ export default function LoyaltyPage() {
           <div className="bg-white rounded-[4px] border border-[#E8DFD5] shadow-sm overflow-hidden">
             {/* Thanh cuộn ngang hỗ trợ mobile */}
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] border-collapse text-left">
+              <table className="w-full min-w-[760px] lg:min-w-full border-collapse text-left">
                 {/* Header Bảng: 4 Hạng Thành Viên */}
                 <thead>
                   <tr className="border-b border-[#E8DFD5] bg-[#FAF8F5]">
-                    <th className="px-5 pt-10 pb-6 w-[28%] text-xs font-bold uppercase tracking-wider text-[#8C7E74] align-top">
+                    <th className="px-6 sm:px-8 pt-10 pb-6 w-[28%] text-xs sm:text-sm font-bold uppercase tracking-wider text-[#8C7E74] align-top">
                       <div className="pt-3">Đặc Quyền / Hạng Bậc</div>
                     </th>
                     {tiersData.map((t) => (
                       <th
                         key={t.id}
-                        className={`px-3 pt-10 pb-6 w-[18%] text-center transition-colors relative align-top ${
+                        className={`px-4 sm:px-6 pt-10 pb-6 w-[18%] text-center transition-colors relative align-top ${
                           t.isTop
                             ? 'bg-gradient-to-b from-[#FFF5F6] to-[#FAF8F5] border-x border-[#F2B8B5]'
                             : ''
                         }`}
                       >
                         {t.isTop && (
-                          <span className="absolute top-0 left-1/2 -translate-x-1/2 bg-[#631521] text-[#D4AF37] px-3 py-1 rounded-b-[4px] text-[9.5px] font-bold uppercase tracking-wider shadow-xs whitespace-nowrap z-10">
+                          <span className="absolute top-0 left-1/2 -translate-x-1/2 bg-[#631521] text-[#D4AF37] px-3 py-1 rounded-b-[4px] text-[10px] sm:text-xs font-bold uppercase tracking-wider shadow-xs whitespace-nowrap z-10">
                             Đặc Quyền Cao Nhất
                           </span>
                         )}
@@ -311,10 +317,10 @@ export default function LoyaltyPage() {
                           <div className="mb-2.5">
                             <TierBadge tier={t.id} size="md" />
                           </div>
-                          <h3 className="font-serif text-base font-bold text-[#1A1614] mb-2 leading-tight">
+                          <h3 className="font-serif text-base sm:text-lg lg:text-xl font-bold text-[#1A1614] mb-2 leading-tight">
                             {t.name}
                           </h3>
-                          <span className="inline-block font-mono text-xs font-bold text-[#631521] bg-white px-2.5 py-1 rounded-[2px] border border-[#E8DFD5] shadow-2xs">
+                          <span className="inline-block font-mono text-xs sm:text-sm font-bold text-[#631521] bg-white px-3 py-1 rounded-[2px] border border-[#E8DFD5] shadow-2xs">
                             {t.spendNum > 0 ? formatVND(t.spendNum) : '0đ'}
                           </span>
                         </div>
@@ -331,7 +337,7 @@ export default function LoyaltyPage() {
                       <tr className="bg-[#FAF5F0] border-t-2 border-[#E8DFD5]">
                         <td
                           colSpan={5}
-                          className="px-5 py-2.5 text-[11px] font-bold uppercase tracking-widest text-[#631521]"
+                          className="px-6 sm:px-8 py-3 text-xs sm:text-sm font-bold uppercase tracking-widest text-[#631521]"
                         >
                           {section.title}
                         </td>
@@ -343,8 +349,8 @@ export default function LoyaltyPage() {
                           key={rIdx}
                           className="hover:bg-[#FAF8F5] transition-colors"
                         >
-                          <td className="px-5 py-3.5 text-[#1A1614] font-medium">
-                            <span className="block font-semibold text-xs text-[#2C201A]">
+                          <td className="px-6 sm:px-8 py-4 sm:py-4.5 text-[#1A1614] font-medium">
+                            <span className="block font-semibold text-xs sm:text-sm text-[#2C201A]">
                               {row.label}
                             </span>
                           </td>
@@ -354,7 +360,7 @@ export default function LoyaltyPage() {
                             return (
                               <td
                                 key={vIdx}
-                                className={`px-4 py-3.5 text-center font-mono ${
+                                className={`px-4 sm:px-6 py-4 sm:py-4.5 text-center font-mono text-xs sm:text-sm ${
                                   isDiamondCol ? 'bg-[#FFF9FA]/60 border-x border-[#F8D7DA]' : ''
                                 }`}
                               >
@@ -367,17 +373,17 @@ export default function LoyaltyPage() {
                                     <Minus className="w-4 h-4 text-[#D1D5DB] mx-auto" />
                                   )
                                 ) : row.isDiscount ? (
-                                  <strong className="font-serif text-sm font-bold text-[#631521] block">
+                                  <strong className="font-serif text-sm sm:text-base lg:text-lg font-bold text-[#631521] block">
                                     {val}
                                   </strong>
                                 ) : row.isGold ? (
-                                  <strong className="text-[#B45309] font-bold">
+                                  <strong className="text-[#B45309] font-bold text-xs sm:text-sm lg:text-base">
                                     {val}
                                   </strong>
                                 ) : val === '—' ? (
                                   <span className="text-[#9CA3AF]">—</span>
                                 ) : (
-                                  <span className="text-[#2C201A] font-semibold">
+                                  <span className="text-[#2C201A] font-semibold text-xs sm:text-sm">
                                     {val}
                                   </span>
                                 )}
@@ -478,44 +484,44 @@ export default function LoyaltyPage() {
       </section>
 
       {/* ─── 3 BƯỚC ĐƠN GIẢN ─── */}
-      <section className="py-14 bg-[#FAF5F0] border-y border-[#E8DFD5]">
-        <div className="max-w-[1240px] mx-auto px-4 sm:px-6">
-          <div className="text-center max-w-xl mx-auto mb-10">
+      <section className="py-16 md:py-20 bg-[#FAF5F0] border-y border-[#E8DFD5]">
+        <div className="max-w-[1380px] mx-auto px-4 sm:px-8 lg:px-10">
+          <div className="text-center max-w-2xl mx-auto mb-12">
             <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#631521] block mb-1">
               Quy Trình Hoạt Động
             </span>
-            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1A1614]">
+            <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-[#1A1614]">
               3 Bước Tích Điểm & Đổi Thưởng Đơn Giản
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-[4px] border border-[#E8DFD5] shadow-2xs">
-              <span className="font-mono text-3xl font-bold text-[#D4AF37] block mb-2">01</span>
-              <h3 className="font-serif text-base font-bold text-[#1A1614] mb-1.5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+            <div className="bg-white p-6 sm:p-8 rounded-[6px] border border-[#E8DFD5] shadow-2xs hover:shadow-md transition-shadow">
+              <span className="font-mono text-3xl sm:text-4xl lg:text-5xl font-bold text-[#D4AF37] block mb-3">01</span>
+              <h3 className="font-serif text-base sm:text-lg lg:text-xl font-bold text-[#1A1614] mb-2">
                 Đăng Ký & Nhận Diện
               </h3>
-              <p className="text-xs text-[#4A3F38] leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#4A3F38] leading-relaxed">
                 Đăng ký chỉ bằng số điện thoại và xác nhận OTP một lần. Mọi đơn hàng đặt bằng số điện thoại này sẽ được hệ thống tự động ghi nhận tích điểm.
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-[4px] border border-[#E8DFD5] shadow-2xs">
-              <span className="font-mono text-3xl font-bold text-[#D4AF37] block mb-2">02</span>
-              <h3 className="font-serif text-base font-bold text-[#1A1614] mb-1.5">
+            <div className="bg-white p-6 sm:p-8 rounded-[6px] border border-[#E8DFD5] shadow-2xs hover:shadow-md transition-shadow">
+              <span className="font-mono text-3xl sm:text-4xl lg:text-5xl font-bold text-[#D4AF37] block mb-3">02</span>
+              <h3 className="font-serif text-base sm:text-lg lg:text-xl font-bold text-[#1A1614] mb-2">
                 Tích Lũy 100k = 1 Điểm
               </h3>
-              <p className="text-xs text-[#4A3F38] leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#4A3F38] leading-relaxed">
                 Mỗi 100.000đ giá trị hàng thực trả sẽ được quy đổi thành 1 điểm thưởng ngay khi đơn hàng chuyển sang trạng thái Đã Giao Thành Công (Delivered).
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-[4px] border border-[#E8DFD5] shadow-2xs">
-              <span className="font-mono text-3xl font-bold text-[#D4AF37] block mb-2">03</span>
-              <h3 className="font-serif text-base font-bold text-[#1A1614] mb-1.5">
+            <div className="bg-white p-6 sm:p-8 rounded-[6px] border border-[#E8DFD5] shadow-2xs hover:shadow-md transition-shadow">
+              <span className="font-mono text-3xl sm:text-4xl lg:text-5xl font-bold text-[#D4AF37] block mb-3">03</span>
+              <h3 className="font-serif text-base sm:text-lg lg:text-xl font-bold text-[#1A1614] mb-2">
                 Đổi 10 Điểm = 50.000đ
               </h3>
-              <p className="text-xs text-[#4A3F38] leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#4A3F38] leading-relaxed">
                 Cứ 10 điểm thưởng, bạn quy đổi thành Voucher 50.000đ (đơn từ 0đ, hạn 90 ngày) với lớp xác thực OTP bảo mật cao. Tiêu điểm trực tiếp khi thanh toán.
               </p>
             </div>
@@ -524,44 +530,47 @@ export default function LoyaltyPage() {
       </section>
 
       {/* ─── FAQ SECTION ─── */}
-      <section className="py-16 md:py-20 max-w-2xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-10">
-          <HelpCircle className="w-7 h-7 text-[#631521] mx-auto mb-2" />
+      <section className="py-16 md:py-24 max-w-4xl lg:max-w-5xl mx-auto px-4 sm:px-8 lg:px-10">
+        <div className="text-center mb-12">
+          <HelpCircle className="w-8 h-8 text-[#631521] mx-auto mb-3" />
           <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1A1614]">
             Câu Hỏi Thường Gặp
           </h2>
-          <p className="text-xs text-[#8C7E74] mt-1">
+          <p className="text-xs sm:text-sm text-[#8C7E74] mt-2 max-w-xl mx-auto">
             Mọi thông tin chi tiết về chính sách tích lũy và duy trì quyền lợi
           </p>
         </div>
 
         <div className="space-y-3">
-          {faqs.map((f, idx) => (
-            <div
-              key={idx}
-              className="bg-white rounded-[2px] border border-[#E8DFD5] overflow-hidden"
-            >
-              <button
-                type="button"
-                onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
-                className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 cursor-pointer hover:bg-[#FAF8F5] transition-colors"
+          {faqs.map((f, idx) => {
+            const isOpen = openFaqs.includes(idx)
+            return (
+              <div
+                key={idx}
+                className="bg-white rounded-[2px] border border-[#E8DFD5] overflow-hidden"
               >
-                <span className="font-serif font-bold text-xs sm:text-sm text-[#1A1614]">
-                  {f.q}
-                </span>
-                <ChevronRight
-                  className={`w-4 h-4 text-[#8C7E74] transition-transform shrink-0 ${
-                    activeFaq === idx ? 'rotate-90 text-[#631521]' : ''
-                  }`}
-                />
-              </button>
-              {activeFaq === idx && (
-                <div className="px-5 pb-5 pt-0 text-xs text-[#4A3F38] leading-relaxed border-t border-[#F0EAE1]">
-                  {f.a}
-                </div>
-              )}
-            </div>
-          ))}
+                <button
+                  type="button"
+                  onClick={() => toggleFaq(idx)}
+                  className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 cursor-pointer hover:bg-[#FAF8F5] transition-colors"
+                >
+                  <span className="font-serif font-bold text-sm sm:text-base text-[#1A1614]">
+                    {f.q}
+                  </span>
+                  <ChevronRight
+                    className={`w-4 h-4 text-[#8C7E74] transition-transform shrink-0 ${
+                      isOpen ? 'rotate-90 text-[#631521]' : ''
+                    }`}
+                  />
+                </button>
+                {isOpen && (
+                  <div className="px-5 sm:px-6 py-4 sm:py-5 text-xs sm:text-sm text-[#4A3F38] leading-relaxed border-t border-[#F0EAE1] text-left">
+                    {f.a}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </section>
 

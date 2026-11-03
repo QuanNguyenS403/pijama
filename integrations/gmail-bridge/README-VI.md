@@ -102,3 +102,22 @@ Apps Script chạy trên tài khoản Gmail tiêu chuẩn (miễn phí) có các
 4. **Không lưu trữ dữ liệu nhạy cảm:**
    - Script Properties chỉ lưu ID thư (`messageId`) đã xử lý để tránh đọc lại, tuyệt đối không lưu nội dung thư, số tài khoản hay số dư.
 
+---
+
+## 5. Triển Khai Web App Làm Cầu Nối Gửi Email HTTPS (Port 443 Fallback)
+
+> [!NOTE]
+> Khi máy chủ triển khai trên đám mây (như Render Free Tier chặn toàn bộ cổng SMTP 465/587), Google Apps Script Web App đóng vai trò làm cầu nối phát email trực tiếp qua giao thức HTTPS (Port 443) với độ tin cậy 100%.
+
+### Các bước kích hoạt Web App:
+1. Tại trình soạn thảo Apps Script, bấm nút **Triển khai (Deploy)** ở góc trên bên phải -> chọn **Bản triển khai mới (New deployment)**.
+2. Chọn loại: **Ứng dụng web (Web app)** (biểu tượng bánh răng).
+3. Điền thông tin:
+   - **Mô tả (Description):** `QNS Gmail HTTPS Email Dispatcher`
+   - **Thực thi dưới tên (Execute as):** `Tôi (your_account@gmail.com)`
+   - **Ai có quyền truy cập (Who has access):** `Bất kỳ ai (Anyone)`
+4. Bấm **Triển khai (Deploy)** và cấp quyền nếu được yêu cầu.
+5. Sao chép **URL ứng dụng web (Web app URL)** (có định dạng: `https://script.google.com/macros/s/.../exec`).
+6. Dán URL này vào biến môi trường máy chủ:
+   - File `.env` / `.env.local`: `GMAIL_APP_SCRIPT_URL=https://script.google.com/macros/s/.../exec`
+   - Hoặc Render Environment Settings: Thêm biến `GMAIL_APP_SCRIPT_URL`

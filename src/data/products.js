@@ -29,9 +29,9 @@ Họa tiết Sọc Hồng (Pink Stripe) biểu trưng cho năng lượng Hỏa �
     tagline: `Khởi đầu ngày mới tràn đầy sinh khí với sắc hồng ấm áp và phom dáng châu Âu kinh điển.`,
     sectionLabel: "BST THU ĐÔNG 2026 · HỎA SẮC SỚM MAI",
 
-    price: 390000,
-    originalPrice: 490000,
-    discount: 20,
+    price: 490000,
+    originalPrice: null,
+    discount: 0,
     rating: 4.8,
     reviewCount: 78,
 

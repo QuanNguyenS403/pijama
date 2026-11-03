@@ -32,7 +32,7 @@ export default function MessageList({ messages, isTyping, onProductSelect, recen
       aria-live="polite"
       tabIndex={0}
       role="region"
-      aria-label="Lịch sử hội thoại với trợ lý ảo"
+      aria-label="Lịch sử hội thoại với trợ lý QuanNguyenS"
     >
       {messages.map((msg, index) => {
         const isUser = msg.role === 'user'
@@ -46,11 +46,11 @@ export default function MessageList({ messages, isTyping, onProductSelect, recen
             {!isUser ? (
               <div
                 className="w-7 h-7 rounded-full overflow-hidden border border-[#D4AF37] shadow-xs shrink-0"
-                title="Trợ lý ảo QuanNguyenS"
+                title="Trợ lý QuanNguyenS"
               >
                 <img
                   src="/images/logo.jpg"
-                  alt="QuanNguyenS Assistant"
+                  alt="QNS Chat"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -105,7 +105,7 @@ export default function MessageList({ messages, isTyping, onProductSelect, recen
           <div className="w-7 h-7 rounded-full overflow-hidden border border-[#D4AF37] shrink-0 shadow-xs">
             <img
               src="/images/logo.jpg"
-              alt="QuanNguyenS Assistant"
+              alt="QNS Chat"
               className="w-full h-full object-cover"
             />
           </div>

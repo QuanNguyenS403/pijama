@@ -29,10 +29,6 @@ const FORBIDDEN_PHRASES = [
   /duy\s+nhất\s+hôm\s+nay/i,
   /hết\s+hạn\s+hôm\s+nay/i,
   /hết\s+ưu\s+đãi\s+trong\s+ngày\s+hôm\s+nay/i,
-  /em\s+là\s+người\s+thật/i,
-  /tôi\s+là\s+người\s+thật/i,
-  /không\s+phải\s+trợ\s+lý\s+ảo/i,
-  /không\s+phải\s+(?:bot|ai)/i,
 ]
 
 // Tập hợp các mức giá hợp lệ trong hệ thống

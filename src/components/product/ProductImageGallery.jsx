@@ -68,18 +68,6 @@ export default function ProductImageGallery({
           aria-label={`Mở ảnh lớn ${productName}`}
           onKeyDown={(e) => e.key === 'Enter' && openLightbox(activeIndex)}
         >
-          {badge && (
-            <div className="absolute top-4 left-4 z-10 bg-[#631521]/95 text-[#D4AF37] border border-[#D4AF37]/50 text-[0.7rem] font-sans font-bold uppercase tracking-[0.2em] px-3 py-1 rounded-[2px] shadow-md backdrop-blur-sm">
-              {badge}
-            </div>
-          )}
-
-          {preOrder?.enabled && (
-            <div className="absolute top-4 right-4 z-10 bg-[#D4AF37] text-[#1A1614] text-[0.7rem] font-sans font-bold uppercase tracking-[0.16em] px-3 py-1 rounded-[2px] shadow-md">
-              Pre-order
-            </div>
-          )}
-
           {/* Quick Prev / Next navigation buttons on desktop */}
           {currentImages.length > 1 && (
             <>

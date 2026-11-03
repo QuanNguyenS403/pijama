@@ -174,7 +174,8 @@ export function markOrderPaid(
   order.updatedAt = nowIso
 
   // Lưu trữ đơn hàng an toàn (Persistence)
-  orderPersistence.set(orderId, order)
+  // Loại bỏ hoàn toàn đơn hàng khỏi hệ thống lưu trữ backend khi hết hạn QR (Yêu cầu người dùng)
+  orderPersistence.delete(orderId)
 
   // Ghi nhật ký bảo mật (I7)
   logSecurityAudit({
@@ -277,13 +278,21 @@ export function expireOrderIfDue(orderId, now = Date.now()) {
     }
   }
 
-  // Cập nhật Google Sheets
+  // Cập nhật Google Sheets (Chỉ áp dụng đơn thực tế, bỏ qua đơn test)
   try {
-    updateOrderStatusInSheet(
-      orderId,
-      'CANCELLED',
-      `Hết hạn thanh toán VietQR quá ${Math.round((PAYMENT_QR_TTL_SECONDS + PAYMENT_DETECTION_GRACE_SECONDS) / 60)} phút`
-    ).catch(() => {})
+    const idStr = String(orderId).trim()
+    if (
+      !idStr.startsWith('QNS-ADV-') &&
+      !idStr.startsWith('TEST-') &&
+      !idStr.startsWith('QNS-VTTEST-') &&
+      !idStr.includes('-TEST-')
+    ) {
+      updateOrderStatusInSheet(
+        orderId,
+        'CANCELLED',
+        `Hết hạn thanh toán VietQR quá ${Math.round((PAYMENT_QR_TTL_SECONDS + PAYMENT_DETECTION_GRACE_SECONDS) / 60)} phút`
+      ).catch(() => {})
+    }
   } catch {}
 
   // Ghi nhật ký bảo mật (I7)

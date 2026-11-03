@@ -59,7 +59,7 @@ export const policiesData = {
       {
         heading: '6. Cơ chế tiếp nhận và giải quyết khiếu nại của người tiêu dùng.',
         content: [
-          'Khi phát hiện thông tin cá nhân của mình bị sử dụng sai mục đích hoặc phạm vi, khách hàng gọi điện thoại tới số xxxxxxxxx hoặc Email quannguyens403@gmail.com để khiếu nại và cung cấp chứng cứ liên quan đến vụ việc cho ban quản trị.',
+          'Khi phát hiện thông tin cá nhân của mình bị sử dụng sai mục đích hoặc phạm vi, khách hàng gọi điện thoại tới Hotline 0973 486 218 hoặc Email quannguyens403@gmail.com để khiếu nại và cung cấp chứng cứ liên quan đến vụ việc cho ban quản trị.',
           'Ban quản trị cam kết sẽ phản hồi ngay lập tức hoặc muộn nhất là trong vòng 24 giờ làm việc kể từ thời điểm nhận được khiếu nại.',
         ],
       },
@@ -166,7 +166,10 @@ export const policiesData = {
       {
         heading: '1. Phạm vi & Thời gian giao hàng',
         content: [
-          'QuanNguyenS cung cấp dịch vụ giao hàng cho khách hàng tại tất cả các tỉnh thành trong toàn quốc nhận hàng trung bình từ 2-4 ngày kể từ ngày đặt hàng.',
+          '• Hàng có sẵn: Giao nhanh toàn quốc trong 2-4 ngày làm việc kể từ thời điểm xác nhận đơn hàng.',
+          '• Hàng đặt trước (Pre-order): Chuẩn bị và giao hàng dự kiến trong 7–10 ngày làm việc.',
+          '• Thanh toán khi nhận hàng (COD): Áp dụng cho các đơn hàng trong bán kính 30km từ kho hàng (Amber Riverside, Hai Bà Trưng, Hà Nội).',
+          '• Quý khách ở các tỉnh thành khác áp dụng thanh toán chuyển khoản VietQR và nhận ngay ưu đãi giảm thêm 10% trực tiếp.',
         ],
       },
       {

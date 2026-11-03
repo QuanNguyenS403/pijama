@@ -228,7 +228,7 @@ export default function Section8DeepFeature() {
           transition={{ duration: 0.6 }}
         >
           <span
-            className="font-serif text-[11px] font-semibold tracking-[0.3em] uppercase block mb-3"
+            className="font-sans text-[11px] font-semibold tracking-[0.3em] uppercase block mb-3"
             style={{ color: '#D4AF37' }}
           >
             NĂNG LƯỢNG & PHONG THỦY
