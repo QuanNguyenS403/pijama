@@ -149,7 +149,7 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
   if (!member) {
     return (
       <>
-        <div className="bg-gradient-to-br from-[#2C201A] to-[#1A1614] text-white p-6 sm:p-8 rounded-[4px] border border-[#D4AF37]/40 shadow-luxury relative overflow-hidden">
+        <div className="bg-[#2C201A] text-white p-6 sm:p-8 rounded-[4px] border border-[#D4AF37]/40 shadow-luxury relative overflow-hidden">
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="space-y-1.5 max-w-xl">
               <div className="flex items-center gap-2">
@@ -161,9 +161,6 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
               <h3 className="font-serif text-lg sm:text-xl font-bold text-white">
                 Chương Trình Đặc Quyền Hội Viên
               </h3>
-              <p className="text-xs text-white/80 font-light leading-relaxed">
-                Tham gia miễn phí để tích điểm tự động 100k = 1 điểm, đổi điểm nhận voucher 50.000đ và hưởng ưu đãi đến 15% trọn năm.
-              </p>
             </div>
 
             <div className="shrink-0 w-full md:w-auto">
@@ -173,7 +170,7 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
                 className="w-full md:w-auto px-6 py-3 bg-[#631521] hover:bg-[#7D1B2A] text-white border border-[#D4AF37]/50 rounded-[2px] font-sans text-xs font-bold uppercase tracking-widest transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
               >
                 <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-                <span>Tham Gia Miễn Phí</span>
+                <span>Tham Gia</span>
               </button>
             </div>
           </div>

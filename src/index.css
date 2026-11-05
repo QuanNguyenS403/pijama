@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Inter:ital,opsz,wght@0,14..32,400..800;1,14..32,400..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -40,22 +40,28 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', sans-serif !important;
   }
 
   body {
     @apply font-sans overflow-x-hidden;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', sans-serif !important;
   }
 
-  /* ── ĐỒNG BỘ TOÀN DIỆN NỘI DUNG, MÔ TẢ, PHỤ ĐỀ TRÊN TOÀN BỘ WEBSITE THÀNH FONT INTER ── */
+  /* ── ĐỒNG BỘ TOÀN BỘ WEBSITE THÀNH DUY NHẤT FONT INTER (BAO GỒM CẢ SỐ VÀ CHỮ) ── */
   *,
   *::before,
   *::after {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', sans-serif !important;
   }
 
-  /* Bắt buộc toàn bộ thẻ nội dung, mô tả, phụ đề, bảng biểu, form sử dụng font Inter */
+  /* Bắt buộc toàn bộ thẻ nội dung, tiêu đề, mô tả, phụ đề, bảng biểu, form, số liệu sử dụng font Inter */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
   p,
   span,
   a,
@@ -74,70 +80,21 @@
   em,
   caption,
   figcaption,
-  .font-sans,
-  .font-sans * {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-  }
-
-  /* Bất kỳ thẻ nội dung, mô tả, phụ đề nào dù có gắn class font-serif cũng đồng bộ bắt buộc sang Inter */
-  p.font-serif,
-  p.font-serif *,
-  span.font-serif,
-  span.font-serif *,
-  a.font-serif,
-  a.font-serif *,
-  li.font-serif,
-  li.font-serif *,
-  td.font-serif,
-  td.font-serif *,
-  th.font-serif,
-  th.font-serif *,
-  div.font-serif:not(.font-heading):not(h1 *):not(h2 *):not(h3 *):not(h4 *):not(h5 *):not(h6 *),
-  div.font-serif:not(.font-heading):not(h1 *):not(h2 *):not(h3 *):not(h4 *):not(h5 *):not(h6 *) *,
-  strong.font-serif,
-  strong.font-serif *,
-  em.font-serif,
-  em.font-serif * {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-  }
-
-  /* CHỈ CÁC THẺ TIÊU ĐỀ HEADING (h1, h2, h3, h4, h5, h6) HOẶC .font-heading MỚI DÙNG FONT SERIF (Cormorant Garamond) */
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6,
-  h1:not(.font-sans),
-  h2:not(.font-sans),
-  h3:not(.font-sans),
-  h4:not(.font-sans),
-  h5:not(.font-sans),
-  h6:not(.font-sans),
-  .font-heading,
-  .heading-serif {
-    font-family: 'Cormorant Garamond', Georgia, Cambria, 'Times New Roman', serif !important;
-  }
-
-  /* Các phần tử con nằm trong heading thừa hưởng font serif của heading, trừ khi mang class font-sans */
-  h1 *:not(.font-sans),
-  h2 *:not(.font-sans),
-  h3 *:not(.font-sans),
-  h4 *:not(.font-sans),
-  h5 *:not(.font-sans),
-  h6 *:not(.font-sans),
-  .font-heading *:not(.font-sans),
-  .heading-serif *:not(.font-sans) {
-    font-family: inherit !important;
-  }
-
-  /* Giữ font monospace cho mã code / tracking */
   code,
   kbd,
   samp,
   pre,
-  .font-mono {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  .font-sans,
+  .font-sans *,
+  .font-serif,
+  .font-serif *,
+  .font-mono,
+  .font-mono *,
+  .font-heading,
+  .font-heading *,
+  .heading-serif,
+  .heading-serif * {
+    font-family: 'Inter', sans-serif !important;
   }
 
   /* Custom smooth scrollbar - Kích thước tiêu chuẩn công thái học (10px) */
@@ -169,7 +126,7 @@
   .pdp-scrollbar::-webkit-scrollbar-thumb { background: #631521; }
 
   .font-serif-italic {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: 'Inter', sans-serif !important;
     font-style: italic;
   }
 
@@ -249,25 +206,20 @@
     }
   }
 
-  /* ── Toàn bộ phần tử KHÔNG PHẢI heading (kể cả khi mang class font-serif) đều dùng Inter ── */
-  :not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(.font-heading):not(.heading-serif).font-serif {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-  }
-
   /* PDP section label pattern chuẩn hóa sang Inter */
   .section-label {
     @apply font-sans text-[0.8rem] uppercase tracking-[0.25em] font-semibold text-[#631521];
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-family: 'Inter', sans-serif !important;
   }
 
   .section-label-gold {
     @apply font-sans text-[0.8rem] uppercase tracking-[0.25em] font-semibold text-[#D4AF37];
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-family: 'Inter', sans-serif !important;
   }
 
   .section-label-light {
     @apply font-sans text-[0.7rem] uppercase tracking-[0.25em] font-bold text-[#D4AF37];
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-family: 'Inter', sans-serif !important;
   }
 
   /* OOS size tile strikethrough */

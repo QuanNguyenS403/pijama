@@ -56,7 +56,7 @@ export default function AdminLoginGate({ children }) {
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center',
       justifyContent: 'center', background: '#2C201A',
-      fontFamily: 'Inter, Arial, sans-serif',
+      fontFamily: 'Inter, sans-serif',
       padding: '20px',
       color: '#1A1614',
     }}>
@@ -80,7 +80,7 @@ export default function AdminLoginGate({ children }) {
             }}
           />
         </div>
-        <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '22px', marginBottom: '6px', color: '#631521', fontWeight: 'bold', textAlign: 'center' }}>
+        <h1 style={{ fontFamily: 'Inter, sans-serif', fontSize: '22px', marginBottom: '6px', color: '#631521', fontWeight: 'bold', textAlign: 'center' }}>
           QuanNguyenS Admin
         </h1>
         <p style={{ fontSize: '13px', color: '#8C7E74', marginBottom: '24px', lineHeight: '1.5', textAlign: 'center' }}>
@@ -104,7 +104,7 @@ export default function AdminLoginGate({ children }) {
               boxSizing: 'border-box',
               color: '#000000',
               backgroundColor: '#FFFFFF',
-              fontFamily: 'Inter, Arial, sans-serif',
+              fontFamily: 'Inter, sans-serif',
               fontWeight: 600,
               letterSpacing: showPassword ? 'normal' : '2px',
             }}

@@ -280,14 +280,14 @@ export default function AdminMembersPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FAF8F5', color: '#27272A', padding: '24px 32px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#FAF8F5', color: '#27272A', padding: '24px 32px', fontFamily: 'Inter, sans-serif' }}>
       {/* ── HEADER NAVIGATION ───────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <div style={{ fontSize: '11px', letterSpacing: '2px', textTransform: 'uppercase', color: '#71717A', fontWeight: 600 }}>
             HỆ THỐNG QUẢN TRỊ QUANNGUYENS
           </div>
-          <h1 style={{ fontFamily: 'Georgia, serif', fontSize: '28px', fontWeight: 600, margin: '4px 0 0', color: '#631521' }}>
+          <h1 style={{ fontFamily: 'Inter, sans-serif', fontSize: '28px', fontWeight: 600, margin: '4px 0 0', color: '#631521' }}>
             Ưu Đãi Hội Viên & Điểm Thưởng
           </h1>
         </div>
@@ -593,7 +593,7 @@ export default function AdminMembersPage() {
                       </td>
                       <td style={{ padding: '12px' }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+                          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '12px' }}>
                             {unmaskedPhones[m.id] || m.maskedPhone}
                           </span>
                           {!unmaskedPhones[m.id] && (
@@ -766,7 +766,7 @@ export default function AdminMembersPage() {
                         {row.points_delta > 0 ? `+${row.points_delta}` : row.points_delta}
                       </td>
                       <td style={{ padding: '8px' }}>{row.spend_delta ? `${row.spend_delta.toLocaleString('vi-VN')}đ` : '—'}</td>
-                      <td style={{ padding: '8px', fontFamily: 'monospace' }}>{row.order_id || '—'}</td>
+                      <td style={{ padding: '8px', fontFamily: 'Inter, sans-serif' }}>{row.order_id || '—'}</td>
                       <td style={{ padding: '8px' }}>{row.reason}</td>
                       <td style={{ padding: '8px', color: '#71717A' }}>
                         {new Date(row.created_at).toLocaleString('vi-VN')}

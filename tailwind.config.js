@@ -38,21 +38,10 @@ export default {
         'burgundy-hover':  '#4A0D17',
       },
       fontFamily: {
-        serif: [
-          '"Cormorant Garamond"',
-          'Georgia',
-          'Cambria',
-          '"Times New Roman"',
-          'serif',
-        ],
-        sans: [
-          'Inter',
-          '-apple-system',
-          'BlinkMacSystemFont',
-          '"Segoe UI"',
-          'Roboto',
-          'sans-serif',
-        ],
+        sans: ['Inter', 'sans-serif'],
+        serif: ['Inter', 'sans-serif'],
+        mono: ['Inter', 'sans-serif'],
+        heading: ['Inter', 'sans-serif'],
       },
       fontWeight: {
         light: '400',

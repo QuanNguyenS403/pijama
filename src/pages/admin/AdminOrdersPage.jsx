@@ -390,7 +390,7 @@ export default function AdminOrdersPage() {
         fontWeight:    600,
         cursor:        actionLoading ? 'not-allowed' : 'pointer',
         letterSpacing: '0.5px',
-        fontFamily:    'Inter, Arial, sans-serif',
+        fontFamily: 'Inter, sans-serif',
         borderRadius:  '2px',
         opacity:       actionLoading ? 0.6 : 1,
         transition:    'opacity 0.2s',
@@ -401,7 +401,7 @@ export default function AdminOrdersPage() {
   )
 
   return (
-    <div style={{ padding:'24px', fontFamily:'Inter, Arial, sans-serif', color:'#3A3535', minHeight:'100vh', background:'#FAF8F5' }}>
+    <div style={{ padding:'24px', fontFamily:'Inter, sans-serif', color:'#3A3535', minHeight:'100vh', background:'#FAF8F5' }}>
 
       {/* ── HEADER ──────────────────────────── */}
       <div style={{ marginBottom:'24px', display:'flex', justifyContent:'space-between', alignItems:'flex-end', flexWrap:'wrap', gap:'12px' }}>
@@ -422,7 +422,7 @@ export default function AdminOrdersPage() {
             <div style={{ fontSize:'11px', letterSpacing:'2px', textTransform:'uppercase', color:'#7A6E6E', fontWeight:600 }}>
               HỆ THỐNG QUẢN TRỊ QUANNGUYENS
             </div>
-            <h1 style={{ fontFamily:'Georgia,serif', fontSize:'26px', fontWeight:600, margin:'2px 0 0', color:'#631521' }}>
+            <h1 style={{ fontFamily:'Inter, sans-serif', fontSize:'26px', fontWeight:600, margin:'2px 0 0', color:'#631521' }}>
               Quản Lý Đơn Hàng
             </h1>
             <p style={{ color:'#7A6E6E', fontSize:'13px', marginTop:'3px' }}>
@@ -600,7 +600,7 @@ export default function AdminOrdersPage() {
                 <tbody>
                   {unresolvedTx.map((tx) => (
                     <tr key={tx.tx_id} style={{ borderBottom: '1px solid #E5E7EB' }}>
-                      <td style={{ padding: '8px 10px', fontFamily: 'monospace' }}>{tx.tx_id}</td>
+                      <td style={{ padding: '8px 10px', fontFamily: 'Inter, sans-serif' }}>{tx.tx_id}</td>
                       <td style={{ padding: '8px 10px' }}>{tx.received_at}</td>
                       <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600, color: '#059669' }}>
                         {Number(tx.amount || 0).toLocaleString('vi-VN')}đ
@@ -841,7 +841,7 @@ export default function AdminOrdersPage() {
                     </td>
 
                     {/* Tổng tiền */}
-                    <td style={{ padding:'12px 14px', fontFamily:'Inter, Arial, sans-serif', color:'#631521', fontWeight:'bold', fontSize:'14px', whiteSpace:'nowrap' }}>
+                    <td style={{ padding:'12px 14px', fontFamily:'Inter, sans-serif', color:'#631521', fontWeight:'bold', fontSize:'14px', whiteSpace:'nowrap' }}>
                       {vnd(order.total)}
                     </td>
 
@@ -943,7 +943,7 @@ export default function AdminOrdersPage() {
         }}>
           <div style={{
             background:'#fff', padding:'32px', width:'440px', maxWidth:'95vw',
-            fontFamily:'Inter, Arial, sans-serif',
+            fontFamily:'Inter, sans-serif',
             boxShadow:'0 20px 40px rgba(0,0,0,0.2)',
             borderRadius:'4px',
           }}>
@@ -1117,14 +1117,14 @@ export default function AdminOrdersPage() {
           <div style={{
             background:'#fff', padding:'28px', width:'560px', maxWidth:'95vw',
             maxHeight:'85vh', overflowY:'auto',
-            fontFamily:'Inter, Arial, sans-serif',
+            fontFamily:'Inter, sans-serif',
             boxShadow:'0 20px 40px rgba(0,0,0,0.2)',
             borderRadius:'4px',
           }} onClick={e => e.stopPropagation()}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'16px' }}>
               <div>
                 <span style={{ fontSize:'11px', color:'#7A6E6E', textTransform:'uppercase', letterSpacing:'1px' }}>Chi tiết đơn hàng</span>
-                <h2 style={{ fontFamily:'Georgia,serif', fontSize:'22px', color:'#631521', margin:'2px 0 0' }}>
+                <h2 style={{ fontFamily:'Inter, sans-serif', fontSize:'22px', color:'#631521', margin:'2px 0 0' }}>
                   #{selectedOrder.orderId || selectedOrder.id}
                 </h2>
               </div>
@@ -1196,7 +1196,7 @@ export default function AdminOrdersPage() {
                   <div><strong>Đơn vị vận chuyển:</strong> {selectedOrder.carrier || 'Viettel Post'}</div>
                   <div>
                     <strong>Mã vận đơn:</strong>{' '}
-                    <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#EA580C', background: '#FFE8D6', padding: '2px 6px', borderRadius: '2px' }}>
+                    <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, color: '#EA580C', background: '#FFE8D6', padding: '2px 6px', borderRadius: '2px' }}>
                       {selectedOrder.trackingNumber || selectedOrder.trackingCode || 'Chưa tạo'}
                     </span>
                   </div>
@@ -1315,7 +1315,7 @@ export default function AdminOrdersPage() {
 const inputStyle = {
   padding:'8px 12px', fontSize:'13px',
   border:'1px solid #D9CFC4', outline:'none',
-  fontFamily:'Inter, Arial, sans-serif',
+  fontFamily:'Inter, sans-serif',
   minWidth:'160px',
   borderRadius:'2px',
 }
@@ -1324,11 +1324,11 @@ const btnStyle = {
   border:'none', padding:'8px 16px',
   fontSize:'12px', fontWeight:600,
   letterSpacing:'0.5px', cursor:'pointer',
-  fontFamily:'Inter, Arial, sans-serif',
+  fontFamily:'Inter, sans-serif',
   textTransform:'uppercase',
   borderRadius:'2px',
 }
-const modalTitle    = { fontFamily:'Georgia,serif', fontSize:'20px', marginBottom:'10px', color:'#631521' }
+const modalTitle    = { fontFamily:'Inter, sans-serif', fontSize:'20px', marginBottom:'10px', color:'#631521' }
 const modalDesc     = { fontSize:'13px', color:'#5A5050', lineHeight:1.7, marginBottom:'16px' }
-const textareaStyle = { width:'100%', padding:'10px 12px', fontSize:'13px', border:'1px solid #D9CFC4', resize:'vertical', fontFamily:'Inter, Arial, sans-serif', marginBottom:'16px', boxSizing:'border-box', borderRadius:'2px' }
+const textareaStyle = { width:'100%', padding:'10px 12px', fontSize:'13px', border:'1px solid #D9CFC4', resize:'vertical', fontFamily:'Inter, sans-serif', marginBottom:'16px', boxSizing:'border-box', borderRadius:'2px' }
 const modalActions  = { display:'flex', gap:'10px' }

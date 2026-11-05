@@ -32,20 +32,8 @@ export default function ProductCard({ product, onQuickView, onAddToCart, classNa
           className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700 ease-out"
         />
 
-        {/* Badge (Top-Left) */}
-        {product.badge && (
-          <div className="absolute top-2.5 left-2.5 z-10 bg-[#631521]/95 backdrop-blur-sm text-[#D4AF37] border border-[#D4AF37]/40 text-[0.6rem] font-sans font-bold uppercase tracking-[0.16em] px-2 py-0.5 rounded-[2px] shadow-sm">
-            {product.badge}
-          </div>
-        )}
-
-        {/* Top-Right: Pre-order badge + Wishlist Button */}
-        <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5">
-          {product.preOrder?.enabled && (
-            <div className="bg-[#D4AF37] text-[#1A1614] text-[0.6rem] font-sans font-bold uppercase tracking-[0.14em] px-2 py-0.5 rounded-[2px] shadow-sm">
-              Pre-order
-            </div>
-          )}
+        {/* Top-Right: Wishlist Button */}
+        <div className="absolute top-2.5 right-2.5 z-10 flex items-center">
           <WishlistButton
             productId={product.id}
             colorName={product.colors?.[0]?.name || 'default'}
@@ -85,7 +73,6 @@ export default function ProductCard({ product, onQuickView, onAddToCart, classNa
               {product.name}
             </h3>
           </Link>
-          <p className="font-sans text-xs text-[#8C7E74] mt-0.5 line-clamp-1">{product.subtitle}</p>
 
           <div className="flex items-baseline gap-2 mt-1.5">
             <span className="font-serif text-base sm:text-lg font-bold text-[#631521]">{formatPrice(product.price)}</span>
@@ -94,83 +81,6 @@ export default function ProductCard({ product, onQuickView, onAddToCart, classNa
             )}
           </div>
         </div>
-
-        {/* Color / Pattern swatches */}
-        {product.colors && (
-          <div className="flex items-center gap-2 mt-3 pt-2 border-t border-[#F5F0EB]">
-            {product.colors.map((c) => {
-              if (c.patternPreview && c.patternType === 'stripe') {
-                return (
-                  <span
-                    key={c.name}
-                    aria-label={c.label || c.name}
-                    title={c.label || c.name}
-                    className="w-4 h-4 border border-[#E8DFD5] shadow-xs"
-                    style={{
-                      borderRadius: '0px',
-                      background: `repeating-linear-gradient(
-                        0deg,
-                        #EFAEA0 0px, #EFAEA0 2px,
-                        #FFFFFF 2px, #FFFFFF 4px
-                      )`,
-                    }}
-                  />
-                )
-              }
-              if (c.patternPreview && c.patternType === 'plaid') {
-                return (
-                  <span
-                    key={c.name}
-                    aria-label={c.label || c.name}
-                    title={c.label || c.name}
-                    className="w-4 h-4 border border-[#E8DFD5] shadow-xs"
-                    style={{
-                      borderRadius: '0px',
-                      background: `repeating-linear-gradient(
-                        0deg, rgba(245, 225, 164, 0.6) 0px, rgba(245, 225, 164, 0.6) 1px,
-                        #222636 1px, #222636 4px
-                      ),
-                      repeating-linear-gradient(
-                        90deg, rgba(245, 225, 164, 0.6) 0px, rgba(245, 225, 164, 0.6) 1px,
-                        transparent 1px, transparent 4px
-                      )`,
-                      backgroundColor: '#222636',
-                    }}
-                  />
-                )
-              }
-              if (c.patternPreview && (c.patternType === 'brown-stripe' || c.patternType === 'mocha-stripe')) {
-                return (
-                  <span
-                    key={c.name}
-                    aria-label={c.label || c.name}
-                    title={c.label || c.name}
-                    className="w-4 h-4 border border-[#E8DFD5] shadow-xs"
-                    style={{
-                      borderRadius: '0px',
-                      background: `repeating-linear-gradient(
-                        90deg,
-                        #5C3A21 0px, #5C3A21 2px,
-                        #FFFFFF 2px, #FFFFFF 3px,
-                        #5C3A21 3px, #5C3A21 5px
-                      )`,
-                      backgroundColor: '#5C3A21',
-                    }}
-                  />
-                )
-              }
-              return (
-                <span
-                  key={c.name}
-                  aria-label={c.label || c.name}
-                  title={c.label || c.name}
-                  className="w-3.5 h-3.5 rounded-full border border-[#E8DFD5] shadow-xs"
-                  style={{ backgroundColor: c.hex }}
-                />
-              )
-            })}
-          </div>
-        )}
       </div>
     </div>
   )

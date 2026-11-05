@@ -20,18 +20,10 @@ export default function ProductCard({ product, onSelect }) {
         <h4 className="font-serif text-xs font-bold text-[#631521] uppercase tracking-wide truncate">
           {product.name}
         </h4>
-        <p className="font-sans text-[11px] text-[#8C7E74] truncate">
-          {product.subtitle || 'Sleepwear Cao Cấp'}
-        </p>
         <div className="flex items-center gap-2 mt-0.5">
           <span className="font-sans text-xs font-bold text-[#2C201A]">
             {formatVND(product.price)}
           </span>
-          {product.preOrder && (
-            <span className="font-sans text-[9px] font-bold text-[#631521] bg-[#631521]/10 px-1.5 py-0.5 rounded-[2px]">
-              Pre-order
-            </span>
-          )}
         </div>
       </div>
       <Link
