@@ -22,6 +22,8 @@ import {
   Loader2,
   Lock,
   Crown,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Section12Footer from '../components/sections/Section12Footer'
@@ -66,6 +68,8 @@ export default function AccountPage() {
   const [resetToken, setResetToken] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
   const [authSuccessMsg, setAuthSuccessMsg] = useState('')
   const googleButtonRef = useRef(null)
@@ -267,7 +271,11 @@ export default function AccountPage() {
         const data = await res.json()
 
         if (!res.ok || !data.success) {
-          throw new Error(data.error || 'Email hoặc mật khẩu không chính xác')
+          const rawErr = data.error || 'Email hoặc mật khẩu không chính xác'
+          const cleanErr = rawErr.startsWith('Email hoặc mật khẩu không chính xác')
+            ? 'Email hoặc mật khẩu không chính xác'
+            : rawErr
+          throw new Error(cleanErr)
         }
 
         if (data.accessToken) {
@@ -699,14 +707,25 @@ export default function AccountPage() {
                     <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
                       Mật khẩu <span className="text-[#e53935]">*</span>
                     </label>
-                    <input
-                      type="password"
-                      value={authPassword}
-                      onChange={(e) => setAuthPassword(e.target.value)}
-                      placeholder="Mật khẩu"
-                      required
-                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        placeholder="Mật khẩu"
+                        required
+                        className="w-full px-3.5 pr-10 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                      />
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8C7E74] hover:text-[#1A1614] transition-colors cursor-pointer p-0.5"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="text-left mb-5">
@@ -796,14 +815,25 @@ export default function AccountPage() {
                     <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
                       Mật khẩu <span className="text-[#e53935]">*</span>
                     </label>
-                    <input
-                      type="password"
-                      value={authPassword}
-                      onChange={(e) => setAuthPassword(e.target.value)}
-                      placeholder="Mật khẩu"
-                      required
-                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        placeholder="Mật khẩu"
+                        required
+                        className="w-full px-3.5 pr-10 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                      />
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8C7E74] hover:text-[#1A1614] transition-colors cursor-pointer p-0.5"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken('')} />
@@ -1022,28 +1052,50 @@ export default function AccountPage() {
                     <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
                       Mật khẩu mới <span className="text-[#e53935]">*</span>
                     </label>
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Mật khẩu mới (tối thiểu 8 ký tự, gồm chữ và số)"
-                      required
-                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Mật khẩu mới (tối thiểu 8 ký tự, gồm chữ và số)"
+                        required
+                        className="w-full px-3.5 pr-10 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                      />
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8C7E74] hover:text-[#1A1614] transition-colors cursor-pointer p-0.5"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="mb-6">
                     <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
                       Xác nhận mật khẩu mới <span className="text-[#e53935]">*</span>
                     </label>
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Nhập lại mật khẩu mới"
-                      required
-                      className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Nhập lại mật khẩu mới"
+                        required
+                        className="w-full px-3.5 pr-10 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                      />
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        onClick={() => setShowConfirmPassword((prev) => !prev)}
+                        aria-label={showConfirmPassword ? 'Ẩn mật khẩu xác nhận' : 'Hiện mật khẩu xác nhận'}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8C7E74] hover:text-[#1A1614] transition-colors cursor-pointer p-0.5"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   <button
@@ -1068,41 +1120,43 @@ export default function AccountPage() {
                     </span>
                   </div>
 
-                  <div className="w-full flex justify-center items-center min-h-[44px]">
+                  <div className="relative w-full flex justify-center items-center min-h-[44px] overflow-hidden">
                     <div
                       ref={googleButtonRef}
-                      className={isGisButtonMounted ? 'w-full flex justify-center' : 'hidden'}
+                      className={
+                        isGisButtonMounted
+                          ? 'absolute inset-0 z-10 flex items-center justify-center opacity-[0.001] overflow-hidden cursor-pointer'
+                          : 'hidden pointer-events-none'
+                      }
                     />
-                    {!isGisButtonMounted && (
-                      <button
-                        type="button"
-                        onClick={handleGoogleSignInClick}
-                        disabled={authSubmitting}
-                        className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[#E8DFD5] bg-[#FAF8F5] hover:bg-white text-[#2C201A] rounded-[2px] text-xs font-medium transition-all shadow-2xs cursor-pointer group disabled:opacity-70 active:scale-[0.99]"
-                      >
-                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                          <path
-                            fill="#4285F4"
-                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                          />
-                          <path
-                            fill="#34A853"
-                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                          />
-                          <path
-                            fill="#FBBC05"
-                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                          />
-                          <path
-                            fill="#EA4335"
-                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                          />
-                        </svg>
-                        <span className="group-hover:text-[#631521] transition-colors">
-                          {authSubmitting ? 'Đang kết nối Google...' : 'Tiếp tục với Google'}
-                        </span>
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={handleGoogleSignInClick}
+                      disabled={authSubmitting}
+                      className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[#d9d9d9] bg-white hover:bg-[#FAF8F5] text-[#2C201A] rounded-[2px] text-xs sm:text-sm font-medium transition-all shadow-2xs cursor-pointer group disabled:opacity-70 active:scale-[0.99]"
+                    >
+                      <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                        <path
+                          fill="#4285F4"
+                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        />
+                        <path
+                          fill="#34A853"
+                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        />
+                        <path
+                          fill="#FBBC05"
+                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                        />
+                        <path
+                          fill="#EA4335"
+                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                        />
+                      </svg>
+                      <span className="group-hover:text-[#631521] transition-colors">
+                        {authSubmitting ? 'Đang kết nối Google...' : 'Tiếp tục với Google'}
+                      </span>
+                    </button>
                   </div>
                 </>
               )}

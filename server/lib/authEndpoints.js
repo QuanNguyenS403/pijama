@@ -28,6 +28,7 @@ import {
   updateAccountProfile,
   linkIdentityToAccount,
   findAccountByIdentity,
+  syncUserToSupabase,
 } from './accountDb.js'
 import {
   sendVerificationCodeEmail,
@@ -186,6 +187,15 @@ export function registerAuthEndpoints(app) {
         avatarUrl,
         marketingOptIn: Boolean(marketingOptIn),
       })
+
+      syncUserToSupabase({
+        id: userId,
+        email: account.email || email,
+        full_name: account.full_name || customerName,
+        avatar_url: account.avatar_url || avatarUrl,
+        verified: 1,
+        marketing_email_opt_in: Boolean(marketingOptIn) ? 1 : 0,
+      }).catch(() => {})
 
       const clientIp = req.ip || req.socket?.remoteAddress || '127.0.0.1'
       const clientUserAgent = req.headers['user-agent'] || ''

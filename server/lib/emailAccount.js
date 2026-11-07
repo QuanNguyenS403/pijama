@@ -1,3 +1,4 @@
+import nodemailer from 'nodemailer'
 import { getTransporter } from './emailConfig.js'
 import { generateUnsubscribeToken } from './authCrypto.js'
 import crypto from 'crypto'
@@ -8,47 +9,60 @@ const SHOP_PHONE = process.env.SHOP_PHONE || '0973 486 218'
 const SHOP_ADDRESS = process.env.SHOP_ADDRESS || 'Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội'
 const APP_URL = process.env.APP_URL || process.env.CLIENT_ORIGIN || 'http://localhost:3000'
 
-/**
- * Bộ phát email bọc thép (Multi-Transport Resilient Email Dispatcher)
- * 1. Tự động kiểm tra nạp biến môi trường
- * 2. Thử gửi qua Nodemailer SMTP với timeout 8s
- * 3. Nếu SMTP bị chặn cổng (như trên Render Free Tier), tự động kích hoạt HTTPS Google Apps Script Bridge (Port 443)
- */
-async function dispatchEmail(mailOptions) {
-  try {
-    loadEnvironment()
-  } catch (_) {}
+let pooledTransporter = null
+let pooledCredentialsKey = ''
+let smtpCircuitBrokenUntil = 0
 
-  let smtpError = null
-
-  // 1. Thử gửi trực tiếp qua Nodemailer SMTP
-  try {
-    const transporter = getTransporter()
-    return await dispatchEmail(mailOptions)
-  } catch (err) {
-    smtpError = err
-    console.warn('⚠️ [SMTP DIRECT WARNING] Gửi email qua SMTP gặp lỗi hoặc bị chặn cổng:', err.message)
+function getResilientSmtpTransporter() {
+  const user = getSenderEmail()
+  const pass = (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '')
+  if (!user || !pass) {
+    return getTransporter()
   }
+  const key = `${user}:${pass}`
+  if (pooledTransporter && pooledCredentialsKey === key) {
+    return pooledTransporter
+  }
+  pooledCredentialsKey = key
+  pooledTransporter = nodemailer.createTransport({
+    service: 'gmail',
+    pool: true,
+    maxConnections: 3,
+    maxMessages: 100,
+    auth: { user, pass },
+    connectionTimeout: 6000,
+    greetingTimeout: 6000,
+    socketTimeout: 8000,
+  })
+  return pooledTransporter
+}
 
-  // 2. Fallback: Google Apps Script Web App qua HTTPS (Port 443 - không bao giờ bị Render chặn)
-  const bridgeUrl = (process.env.GMAIL_APP_SCRIPT_URL || process.env.GMAIL_BRIDGE_WEBHOOK_URL || '').trim()
-  if (bridgeUrl && bridgeUrl.startsWith('https://')) {
+async function sendViaHttpsBridge(bridgeUrl, mailOptions) {
+  const secret = (process.env.GMAIL_BRIDGE_SECRET || '').trim()
+  const timestamp = Math.floor(Date.now() / 1000)
+  const payload = {
+    action: 'SEND_EMAIL',
+    to: mailOptions.to,
+    subject: mailOptions.subject,
+    html: mailOptions.html,
+    fromName: mailOptions.from ? mailOptions.from.replace(/<.*>/, '').replace(/"/g, '').trim() : SHOP_NAME,
+  }
+  const rawBody = JSON.stringify(payload)
+  const signature = secret
+    ? crypto.createHmac('sha256', secret).update(`${timestamp}.${rawBody}`, 'utf8').digest('hex')
+    : ''
+
+  const sep = bridgeUrl.includes('?') ? '&' : '?'
+  const targetUrl = signature
+    ? `${bridgeUrl}${sep}sig=${encodeURIComponent(signature)}&ts=${encodeURIComponent(timestamp)}`
+    : bridgeUrl
+
+  let lastBridgeErr = null
+  for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      console.log('🔄 Đang kích hoạt Google Apps Script HTTPS Bridge để gửi email qua Port 443...')
-      const secret = (process.env.GMAIL_BRIDGE_SECRET || '').trim()
-      const timestamp = Math.floor(Date.now() / 1000)
-      const payload = {
-        action: 'SEND_EMAIL',
-        to: mailOptions.to,
-        subject: mailOptions.subject,
-        html: mailOptions.html,
-        fromName: mailOptions.from ? mailOptions.from.replace(/<.*>/, '').replace(/"/g, '').trim() : SHOP_NAME,
-      }
-      const rawBody = JSON.stringify(payload)
-      const signature = secret ? crypto.createHmac('sha256', `${timestamp}.${rawBody}`).digest('hex') : ''
-
-      const res = await fetch(bridgeUrl, {
+      const res = await fetch(targetUrl, {
         method: 'POST',
+        redirect: 'follow',
         headers: {
           'Content-Type': 'application/json',
           ...(signature && {
@@ -66,9 +80,87 @@ async function dispatchEmail(mailOptions) {
           console.log('✅ [HTTPS BRIDGE] Đã gửi email thành công qua Google Apps Script Web App!')
           return { messageId: `bridge_${Date.now()}`, response: '250 Sent via Apps Script Bridge' }
         }
+        lastBridgeErr = new Error(resData.error || 'Apps Script Bridge trả về success=false')
+      } else {
+        lastBridgeErr = new Error(`HTTP ${res.status} từ Apps Script Bridge`)
       }
+    } catch (err) {
+      lastBridgeErr = err
+    }
+
+    if (attempt < 2) {
+      await new Promise((r) => setTimeout(r, 500))
+    }
+  }
+
+  throw lastBridgeErr || new Error('Không thể gửi email qua Google Apps Script HTTPS Bridge')
+}
+
+function getSenderEmail() {
+  try {
+    loadEnvironment()
+  } catch (_) {}
+  return (process.env.GMAIL_USER || 'quannguyens403@gmail.com').trim()
+}
+
+/**
+ * Bộ phát email bọc thép (Multi-Transport Resilient Email Dispatcher)
+ * 1. Tự động kiểm tra nạp biến môi trường
+ * 2. Circuit Breaker tự động: Nếu đang chạy trên Render có cấu hình HTTPS Bridge hoặc cổng SMTP vừa bị chặn,
+ *    chuyển thẳng sang HTTPS Bridge (Port 443) trong 0ms để triệt tiêu hoàn toàn tình trạng nghẽn hàng đợi 8s.
+ * 3. Gửi qua Pooled Nodemailer SMTP (tái sử dụng kết nối TLS, chống nghẽn socket)
+ * 4. Fallback tự động qua HTTPS Google Apps Script Bridge (Port 443)
+ */
+async function dispatchEmail(mailOptions) {
+  try {
+    loadEnvironment()
+  } catch (_) {}
+
+  const bridgeUrl = (process.env.GMAIL_APP_SCRIPT_URL || process.env.GMAIL_BRIDGE_WEBHOOK_URL || '').trim()
+  const hasHttpsBridge = Boolean(bridgeUrl && bridgeUrl.startsWith('https://'))
+  const isRenderCloud = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL || process.env.RENDER_SERVICE_ID)
+  const skipSmtpFirst = hasHttpsBridge && (isRenderCloud || Date.now() < smtpCircuitBrokenUntil)
+
+  let smtpError = null
+
+  // 1. Nếu không bị Circuit Breaker ngắt, ưu tiên gửi qua Pooled Nodemailer SMTP
+  if (!skipSmtpFirst) {
+    try {
+      const transporter = getResilientSmtpTransporter()
+      return await transporter.sendMail(mailOptions)
+    } catch (err) {
+      smtpError = err
+      smtpCircuitBrokenUntil = Date.now() + 10 * 60 * 1000 // Ngắt mạch SMTP 10 phút nếu lỗi kết nối/timeout
+      if (pooledTransporter) {
+        try {
+          pooledTransporter.close()
+        } catch (_) {}
+        pooledTransporter = null
+      }
+      console.warn('⚠️ [SMTP DIRECT WARNING] Gửi email qua SMTP gặp lỗi hoặc bị chặn cổng:', err.message)
+    }
+  }
+
+  // 2. Gửi qua Google Apps Script Web App HTTPS Bridge (Port 443 - không bao giờ bị Render chặn)
+  if (hasHttpsBridge) {
+    try {
+      console.log('🔄 Đang gửi email qua Google Apps Script HTTPS Bridge (Port 443)...')
+      return await sendViaHttpsBridge(bridgeUrl, mailOptions)
     } catch (bridgeErr) {
       console.warn('⚠️ Lỗi gửi email qua Google Apps Script Bridge:', bridgeErr.message)
+      if (!smtpError) {
+        smtpError = bridgeErr
+      }
+    }
+  }
+
+  // 3. Nếu ban đầu bỏ qua SMTP (do đang ở Render/Circuit Breaker) mà HTTPS Bridge gặp sự cố, thử lại SMTP 1 lần
+  if (skipSmtpFirst) {
+    try {
+      const transporter = getResilientSmtpTransporter()
+      return await transporter.sendMail(mailOptions)
+    } catch (err) {
+      smtpError = err
     }
   }
 
@@ -80,8 +172,8 @@ async function dispatchEmail(mailOptions) {
  * Gửi mã xác minh 6 số (chống tài khoản rác cho Google / Facebook / Email)
  */
 export async function sendVerificationCodeEmail({ to, code, name = 'Quý khách' }) {
-  const transporter = getTransporter()
-  const user = (process.env.GMAIL_USER || '').trim()
+  // Đã chuyển sang getResilientSmtpTransporter() và HTTPS Bridge bên trong dispatchEmail
+  const user = getSenderEmail()
 
   const html = `
     <!DOCTYPE html>
@@ -179,8 +271,8 @@ export async function sendVerificationCodeEmail({ to, code, name = 'Quý khách'
  * Gửi email chúc mừng & tặng mã Voucher chào mừng 10% + Freeship
  */
 export async function sendWelcomeVoucherEmail({ to, code, name = 'Quý khách' }) {
-  const transporter = getTransporter()
-  const user = (process.env.GMAIL_USER || '').trim()
+  // Đã chuyển sang getResilientSmtpTransporter() và HTTPS Bridge bên trong dispatchEmail
+  const user = getSenderEmail()
 
   const html = `
     <!DOCTYPE html>
@@ -280,8 +372,8 @@ export async function sendWelcomeVoucherEmail({ to, code, name = 'Quý khách' }
  * Có cơ chế Unsubscribe bảo mật và tôn trọng opt-out theo luật bảo vệ dữ liệu
  */
 export async function sendBroadcastEmail({ to, subject, contentHtml, broadcastType = 'Sản Phẩm Mới', accountId = null }) {
-  const transporter = getTransporter()
-  const user = (process.env.GMAIL_USER || '').trim()
+  // Đã chuyển sang getResilientSmtpTransporter() và HTTPS Bridge bên trong dispatchEmail
+  const user = getSenderEmail()
 
   const unsubToken = generateUnsubscribeToken(to, accountId)
   const unsubscribeUrl = `${APP_URL}/huy-dang-ky?token=${encodeURIComponent(unsubToken)}`
@@ -398,8 +490,8 @@ export async function sendGoogleRegisterSuccessEmail({
   ip = 'Không xác định',
   userAgent = '',
 }) {
-  const transporter = getTransporter()
-  const user = (process.env.GMAIL_USER || '').trim()
+  // Đã chuyển sang getResilientSmtpTransporter() và HTTPS Bridge bên trong dispatchEmail
+  const user = getSenderEmail()
   const device = formatDeviceName(userAgent)
 
   const html = `
@@ -509,8 +601,8 @@ export async function sendGoogleLoginNotificationEmail({
   ip = 'Không xác định',
   userAgent = '',
 }) {
-  const transporter = getTransporter()
-  const user = (process.env.GMAIL_USER || '').trim()
+  // Đã chuyển sang getResilientSmtpTransporter() và HTTPS Bridge bên trong dispatchEmail
+  const user = getSenderEmail()
   const initialLetter = (name || to || 'Q').trim()[0].toUpperCase()
 
   const html = `
@@ -731,8 +823,8 @@ export async function sendOwnerGoogleAuthNotification({
   userAgent = '',
   voucherCode = '',
 }) {
-  const transporter = getTransporter()
-  const user = (process.env.GMAIL_USER || '').trim()
+  // Đã chuyển sang getResilientSmtpTransporter() và HTTPS Bridge bên trong dispatchEmail
+  const user = getSenderEmail()
   const ownerEmail = (process.env.OWNER_EMAIL || user || 'quannguyens403@gmail.com').trim()
   const device = formatDeviceName(userAgent)
 
@@ -832,8 +924,8 @@ export async function sendOwnerGoogleAuthNotification({
  * Gửi mã OTP xác nhận đặt lại mật khẩu qua Gmail
  */
 export async function sendPasswordResetOtpEmail({ to, code, name = 'Quý khách' }) {
-  const transporter = getTransporter()
-  const user = (process.env.GMAIL_USER || '').trim()
+  // Đã chuyển sang getResilientSmtpTransporter() và HTTPS Bridge bên trong dispatchEmail
+  const user = getSenderEmail()
 
   const html = `
     <!DOCTYPE html>

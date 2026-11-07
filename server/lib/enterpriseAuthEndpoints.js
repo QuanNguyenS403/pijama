@@ -122,6 +122,20 @@ export function registerEnterpriseAuthEndpoints(app) {
         now
       )
 
+      syncUserToSupabase({
+        id: userId,
+        email,
+        password_hash: passwordHash,
+        full_name: fullName,
+        phone: phone || null,
+        role: 'customer',
+        status: 'active',
+        verified: 0,
+        marketing_email_opt_in: marketingOptIn ? 1 : 0,
+        created_at: now,
+        updated_at: now,
+      }).catch(() => {})
+
       // Đồng thời lưu vào enterprise_accounts (Local Provider)
       const entAccountId = `eacc_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`
       db.prepare(`
@@ -291,6 +305,13 @@ export function registerEnterpriseAuthEndpoints(app) {
         await sendVerificationCodeEmail({ to: email, code, name: fullName || 'Quý khách' })
       } catch (eErr) {
         console.error('Lỗi khi gửi email xác thực đăng ký:', eErr)
+        if (!isTestMode) {
+          await cacheDel(cacheKey)
+          return res.status(502).json({
+            success: false,
+            error: 'Hệ thống gửi email đang bận hoặc gián đoạn kết nối. Quý khách vui lòng thử lại sau giây lát.',
+          })
+        }
       }
 
       logSecurityAudit({
@@ -405,6 +426,21 @@ export function registerEnterpriseAuthEndpoints(app) {
         now,
         now
       )
+
+      syncUserToSupabase({
+        id: userId,
+        email: email.toLowerCase(),
+        password_hash: data.passwordHash,
+        full_name: data.fullName,
+        phone: data.phone || null,
+        role: 'customer',
+        status: 'active',
+        verified: 1,
+        verified_at: now,
+        marketing_email_opt_in: data.marketingOptIn ? 1 : 0,
+        created_at: now,
+        updated_at: now,
+      }).catch(() => {})
 
       // 2. Lưu vào enterprise_accounts
       const entAccountId = `eacc_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`
@@ -532,11 +568,22 @@ export function registerEnterpriseAuthEndpoints(app) {
       }
 
       const db = getDb()
-      const user = db.prepare(`
+      let user = db.prepare(`
         SELECT id, email, password_hash, full_name, role, status, avatar_url, verified
         FROM users
         WHERE LOWER(email) = ?
       `).get(email)
+
+      if (!user || !user.password_hash) {
+        const syncedUser = await findUserForPasswordReset(email, db)
+        if (syncedUser) {
+          user = db.prepare(`
+            SELECT id, email, password_hash, full_name, role, status, avatar_url, verified
+            FROM users
+            WHERE LOWER(email) = ?
+          `).get(email) || syncedUser
+        }
+      }
 
       if (!user) {
         logSecurityAudit({ action: 'LOGIN_USER_NOT_FOUND', status: 'FAILURE', ip, userAgent, details: { email } })
@@ -546,7 +593,7 @@ export function registerEnterpriseAuthEndpoints(app) {
         } catch (_) {}
         return res.status(401).json({
           success: false,
-          error: 'Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.',
+          error: 'Email hoặc mật khẩu không chính xác',
         })
       }
 
@@ -558,7 +605,7 @@ export function registerEnterpriseAuthEndpoints(app) {
       if (!user.password_hash) {
         return res.status(401).json({
           success: false,
-          error: 'Email hoặc mật khẩu không chính xác. Nếu quý khách đã đăng ký bằng Google, vui lòng chọn Tiếp tục với Google.',
+          error: 'Email hoặc mật khẩu không chính xác',
         })
       }
 
@@ -574,7 +621,7 @@ export function registerEnterpriseAuthEndpoints(app) {
         })
         return res.status(401).json({
           success: false,
-          error: 'Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.',
+          error: 'Email hoặc mật khẩu không chính xác',
         })
       }
 
@@ -739,6 +786,13 @@ export function registerEnterpriseAuthEndpoints(app) {
       })
     } catch (mailErr) {
       console.warn('⚠️ Lỗi gửi email OTP:', mailErr.message)
+      if (!isTestMode) {
+        await cacheDel(cacheKey)
+        return res.status(502).json({
+          success: false,
+          error: 'Hệ thống gửi email đang bận hoặc gián đoạn kết nối. Quý khách vui lòng thử lại sau giây lát.',
+        })
+      }
     }
 
     logSecurityAudit({
@@ -862,7 +916,7 @@ export function registerEnterpriseAuthEndpoints(app) {
       }
 
       const db = getDb()
-      const user = db.prepare('SELECT id, email, full_name FROM users WHERE LOWER(email) = ?').get(email)
+      const user = await findUserForPasswordReset(email, db)
 
       if (!user) {
         logSecurityAudit({
@@ -872,9 +926,10 @@ export function registerEnterpriseAuthEndpoints(app) {
           userAgent,
           details: { email },
         })
-        // Anti-enumeration: Phản hồi trung tính 200, không tiết lộ tài khoản có tồn tại hay không
+        // Anti-enumeration: Phản hồi trung tính 200 kèm cờ trạng thái giao diện
         return res.json({
           success: true,
+          registered: false,
           message: `Nếu địa chỉ email ${email} tồn tại trong hệ thống, mã xác nhận 6 chữ số đã được gửi đến hộp thư của bạn.`,
           email,
           expiresIn: 600,
@@ -910,6 +965,13 @@ export function registerEnterpriseAuthEndpoints(app) {
         })
       } catch (mailErr) {
         console.warn('⚠️ [GMAIL NOT SENT] Lỗi gửi email OTP đặt lại mật khẩu:', mailErr.message)
+        if (!isTestMode) {
+          await cacheDel(cacheKey)
+          return res.status(502).json({
+            success: false,
+            error: 'Hệ thống gửi email đang bận hoặc gián đoạn kết nối. Quý khách vui lòng thử lại sau giây lát.',
+          })
+        }
       }
 
       logSecurityAudit({
@@ -1043,7 +1105,7 @@ export function registerEnterpriseAuthEndpoints(app) {
       }
 
       const db = getDb()
-      const user = db.prepare('SELECT id, email, full_name FROM users WHERE LOWER(email) = ?').get(email.toLowerCase())
+      const user = (await findUserForPasswordReset(email.toLowerCase(), db)) || db.prepare('SELECT id, email, full_name FROM users WHERE LOWER(email) = ?').get(email.toLowerCase())
       if (!user) {
         return res.status(404).json({
           success: false,
@@ -1057,6 +1119,11 @@ export function registerEnterpriseAuthEndpoints(app) {
 
       // Cập nhật users
       db.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?').run(passwordHash, now, user.id)
+      syncUserToSupabase({
+        ...user,
+        password_hash: passwordHash,
+        updated_at: now,
+      }).catch(() => {})
 
       // Thu hồi toàn bộ phiên đăng nhập cũ ở cả hai hệ bảng (F-M9)
       try {

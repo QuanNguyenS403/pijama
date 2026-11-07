@@ -384,6 +384,21 @@ function syncBankEmails() {
 
 
 /**
+ * Endpoint kiểm tra trạng thái hoạt động khi mở URL Web App trên trình duyệt
+ */
+function doGet(e) {
+  return ContentService.createTextOutput(
+    JSON.stringify({
+      success: true,
+      service: 'QuanNguyenS Gmail HTTPS Bridge',
+      status: 'READY',
+      port: 443,
+      timestamp: new Date().toISOString(),
+    })
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
  * Webhook nhận yêu cầu gửi email từ máy chủ QuanNguyenS qua HTTPS (Port 443)
  * Giúp vượt qua 100% rào cản firewall chặn cổng SMTP (465/587) trên các nền tảng đám mây như Render Free Tier.
  */
@@ -405,19 +420,21 @@ function doPost(e) {
     }
 
     if (data.action === 'SEND_EMAIL') {
-      var to = data.to;
-      var subject = data.subject;
-      var htmlBody = data.html;
-      var fromName = data.fromName || 'QuanNguyenS';
+      var to = String(data.to || '').trim();
+      var subject = String(data.subject || '').trim();
+      var htmlBody = String(data.html || '');
+      var fromName = String(data.fromName || 'QuanNguyenS').trim();
 
       if (!to || !subject || !htmlBody) {
         return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'Thiếu trường to, subject hoặc html' })).setMimeType(ContentService.MimeType.JSON);
       }
 
-      GmailApp.sendEmail(to, subject, '', {
-        htmlBody: htmlBody,
-        name: fromName
-      });
+      safeGoogleServiceCall(function() {
+        GmailApp.sendEmail(to, subject, '', {
+          htmlBody: htmlBody,
+          name: fromName
+        });
+      }, 'GmailApp.sendEmail');
 
       return ContentService.createTextOutput(JSON.stringify({ success: true, message: 'Đã gửi email thành công qua Gmail Native Bridge' })).setMimeType(ContentService.MimeType.JSON);
     }

@@ -1288,32 +1288,34 @@ export async function findUserForPasswordReset(email, database = getDb()) {
   if (!cleanEmail || !cleanEmail.includes('@')) return null
 
   // 1. Kiểm tra bảng users trong SQLite
-  let user = database.prepare('SELECT id, email, full_name, password_hash, role, status FROM users WHERE LOWER(email) = ?').get(cleanEmail)
-  if (user) return user
+  let user = database.prepare('SELECT id, email, full_name, password_hash, role, status, avatar_url, verified FROM users WHERE LOWER(email) = ?').get(cleanEmail)
+  if (user && user.password_hash) return user
 
   // 2. Kiểm tra bảng accounts trong SQLite (ví dụ tài khoản Google hoặc tài khoản cũ)
-  const acc = database.prepare('SELECT id, email, full_name, avatar_url, phone, verified, created_at FROM accounts WHERE LOWER(email) = ?').get(cleanEmail)
-  if (acc) {
-    const now = new Date().toISOString()
-    database.prepare(`
-      INSERT INTO users (id, email, password_hash, full_name, avatar_url, phone, role, status, verified, verified_at, created_at, updated_at)
-      VALUES (?, ?, NULL, ?, ?, ?, 'customer', 'active', ?, ?, ?, ?)
-      ON CONFLICT(id) DO UPDATE SET email = excluded.email, full_name = excluded.full_name
-    `).run(
-      acc.id,
-      acc.email,
-      acc.full_name || 'Quý khách',
-      acc.avatar_url || null,
-      acc.phone || null,
-      acc.verified ? 1 : 0,
-      acc.created_at || now,
-      acc.created_at || now,
-      now
-    )
-    return database.prepare('SELECT id, email, full_name, password_hash, role, status FROM users WHERE LOWER(email) = ?').get(cleanEmail)
+  if (!user) {
+    const acc = database.prepare('SELECT id, email, full_name, avatar_url, phone, verified, created_at FROM accounts WHERE LOWER(email) = ?').get(cleanEmail)
+    if (acc) {
+      const now = new Date().toISOString()
+      database.prepare(`
+        INSERT INTO users (id, email, password_hash, full_name, avatar_url, phone, role, status, verified, verified_at, created_at, updated_at)
+        VALUES (?, ?, NULL, ?, ?, ?, 'customer', 'active', ?, ?, ?, ?)
+        ON CONFLICT(email) DO UPDATE SET full_name = COALESCE(users.full_name, excluded.full_name)
+      `).run(
+        acc.id,
+        acc.email.toLowerCase(),
+        acc.full_name || 'Quý khách',
+        acc.avatar_url || null,
+        acc.phone || null,
+        acc.verified ? 1 : 0,
+        acc.created_at || now,
+        acc.created_at || now,
+        now
+      )
+      user = database.prepare('SELECT id, email, full_name, password_hash, role, status, avatar_url, verified FROM users WHERE LOWER(email) = ?').get(cleanEmail)
+    }
   }
 
-  // 3. Tra cứu trên Supabase Cloud (dành cho môi trường đám mây như Render Free Tier khi SQLite trống)
+  // 3. Tra cứu trên Supabase Cloud (dành cho môi trường đám mây như Render Free Tier khi SQLite trống hoặc chưa có password_hash)
   if (isSupabaseConfigured()) {
     try {
       const client = getSupabase()
@@ -1324,27 +1326,27 @@ export async function findUserForPasswordReset(email, database = getDb()) {
           database.prepare(`
             INSERT INTO users (id, email, password_hash, full_name, avatar_url, phone, role, status, verified, verified_at, marketing_email_opt_in, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET
-              email = excluded.email,
+            ON CONFLICT(email) DO UPDATE SET
               password_hash = COALESCE(excluded.password_hash, users.password_hash),
-              full_name = excluded.full_name,
+              full_name = COALESCE(excluded.full_name, users.full_name),
+              avatar_url = COALESCE(excluded.avatar_url, users.avatar_url),
               updated_at = excluded.updated_at
           `).run(
             sbUser.id,
-            sbUser.email,
-            sbUser.password_hash,
+            String(sbUser.email || cleanEmail).toLowerCase(),
+            sbUser.password_hash || null,
             sbUser.full_name || 'Quý khách',
-            sbUser.avatar_url,
-            sbUser.phone,
+            sbUser.avatar_url || null,
+            sbUser.phone || null,
             sbUser.role || 'customer',
             sbUser.status || 'active',
             sbUser.verified ? 1 : 0,
-            sbUser.verified_at,
+            sbUser.verified_at || null,
             sbUser.marketing_email_opt_in || 0,
             sbUser.created_at || now,
             sbUser.updated_at || now
           )
-          return database.prepare('SELECT id, email, full_name, password_hash, role, status FROM users WHERE LOWER(email) = ?').get(cleanEmail)
+          return database.prepare('SELECT id, email, full_name, password_hash, role, status, avatar_url, verified FROM users WHERE LOWER(email) = ?').get(cleanEmail)
         }
       }
     } catch (sbErr) {
@@ -1352,7 +1354,7 @@ export async function findUserForPasswordReset(email, database = getDb()) {
     }
   }
 
-  return null
+  return user || null
 }
 
 /**
@@ -1374,8 +1376,7 @@ export async function syncUsersFromSupabase(database = getDb()) {
     const stmt = database.prepare(`
       INSERT INTO users (id, email, password_hash, full_name, avatar_url, phone, role, status, verified, verified_at, marketing_email_opt_in, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(id) DO UPDATE SET
-        email = excluded.email,
+      ON CONFLICT(email) DO UPDATE SET
         password_hash = COALESCE(excluded.password_hash, users.password_hash),
         full_name = excluded.full_name,
         avatar_url = COALESCE(excluded.avatar_url, users.avatar_url),
@@ -1386,9 +1387,10 @@ export async function syncUsersFromSupabase(database = getDb()) {
 
     const insertMany = database.transaction((rows) => {
       for (const r of rows) {
+        if (!r.email) continue
         stmt.run(
           r.id,
-          r.email,
+          String(r.email).toLowerCase(),
           r.password_hash,
           r.full_name || 'Khách hàng',
           r.avatar_url,
@@ -1416,19 +1418,22 @@ export async function syncUsersFromSupabase(database = getDb()) {
  * Đẩy một người dùng lên Supabase Cloud khi tạo mới hoặc cập nhật mật khẩu
  */
 export async function syncUserToSupabase(user) {
-  if (!isSupabaseConfigured() || !user || !user.id) return
+  if (!isSupabaseConfigured() || !user || (!user.id && !user.email)) return
   const client = getSupabase()
   if (!client) return
 
   try {
     const now = new Date().toISOString()
-    await client.from('users').upsert({
-      id: user.id,
-      email: user.email,
-      password_hash: user.password_hash || null,
+    const cleanEmail = String(user.email || '').trim().toLowerCase()
+    const { data: existing } = await client.from('users').select('id, password_hash, avatar_url, phone').ilike('email', cleanEmail).maybeSingle()
+
+    const payload = {
+      id: existing?.id || user.id,
+      email: cleanEmail,
+      password_hash: user.password_hash || existing?.password_hash || null,
       full_name: user.full_name || user.fullName || 'Khách hàng',
-      avatar_url: user.avatar_url || user.avatarUrl || null,
-      phone: user.phone || null,
+      avatar_url: user.avatar_url || user.avatarUrl || existing?.avatar_url || null,
+      phone: user.phone || existing?.phone || null,
       role: user.role || 'customer',
       status: user.status || 'active',
       verified: user.verified ? 1 : 0,
@@ -1436,7 +1441,9 @@ export async function syncUserToSupabase(user) {
       marketing_email_opt_in: user.marketing_email_opt_in || user.marketingOptIn ? 1 : 0,
       created_at: user.created_at || now,
       updated_at: user.updated_at || now,
-    }, { onConflict: 'id' })
+    }
+
+    await client.from('users').upsert(payload, { onConflict: 'id' })
   } catch (err) {
     console.warn('⚠️ [SUPABASE SYNC] Lỗi khi lưu user lên Supabase:', err.message)
   }
