@@ -47,7 +47,9 @@ async function sendViaHttpsBridge(bridgeUrl, mailOptions) {
     html: mailOptions.html,
     fromName: mailOptions.from ? mailOptions.from.replace(/<.*>/, '').replace(/"/g, '').trim() : SHOP_NAME,
   }
-  const rawBody = JSON.stringify(payload)
+  const rawBody = JSON.stringify(payload).replace(/[\u007f-\uffff]/g, (ch) =>
+    '\\u' + ('0000' + ch.charCodeAt(0).toString(16)).slice(-4)
+  )
   const signature = secret
     ? crypto.createHmac('sha256', secret).update(`${timestamp}.${rawBody}`, 'utf8').digest('hex')
     : ''
