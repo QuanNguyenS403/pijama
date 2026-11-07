@@ -1361,6 +1361,7 @@ export async function findUserForPasswordReset(email, database = getDb()) {
  * Đồng bộ toàn bộ người dùng từ Supabase Cloud về SQLite khi khởi động máy chủ
  */
 export async function syncUsersFromSupabase(database = getDb()) {
+  if (process.env.NODE_ENV === 'test' || process.env.AUTH_TEST_MODE === 'true') return 0
   if (!isSupabaseConfigured()) return 0
   const client = getSupabase()
   if (!client) return 0
@@ -1373,7 +1374,7 @@ export async function syncUsersFromSupabase(database = getDb()) {
     }
     if (!data || data.length === 0) return 0
 
-    const stmt = database.prepare(`
+    const stmtUser = database.prepare(`
       INSERT INTO users (id, email, password_hash, full_name, avatar_url, phone, role, status, verified, verified_at, marketing_email_opt_in, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(email) DO UPDATE SET
@@ -1381,27 +1382,60 @@ export async function syncUsersFromSupabase(database = getDb()) {
         full_name = excluded.full_name,
         avatar_url = COALESCE(excluded.avatar_url, users.avatar_url),
         phone = COALESCE(excluded.phone, users.phone),
-        verified = excluded.verified,
+        verified = MAX(users.verified, excluded.verified),
+        updated_at = excluded.updated_at
+    `)
+
+    const stmtAccount = database.prepare(`
+      INSERT INTO accounts (
+        id, method, email, phone, full_name, avatar_url, verified, verified_at, marketing_email_opt_in, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        email = excluded.email,
+        full_name = excluded.full_name,
+        avatar_url = COALESCE(excluded.avatar_url, accounts.avatar_url),
+        phone = COALESCE(excluded.phone, accounts.phone),
+        verified = MAX(accounts.verified, excluded.verified),
         updated_at = excluded.updated_at
     `)
 
     const insertMany = database.transaction((rows) => {
       for (const r of rows) {
         if (!r.email) continue
-        stmt.run(
+        const cleanEmail = String(r.email).toLowerCase()
+        const verifiedVal = r.verified ? 1 : 0
+        const optInVal = r.marketing_email_opt_in ? 1 : 0
+        const now = new Date().toISOString()
+
+        stmtUser.run(
           r.id,
-          String(r.email).toLowerCase(),
-          r.password_hash,
+          cleanEmail,
+          r.password_hash || null,
           r.full_name || 'Khách hàng',
-          r.avatar_url,
-          r.phone,
+          r.avatar_url || null,
+          r.phone || null,
           r.role || 'customer',
           r.status || 'active',
-          r.verified ? 1 : 0,
-          r.verified_at,
-          r.marketing_email_opt_in || 0,
-          r.created_at,
-          r.updated_at
+          verifiedVal,
+          r.verified_at || null,
+          optInVal,
+          r.created_at || now,
+          r.updated_at || now
+        )
+
+        stmtAccount.run(
+          r.id,
+          r.password_hash ? 'local' : 'google',
+          cleanEmail,
+          r.phone || null,
+          r.full_name || 'Khách hàng',
+          r.avatar_url || null,
+          verifiedVal,
+          r.verified_at || null,
+          optInVal,
+          r.status || 'active',
+          r.created_at || now,
+          r.updated_at || now
         )
       }
     })
@@ -1418,6 +1452,7 @@ export async function syncUsersFromSupabase(database = getDb()) {
  * Đẩy một người dùng lên Supabase Cloud khi tạo mới hoặc cập nhật mật khẩu
  */
 export async function syncUserToSupabase(user) {
+  if (process.env.NODE_ENV === 'test' || process.env.AUTH_TEST_MODE === 'true') return
   if (!isSupabaseConfigured() || !user || (!user.id && !user.email)) return
   const client = getSupabase()
   if (!client) return
@@ -1425,7 +1460,7 @@ export async function syncUserToSupabase(user) {
   try {
     const now = new Date().toISOString()
     const cleanEmail = String(user.email || '').trim().toLowerCase()
-    const { data: existing } = await client.from('users').select('id, password_hash, avatar_url, phone').ilike('email', cleanEmail).maybeSingle()
+    const { data: existing } = await client.from('users').select('id, password_hash, avatar_url, phone, verified').ilike('email', cleanEmail).maybeSingle()
 
     const payload = {
       id: existing?.id || user.id,
@@ -1436,7 +1471,7 @@ export async function syncUserToSupabase(user) {
       phone: user.phone || existing?.phone || null,
       role: user.role || 'customer',
       status: user.status || 'active',
-      verified: user.verified ? 1 : 0,
+      verified: (user.verified || existing?.verified) ? 1 : 0,
       verified_at: user.verified_at || null,
       marketing_email_opt_in: user.marketing_email_opt_in || user.marketingOptIn ? 1 : 0,
       created_at: user.created_at || now,
