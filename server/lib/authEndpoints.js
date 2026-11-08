@@ -658,7 +658,16 @@ export function registerAuthEndpoints(app) {
           ...(process.env.AUTH_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production' && { mockCode: code }),
         })
       } else {
-        await sendVerificationCodeEmail({ to: cleanTarget, code, name: 'Quý khách' })
+        try {
+          await sendVerificationCodeEmail({ to: cleanTarget, code, name: 'Quý khách' })
+        } catch (mailErr) {
+          console.error('Lỗi khi gửi lại email xác minh:', mailErr.message)
+          return res.status(502).json({
+            success: false,
+            error: 'Hệ thống gửi email đang bận hoặc gián đoạn kết nối. Quý khách vui lòng thử lại sau ít phút hoặc dùng tính năng Tiếp tục với Google.',
+            message: 'Hệ thống gửi email đang bận hoặc gián đoạn kết nối. Quý khách vui lòng thử lại sau ít phút hoặc dùng tính năng Tiếp tục với Google.',
+          })
+        }
         return res.json({
           success: true,
           target: maskEmail(cleanTarget),

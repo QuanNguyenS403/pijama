@@ -61,8 +61,10 @@ Tại trang cấu hình Web Service trên Render, cuộn xuống mục **Environ
 |---|---|---|
 | `NODE_VERSION` | `22.14.0` | **Bắt buộc**: Render sẽ dùng Node.js 22 |
 | `NODE_ENV` | `production` | **Bắt buộc**: Kích hoạt chế độ Production |
-| `GMAIL_USER` | `quannguyens403@gmail.com` | Email gửi thư xác nhận đơn hàng |
-| `GMAIL_APP_PASSWORD` | `[16 ký tự mật khẩu ứng dụng]` | Lấy từ Google Account (viết liền không dấu cách) |
+| `GAS_EMAIL_WEBHOOK_URL` | `https://script.google.com/macros/s/.../exec` | **Quan trọng**: Webhook Google Apps Script gửi mail cổng HTTPS 443 |
+| `GAS_WEBHOOK_SECRET` | `QNS_WEBHOOK_SECRET_2026` | Khóa bí mật khớp với file Code.gs trong Google Apps Script |
+| `RESEND_API_KEY` | `[Mã API Resend của bạn]` | (Tùy chọn) Dự phòng Dual-Transport qua Resend HTTP API |
+| `GMAIL_USER` | `quannguyens403@gmail.com` | Email người gửi mặc định |
 | `OWNER_EMAIL` | `quannguyens403@gmail.com` | Email nhận thông báo khi có khách đặt hàng |
 | `ADMIN_PASSWORD` | `[Mật khẩu quản trị của bạn]` | Mật khẩu vào trang quản lý đơn /admin/orders |
 | `ADMIN_SESSION_SECRET` | `quannguyens_admin_secret_session_key_2026_super_secure` | Chuỗi bảo mật phiên Admin (tối thiểu 32 ký tự) |
@@ -104,8 +106,8 @@ Trên gói Free của Render, máy chủ sẽ tự động tạm dừng ("spin d
 1. Truy cập [https://cron-job.org](https://cron-job.org) và đăng ký tài khoản miễn phí.
 2. Nhấn **Create Cronjob**:
    - **Title:** `QNS Render Keep Alive`
-   - **URL:** `https://<ten-web-cua-ban>.onrender.com/livez` (Ví dụ: `https://qns-clothes.onrender.com/livez`)
-   - **Schedule:** Chọn **Every 10 minutes** (Mỗi 10 phút một lần).
+   - **URL:** `https://www.quannguyens.com/api/health` (hoặc `https://<ten-web-cua-ban>.onrender.com/api/health`)
+   - **Schedule:** Chọn **Every 10 to 14 minutes** (Mỗi 10–14 phút một lần).
 3. Nhấn **Create**.
 
 👉 **Kết quả:** Cứ mỗi 10 phút, Cron-Job sẽ gửi 1 tín hiệu siêu nhẹ (0.001 giây) tới máy chủ Render, báo cho Render biết máy chủ vẫn đang hoạt động. **Web của bạn sẽ thức liên tục 24/24, không bao giờ bị ngủ, khách vào lúc nào cũng mở tức thì!**

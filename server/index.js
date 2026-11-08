@@ -185,28 +185,28 @@ app.get('/api/health', (req, res) => {
   })
 })
 
-// ── 0. Chẩn đoán trạng thái kết nối Gmail độc lập ─────────────
+// ── 0. Chẩn đoán trạng thái kết nối Email HTTPS (Port 443) ─────────────
 app.get('/api/health/email', async (req, res) => {
   try {
     const result = await verifyTransporter()
     if (result && result.success) {
       return res.json({
         emailReady: true,
+        transports: result.transports,
         user: (process.env.GMAIL_USER || '').trim() || null,
         ownerEmail: (process.env.OWNER_EMAIL || '').trim() || null,
-        message: 'Kết nối SMTP Gmail sẵn sàng hoạt động!',
+        message: 'Hệ thống Email HTTPS (Port 443) sẵn sàng hoạt động!',
       })
     } else {
       return res.status(500).json({
         emailReady: false,
-        error: result?.error || 'Không thể kết nối tới Gmail SMTP',
+        error: result?.error || 'Chưa cấu hình dịch vụ gửi email HTTPS',
         user: (process.env.GMAIL_USER || '').trim() || null,
         ownerEmail: (process.env.OWNER_EMAIL || '').trim() || null,
         instructions: [
-          '1. Vào Google Account kiểm tra "Xác minh 2 bước" (2FA) đang BẬT',
-          '2. Tạo App Password mới 16 ký tự tại https://myaccount.google.com/apppasswords',
-          '3. Cập nhật GMAIL_APP_PASSWORD trong file .env.local (viết liền không dấu cách)',
-          '4. Chạy lệnh `node test-email.js` trên terminal để kiểm tra trực tiếp',
+          '1. Tạo Webhook Google Apps Script hoặc lấy Resend API Key',
+          '2. Điền biến môi trường GAS_EMAIL_WEBHOOK_URL và GAS_WEBHOOK_SECRET trên Render Dashboard',
+          '3. (Tùy chọn) Thêm RESEND_API_KEY để kích hoạt cơ chế Dual-Transport dự phòng',
         ],
       })
     }

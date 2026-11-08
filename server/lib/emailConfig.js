@@ -1,59 +1,64 @@
-// 🔒 DỮ LIỆU ĐÃ KHOÁ — xem PROTECTED-DATA.md trước khi sửa file này.
-// Chỉ chỉnh sửa khi có yêu cầu rõ ràng, cụ thể nhắm đúng vào nội dung file này.
-import nodemailer from 'nodemailer'
+// 🔒 CẤU HÌNH GỬI EMAIL CHUẨN HTTPS CỔNG 443 — CHỐNG CHẶN SMTP RENDER
+import { sendEmailViaHttps, getEmailServiceStatus } from './httpsEmailService.js'
 
+/**
+ * Lấy Transporter tương thích ngược với API Nodemailer
+ * Toàn bộ lệnh gửi mail sẽ tự động chuyển hướng qua HTTPS Port 443 (Google Apps Script / Resend)
+ */
 export const getTransporter = () => {
-  const user = (process.env.GMAIL_USER || '').trim()
-  const pass = (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '')
+  return {
+    sendMail: async (mailOptions) => {
+      const fromName = mailOptions.from
+        ? mailOptions.from.replace(/<.*>/, '').replace(/"/g, '').trim()
+        : 'QuanNguyenS'
 
-  if (!user || !pass) {
-    throw new Error('Thiếu GMAIL_USER hoặc GMAIL_APP_PASSWORD trong .env / .env.local')
-  }
-
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user,
-      pass, // Google App Password (16 ký tự viết liền, không dấu cách)
+      return await sendEmailViaHttps({
+        to: mailOptions.to,
+        subject: mailOptions.subject,
+        html: mailOptions.html,
+        text: mailOptions.text,
+        from: mailOptions.from,
+        fromName,
+      })
     },
-    connectionTimeout: 8000,
-    greetingTimeout: 8000,
-    socketTimeout: 10000,
-  })
+    verify: async () => {
+      const status = getEmailServiceStatus()
+      if (!status.ready) {
+        throw new Error('Chưa cấu hình biến môi trường GAS_EMAIL_WEBHOOK_URL hoặc RESEND_API_KEY')
+      }
+      return true
+    },
+  }
 }
 
-// Khởi tạo và kiểm tra kết nối nếu có cấu hình
+/**
+ * Kiểm tra trạng thái hệ thống email
+ */
 export const verifyTransporter = async () => {
   try {
-    const transporter = getTransporter()
-    await transporter.verify()
-    console.log('✅ Email server (Gmail) sẵn sàng hoạt động')
-    return { success: true }
-  } catch (error) {
+    const status = getEmailServiceStatus()
+    if (status.ready) {
+      const activeTransports = []
+      if (status.gasConfigured) activeTransports.push('Google Apps Script HTTPS Bridge')
+      if (status.resendConfigured) activeTransports.push('Resend HTTP API')
+      console.log(`✅ [EMAIL READY] Email service (HTTPS Port 443) sẵn sàng qua: ${activeTransports.join(' & ')}`)
+      return { success: true, transports: activeTransports }
+    }
+
+    // Nếu ở local dev và có SMTP fallback
     const user = (process.env.GMAIL_USER || '').trim()
     const pass = (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '')
+    if (!status.isRender && user && pass) {
+      console.log('ℹ️ [EMAIL NOTICE] Chưa có HTTPS Bridge, đang dùng tạm SMTP Localhost cho Development')
+      return { success: true, transports: ['Localhost SMTP (Dev Only)'] }
+    }
 
-    console.error(`
-================================================================================
-⚠️ CẢNH BÁO: HỆ THỐNG GMAIL CHƯA HOẠT ĐỘNG!
-TOÀN BỘ EMAIL XÁC NHẬN ĐƠN HÀNG SẼ KHÔNG GỬI ĐƯỢC CHO ĐẾN KHI SỬA XONG.
---------------------------------------------------------------------------------
-❌ Chi tiết lỗi: ${error.message}
-📌 Cấu hình hiện tại:
-   - GMAIL_USER: ${user || '(Chưa cấu hình)'}
-   - GMAIL_APP_PASSWORD: ${pass ? `(Đã cấu hình - độ dài ${pass.length} ký tự)` : '(Chưa cấu hình)'}
---------------------------------------------------------------------------------
-👉 3 BƯỚC KIỂM TRA & KHẮC PHỤC NHANH:
-1. Vào https://myaccount.google.com/security → Xác nhận 'Xác minh 2 bước' (2FA) đang BẬT.
-2. Tạo App Password mới (16 ký tự) tại https://myaccount.google.com/apppasswords
-3. Điền vào file .env.local (hoặc .env) ở thư mục gốc dự án:
-   GMAIL_USER=${user || 'quannguyens403@gmail.com'}
-   GMAIL_APP_PASSWORD=xxxxxxxxxxxxxxxx (16 ký tự viết liền không dấu cách)
-   OWNER_EMAIL=${process.env.OWNER_EMAIL || user || 'quannguyens403@gmail.com'}
-
-👉 Kiểm tra kết nối độc lập bằng lệnh: node test-email.js
-================================================================================
-`)
+    console.warn('⚠️ [EMAIL WARNING] Chưa cấu hình biến môi trường gửi email HTTPS (GAS_EMAIL_WEBHOOK_URL / RESEND_API_KEY)')
+    return {
+      success: false,
+      error: 'Chưa cấu hình GAS_EMAIL_WEBHOOK_URL hoặc RESEND_API_KEY',
+    }
+  } catch (error) {
     return { success: false, error: error.message }
   }
 }
@@ -63,4 +68,3 @@ export const transporter = {
 }
 
 export default { getTransporter, verifyTransporter, transporter }
-

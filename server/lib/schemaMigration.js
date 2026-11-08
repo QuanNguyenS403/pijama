@@ -136,6 +136,41 @@ export function runEnterpriseMigrations(database) {
     CREATE INDEX IF NOT EXISTS idx_payment_tx_outcome ON payment_transactions(outcome);
   `)
 
+  // 4c. BẢNG BẢO LƯU OTP & ĐĂNG KÝ BỀN VỮNG (Chống mất mát khi Render Spin-down / Restart)
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS pending_registrations (
+      email TEXT PRIMARY KEY,
+      full_name TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      phone TEXT,
+      marketing_opt_in INTEGER NOT NULL DEFAULT 1,
+      code_hash TEXT NOT NULL,
+      salt TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      expires_at INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_pending_reg_expires ON pending_registrations(expires_at);
+
+    CREATE TABLE IF NOT EXISTS pending_password_resets (
+      email TEXT PRIMARY KEY,
+      code_hash TEXT NOT NULL,
+      salt TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      expires_at INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_pending_pwd_expires ON pending_password_resets(expires_at);
+
+    CREATE TABLE IF NOT EXISTS active_reset_tokens (
+      reset_token TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      expires_at INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_active_reset_tokens_exp ON active_reset_tokens(expires_at);
+  `)
+
   // 5. ĐỒNG BỘ TƯƠNG THÍCH NGƯỢC (Backfill từ bảng accounts cũ sang users nếu có)
   try {
     const existingOldAccounts = database.prepare(`
