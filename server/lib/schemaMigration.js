@@ -91,85 +91,93 @@ export function runEnterpriseMigrations(database) {
   `)
 
   // 4b. BẢNG PAYMENT TRANSACTIONS (Lưu vết mọi giao dịch thanh toán ngân hàng / Webhook)
-  const txTableInfo = database.prepare("PRAGMA table_info(payment_transactions)").all()
-  if (txTableInfo.length === 0) {
+  try {
+    const txTableInfo = database.prepare("PRAGMA table_info(payment_transactions)").all()
+    if (txTableInfo.length === 0) {
+      database.exec(`
+        CREATE TABLE IF NOT EXISTS payment_transactions (
+          id TEXT PRIMARY KEY,
+          tx_id TEXT UNIQUE NOT NULL,
+          received_at TEXT NOT NULL,
+          amount REAL NOT NULL,
+          content TEXT,
+          gateway TEXT,
+          raw_json TEXT,
+          matched_order_id TEXT,
+          outcome TEXT NOT NULL,
+          resolved_at TEXT,
+          resolved_by TEXT,
+          resolution_note TEXT,
+          created_at TEXT NOT NULL
+        );
+      `)
+    } else {
+      const colNames = txTableInfo.map((c) => c.name)
+      if (!colNames.includes('tx_id')) database.exec("ALTER TABLE payment_transactions ADD COLUMN tx_id TEXT")
+      if (!colNames.includes('received_at')) database.exec("ALTER TABLE payment_transactions ADD COLUMN received_at TEXT")
+      if (!colNames.includes('raw_json')) database.exec("ALTER TABLE payment_transactions ADD COLUMN raw_json TEXT")
+      if (!colNames.includes('matched_order_id')) database.exec("ALTER TABLE payment_transactions ADD COLUMN matched_order_id TEXT")
+      if (!colNames.includes('outcome')) database.exec("ALTER TABLE payment_transactions ADD COLUMN outcome TEXT")
+      if (!colNames.includes('resolved_at')) database.exec("ALTER TABLE payment_transactions ADD COLUMN resolved_at TEXT")
+      if (!colNames.includes('resolved_by')) database.exec("ALTER TABLE payment_transactions ADD COLUMN resolved_by TEXT")
+      if (!colNames.includes('resolution_note')) database.exec("ALTER TABLE payment_transactions ADD COLUMN resolution_note TEXT")
+      if (!colNames.includes('fingerprint')) database.exec("ALTER TABLE payment_transactions ADD COLUMN fingerprint TEXT")
+      if (!colNames.includes('message_id')) database.exec("ALTER TABLE payment_transactions ADD COLUMN message_id TEXT")
+      if (!colNames.includes('bank_time')) database.exec("ALTER TABLE payment_transactions ADD COLUMN bank_time TEXT")
+      if (!colNames.includes('bank_ref')) database.exec("ALTER TABLE payment_transactions ADD COLUMN bank_ref TEXT")
+      if (!colNames.includes('account_last4')) database.exec("ALTER TABLE payment_transactions ADD COLUMN account_last4 TEXT")
+      if (!colNames.includes('sender')) database.exec("ALTER TABLE payment_transactions ADD COLUMN sender TEXT")
+      if (!colNames.includes('trust')) database.exec("ALTER TABLE payment_transactions ADD COLUMN trust TEXT")
+    }
     database.exec(`
-      CREATE TABLE IF NOT EXISTS payment_transactions (
-        id TEXT PRIMARY KEY,
-        tx_id TEXT UNIQUE NOT NULL,
-        received_at TEXT NOT NULL,
-        amount REAL NOT NULL,
-        content TEXT,
-        gateway TEXT,
-        raw_json TEXT,
-        matched_order_id TEXT,
-        outcome TEXT NOT NULL,
-        resolved_at TEXT,
-        resolved_by TEXT,
-        resolution_note TEXT,
-        created_at TEXT NOT NULL
-      );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_tx_id ON payment_transactions(tx_id);
+      CREATE INDEX IF NOT EXISTS idx_payment_tx_fingerprint ON payment_transactions(fingerprint);
+      CREATE INDEX IF NOT EXISTS idx_payment_tx_message_id ON payment_transactions(message_id);
+      CREATE INDEX IF NOT EXISTS idx_payment_tx_matched_order ON payment_transactions(matched_order_id);
+      CREATE INDEX IF NOT EXISTS idx_payment_tx_outcome ON payment_transactions(outcome);
     `)
-  } else {
-    const colNames = txTableInfo.map((c) => c.name)
-    if (!colNames.includes('tx_id')) database.exec("ALTER TABLE payment_transactions ADD COLUMN tx_id TEXT")
-    if (!colNames.includes('received_at')) database.exec("ALTER TABLE payment_transactions ADD COLUMN received_at TEXT")
-    if (!colNames.includes('raw_json')) database.exec("ALTER TABLE payment_transactions ADD COLUMN raw_json TEXT")
-    if (!colNames.includes('matched_order_id')) database.exec("ALTER TABLE payment_transactions ADD COLUMN matched_order_id TEXT")
-    if (!colNames.includes('outcome')) database.exec("ALTER TABLE payment_transactions ADD COLUMN outcome TEXT")
-    if (!colNames.includes('resolved_at')) database.exec("ALTER TABLE payment_transactions ADD COLUMN resolved_at TEXT")
-    if (!colNames.includes('resolved_by')) database.exec("ALTER TABLE payment_transactions ADD COLUMN resolved_by TEXT")
-    if (!colNames.includes('resolution_note')) database.exec("ALTER TABLE payment_transactions ADD COLUMN resolution_note TEXT")
-    if (!colNames.includes('fingerprint')) database.exec("ALTER TABLE payment_transactions ADD COLUMN fingerprint TEXT")
-    if (!colNames.includes('message_id')) database.exec("ALTER TABLE payment_transactions ADD COLUMN message_id TEXT")
-    if (!colNames.includes('bank_time')) database.exec("ALTER TABLE payment_transactions ADD COLUMN bank_time TEXT")
-    if (!colNames.includes('bank_ref')) database.exec("ALTER TABLE payment_transactions ADD COLUMN bank_ref TEXT")
-    if (!colNames.includes('account_last4')) database.exec("ALTER TABLE payment_transactions ADD COLUMN account_last4 TEXT")
-    if (!colNames.includes('sender')) database.exec("ALTER TABLE payment_transactions ADD COLUMN sender TEXT")
-    if (!colNames.includes('trust')) database.exec("ALTER TABLE payment_transactions ADD COLUMN trust TEXT")
+  } catch (txErr) {
+    console.warn('⚠️ [MIGRATION WARNING] Payment transactions schema migration:', txErr.message)
   }
-  database.exec(`
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_tx_id ON payment_transactions(tx_id);
-    CREATE INDEX IF NOT EXISTS idx_payment_tx_fingerprint ON payment_transactions(fingerprint);
-    CREATE INDEX IF NOT EXISTS idx_payment_tx_message_id ON payment_transactions(message_id);
-    CREATE INDEX IF NOT EXISTS idx_payment_tx_matched_order ON payment_transactions(matched_order_id);
-    CREATE INDEX IF NOT EXISTS idx_payment_tx_outcome ON payment_transactions(outcome);
-  `)
 
   // 4c. BẢNG BẢO LƯU OTP & ĐĂNG KÝ BỀN VỮNG (Chống mất mát khi Render Spin-down / Restart)
-  database.exec(`
-    CREATE TABLE IF NOT EXISTS pending_registrations (
-      email TEXT PRIMARY KEY,
-      full_name TEXT NOT NULL,
-      password_hash TEXT NOT NULL,
-      phone TEXT,
-      marketing_opt_in INTEGER NOT NULL DEFAULT 1,
-      code_hash TEXT NOT NULL,
-      salt TEXT NOT NULL,
-      attempts INTEGER NOT NULL DEFAULT 0,
-      expires_at INTEGER NOT NULL,
-      created_at INTEGER NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS idx_pending_reg_expires ON pending_registrations(expires_at);
+  try {
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS pending_registrations (
+        email TEXT PRIMARY KEY,
+        full_name TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        phone TEXT,
+        marketing_opt_in INTEGER NOT NULL DEFAULT 1,
+        code_hash TEXT NOT NULL,
+        salt TEXT NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        expires_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_pending_reg_expires ON pending_registrations(expires_at);
 
-    CREATE TABLE IF NOT EXISTS pending_password_resets (
-      email TEXT PRIMARY KEY,
-      code_hash TEXT NOT NULL,
-      salt TEXT NOT NULL,
-      attempts INTEGER NOT NULL DEFAULT 0,
-      expires_at INTEGER NOT NULL,
-      created_at INTEGER NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS idx_pending_pwd_expires ON pending_password_resets(expires_at);
+      CREATE TABLE IF NOT EXISTS pending_password_resets (
+        email TEXT PRIMARY KEY,
+        code_hash TEXT NOT NULL,
+        salt TEXT NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        expires_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_pending_pwd_expires ON pending_password_resets(expires_at);
 
-    CREATE TABLE IF NOT EXISTS active_reset_tokens (
-      reset_token TEXT PRIMARY KEY,
-      email TEXT NOT NULL,
-      expires_at INTEGER NOT NULL,
-      created_at INTEGER NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS idx_active_reset_tokens_exp ON active_reset_tokens(expires_at);
-  `)
+      CREATE TABLE IF NOT EXISTS active_reset_tokens (
+        reset_token TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        expires_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_active_reset_tokens_exp ON active_reset_tokens(expires_at);
+    `)
+  } catch (pendingErr) {
+    console.warn('⚠️ [MIGRATION WARNING] Pending OTP tables migration:', pendingErr.message)
+  }
 
   // 5. ĐỒNG BỘ TƯƠNG THÍCH NGƯỢC (Backfill từ bảng accounts cũ sang users nếu có)
   try {

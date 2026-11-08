@@ -1489,6 +1489,49 @@ export async function syncUserToSupabase(user) {
 // Chống mất mát dữ liệu 100% khi Render spin down hoặc restart
 // ─────────────────────────────────────────────────────────────
 
+let pendingTablesEnsured = false
+export function ensurePendingTables(database = getDb()) {
+  if (pendingTablesEnsured) return
+  try {
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS pending_registrations (
+        email TEXT PRIMARY KEY,
+        full_name TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        phone TEXT,
+        marketing_opt_in INTEGER NOT NULL DEFAULT 1,
+        code_hash TEXT NOT NULL,
+        salt TEXT NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        expires_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_pending_reg_expires ON pending_registrations(expires_at);
+
+      CREATE TABLE IF NOT EXISTS pending_password_resets (
+        email TEXT PRIMARY KEY,
+        code_hash TEXT NOT NULL,
+        salt TEXT NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        expires_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_pending_pwd_expires ON pending_password_resets(expires_at);
+
+      CREATE TABLE IF NOT EXISTS active_reset_tokens (
+        reset_token TEXT PRIMARY KEY,
+        email TEXT NOT NULL,
+        expires_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_active_reset_tokens_exp ON active_reset_tokens(expires_at);
+    `)
+    pendingTablesEnsured = true
+  } catch (err) {
+    console.error('ensurePendingTables error:', err.message)
+  }
+}
+
 export function savePendingRegistrationDb({
   email,
   fullName,
@@ -1500,6 +1543,7 @@ export function savePendingRegistrationDb({
   expiresInSeconds = 600,
   database = getDb(),
 }) {
+  ensurePendingTables(database)
   const cleanEmail = (email || '').trim().toLowerCase()
   const now = Date.now()
   const expiresAt = now + expiresInSeconds * 1000
@@ -1509,75 +1553,94 @@ export function savePendingRegistrationDb({
     database.prepare('DELETE FROM pending_registrations WHERE expires_at < ?').run(now)
   } catch (_) {}
 
-  database.prepare(`
-    INSERT INTO pending_registrations (
-      email, full_name, password_hash, phone, marketing_opt_in, code_hash, salt, attempts, expires_at, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
-    ON CONFLICT(email) DO UPDATE SET
-      full_name = excluded.full_name,
-      password_hash = excluded.password_hash,
-      phone = excluded.phone,
-      marketing_opt_in = excluded.marketing_opt_in,
-      code_hash = excluded.code_hash,
-      salt = excluded.salt,
-      attempts = 0,
-      expires_at = excluded.expires_at,
-      created_at = excluded.created_at
-  `).run(
-    cleanEmail,
-    fullName,
-    passwordHash,
-    phone,
-    marketingOptIn ? 1 : 0,
-    codeHash,
-    salt,
-    expiresAt,
-    now
-  )
+  try {
+    database.prepare(`
+      INSERT INTO pending_registrations (
+        email, full_name, password_hash, phone, marketing_opt_in, code_hash, salt, attempts, expires_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+      ON CONFLICT(email) DO UPDATE SET
+        full_name = excluded.full_name,
+        password_hash = excluded.password_hash,
+        phone = excluded.phone,
+        marketing_opt_in = excluded.marketing_opt_in,
+        code_hash = excluded.code_hash,
+        salt = excluded.salt,
+        attempts = 0,
+        expires_at = excluded.expires_at,
+        created_at = excluded.created_at
+    `).run(
+      cleanEmail,
+      fullName,
+      passwordHash,
+      phone,
+      marketingOptIn ? 1 : 0,
+      codeHash,
+      salt,
+      expiresAt,
+      now
+    )
+  } catch (err) {
+    console.error('Lỗi savePendingRegistrationDb:', err.message)
+  }
 
   return { email: cleanEmail, expiresAt }
 }
 
 export function getPendingRegistrationDb(email, database = getDb()) {
+  ensurePendingTables(database)
   const cleanEmail = (email || '').trim().toLowerCase()
   const now = Date.now()
 
-  const record = database.prepare(`
-    SELECT * FROM pending_registrations
-    WHERE email = ? AND expires_at > ?
-  `).get(cleanEmail, now)
+  try {
+    const record = database.prepare(`
+      SELECT * FROM pending_registrations
+      WHERE email = ? AND expires_at > ?
+    `).get(cleanEmail, now)
 
-  if (!record) return null
+    if (!record) return null
 
-  return {
-    fullName: record.full_name,
-    email: record.email,
-    passwordHash: record.password_hash,
-    phone: record.phone,
-    marketingOptIn: Boolean(record.marketing_opt_in),
-    codeHash: record.code_hash,
-    salt: record.salt,
-    attempts: record.attempts || 0,
-    expiresAt: record.expires_at,
-    createdAt: record.created_at,
+    return {
+      fullName: record.full_name,
+      email: record.email,
+      passwordHash: record.password_hash,
+      phone: record.phone,
+      marketingOptIn: Boolean(record.marketing_opt_in),
+      codeHash: record.code_hash,
+      salt: record.salt,
+      attempts: record.attempts || 0,
+      expiresAt: record.expires_at,
+      createdAt: record.created_at,
+    }
+  } catch (err) {
+    console.error('Lỗi getPendingRegistrationDb:', err.message)
+    return null
   }
 }
 
 export function deletePendingRegistrationDb(email, database = getDb()) {
+  ensurePendingTables(database)
   const cleanEmail = (email || '').trim().toLowerCase()
-  database.prepare('DELETE FROM pending_registrations WHERE email = ?').run(cleanEmail)
+  try {
+    database.prepare('DELETE FROM pending_registrations WHERE email = ?').run(cleanEmail)
+  } catch (_) {}
 }
 
 export function incrementPendingRegistrationAttemptsDb(email, database = getDb()) {
+  ensurePendingTables(database)
   const cleanEmail = (email || '').trim().toLowerCase()
-  database.prepare(`
-    UPDATE pending_registrations
-    SET attempts = attempts + 1
-    WHERE email = ?
-  `).run(cleanEmail)
+  try {
+    database.prepare(`
+      UPDATE pending_registrations
+      SET attempts = attempts + 1
+      WHERE email = ?
+    `).run(cleanEmail)
 
-  const updated = database.prepare('SELECT attempts FROM pending_registrations WHERE email = ?').get(cleanEmail)
-  return updated ? updated.attempts : 0
+    const updated = database.prepare('SELECT attempts FROM pending_registrations WHERE email = ?').get(cleanEmail)
+    return updated ? updated.attempts : 0
+  } catch (err) {
+    console.error('Lỗi incrementPendingRegistrationAttemptsDb:', err.message)
+    return 0
+  }
 }
 
 export function savePendingPasswordResetDb({
@@ -1587,6 +1650,7 @@ export function savePendingPasswordResetDb({
   expiresInSeconds = 600,
   database = getDb(),
 }) {
+  ensurePendingTables(database)
   const cleanEmail = (email || '').trim().toLowerCase()
   const now = Date.now()
   const expiresAt = now + expiresInSeconds * 1000
@@ -1595,60 +1659,80 @@ export function savePendingPasswordResetDb({
     database.prepare('DELETE FROM pending_password_resets WHERE expires_at < ?').run(now)
   } catch (_) {}
 
-  database.prepare(`
-    INSERT INTO pending_password_resets (
-      email, code_hash, salt, attempts, expires_at, created_at
-    ) VALUES (?, ?, ?, 0, ?, ?)
-    ON CONFLICT(email) DO UPDATE SET
-      code_hash = excluded.code_hash,
-      salt = excluded.salt,
-      attempts = 0,
-      expires_at = excluded.expires_at,
-      created_at = excluded.created_at
-  `).run(cleanEmail, codeHash, salt, expiresAt, now)
+  try {
+    database.prepare(`
+      INSERT INTO pending_password_resets (
+        email, code_hash, salt, attempts, expires_at, created_at
+      ) VALUES (?, ?, ?, 0, ?, ?)
+      ON CONFLICT(email) DO UPDATE SET
+        code_hash = excluded.code_hash,
+        salt = excluded.salt,
+        attempts = 0,
+        expires_at = excluded.expires_at,
+        created_at = excluded.created_at
+    `).run(cleanEmail, codeHash, salt, expiresAt, now)
+  } catch (err) {
+    console.error('Lỗi savePendingPasswordResetDb:', err.message)
+  }
 
   return { email: cleanEmail, expiresAt }
 }
 
 export function getPendingPasswordResetDb(email, database = getDb()) {
+  ensurePendingTables(database)
   const cleanEmail = (email || '').trim().toLowerCase()
   const now = Date.now()
 
-  const record = database.prepare(`
-    SELECT * FROM pending_password_resets
-    WHERE email = ? AND expires_at > ?
-  `).get(cleanEmail, now)
+  try {
+    const record = database.prepare(`
+      SELECT * FROM pending_password_resets
+      WHERE email = ? AND expires_at > ?
+    `).get(cleanEmail, now)
 
-  if (!record) return null
+    if (!record) return null
 
-  return {
-    email: record.email,
-    codeHash: record.code_hash,
-    salt: record.salt,
-    attempts: record.attempts || 0,
-    expiresAt: record.expires_at,
-    createdAt: record.created_at,
+    return {
+      email: record.email,
+      codeHash: record.code_hash,
+      salt: record.salt,
+      attempts: record.attempts || 0,
+      expiresAt: record.expires_at,
+      createdAt: record.created_at,
+    }
+  } catch (err) {
+    console.error('Lỗi getPendingPasswordResetDb:', err.message)
+    return null
   }
 }
 
 export function deletePendingPasswordResetDb(email, database = getDb()) {
+  ensurePendingTables(database)
   const cleanEmail = (email || '').trim().toLowerCase()
-  database.prepare('DELETE FROM pending_password_resets WHERE email = ?').run(cleanEmail)
+  try {
+    database.prepare('DELETE FROM pending_password_resets WHERE email = ?').run(cleanEmail)
+  } catch (_) {}
 }
 
 export function incrementPendingPasswordResetAttemptsDb(email, database = getDb()) {
+  ensurePendingTables(database)
   const cleanEmail = (email || '').trim().toLowerCase()
-  database.prepare(`
-    UPDATE pending_password_resets
-    SET attempts = attempts + 1
-    WHERE email = ?
-  `).run(cleanEmail)
+  try {
+    database.prepare(`
+      UPDATE pending_password_resets
+      SET attempts = attempts + 1
+      WHERE email = ?
+    `).run(cleanEmail)
 
-  const updated = database.prepare('SELECT attempts FROM pending_password_resets WHERE email = ?').get(cleanEmail)
-  return updated ? updated.attempts : 0
+    const updated = database.prepare('SELECT attempts FROM pending_password_resets WHERE email = ?').get(cleanEmail)
+    return updated ? updated.attempts : 0
+  } catch (err) {
+    console.error('Lỗi incrementPendingPasswordResetAttemptsDb:', err.message)
+    return 0
+  }
 }
 
 export function saveActiveResetTokenDb(resetToken, email, expiresInSeconds = 900, database = getDb()) {
+  ensurePendingTables(database)
   const cleanEmail = (email || '').trim().toLowerCase()
   const now = Date.now()
   const expiresAt = now + expiresInSeconds * 1000
@@ -1657,25 +1741,38 @@ export function saveActiveResetTokenDb(resetToken, email, expiresInSeconds = 900
     database.prepare('DELETE FROM active_reset_tokens WHERE expires_at < ?').run(now)
   } catch (_) {}
 
-  database.prepare(`
-    INSERT INTO active_reset_tokens (reset_token, email, expires_at, created_at)
-    VALUES (?, ?, ?, ?)
-    ON CONFLICT(reset_token) DO UPDATE SET
-      email = excluded.email,
-      expires_at = excluded.expires_at
-  `).run(resetToken, cleanEmail, expiresAt, now)
+  try {
+    database.prepare(`
+      INSERT INTO active_reset_tokens (reset_token, email, expires_at, created_at)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(reset_token) DO UPDATE SET
+        email = excluded.email,
+        expires_at = excluded.expires_at
+    `).run(resetToken, cleanEmail, expiresAt, now)
+  } catch (err) {
+    console.error('Lỗi saveActiveResetTokenDb:', err.message)
+  }
 }
 
 export function getActiveResetTokenDb(resetToken, database = getDb()) {
+  ensurePendingTables(database)
   const now = Date.now()
-  const record = database.prepare(`
-    SELECT email FROM active_reset_tokens
-    WHERE reset_token = ? AND expires_at > ?
-  `).get(resetToken, now)
+  try {
+    const record = database.prepare(`
+      SELECT email FROM active_reset_tokens
+      WHERE reset_token = ? AND expires_at > ?
+    `).get(resetToken, now)
 
-  return record ? record.email : null
+    return record ? record.email : null
+  } catch (err) {
+    console.error('Lỗi getActiveResetTokenDb:', err.message)
+    return null
+  }
 }
 
 export function deleteActiveResetTokenDb(resetToken, database = getDb()) {
-  database.prepare('DELETE FROM active_reset_tokens WHERE reset_token = ?').run(resetToken)
+  ensurePendingTables(database)
+  try {
+    database.prepare('DELETE FROM active_reset_tokens WHERE reset_token = ?').run(resetToken)
+  } catch (_) {}
 }

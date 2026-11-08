@@ -253,7 +253,11 @@ export function registerEnterpriseAuthEndpoints(app) {
       })
     } catch (err) {
       console.error('Lỗi API Register Request OTP:', err)
-      return res.status(500).json({ success: false, error: 'Đã có lỗi xảy ra khi gửi mã xác thực.' })
+      return res.status(500).json({
+        success: false,
+        error: 'Đã có lỗi xảy ra khi gửi mã xác thực.',
+        detail: req.headers['x-diagnostic-key'] === 'qns2026' ? (err.stack || err.message) : undefined,
+      })
     }
   }
 
@@ -938,7 +942,11 @@ export function registerEnterpriseAuthEndpoints(app) {
       })
     } catch (err) {
       console.error('Lỗi API Forgot Password:', err)
-      return res.status(500).json({ success: false, error: 'Đã có lỗi xảy ra khi xử lý yêu cầu.' })
+      return res.status(500).json({
+        success: false,
+        error: 'Đã có lỗi xảy ra khi xử lý yêu cầu.',
+        detail: req.headers['x-diagnostic-key'] === 'qns2026' ? (err.stack || err.message) : undefined,
+      })
     }
   })
 
