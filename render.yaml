@@ -68,4 +68,6 @@ services:
       - key: SUPABASE_ANON_KEY
         sync: false
       - key: GMAIL_APP_SCRIPT_URL
-        value: https://script.google.com/macros/s/AKfycbxMMvnIZlAp5BpSCvlWRrY6UkmfsHJsWQ7-ffdyigFwHVnt4a_Be6-n2WIzleTNNhYt8Q/exec
+        value: https://script.google.com/macros/s/AKfycbxsGaymlrhGlmUdlV49ma1bnYr42Fle3UP-KvPdhLIFBZLQH0Q9JpXfCUaqOvAbkUg5/exec
+      - key: GAS_EMAIL_WEBHOOK_URL
+        value: https://script.google.com/macros/s/AKfycbxsGaymlrhGlmUdlV49ma1bnYr42Fle3UP-KvPdhLIFBZLQH0Q9JpXfCUaqOvAbkUg5/exec
