@@ -14,63 +14,8 @@ import CraftsmanshipStrip from '../components/sections/CraftsmanshipStrip'
 import StickyMobileAtc from '../components/product/StickyMobileAtc'
 import { useProduct } from '../hooks/useProduct'
 import { useCart } from '../hooks/useCart'
-import { useProductReviews } from '../hooks/useProductReviews'
 
 
-function VisualProofSection({ summary }) {
-  const hasReviews = summary && summary.totalReviews > 0
-
-  return (
-    <section className="py-14 sm:py-16 md:py-20 bg-[#FAF8F5] border-y border-[#E8DFD5]" aria-label="Tại sao khách hàng tin tưởng">
-      <div className="w-full max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center divide-y md:divide-y-0 md:divide-x divide-[#E8DFD5]">
-          <div className="flex flex-col items-center justify-center p-4">
-            <span className="font-serif text-4xl sm:text-5xl font-bold text-[#631521] leading-none mb-2">
-              500+
-            </span>
-            <span className="font-sans text-xs sm:text-sm text-[#4A3F38] font-normal">
-              Lượt bán ra
-            </span>
-          </div>
-
-          <div className="flex flex-col items-center justify-center p-4">
-            <span className="font-serif text-4xl sm:text-5xl font-bold text-[#631521] leading-none mb-2">
-              BST 2026
-            </span>
-            <span className="font-sans text-xs sm:text-sm text-[#4A3F38] font-normal">
-              phiên bản giới hạn thiết kế độc quyền
-            </span>
-          </div>
-
-          <div className="flex flex-col items-center justify-center p-4">
-            {hasReviews ? (
-              <>
-                <div className="flex items-center justify-center gap-1 mb-2">
-                  <span className="font-serif text-4xl sm:text-5xl font-bold text-[#631521] leading-none">
-                    {summary.averageRating}
-                  </span>
-                  <span className="text-3xl text-[#D4AF37]">★</span>
-                </div>
-                <span className="font-sans text-xs sm:text-sm text-[#4A3F38] font-normal">
-                  điểm đánh giá thực tế ({summary.totalReviews} lượt)
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="font-serif text-4xl sm:text-5xl font-bold text-[#631521] leading-none mb-2">
-                  100+
-                </span>
-                <span className="font-sans text-xs sm:text-sm text-[#4A3F38] font-normal">
-                  Đánh giá 5 sao
-                </span>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-}
 
 export default function ProductDetailPage() {
   const { productSlug } = useParams()
@@ -80,7 +25,6 @@ export default function ProductDetailPage() {
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
   const [toast, setToast] = useState(null)
   const { addItem } = useCart()
-  const { summary } = useProductReviews(product?.id)
 
   useEffect(() => {
     if (product) {
@@ -206,7 +150,7 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 xl:gap-12 items-start">
           {/* Left — Gallery (6 cols, STICKY trong suốt quá trình cuộn đọc thông tin bên phải) */}
           <div className="lg:col-span-6 lg:sticky lg:top-24 xl:top-28 self-start flex justify-center lg:justify-start">
-            <div className="w-full max-w-[530px]">
+            <div className="w-full max-w-[620px] xl:max-w-[660px]">
               <ProductImageGallery
                 images={product.images}
                 selectedColor={selectedColor}
@@ -239,9 +183,6 @@ export default function ProductDetailPage() {
       {related.length > 0 && (
         <RelatedProducts products={related} onAddToCart={handleAddToCart} />
       )}
-
-      {/* Visual Proof Section: Tại Sao Khách Tin Tưởng */}
-      <VisualProofSection summary={summary} />
 
       {/* Reviews */}
       <ProductReviews product={product} />

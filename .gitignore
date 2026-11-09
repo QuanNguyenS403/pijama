@@ -14,3 +14,4 @@ _archive/
 *.db-journal
 bin/
 *.exe
+temp_downloads/

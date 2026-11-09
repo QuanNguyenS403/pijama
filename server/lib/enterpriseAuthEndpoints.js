@@ -16,6 +16,7 @@ import { verifyTurnstileToken } from './turnstileService.js'
 import { logSecurityAudit } from './auditLogger.js'
 import { parseCookies, setCustomerSessionCookie, clearCustomerSessionCookie } from './customerSessionMiddleware.js'
 import { sendVerificationCodeEmail, sendWelcomeVoucherEmail, sendPasswordResetOtpEmail } from './emailAccount.js'
+import { checkEmailDeliverability, UNDELIVERABLE_EMAIL_MESSAGE } from './emailRecipientGuard.js'
 import {
   createWelcomeVoucher,
   createCustomerSession,
@@ -69,6 +70,17 @@ export function registerEnterpriseAuthEndpoints(app) {
   // Helper lấy User-Agent
   const getUserAgent = (req) => req.headers['user-agent'] || 'Unknown-Client'
 
+  // Helper kiểm tra khóa chẩn đoán (chỉ bật khi đặt DIAGNOSTIC_KEY trong biến môi trường, so sánh constant-time).
+  // Trước đây khóa 'qns2026' bị hardcode -> bất kỳ ai biết khóa đều xem được stack trace nội bộ trên production.
+  const hasValidDiagnosticKey = (req) => {
+    const expected = String(process.env.DIAGNOSTIC_KEY || '').trim()
+    const provided = String(req.headers['x-diagnostic-key'] || '').trim()
+    if (!expected || expected.length < 16 || !provided) return false
+    const a = Buffer.from(provided)
+    const b = Buffer.from(expected)
+    return a.length === b.length && crypto.timingSafeEqual(a, b)
+  }
+
   // ── 1. ĐĂNG KÝ TÀI KHOẢN MỚI (BƯỚC 3) ──────────────────────────
   app.post('/api/auth/register', validateBody(RegisterRequestOtpDtoSchema), async (req, res) => {
     // Hỗ trợ chế độ test runner nội bộ tự động
@@ -80,64 +92,80 @@ export function registerEnterpriseAuthEndpoints(app) {
   })
 
   const handleDirectRegisterTestMode = async (req, res) => {
-    const ip = getClientIp(req)
-    const userAgent = getUserAgent(req)
-    const { email, password, fullName, phone, marketingOptIn } = req.validatedBody
-    const cleanEmail = (email || '').trim().toLowerCase()
-    const db = getDb()
+    try {
+      const ip = getClientIp(req)
+      const userAgent = getUserAgent(req)
+      const { email, password, fullName, phone, marketingOptIn } = req.validatedBody
+      const cleanEmail = (email || '').trim().toLowerCase()
+      const db = getDb()
 
-    const existingUser = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(cleanEmail)
-    if (existingUser) {
-      return res.status(409).json({ success: false, error: 'Email này đã được đăng ký tài khoản.' })
+      const existingUser = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(cleanEmail)
+      if (existingUser) {
+        return res.status(409).json({ success: false, error: 'Email này đã được đăng ký tài khoản.' })
+      }
+
+      const passwordHash = await hashPassword(password)
+      const userId = `usr_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`
+      const now = new Date().toISOString()
+
+      db.prepare(`
+        INSERT INTO users (
+          id, email, password_hash, full_name, phone, role, status, verified, marketing_email_opt_in, marketing_opt_in_at, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, 'customer', 'active', 1, ?, ?, ?, ?)
+      `).run(userId, cleanEmail, passwordHash, fullName, phone || null, marketingOptIn ? 1 : 0, marketingOptIn ? now : null, now, now)
+
+      // Đồng bộ sang bảng accounts để thỏa mãn khóa ngoại vouchers(account_id) -> accounts(id)
+      db.prepare(`
+        INSERT INTO accounts (
+          id, method, email, phone, full_name, verified, marketing_email_opt_in, marketing_opt_in_at, status, created_at, updated_at
+        ) VALUES (?, 'local', ?, ?, ?, 1, ?, ?, 'active', ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          email = excluded.email,
+          full_name = excluded.full_name,
+          phone = excluded.phone,
+          marketing_email_opt_in = excluded.marketing_email_opt_in,
+          verified = 1,
+          status = 'active',
+          updated_at = excluded.updated_at
+      `).run(userId, cleanEmail, phone || null, fullName, marketingOptIn ? 1 : 0, marketingOptIn ? now : null, now, now)
+
+      const voucher = createWelcomeVoucher(userId)
+      const tokens = await createSessionAndTokens(
+        { id: userId, email: cleanEmail, full_name: fullName, role: 'customer' },
+        { ip, userAgent }
+      )
+
+      setRefreshTokenCookie(res, tokens.refreshToken)
+      createCustomerSession({
+        accountId: userId,
+        ip,
+        userAgent,
+        ttlDays: 30,
+        res,
+      })
+
+      const userPayload = {
+        id: userId,
+        email: cleanEmail,
+        fullName,
+        phone: phone || null,
+        avatarUrl: null,
+        role: 'customer',
+        verified: true,
+        voucherCode: voucher?.code || 'WELCOME10',
+      }
+
+      return res.status(201).json({
+        success: true,
+        user: userPayload,
+        account: userPayload,
+        accessToken: tokens.accessToken,
+        voucher,
+      })
+    } catch (err) {
+      console.error('Lỗi handleDirectRegisterTestMode:', err)
+      return res.status(500).json({ success: false, error: err.message })
     }
-
-    const passwordHash = await hashPassword(password)
-    const userId = `usr_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`
-    const now = new Date().toISOString()
-
-    db.prepare(`
-      INSERT INTO users (
-        id, email, password_hash, full_name, phone, role, status, verified, marketing_email_opt_in, marketing_opt_in_at, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, 'customer', 'active', 1, ?, ?, ?, ?)
-    `).run(userId, cleanEmail, passwordHash, fullName, phone || null, marketingOptIn ? 1 : 0, marketingOptIn ? now : null, now, now)
-
-    const voucher = createWelcomeVoucher(userId)
-    const familyId = crypto.randomUUID()
-    const tokens = await createSessionAndTokens({
-      userId,
-      email: cleanEmail,
-      role: 'customer',
-      familyId,
-      req,
-    })
-
-    setRefreshTokenCookie(res, tokens.refreshToken, tokens.refreshExpiresIn)
-    createCustomerSession({
-      accountId: userId,
-      ip,
-      userAgent,
-      ttlDays: 30,
-      res,
-    })
-
-    const userPayload = {
-      id: userId,
-      email: cleanEmail,
-      fullName,
-      phone: phone || null,
-      avatarUrl: null,
-      role: 'customer',
-      verified: true,
-      voucherCode: voucher?.code || 'WELCOME10',
-    }
-
-    return res.status(201).json({
-      success: true,
-      user: userPayload,
-      account: userPayload,
-      accessToken: tokens.accessToken,
-      voucher,
-    })
   }
 
   const handleRegisterRequestOtp = async (req, res) => {
@@ -164,6 +192,19 @@ export function registerEnterpriseAuthEndpoints(app) {
       }
 
       const db = getDb()
+
+      // B2. Kiểm tra email có nhận được thư không (domain tồn tại & có MX) — chống bounce làm hỏng uy tín hộp thư gửi
+      const deliverability = await checkEmailDeliverability(cleanEmail)
+      if (!deliverability.deliverable) {
+        logSecurityAudit({
+          action: 'REGISTER_UNDELIVERABLE_EMAIL',
+          status: 'BLOCKED',
+          ip,
+          userAgent,
+          details: { email: cleanEmail, reason: deliverability.reason },
+        })
+        return res.status(400).json({ success: false, error: UNDELIVERABLE_EMAIL_MESSAGE, message: UNDELIVERABLE_EMAIL_MESSAGE })
+      }
 
       // C. Kiểm tra email đã tồn tại hay chưa
       const existingUser = db.prepare('SELECT id, verified FROM users WHERE LOWER(email) = ?').get(cleanEmail)
@@ -228,6 +269,9 @@ export function registerEnterpriseAuthEndpoints(app) {
         console.error('❌ Lỗi gửi email xác thực đăng ký:', eErr.message)
         await cacheDel(cacheKey)
         deletePendingRegistrationDb(cleanEmail, db)
+        if (eErr.code === 'UNDELIVERABLE_RECIPIENT') {
+          return res.status(400).json({ success: false, error: UNDELIVERABLE_EMAIL_MESSAGE, message: UNDELIVERABLE_EMAIL_MESSAGE })
+        }
         return res.status(502).json({
           success: false,
           error: 'Hệ thống gửi email đang bận hoặc gián đoạn kết nối. Quý khách vui lòng thử lại sau ít phút hoặc dùng tính năng Tiếp tục với Google.',
@@ -256,7 +300,7 @@ export function registerEnterpriseAuthEndpoints(app) {
       return res.status(500).json({
         success: false,
         error: 'Đã có lỗi xảy ra khi gửi mã xác thực.',
-        detail: req.headers['x-diagnostic-key'] === 'qns2026' ? (err.stack || err.message) : undefined,
+        detail: hasValidDiagnosticKey(req) ? (err.stack || err.message) : undefined,
       })
     }
   }
@@ -696,6 +740,11 @@ export function registerEnterpriseAuthEndpoints(app) {
       return res.status(400).json({ success: false, error: turnstileCheck.error })
     }
 
+    const otpDeliverability = await checkEmailDeliverability(email)
+    if (!otpDeliverability.deliverable) {
+      return res.status(400).json({ success: false, error: UNDELIVERABLE_EMAIL_MESSAGE })
+    }
+
     // Sinh OTP 6 chữ số bằng CSPRNG và băm an toàn
     const otpCode = crypto.randomInt(100000, 999999).toString()
     const salt = crypto.randomBytes(16).toString('hex')
@@ -945,7 +994,7 @@ export function registerEnterpriseAuthEndpoints(app) {
       return res.status(500).json({
         success: false,
         error: 'Đã có lỗi xảy ra khi xử lý yêu cầu.',
-        detail: req.headers['x-diagnostic-key'] === 'qns2026' ? (err.stack || err.message) : undefined,
+        detail: hasValidDiagnosticKey(req) ? (err.stack || err.message) : undefined,
       })
     }
   })

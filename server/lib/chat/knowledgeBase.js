@@ -241,7 +241,7 @@ export function retrieveKnowledge(query, topK = 3) {
     // Ưu tiên sản phẩm đích danh nếu query nhắc đúng tên hoặc màu sắc đặc trưng
     if (chunk.topic === 'product') {
       const titleLower = chunk.title.toLowerCase()
-      if (titleLower.includes('daybreak') && (cleanQuery.includes('daybreak') || cleanQuery.includes('hong') || cleanQuery.includes('pink'))) {
+      if (titleLower.includes('daybreak') && (cleanQuery.includes('daybreak') || cleanQuery.includes('do') || cleanQuery.includes('red') || cleanQuery.includes('hong') || cleanQuery.includes('pink'))) {
         score += 35
       } else if (titleLower.includes('stillwater') && (cleanQuery.includes('stillwater') || cleanQuery.includes('navy') || cleanQuery.includes('caro') || cleanQuery.includes('size l') || cleanQuery.includes('65kg') || cleanQuery.includes('1m72') || cleanQuery.includes('nam'))) {
         score += 35

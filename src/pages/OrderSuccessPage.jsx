@@ -418,11 +418,8 @@ export default function OrderSuccessPage() {
                         const isItemPreOrder = !!(
                           item.preOrder?.enabled ||
                           item.isPreOrder ||
-                          item.slug === 'the-classic-set' ||
-                          item.productId === 'the-classic-set' ||
                           item.slug === 'the-evening-edit' ||
                           item.productId === 'the-evening-edit' ||
-                          item.productName?.includes('DAYBREAK') ||
                           item.productName?.includes('HEARTH')
                         )
                         return (
@@ -520,11 +517,8 @@ export default function OrderSuccessPage() {
                       (i) =>
                         i.preOrder?.enabled ||
                         i.isPreOrder ||
-                        i.slug === 'the-classic-set' ||
-                        i.productId === 'the-classic-set' ||
                         i.slug === 'the-evening-edit' ||
                         i.productId === 'the-evening-edit' ||
-                        i.productName?.includes('DAYBREAK') ||
                         i.productName?.includes('HEARTH')
                     )
                   )

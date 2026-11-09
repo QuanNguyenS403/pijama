@@ -11,7 +11,7 @@
 ### 1.1 Giá niêm yết sản phẩm thực tế (`src/data/products.js`)
 | Sản phẩm | Mã / Slug | Giá bán lẻ (VND) | Phí ship tiêu chuẩn |
 |---|---|---|---|
-| **THE DAYBREAK SET** (Sọc Hồng) | `the-classic-set` | **390.000đ** | 30.000đ (miễn phí nếu ≥ 500k) |
+| **THE DAYBREAK SET** (Đỏ) | `the-classic-set` | **490.000đ** | 30.000đ (miễn phí nếu ≥ 500k) |
 | **THE STILLWATER SET** (Caro Navy) | `the-cafe-look` | **550.000đ** | Miễn phí (đơn ≥ 500k) |
 | **THE HEARTH SET** (Sọc Nâu) | `the-evening-edit` | **750.000đ** | Miễn phí (đơn ≥ 500k) |
 

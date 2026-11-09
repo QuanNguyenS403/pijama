@@ -42,6 +42,8 @@ export default function ColorSelector({ colors = [], selected, onChange }) {
               #FFFFFF 4px, #FFFFFF 6px,
               #5C3A21 6px, #5C3A21 10px
             )`
+          } else if (isPattern && (color.patternType === 'red' || color.patternType === 'solid-red')) {
+            swatchBackground = `linear-gradient(135deg, #9E2A36 0%, #80262F 50%, #5E171E 100%)`
           }
 
           if (isPattern) {

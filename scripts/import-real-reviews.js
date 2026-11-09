@@ -33,7 +33,7 @@ async function main() {
     "displayName": "Khánh Linh D.",
     "body": "Nội dung phản hồi nguyên văn từ khách...",
     "consentEvidence": "Tin nhắn Zalo ngày 15/10/2026 xác nhận đồng ý đăng ảnh feedback",
-    "photos": ["/images/classic-set-pink-thumb-1.jpg"],
+    "photos": ["/images/classic-set-red-thumb-1.jpg"],
     "status": "approved"
   }
 ]`)

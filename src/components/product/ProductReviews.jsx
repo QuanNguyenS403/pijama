@@ -420,7 +420,7 @@ export default function ProductReviews({ product }) {
                     aria-expanded={showFilters}
                     aria-label="Tùy chọn lọc đánh giá"
                   >
-                    <span>{summary.totalReviews} đánh giá</span>
+                    <span>Đánh giá từ khách hàng</span>
                     <ChevronDown
                       className={`w-4 h-4 text-white/60 group-hover:text-[#D4AF37] transition-transform duration-200 ${
                         showFilters ? 'rotate-180' : ''
@@ -481,10 +481,10 @@ export default function ProductReviews({ product }) {
                   <span className="text-white/60 mr-1 font-medium">Lọc theo:</span>
 
                   {[
-                    { key: 'all', label: `Tất cả (${summary.totalReviews})` },
-                    { key: 'photo', label: `Có ảnh (${summary.photoCount || 0})` },
-                    { key: '5star', label: `5 sao (${summary.ratingDistribution?.[5] || 0})` },
-                    { key: '4star', label: `4 sao (${summary.ratingDistribution?.[4] || 0})` },
+                    { key: 'all', label: 'Tất cả' },
+                    { key: 'photo', label: 'Có ảnh' },
+                    { key: '5star', label: '5 sao' },
+                    { key: '4star', label: '4 sao' },
                   ].map((filter) => (
                     <button
                       key={filter.key}
@@ -559,7 +559,7 @@ export default function ProductReviews({ product }) {
                   onClick={handleToggleExpand}
                   className="inline-flex items-center gap-2 px-7 py-2.5 rounded-full border border-[#D4AF37] bg-white text-[#1A1614] hover:bg-[#D4AF37] hover:text-[#1A1614] text-xs font-sans font-bold uppercase tracking-wider transition-all shadow-md cursor-pointer"
                 >
-                  <span>{isExpanded ? 'Thu gọn' : `Xem thêm đánh giá (${reviews.length - INITIAL_REVIEW_COUNT})`}</span>
+                  <span>{isExpanded ? 'Thu gọn' : 'Xem thêm đánh giá'}</span>
                 </button>
               </div>
             )}

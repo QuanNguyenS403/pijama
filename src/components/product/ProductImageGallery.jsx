@@ -9,18 +9,20 @@ export default function ProductImageGallery({
   preOrder,
   productName,
 }) {
-  // Resolve image list based on whether images is an object keyed by color name or an array
+  // Resolve image list based on whether images is an object keyed by color name or an array (tối đa 4 ảnh, loại bỏ thumbnail 5)
   const currentImages = useMemo(() => {
+    let list = []
     if (!images) return []
-    if (Array.isArray(images)) return images
-    if (typeof images === 'object') {
+    if (Array.isArray(images)) list = images
+    else if (typeof images === 'object') {
       if (selectedColor?.name && images[selectedColor.name]) {
-        return images[selectedColor.name]
+        list = images[selectedColor.name]
+      } else {
+        const firstKey = Object.keys(images)[0]
+        list = firstKey ? images[firstKey] : []
       }
-      const firstKey = Object.keys(images)[0]
-      return firstKey ? images[firstKey] : []
     }
-    return []
+    return list.slice(0, 4)
   }, [images, selectedColor?.name])
 
   const [activeIndex, setActiveIndex] = useState(0)
@@ -61,14 +63,14 @@ export default function ProductImageGallery({
       <div className="flex flex-col gap-3.5">
         {/* Main hero image */}
         <div
-          className="relative overflow-hidden bg-[#F5F0EB] border border-[#E8DFD5] cursor-zoom-in group rounded-[4px] w-full flex items-center justify-center aspect-[3/4] max-h-[700px]"
+          className="relative overflow-hidden bg-[#F5F0EB] border border-[#E8DFD5] cursor-zoom-in group rounded-[4px] w-full flex items-center justify-center aspect-[4/5] max-h-[640px] xl:max-h-[660px]"
           onClick={() => openLightbox(activeIndex)}
           role="button"
           tabIndex={0}
           aria-label={`Mở ảnh lớn ${productName}`}
           onKeyDown={(e) => e.key === 'Enter' && openLightbox(activeIndex)}
         >
-          {/* Quick Prev / Next navigation buttons on desktop */}
+          {/* Quick Prev / Next navigation buttons on desktop & mobile */}
           {currentImages.length > 1 && (
             <>
               <button
@@ -78,9 +80,9 @@ export default function ProductImageGallery({
                   setActiveIndex((i) => (i - 1 + currentImages.length) % currentImages.length)
                 }}
                 aria-label="Ảnh trước"
-                className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/90 text-[#1A1614] hover:bg-[#631521] hover:text-white flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer backdrop-blur-xs"
+                className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white text-[#1A1614] hover:bg-[#631521] hover:text-white flex items-center justify-center shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 active:scale-95 border border-[#E8DFD5]/80"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
               </button>
               <button
                 type="button"
@@ -89,9 +91,9 @@ export default function ProductImageGallery({
                   setActiveIndex((i) => (i + 1) % currentImages.length)
                 }}
                 aria-label="Ảnh tiếp theo"
-                className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/90 text-[#1A1614] hover:bg-[#631521] hover:text-white flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer backdrop-blur-xs"
+                className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white text-[#1A1614] hover:bg-[#631521] hover:text-white flex items-center justify-center shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 active:scale-95 border border-[#E8DFD5]/80"
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
               </button>
             </>
           )}
@@ -103,7 +105,7 @@ export default function ProductImageGallery({
             </div>
           )}
 
-          <div className="absolute bottom-4 right-4 z-10 text-[#2C201A] bg-white/80 backdrop-blur-sm p-1.5 rounded-[2px] opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+          <div className="absolute bottom-3.5 right-3.5 z-10 text-[#1A1614] bg-white/90 hover:bg-white p-2 rounded-full shadow-md transition-all">
             <ZoomIn className="w-4 h-4" />
           </div>
 
@@ -140,7 +142,7 @@ export default function ProductImageGallery({
                   transition={{ duration: 0.2, delay: i * 0.04 }}
                   onClick={() => setActiveIndex(i)}
                   aria-label={`Chọn ảnh ${i + 1}`}
-                  className={`shrink-0 w-16 sm:w-20 lg:w-[72px] xl:w-20 aspect-[3/4] overflow-hidden transition-all duration-150 rounded-[3px] cursor-pointer ${
+                  className={`shrink-0 w-18 sm:w-22 lg:w-20 xl:w-24 aspect-[4/5] overflow-hidden transition-all duration-150 rounded-[3px] cursor-pointer ${
                     i === activeIndex
                       ? 'border-2 border-[#631521] shadow-md opacity-100 ring-2 ring-[#D4AF37]/40 scale-[1.02]'
                       : 'border border-[#E8DFD5] opacity-70 hover:opacity-100 hover:border-[#631521]'

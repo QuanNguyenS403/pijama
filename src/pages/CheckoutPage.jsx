@@ -737,7 +737,7 @@ export default function CheckoutPage() {
                   </div>
 
                   {/* Pre-Order Notice Banner */}
-                  {items.some((i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-classic-set' || i.productId === 'the-classic-set' || i.slug === 'the-evening-edit' || i.productId === 'the-evening-edit') && (
+                  {items.some((i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-evening-edit' || i.productId === 'the-evening-edit') && (
                     <div className="mb-5 p-3.5 bg-[#FAF5F0] border-2 border-[#D4AF37] rounded-[3px] flex items-start gap-2.5 text-xs text-[#631521] font-sans">
                       <span className="text-base shrink-0">⏱</span>
                       <div>
@@ -746,7 +746,7 @@ export default function CheckoutPage() {
                         </p>
                         {(() => {
                           const preOrderNames = items
-                            .filter((i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-classic-set' || i.productId === 'the-classic-set' || i.slug === 'the-evening-edit' || i.productId === 'the-evening-edit')
+                            .filter((i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-evening-edit' || i.productId === 'the-evening-edit')
                             .map((i) => i.name || i.productName)
                             .filter((val, idx, self) => self.indexOf(val) === idx)
                           const displayNames = preOrderNames.length > 0 ? preOrderNames.join(' & ') : 'sản phẩm Đặt Trước'
@@ -766,8 +766,6 @@ export default function CheckoutPage() {
                       const isItemPreOrder = !!(
                         item.preOrder?.enabled ||
                         item.isPreOrder ||
-                        item.slug === 'the-classic-set' ||
-                        item.productId === 'the-classic-set' ||
                         item.slug === 'the-evening-edit' ||
                         item.productId === 'the-evening-edit'
                       )

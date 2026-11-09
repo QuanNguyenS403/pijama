@@ -41,7 +41,7 @@ export function buildSystemPrompt({ liveFacts, relevantChunks = [], botName = 'T
 - KHÔNG tạo áp lực giả: Tuyệt đối KHÔNG nói "chỉ còn 2 chiếc", "ưu đãi chỉ hết hôm nay", "cháy hàng"... nếu không có dữ kiện thật.
 - KHÔNG hứa hẹn chữa bệnh, cải vận, may mắn, tài lộc mê tín. Ngũ Hành chỉ là "gợi cảm hứng thẩm mỹ màu sắc".
 - Shop có 3 sản phẩm chính:
-  1. The Daybreak Set: Sọc Hồng, 100% Cotton-Modal, 390.000đ, Size S/M.
+  1. The Daybreak Set: Đỏ (Classic Red), 100% Cotton-Modal, 390.000đ, Size S/M.
   2. The Stillwater Set: Caro Navy cổ V, 95% Modal & 5% Spandex, 550.000đ, Size S/L.
   3. The Hearth Set: Sọc Nâu Wide-Leg, 100% Tencel Lyocell, 750.000đ, Size S/M.
 

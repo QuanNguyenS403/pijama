@@ -30,7 +30,7 @@ const facebookThreads = [
       avatar: 'NL',
       avatarBg: '#C5A059',
       time: '2 ngày',
-      text: 'Thấy bài viết trên page nhiều review khen nên đặt thử 1 bộ Daybreak sọc hồng. Mặc ngủ một giấc dậy không muốn cởi ra luôn vì quá mềm êm 😭 Không hề bị tích điện hay dính dính vào da. Lần này mình order thêm 2 bộ nữa cho mẹ và chị gái làm quà.',
+      text: 'Thấy bài viết trên page nhiều review khen nên đặt thử 1 bộ Daybreak màu đỏ. Mặc ngủ một giấc dậy không muốn cởi ra luôn vì quá mềm êm 😭 Không hề bị tích điện hay dính dính vào da. Lần này mình order thêm 2 bộ nữa cho mẹ và chị gái làm quà.',
       likes: 247,
       reactions: ['love', 'like'],
     },

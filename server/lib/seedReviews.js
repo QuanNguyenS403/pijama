@@ -13,10 +13,10 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Bảo Ngọc",
     "date": "2026-10-12T08:15:00.000Z",
     "rating": 5,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "S",
-    "photo": "/images/classic-set-pink-thumb-1.jpg",
-    "text": "Mở hộp ra cái là ưng cái màu liền luôn á mấy bà ơi! Sọc hồng ngoài đời nhìn ngọt mà sang chứ khum bị sến chút nào, mặc lên nhìn da sáng bừng. Lúc mới khui ra ở phần gấu áo có vương vài cọng chỉ thừa nhỏ xíu nhưng mình lấy kéo bấm cái rẹt là xong, không ảnh hưởng gì tới hòa bình thế giới. Tầm giá 390k mà lên form tiểu thư thế này là quá ổn áp, hôm nào có lương lại ghé shop chốt thêm bộ nữa đổi gió!"
+    "photo": "/images/classic-set-red-thumb-1.jpg",
+    "text": "Mở hộp ra cái là ưng cái màu liền luôn á mấy bà ơi! Màu đỏ ngoài đời nhìn sang xỉu chứ khum bị sến chút nào, mặc lên nhìn da sáng bừng. Lúc mới khui ra ở phần gấu áo có vương vài cọng chỉ thừa nhỏ xíu nhưng mình lấy kéo bấm cái rẹt là xong, không ảnh hưởng gì tới hòa bình thế giới. Tầm giá 390k mà lên form tiểu thư thế này là quá ổn áp, hôm nào có lương lại ghé shop chốt thêm bộ nữa đổi gió!"
   },
   {
     "id": "rv-2",
@@ -24,9 +24,9 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Quỳnh Hương",
     "date": "2026-10-14T09:30:00.000Z",
     "rating": 5,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "M",
-    "photo": "/images/classic-set-pink-thumb-2.jpg",
+    "photo": "/images/classic-set-red-thumb-2.jpg",
     "text": "Săn được em này lúc đang giảm còn 390 cành phải gọi là hời thực sự. Mình 1m60 nặng 54kg mặc size M vừa xinh, dáng suông rộng rãi che được cái bắp tay to. Mặc bộ này chụp story gương trong phòng ngủ mà mấy đứa bạn cứ nhắn hỏi xin link mãi. Đường kim mũi chỉ nhìn chung ở mức vừa vặn với tầm giá, mặc ở nhà lăn lê thoải mái cực kỳ."
   },
   {
@@ -35,9 +35,9 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Gia Hân",
     "date": "2026-10-15T14:20:00.000Z",
     "rating": 4,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "S",
-    "photo": "/images/classic-set-pink-thumb-3.jpg",
+    "photo": "/images/classic-set-red-thumb-3.jpg",
     "text": "Cho shop 4 sao rưỡi nha (mà web chỉ cho bấm 4 hoặc 5 sao nên để 4 sao góp ý nhẹ nè). Điểm cộng to đùng là thiết kế cổ V lệch nhìn rất có gu, mặc lên người nhẹ nhàng dễ chịu lắm. Điểm trừ nhỏ là nếu lộn mặt trái ra soi kỹ thì đường may bên trong ở mức trung bình thui, chưa được sắc nét từng milimet đâu. Cơ mà mặc bên ngoài thì lên dáng vẫn xinh xắn, vẫn đáng để quay lại mua tiếp nha!"
   },
   {
@@ -46,10 +46,10 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Thảo Vy",
     "date": "2026-10-17T10:05:00.000Z",
     "rating": 5,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "M",
-    "photo": "/images/classic-set-pink-detail.jpg",
-    "text": "Cứu cánh cho những ngày lười thay đồ của tui đây rồi! Bình thường mặc đồ bộ ở nhà mỗi lần chạy xuống sảnh chung cư nhận đồ ship cứ bị ngại, từ ngày có bộ sọc hồng này là tự tin bước xuống luôn vì nhìn lịch sự, kín đáo mà vẫn trẻ trung. Mặc ngủ cả đêm không bị bức bí xíu nào, 10 điểm cho chiếc vibe này."
+    "photo": "/images/classic-set-red-detail.jpg",
+    "text": "Cứu cánh cho những ngày lười thay đồ của tui đây rồi! Bình thường mặc đồ bộ ở nhà mỗi lần chạy xuống sảnh chung cư nhận đồ ship cứ bị ngại, từ ngày có bộ đỏ này là tự tin bước xuống luôn vì nhìn lịch sự, kín đáo mà vẫn trẻ trung. Mặc ngủ cả đêm không bị bức bí xíu nào, 10 điểm cho chiếc vibe này."
   },
   {
     "id": "rv-5",
@@ -57,7 +57,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Minh Châu",
     "date": "2026-10-18T16:45:00.000Z",
     "rating": 4,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "S",
     "photo": null,
     "text": "Màu hồng phấn phối sọc trắng nhìn dịu mắt cực, đúng kiểu nhìn vào là thấy tâm trạng vui vẻ liền. Đồ của mình nhận về có 1 chiếc cúc áo dưới cùng hơi lỏng chỉ một tẹo, mình tự lấy kim khâu cố định lại 2 phút là ngon lành cành đào. Nói chung chất lượng may ở mức khá thôi nhưng bù lại thiết kế với màu sắc quá nịnh mắt nên vẫn mê."
@@ -68,7 +68,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Hà My",
     "date": "2026-10-19T11:10:00.000Z",
     "rating": 5,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "S",
     "photo": null,
     "text": "Trộm vía hợp vía shop hay sao á mà đặt hôm trước hôm sau đã nhận được rồi. Hộp đồ mở ra thơm tho gọn gàng, cảm giác được nâng niu ghê. Bộ này mặc lên người nhẹ tênh, nằm điều hòa ngủ một mạch tới sáng. Với mức giá dưới 400k thì độ hoàn thiện vậy là vừa đủ xài rồi, tuần sau lĩnh lương mình quay lại rinh tiếp mẫu caro xanh nha shop!"
@@ -79,7 +79,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Yến Nhi",
     "date": "2026-10-20T18:30:00.000Z",
     "rating": 5,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "M",
     "photo": null,
     "text": "Trước giờ toàn mặc áo phông cũ đi ngủ, nay mạnh dạn đầu tư bộ pijama tử tế mà thấy yêu bản thân hơn hẳn haha. Cổ áo may kiểu châu Âu nhìn thanh lịch phết, không bị già dặn. Đường may thì theo mình đánh giá là tầm trung, đủ chắc chắn để mặc hàng ngày, quan trọng là lên form chuẩn như ảnh mẫu web."
@@ -90,7 +90,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Thanh Trúc",
     "date": "2026-10-21T13:40:00.000Z",
     "rating": 4,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "M",
     "photo": null,
     "text": "Nhận hàng xong phải giặt mặc thử liền mới dám lên viết review nè. Tổng thể form quần ống suông mặc thoải mái, đứng lên ngồi xuống không bị kích. Tuy nhiên phần vắt sổ ở lai quần làm hơi vội hay sao á nên nhìn chưa được mượt lắm, còn sót xíu chỉ. Được cái mặc lên tổng thể vẫn xinh lung linh nên không ảnh hưởng mấy, giá 390k vậy là hợp lý rồi."
@@ -101,7 +101,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Khánh Vân",
     "date": "2026-10-22T09:20:00.000Z",
     "rating": 5,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "S",
     "photo": null,
     "text": "Mua bộ này đem đi Vũng Tàu staycation cùng hội chị em mà ai cũng khen nức nở! Lên hình dưới nắng sáng sớm đúng chuẩn tên bộ sưu tập luôn, tươi tắn rạng rỡ cực kỳ. Mặc ở phòng khách sạn ăn sáng chụp ảnh sống ảo cháy máy, chắc chắn sẽ giới thiệu cho hội bạn qua hốt thêm."
@@ -112,7 +112,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Diệu Linh",
     "date": "2026-10-23T15:00:00.000Z",
     "rating": 5,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "S",
     "photo": null,
     "text": "Bà nào da ngăm nhẹ đang phân vân màu hồng này thì cứ tự tin chốt đơn đi nha, tui da ngăm mặc lên vẫn sáng da bình thường luôn vì tông hồng của shop pha khéo lắm, không phải hồng cánh sen đâu. Mặc vào người cảm giác thoải mái, cuối tuần chỉ muốn nằm ườn trên giường đọc sách cả ngày."
@@ -123,7 +123,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Tú Anh",
     "date": "2026-10-24T17:15:00.000Z",
     "rating": 4,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "M",
     "photo": null,
     "text": "Mình cao có 1m53 nhưng thích mặc rộng nên cố chấp lấy size M, thành ra quần hơi dài chấm gót một xíu, đem ra tiệm lên lai 15k là vừa đẹp. Lúc nhận hàng có vài chỗ nối chỉ chưa được gọn gàng lắm, ở mức trung bình thui nhưng không bị bung sổ gì cả. Shop tư vấn dễ thương cực nên vẫn tặng 4 sao và hẹn quay lại lần sau!"
@@ -134,7 +134,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Ngọc Diệp",
     "date": "2026-10-25T11:50:00.000Z",
     "rating": 5,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "M",
     "photo": null,
     "text": "Phải vào khen bạn nhân viên trực web một câu vì tư vấn size quá có tâm! Lúc đầu mình định đặt S mà bạn khuyên lấy M để mặc ngủ cho phóng khoáng, nhận về mặc vào đúng chuẩn ý thích luôn. Đường kim mũi chỉ vừa tầm giá, không quá cầu kỳ xuất sắc nhưng mặc lên người nhìn sang và gọn gàng lắm."
@@ -145,10 +145,10 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Phương Nghi",
     "date": "2026-10-26T20:10:00.000Z",
     "rating": 5,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "S",
     "photo": null,
-    "text": "Ban đầu mua tặng sinh nhật nhỏ bạn cùng phòng thôi, ai dè lúc nó mặc thử lên xinh điên nên tui không kìm lòng được phải lên web đặt thêm một bộ y hệt để hai đứa mặc đồ đôi ở trọ. Màu sọc hồng lên đèn vàng buổi tối nhìn ấm áp dễ thương xỉu!"
+    "text": "Ban đầu mua tặng sinh nhật nhỏ bạn cùng phòng thôi, ai dè lúc nó mặc thử lên xinh điên nên tui không kìm lòng được phải lên web đặt thêm một bộ y hệt để hai đứa mặc đồ đôi ở trọ. Màu đỏ lên đèn vàng buổi tối nhìn ấm áp dễ thương xỉu!"
   },
   {
     "id": "rv-14",
@@ -156,7 +156,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Lan Anh",
     "date": "2026-10-27T08:45:00.000Z",
     "rating": 4,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "S",
     "photo": null,
     "text": "Nói thật lòng cho các bạn dễ mua nha: nếu ai khó tính đòi hỏi đường may phải nét căng như hàng thiết kế tiền triệu thì bộ này chưa tới mức đó đâu, đường may ở mức bình thường thôi và có vài cọng chỉ dư. Nhưng nếu tìm một bộ pijama giá mềm, màu xinh, lên form chuẩn tiểu thư để mặc nhà vừa đẹp vừa thoải mái thì em này đáp ứng dư sức nha!"
@@ -167,7 +167,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Hoài Thương",
     "date": "2026-10-28T14:30:00.000Z",
     "rating": 5,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "M",
     "photo": null,
     "text": "Tối qua mặc ngủ thử một đêm thấy êm ái cực, mình thuộc dạng ngủ hay trở mình mà áo quần không bị xoắn hay cấn nút gì hết. Đi làm về mệt tắm rửa xong xỏ bộ này vào là thấy xả stress liền. Sẽ còn ủng hộ QuanNguyenS dài dài."
@@ -178,7 +178,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Mai Chi",
     "date": "2026-10-29T10:15:00.000Z",
     "rating": 5,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "S",
     "photo": null,
     "text": "Giá giảm còn 390k là quá yêu thương cho một cuộc tình! Chỗ viền túi áo của mình có xíu chỉ thừa nhưng xử lý nhẹ cái là êm xuôi. Quan trọng là phom áo cổ V mặc lên nhìn cái cổ cao ráo thanh thoát hẳn, không bị bí bách như mấy bộ cổ tròn kín cổng cao tường."
@@ -189,7 +189,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Trâm Anh",
     "date": "2026-10-29T19:00:00.000Z",
     "rating": 4,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "M",
     "photo": null,
     "text": "Giao hàng đúng hẹn, đóng gói chỉn chu. Độ hoàn thiện đường may mình chấm khoảng 7.5/10 thôi vì vài chỗ giấu mối chỉ chưa khéo lắm, nhưng form dáng với phối màu thì 10/10 nha, mặc vào nhìn gọn người mà có gu hẳn. Đáng để thử và mua thêm màu khác."
@@ -200,10 +200,10 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "author": "Xuân Nghi",
     "date": "2026-10-30T07:40:00.000Z",
     "rating": 5,
-    "color": "Sọc Hồng",
+    "color": "Đỏ",
     "size": "S",
     "photo": null,
-    "text": "Lướt thấy ảnh mẫu mặc bộ sọc hồng này là dính thính ngay lập tức. Nhận hàng về không làm mình thất vọng, màu bên ngoài giống hình tới 98% (2% do ánh sáng phòng mình thôi). Mặc thoải mái, giá hợp túi tiền sinh viên mới đi làm, mãi keo nha shop ơi!"
+    "text": "Lướt thấy ảnh mẫu mặc bộ đỏ này là dính thính ngay lập tức. Nhận hàng về không làm mình thất vọng, màu bên ngoài giống hình tới 98% (2% do ánh sáng phòng mình thôi). Mặc thoải mái, giá hợp túi tiền sinh viên mới đi làm, mãi keo nha shop ơi!"
   },
 
   // ─── 2. THE STILLWATER SET (the-cafe-look) ───
@@ -271,7 +271,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "color": "Caro Navy",
     "size": "M",
     "photo": null,
-    "text": "Đây là đơn thứ 2 của mình tại QuanNguyenS rồi nè! Đợt trước mua bộ sọc hồng mặc thích quá nên đợt này quay lại hốt thêm bộ caro navy. Thích nhất là cái dáng quần suông với áo không bị bó eo, ăn no xong mặc vẫn giấu bụng cực đỉnh. Điểm 10 cho sự ổn định về form dáng của shop!"
+    "text": "Đây là đơn thứ 2 của mình tại QuanNguyenS rồi nè! Đợt trước mua bộ đỏ mặc thích quá nên đợt này quay lại hốt thêm bộ caro navy. Thích nhất là cái dáng quần suông với áo không bị bó eo, ăn no xong mặc vẫn giấu bụng cực đỉnh. Điểm 10 cho sự ổn định về form dáng của shop!"
   },
   {
     "id": "rv-25",
@@ -581,7 +581,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "color": "Sọc Nâu",
     "size": "S",
     "photo": null,
-    "text": "Mình cao 1m58 nặng 47kg mặc size S vừa vặn, chiều dài quần phủ xuống mắt cá chân nhìn rất thời trang. Đường kim mũi chỉ của sản phẩm ở mức trung bình vừa đủ để mặc bền hàng ngày chứ không quá xuất sắc, nhưng thiết kế ống rộng quá tôn dáng nên mình vẫn rất mê và sẽ quay lại mua thêm bộ sọc hồng."
+    "text": "Mình cao 1m58 nặng 47kg mặc size S vừa vặn, chiều dài quần phủ xuống mắt cá chân nhìn rất thời trang. Đường kim mũi chỉ của sản phẩm ở mức trung bình vừa đủ để mặc bền hàng ngày chứ không quá xuất sắc, nhưng thiết kế ống rộng quá tôn dáng nên mình vẫn rất mê và sẽ quay lại mua thêm bộ đỏ."
   },
   {
     "id": "rv-53",

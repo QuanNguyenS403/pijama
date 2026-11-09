@@ -57,7 +57,7 @@ function adviseSize(weight, height) {
     return {
       recommendedSize: 'Size S',
       reason: `với cân nặng ${weight}kg${height ? ` và chiều cao ${height}cm` : ''}, anh/chị mặc chuẩn nhất là **Size S** ạ (thiết kế chuẩn cho người từ 40–49kg). Phom dáng suông rộng rãi thoải mái theo phong cách châu Âu, mặc ngủ hay làm việc tại nhà đều rất vừa vặn.`,
-      models: 'Mẫu **THE DAYBREAK SET** (Sọc Hồng, 390k) hoặc **THE HEARTH SET** (Sọc Nâu Tencel, 750k) đều có Size S rất đẹp ạ.',
+      models: 'Mẫu **THE DAYBREAK SET** (Đỏ, 490k) hoặc **THE HEARTH SET** (Sọc Nâu Tencel, 750k) đều có Size S rất đẹp ạ.',
     }
   }
 
@@ -119,11 +119,11 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     return {
       reply:
         'Dạ QuanNguyenS hiện có 3 bộ sleepwear thiết kế cao cấp trong Bộ Sưu Tập Thu Đông 2026 chuẩn phong cách Style To Be Lived In ạ:\n\n' +
-        '1. 🌸 **THE DAYBREAK SET (390.000đ)**: Họa tiết sọc hồng nắng sớm ấm áp (Hành Hỏa), viền tương phản sắc nét, cổ notch cổ điển, 100% sợi tự nhiên Cotton-Modal thoáng khí 4 mùa (Size S, M).\n\n' +
+        '1. 🌸 **THE DAYBREAK SET (490.000đ)**: Sắc Đỏ ấm áp và quyến rũ (Hành Hỏa), viền tương phản sắc nét, cổ notch cổ điển, 100% sợi tự nhiên Cotton-Modal thoáng khí 4 mùa (Size S, M).\n\n' +
         '2. 🌊 **THE STILLWATER SET (550.000đ)**: Họa tiết Caro Navy lịch lãm (Hành Thủy), thiết kế cổ V thanh thoát tôn dáng, chất liệu 95% Modal & 5% Spandex mướt mát chống nhăn tự nhiên (Size S, L).\n\n' +
         '3. 🍂 **THE HEARTH SET (750.000đ)**: Họa tiết sọc nâu mocha quý phái (Hành Thổ), quần dáng wide-leg ống rộng buông rủ kiêu sa, chế tác từ 100% Tencel Lyocell thượng hạng (Size S, M).\n\n' +
         'Anh/chị đang tìm đồ mặc nhà thoáng mát hay đang muốn chọn một món quà tinh tế cho người thân ạ?',
-      quickReplies: ['Mẫu Daybreak (Hồng)', 'Mẫu Stillwater (Navy)', 'Mẫu Hearth (Nâu)', 'Tư vấn chọn size'],
+      quickReplies: ['Mẫu Daybreak (Đỏ)', 'Mẫu Stillwater (Navy)', 'Mẫu Hearth (Nâu)', 'Tư vấn chọn size'],
     }
   }
 
@@ -147,35 +147,38 @@ export function generateLocalAdvisorResponse(message, context = {}) {
 
       return {
         reply: `Dạ ${sizeAdvice.reason}\n\n${sizeAdvice.models}\n\nAnh/chị thích mẫu sleepwear tone màu nào nhất để em gửi chi tiết ạ?`,
-        quickReplies: ['Xem Daybreak (Hồng)', 'Xem Stillwater (Navy)', 'Xem Hearth (Nâu)', 'Phí ship & Ưu đãi'],
+        quickReplies: ['Xem Daybreak (Đỏ)', 'Xem Stillwater (Navy)', 'Xem Hearth (Nâu)', 'Phí ship & Ưu đãi'],
       }
     }
   }
 
-  // 3. Hỏi chi tiết mẫu The Daybreak Set (Sọc Hồng)
+  // 3. Hỏi chi tiết mẫu The Daybreak Set (Màu Đỏ)
   if (
     norm.includes('daybreak') ||
+    norm.includes('mau do') ||
+    norm.includes('set do') ||
+    norm.includes('bo do') ||
     norm.includes('soc hong') ||
     norm.includes('mau hong') ||
-    (norm.includes('390') && !norm.includes('hearth') && !norm.includes('stillwater'))
+    (norm.includes('490') && !norm.includes('hearth') && !norm.includes('stillwater'))
   ) {
     return {
       reply:
         'Dạ bộ **THE DAYBREAK SET** là mẫu sleepwear cổ bẻ kinh điển phong cách châu Âu bán rất chạy tại QuanNguyenS ạ:\n\n' +
-        '• **Giá bán**: 390.000đ (đang ưu đãi 20% từ giá gốc 490.000đ).\n' +
-        '• **Màu sắc**: Sọc Hồng (Pink Stripe) mang năng lượng Hỏa ấm áp, tươi vui như nắng sớm.\n' +
+        '• **Giá bán**: 490.000đ.\n' +
+        '• **Màu sắc**: Sắc Đỏ (Classic Red) mang năng lượng Hỏa ấm áp, quyến rũ và may mắn.\n' +
         '• **Chất liệu**: 100% sợi tự nhiên Cotton-Modal dệt thoi thoáng khí 4 mùa, an toàn cho da nhạy cảm theo tiêu chuẩn OEKO-TEX 100.\n' +
         '• **Kích cỡ**: Size S (40–49kg) và Size M (50–58kg).\n' +
-        '• **Đặt may**: Sản phẩm may thủ công giới hạn, hoàn thiện và giao trong 7–10 ngày làm việc.\n\n' +
+        '• **Tình trạng**: Có sẵn hàng giao ngay (giao toàn quốc 2–4 ngày làm việc).\n\n' +
         'Anh/chị cho em xin chiều cao và cân nặng để em chọn size vừa vặn nhất cho mình nhé!',
       quickReplies: ['Chọn size cho bộ này', 'Chính sách freeship', 'Xem mẫu Caro Navy'],
       product: {
         name: 'THE DAYBREAK SET',
-        subtitle: 'Sleepwear Phong Cách Châu Âu · Sọc Hồng',
-        price: 390000,
+        subtitle: 'Sleepwear Phong Cách Châu Âu · Sắc Đỏ',
+        price: 490000,
         slug: 'the-classic-set',
-        preOrder: true,
-        image: '/images/hero-slide-01.jpg',
+        preOrder: false,
+        image: '/images/classic-set-red-main.jpg',
       },
     }
   }
@@ -276,7 +279,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     return {
       reply:
         'Dạ QuanNguyenS niêm yết mức giá minh bạch cho 3 bộ sleepwear thiết kế như sau ạ:\n\n' +
-        '• **THE DAYBREAK SET**: 390.000đ (đang ưu đãi từ 490.000đ) · Sọc Hồng Cotton-Modal.\n' +
+        '• **THE DAYBREAK SET**: 490.000đ · Sắc Đỏ Cotton-Modal.\n' +
         '• **THE STILLWATER SET**: 550.000đ · Caro Navy Modal cao cấp.\n' +
         '• **THE HEARTH SET**: 750.000đ · Sọc Nâu Wide-Leg Tencel thượng hạng.\n\n' +
         '🎁 **Ưu đãi áp dụng**:\n' +
@@ -300,7 +303,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     return {
       reply:
         'Dạ anh/chị chọn sleepwear cao cấp làm quà tặng là một lựa chọn cực kỳ chu đáo và tinh tế!\n\n' +
-        '• Nếu người nhận thích phong cách ngọt ngào, tươi trẻ: mẫu **THE DAYBREAK SET** (Sọc Hồng, 390k) mang năng lượng ấm áp, rạng rỡ như nắng sớm.\n' +
+        '• Nếu người nhận thích phong cách ngọt ngào, quyến rũ: mẫu **THE DAYBREAK SET** (Màu Đỏ, 490k) mang năng lượng ấm áp, rạng rỡ và may mắn.\n' +
         '• Nếu người nhận thích phong cách thanh lịch, trầm tĩnh: mẫu **THE STILLWATER SET** (Caro Navy, 550k) cổ V rất tôn dáng và hiện đại.\n' +
         '• Nếu muốn món quà đẳng cấp nhất dành tặng người đặc biệt: mẫu **THE HEARTH SET** (Sọc Nâu Tencel, 750k) phom wide-leg quý phái là lựa chọn hoàn hảo nhất.\n\n' +
         'Mỗi đơn hàng QuanNguyenS đều được đóng gói hộp quà trang nhã và hỗ trợ đồng kiểm khi nhận hàng ạ. Anh/chị cho em xin số đo hoặc chiều cao/cân nặng của người nhận để em gợi ý size chuẩn nhé!',
@@ -322,11 +325,11 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     return {
       reply:
         'Dạ các thiết kế của QuanNguyenS lấy cảm hứng thẩm mỹ màu sắc từ Ngũ Hành tự nhiên để mang lại cảm xúc an yên trọn vẹn:\n\n' +
-        '• **Hỏa Sắc (The Daybreak Set - Sọc Hồng)**: Ấm áp, yêu đời, tiếp thêm sinh khí tích cực — rất tương sinh hòa hợp cho người mệnh Hỏa và Thổ.\n' +
+        '• **Hỏa Sắc (The Daybreak Set - Đỏ)**: Ấm áp, yêu đời, tiếp thêm sinh khí tích cực — rất tương sinh hòa hợp cho người mệnh Hỏa và Thổ.\n' +
         '• **Thủy Sắc (The Stillwater Set - Caro Navy)**: Tĩnh tại, sâu lắng, mang lại sự thư thái như mặt hồ phẳng lặng — tương hợp nuôi dưỡng cho người mệnh Thủy và Mộc.\n' +
         '• **Thổ Sắc (The Hearth Set - Sọc Nâu)**: Vững chãi, an lành, mang cảm giác bình yên của tổ ấm — hòa hợp cho người mệnh Thổ và Kim.\n\n' +
         'Lưu ý là Ngũ Hành ở đây là gợi cảm hứng thẩm mỹ tinh tế cho không gian nghỉ ngơi của anh/chị ạ! Anh/chị đang có cảm tình với tone màu nào nhất ạ?',
-      quickReplies: ['Tone Hồng (Hỏa)', 'Tone Navy (Thủy)', 'Tone Nâu (Thổ)', 'Tư vấn size'],
+      quickReplies: ['Tone Đỏ (Hỏa)', 'Tone Navy (Thủy)', 'Tone Nâu (Thổ)', 'Tư vấn size'],
     }
   }
 
@@ -371,7 +374,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
   // Fallback thân thiện, luôn hỗ trợ khách nhiệt tình
   return {
     reply:
-      'Dạ em là Trợ lý tư vấn của QuanNguyenS. Em rất vui được hỗ trợ anh/chị chọn size vừa vặn theo chiều cao/cân nặng, tư vấn chất liệu 3 bộ sleepwear (Daybreak Sọc Hồng, Stillwater Caro Navy, Hearth Sọc Nâu) hoặc các ưu đãi tốt nhất hôm nay ạ.\n\nAnh/chị đang quan tâm đến bộ sleepwear cho dịp nào để em tư vấn nhé ạ?',
+      'Dạ em là Trợ lý tư vấn của QuanNguyenS. Em rất vui được hỗ trợ anh/chị chọn size vừa vặn theo chiều cao/cân nặng, tư vấn chất liệu 3 bộ sleepwear (Daybreak Sắc Đỏ, Stillwater Caro Navy, Hearth Sọc Nâu) hoặc các ưu đãi tốt nhất hôm nay ạ.\n\nAnh/chị đang quan tâm đến bộ sleepwear cho dịp nào để em tư vấn nhé ạ?',
     quickReplies: ['Xem 3 mẫu Sleepwear', 'Tư vấn chọn size', 'Ưu đãi & Freeship', 'Gặp chủ shop'],
   }
 }

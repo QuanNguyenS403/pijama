@@ -30,7 +30,7 @@ describe('Enterprise Authentication Suite (8-Step Architecture)', () => {
     }
   })
 
-  const testEmail = `ent_user_${Date.now()}@quannguyens.com`
+  const testEmail = `ent_user_${Date.now()}@example.com`
   const testPassword = 'Password@123'
   let currentAccessToken = ''
   let currentRefreshToken = ''
@@ -155,7 +155,7 @@ describe('Enterprise Authentication Suite (8-Step Architecture)', () => {
   })
 
   it('Bước 2 & 3: Gửi và Xác minh OTP qua Cache Service', async () => {
-    const otpEmail = `otp_test_${Date.now()}@quannguyens.com`
+    const otpEmail = `otp_test_${Date.now()}@example.com`
 
     // 1. Gửi OTP
     const sendRes = await fetch(`${baseUrl}/api/auth/otp/send`, {
@@ -228,10 +228,10 @@ describe('Enterprise Authentication Suite (8-Step Architecture)', () => {
     delete process.env.AUTH_TEST_MODE
 
     try {
-      const manualEmail = `quannguyen_${Date.now()}@top1lux.com`
+      const manualEmail = `quannguyen_${Date.now()}@example.com`
       const manualPass = 'Top1Lux@2026'
 
-      // 1. Đăng ký thủ công không truyền turnstileToken
+      // 1. Đăng ký thủ công không truyền turnstileToken -> hệ thống bắt buộc xác thực OTP email (200 + requireOtp)
       const regRes = await fetch(`${baseUrl}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -243,12 +243,37 @@ describe('Enterprise Authentication Suite (8-Step Architecture)', () => {
         }),
       })
 
-      const regData = await regRes.json()
-      assert.equal(regRes.status, 201, `Đăng ký thủ công phải thành công 201: ${JSON.stringify(regData)}`)
+      const regReqData = await regRes.json()
+      assert.equal(regRes.status, 200, `Yêu cầu OTP đăng ký phải thành công khi không có Turnstile token: ${JSON.stringify(regReqData)}`)
+      assert.equal(regReqData.requireOtp, true, 'Production flow phải bắt buộc OTP email')
+
+      // 1b. Bật lại test mode để đọc mã OTP từ cache, sau đó xác nhận OTP -> tạo tài khoản 201
+      process.env.AUTH_TEST_MODE = 'true'
+      const reqOtpRes = await fetch(`${baseUrl}/api/auth/register/request-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: manualEmail,
+          password: manualPass,
+          fullName: 'Nguyễn Đức Quân Test',
+          marketingOptIn: true,
+        }),
+      })
+      assert.equal(reqOtpRes.status, 200)
+      const pendingRaw = await cacheGet(`pending_reg:${manualEmail.toLowerCase()}`)
+      const pending = typeof pendingRaw === 'string' ? JSON.parse(pendingRaw) : pendingRaw
+      assert.match(pending?.code || '', /^\d{6}$/, 'Phải đọc được mã OTP trong test mode')
+
+      const verifyRegRes = await fetch(`${baseUrl}/api/auth/register/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: manualEmail, code: pending.code }),
+      })
+      const regData = await verifyRegRes.json()
+      assert.equal(verifyRegRes.status, 201, `Đăng ký thủ công phải thành công 201: ${JSON.stringify(regData)}`)
       assert.equal(regData.success, true)
       assert.ok(regData.user.id, 'Phải có user.id')
       assert.equal(regData.user.email, manualEmail)
-      assert.ok(regData.account, 'Phải có payload account')
 
       // 2. Đăng nhập thủ công không truyền turnstileToken
       const loginRes = await fetch(`${baseUrl}/api/auth/login`, {
@@ -287,7 +312,7 @@ describe('Enterprise Authentication Suite (8-Step Architecture)', () => {
 
   it('Quy trình Quên mật khẩu: Gửi OTP Gmail -> Xác minh OTP -> Tạo mật khẩu mới -> Đăng nhập lại với mật khẩu mới', async () => {
     const { cacheGet } = await import('../server/lib/cacheService.js')
-    const resetUserEmail = `forgot_${Date.now()}@quannguyens.com`
+    const resetUserEmail = `forgot_${Date.now()}@example.com`
     const oldPassword = 'OldPassword@123'
     const newPassword = 'NewPassword@2026'
 
@@ -376,7 +401,7 @@ describe('Enterprise Authentication Suite (8-Step Architecture)', () => {
   })
 
   it('Bước 1, 2, 3 (Nâng cao): Đăng ký tài khoản xác thực qua OTP Gmail & Tự động đăng nhập trực tiếp', async () => {
-    const regOtpEmail = `otp_register_${Date.now()}@quannguyens.com`
+    const regOtpEmail = `otp_register_${Date.now()}@example.com`
     const regPassword = 'SecurePassword@123'
     const regFullName = 'Khách Hàng OTP QuanNguyenS'
 

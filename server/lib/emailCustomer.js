@@ -51,11 +51,8 @@ export const buildBankTransferEmailHTML = (order) => {
     order.items?.some(
       (i) =>
         i.isPreOrder ||
-        i.slug === 'the-classic-set' ||
-        i.productId === 'the-classic-set' ||
         i.slug === 'the-evening-edit' ||
         i.productId === 'the-evening-edit' ||
-        i.productName?.includes('DAYBREAK') ||
         i.productName?.includes('HEARTH')
     )
   )
@@ -233,11 +230,8 @@ export const buildCODEmailHTML = (order) => {
     order.items?.some(
       (i) =>
         i.isPreOrder ||
-        i.slug === 'the-classic-set' ||
-        i.productId === 'the-classic-set' ||
         i.slug === 'the-evening-edit' ||
         i.productId === 'the-evening-edit' ||
-        i.productName?.includes('DAYBREAK') ||
         i.productName?.includes('HEARTH')
     )
   )
@@ -646,11 +640,8 @@ export const buildPaidEmailHTML = (order) => {
     order.items?.some(
       (i) =>
         i.isPreOrder ||
-        i.slug === 'the-classic-set' ||
-        i.productId === 'the-classic-set' ||
         i.slug === 'the-evening-edit' ||
         i.productId === 'the-evening-edit' ||
-        i.productName?.includes('DAYBREAK') ||
         i.productName?.includes('HEARTH')
     )
   )

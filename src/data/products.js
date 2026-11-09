@@ -5,29 +5,25 @@ export const products = [
     id: "the-classic-set",
     slug: "the-classic-set",
     name: "THE DAYBREAK SET",
-    subtitle: "Pijama Phong Cách Châu Âu · Sọc Hồng Nắng Sớm",
+    subtitle: "Pijama Phong Cách Châu Âu · Sắc Đỏ Quyến Rũ",
     collection: "Thu Đông 2026",
     badge: "MỚI RA MẮT",
-    preOrder: {
-      enabled: true,
-      leadTimeDays: [7, 10],
-      message: 'Hàng đặt trước — Giao hàng dự kiến trong 7-10 ngày làm việc',
-    },
+    preOrder: null,
 
-    description: `Bộ pijama lấy cảm hứng từ phong cách ngủ cổ điển châu Âu với họa tiết Sọc Hồng ngọt ngào — đường viền tương phản tinh tế, cổ áo notch thanh lịch, và phom dáng suông tự do cho cảm giác thoải mái trọn ngày. Mang năng lượng Hỏa ấm áp và rạng rỡ như nắng sớm, khơi dậy nguồn sinh khí tươi mới cho không gian nghỉ ngơi của bạn.`,
+    description: `Bộ pijama lấy cảm hứng từ phong cách ngủ cổ điển châu Âu với gam màu Đỏ quý phái, quyến rũ — đường viền tương phản tinh tế, cổ áo notch thanh lịch, và phom dáng suông tự do cho cảm giác thoải mái trọn ngày. Mang năng lượng Hỏa ấm áp và rạng rỡ, khơi dậy nguồn sinh khí tươi mới cho không gian nghỉ ngơi của bạn.`,
 
-    longDescription: `THE DAYBREAK SET được thiết kế để mang lại cảm giác như đang thức giấc tại một khách sạn boutique 5 sao giữa lòng châu Âu. Họa tiết Sọc Hồng (Pink Stripe) mang sắc thái ấm áp, dịu dàng của hành Hỏa — như những tia nắng sớm đầu ngày tiếp thêm sinh khí và năng lượng tích cực cho tinh thần. Thiết kế suông nhẹ, viền tương phản sắc nét giúp bạn luôn thanh lịch, tự tin diện từ phòng ngủ ra phố hay tiếp khách tại nhà mà không cần đắn đo. Tương sinh và hòa hợp lý tưởng cho người mệnh Hỏa và Thổ.`,
+    longDescription: `THE DAYBREAK SET được thiết kế để mang lại cảm giác như đang thức giấc tại một khách sạn boutique 5 sao giữa lòng châu Âu. Gam màu Đỏ (Classic Red) mang sắc thái ấm áp, nồng nàn của hành Hỏa — như những tia nắng ấm tiếp thêm sinh khí và năng lượng tích cực cho tinh thần. Thiết kế suông nhẹ, viền tương phản sắc nét giúp bạn luôn thanh lịch, tự tin diện từ phòng ngủ ra phố hay tiếp khách tại nhà mà không cần đắn đo. Tương sinh và hòa hợp lý tưởng cho người mệnh Hỏa và Thổ.`,
 
     detailedDescription: `THE DAYBREAK SET lấy cảm hứng từ đồ ngủ của các khách sạn boutique châu Âu — nơi pijama không chỉ là trang phục nghỉ ngơi mà là một tuyên ngôn phong cách sống tinh tế.
 
-Thiết kế notch collar (cổ bẻ cổ điển) với viền tương phản trắng sắc nét chạy dọc ve áo, cổ tay và miệng túi — tạo nên dấu ấn thanh lịch đặc trưng. Hàng cúc trước tiệp màu cùng hai túi patch rộng rãi và một túi ngực nhỏ hoàn thiện phom dáng chuẩn mực.
+Thiết kế notch collar (cổ bẻ cổ điển) với viền tương phản đỏ sắc nét chạy dọc ve áo, cổ tay và miệng túi — tạo nên dấu ấn thanh lịch đặc trưng. Hàng cúc trước tiệp màu cùng hai túi patch rộng rãi và một túi ngực nhỏ hoàn thiện phom dáng chuẩn mực.
 
 Quần dáng suông thẳng (straight-leg) với độ rủ tự nhiên từ sợi dệt cao cấp — thoải mái tối đa khi nằm nghỉ, chỉn chu tuyệt đối khi bước ra ngoài.
 
-Họa tiết Sọc Hồng (Pink Stripe) biểu trưng cho năng lượng Hỏa — biểu tượng của sự ấm áp, yêu đời và nhiệt huyết dịu lành. Rất hòa hợp và tương sinh cho những ai tìm kiếm sự cân bằng, đặc biệt là người mang mệnh Hỏa và Thổ.`,
+Gam màu Đỏ (Classic Red) biểu trưng cho năng lượng Hỏa — biểu tượng của sự ấm áp, yêu đời, may mắn và nhiệt huyết tràn đầy. Rất hòa hợp và tương sinh cho những ai tìm kiếm sự cân bằng, đặc biệt là người mang mệnh Hỏa và Thổ.`,
 
-    tagline: `Khởi đầu ngày mới tràn đầy sinh khí với sắc hồng ấm áp và phom dáng châu Âu kinh điển.`,
-    sectionLabel: "BST THU ĐÔNG 2026 · HỎA SẮC SỚM MAI",
+    tagline: `Khởi đầu ngày mới tràn đầy sinh khí với sắc đỏ ấm áp và phom dáng châu Âu kinh điển.`,
+    sectionLabel: "BST THU ĐÔNG 2026 · HỎA SẮC RỰC RỠ",
 
     price: 490000,
     originalPrice: null,
@@ -39,19 +35,19 @@ Họa tiết Sọc Hồng (Pink Stripe) biểu trưng cho năng lượng Hỏa �
     fengShui: {
       element: "Hỏa",
       elementEn: "Fire",
-      color: "Sọc Hồng",
+      color: "Đỏ",
       goodFor: ["Hỏa", "Thổ"],
-      energyNote: "Ấm áp, nhiệt huyết, dịu dàng nhưng tràn đầy sức sống — như nắng sớm mai tiếp thêm sinh khí.",
+      energyNote: "Ấm áp, nhiệt huyết, nồng nàn nhưng tràn đầy sức sống — gam màu đỏ tượng trưng cho hành Hỏa mang lại may mắn và sinh khí.",
     },
 
     // ─── STYLE VARIANTS (treated as "colors" in the UI selector) ─────────────
     colors: [
       {
-        name: "Pink Stripe",
-        label: "Sọc Hồng",
-        hex: "#EFAEA0",          // representative swatch color (Hồng Đào)
-        patternPreview: true,    // flag: render pattern thumbnail, not plain swatch
-        patternType: "stripe",   // used by ColorSelector to pick preview style
+        name: "Classic Red",
+        label: "Đỏ",
+        hex: "#80262F",          // representative swatch color (Đỏ Ruby / Đỏ Rượu)
+        patternPreview: true,    // swatch preview
+        patternType: "red",
         stock: { S: 10, M: 8 },
       },
     ],
@@ -94,22 +90,27 @@ Họa tiết Sọc Hồng (Pink Stripe) biểu trưng cho năng lượng Hỏa �
     returnPolicy: "Hỗ trợ đổi trả trong 30 ngày — Áp dụng theo chính sách đổi trả & cam kết chất lượng QuanNguyenS — Liên hệ hotline 0973 486 218",
 
     highlights: [
-      "Họa tiết Sọc Hồng năng lượng Hỏa — ấm áp, dịu dàng, tràn đầy sinh khí như nắng sớm",
-      "Viền tương phản trắng tinh tế — dấu ấn tay nghề may chuẩn phong cách châu Âu",
+      "Sắc Đỏ nồng nàn năng lượng Hỏa — ấm áp, quyến rũ, tràn đầy sinh khí",
+      "Viền tương phản sắc nét — dấu ấn tay nghề may chuẩn phong cách châu Âu",
       "Phom dáng suông tự do — ôm đẹp mọi vóc dáng, thoải mái từ nhà ra phố",
     ],
 
-    tags: ["Mới Ra Mắt", "Classic", "Sọc Hồng", "European Style", "Hành Hỏa"],
+    tags: ["Mới Ra Mắt", "Classic", "Màu Đỏ", "European Style", "Hành Hỏa"],
     relatedProducts: ["the-cafe-look", "the-evening-edit"],
 
     // ─── IMAGE MAP — keyed by color.name ─────────────────────────────────────
     images: {
-      "Pink Stripe": [
-        "/images/classic-set-pink-main.jpg",
-        "/images/classic-set-pink-thumb-1.jpg",
-        "/images/classic-set-pink-thumb-2.jpg",
-        "/images/classic-set-pink-thumb-3.jpg",
-        "/images/classic-set-pink-detail.jpg",
+      "Classic Red": [
+        "/images/classic-set-red-main.jpg",
+        "/images/classic-set-red-thumb-1.jpg",
+        "/images/classic-set-red-thumb-2.jpg",
+        "/images/classic-set-red-thumb-3.jpg",
+      ],
+      "Đỏ": [
+        "/images/classic-set-red-main.jpg",
+        "/images/classic-set-red-thumb-1.jpg",
+        "/images/classic-set-red-thumb-2.jpg",
+        "/images/classic-set-red-thumb-3.jpg",
       ],
     },
   },
@@ -157,14 +158,12 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
         "/images/classic-set-navy-thumb-1.jpg",
         "/images/classic-set-navy-thumb-2.jpg",
         "/images/classic-set-navy-thumb-3.jpg",
-        "/images/classic-set-navy-detail.jpg",
       ],
       "Caro Navy": [
         "/images/classic-set-navy-main.jpg",
         "/images/classic-set-navy-thumb-1.jpg",
         "/images/classic-set-navy-thumb-2.jpg",
         "/images/classic-set-navy-thumb-3.jpg",
-        "/images/classic-set-navy-detail.jpg",
       ],
     },
 
@@ -264,14 +263,12 @@ Họa tiết Sọc Nâu mocha (Brown Stripe) đại diện cho năng lượng h�
         "/images/classic-set-brown-thumb-1.jpg",
         "/images/classic-set-brown-thumb-2.jpg",
         "/images/classic-set-brown-thumb-3.jpg",
-        "/images/classic-set-brown-detail.jpg",
       ],
       "Sọc Nâu": [
         "/images/classic-set-brown-main.jpg",
         "/images/classic-set-brown-thumb-1.jpg",
         "/images/classic-set-brown-thumb-2.jpg",
         "/images/classic-set-brown-thumb-3.jpg",
-        "/images/classic-set-brown-detail.jpg",
       ],
     },
 
@@ -313,18 +310,18 @@ Họa tiết Sọc Nâu mocha (Brown Stripe) đại diện cho năng lượng h�
 ]
 
 export const sampleReviews = [
-  // ── THE CLASSIC SET (THE DAYBREAK SET - Sọc Hồng) ──
+  // ── THE CLASSIC SET (THE DAYBREAK SET - Đỏ) ──
   {
     id: 'rv-1',
     productId: 'the-classic-set',
     author: 'Thùy Trang N.',
     date: '14/10/2026',
     rating: 5,
-    color: 'Sọc Hồng',
+    color: 'Đỏ',
     size: 'S',
     verified: true,
-    photo: '/images/classic-set-pink-thumb-1.jpg',
-    text: 'Nhận hàng mở hộp ra ưng ngay cái nết đóng gói, thơm mùi hoa nhẹ. Bộ sọc hồng này chất vải mê thực sự, mềm mượt mát tay chứ không bị dính ráp da. Mình hay mặc từ phòng ngủ lững thững ra ban công nhâm nhi ly cafe sáng hoặc xuống nhận shipper mà vẫn rất lịch sự. Đường viền cúc và cổ notch may chỉn chu lắm, giặt máy túi giặt 3 lần rồi vẫn phẳng phiu không bị bai dão.',
+    photo: '/images/classic-set-red-thumb-1.jpg',
+    text: 'Nhận hàng mở hộp ra ưng ngay cái nết đóng gói, thơm mùi hoa nhẹ. Bộ đỏ này chất vải mê thực sự, mềm mượt mát tay chứ không bị dính ráp da. Mình hay mặc từ phòng ngủ lững thững ra ban công nhâm nhi ly cafe sáng hoặc xuống nhận shipper mà vẫn rất lịch sự. Đường viền cúc và cổ notch may chỉn chu lắm, giặt máy túi giặt 3 lần rồi vẫn phẳng phiu không bị bai dão.',
   },
   {
     id: 'rv-2',
@@ -332,11 +329,11 @@ export const sampleReviews = [
     author: 'Khánh Linh D.',
     date: '08/10/2026',
     rating: 5,
-    color: 'Sọc Hồng',
+    color: 'Đỏ',
     size: 'S',
     verified: true,
-    photo: '/images/classic-set-pink-thumb-2.jpg',
-    text: 'Mình 49kg cao 1m58 chọn size S vừa vặn thoải mái, quần dài chạm mu bàn chân đi dép bệt rất tôn dáng. Vải pha modal mềm rũ như làn da thứ hai, đêm nằm phòng điều hòa ấm áp dễ chịu cực kỳ. Gam sọc hồng ngọt ngào vừa phải, mặc lên nhìn da sáng bừng mà sang chảnh chứ không bị sến xíu nào.',
+    photo: '/images/classic-set-red-thumb-2.jpg',
+    text: 'Mình 49kg cao 1m58 chọn size S vừa vặn thoải mái, quần dài chạm mu bàn chân đi dép bệt rất tôn dáng. Vải mềm rũ như làn da thứ hai, đêm nằm phòng điều hòa ấm áp dễ chịu cực kỳ. Tone màu đỏ ruby sang trọng vừa phải, mặc lên nhìn da sáng bừng mà quý phái chứ không bị chói xíu nào.',
   },
   {
     id: 'rv-3',
@@ -344,10 +341,10 @@ export const sampleReviews = [
     author: 'Minh Anh P.',
     date: '29/09/2026',
     rating: 5,
-    color: 'Sọc Hồng',
+    color: 'Đỏ',
     size: 'M',
     verified: true,
-    photo: '/images/classic-set-pink-thumb-3.jpg',
+    photo: '/images/classic-set-red-thumb-3.jpg',
     text: 'Đã mua bộ thứ 2 ở shop rồi. Form suông relaxed chuẩn kiểu homewear châu Âu, mặc đi lại quanh nhà nhẹ tênh không có cảm giác bị gò bó. Thích nhất là đường may giấu mép bên trong, lộn ra sờ không thấy cộm hay cọ xát vào da tí nào. Mẹ mình nhìn thấy khen quá trời nên bảo đặt thêm cho mẹ một bộ nữa.',
   },
   {
@@ -356,10 +353,10 @@ export const sampleReviews = [
     author: 'Phương Thảo V.',
     date: '18/09/2026',
     rating: 5,
-    color: 'Sọc Hồng',
+    color: 'Đỏ',
     size: 'M',
     verified: true,
-    photo: '/images/classic-set-pink-detail.jpg',
+    photo: '/images/classic-set-red-thumb-1.jpg',
     text: 'Đường kim mũi chỉ sắc sảo từng milimet luôn á, không thấy một sợi chỉ thừa nào. Da mình thuộc dạng siêu nhạy cảm, mặc đồ ngủ rẻ tiền một tí là ngứa ngáy nổi mẩn liền, mà mặc bộ này của QuanNguyenS ngủ một giấc tới sáng êm ru. Đóng hộp quà kèm thiệp chỉn chu, làm quà tặng bạn thân thì hết nước chấm.',
   },
   {
@@ -368,11 +365,11 @@ export const sampleReviews = [
     author: 'Ngọc Mai H.',
     date: '11/09/2026',
     rating: 5,
-    color: 'Sọc Hồng',
+    color: 'Đỏ',
     size: 'S',
     verified: true,
     photo: null,
-    text: 'Đợt này đi du lịch Đà Lạt mang theo bộ này chụp hình trong homestay ai cũng hỏi mua ở đâu. Họa tiết sọc hồng lên hình ăn ảnh xỉu, vừa cổ điển vừa hiện đại. Chất vải thoáng khí tự nhiên, tối se lạnh mặc ấm mà trưa hửng nắng vẫn mát mẻ.',
+    text: 'Đợt này đi du lịch mang theo bộ đỏ này chụp hình ai cũng hỏi mua ở đâu. Sắc đỏ lên hình ăn ảnh xỉu, vừa cổ điển vừa hiện đại. Chất vải thoáng khí tự nhiên, tối se lạnh mặc ấm mà trưa hửng nắng vẫn mát mẻ.',
   },
   {
     id: 'rv-7',
@@ -380,11 +377,11 @@ export const sampleReviews = [
     author: 'Hải Yến T.',
     date: '22/08/2026',
     rating: 5,
-    color: 'Sọc Hồng',
+    color: 'Đỏ',
     size: 'M',
     verified: true,
     photo: null,
-    text: 'Mình thuộc dạng khó tính về đồ mặc nhà, nhưng bộ này thì duyệt 10/10. Giặt qua hơn chục lần bằng nước lạnh rồi mà màu sọc hồng vẫn tươi mới, không hề bị co rút hay xù lông. Đáng đồng tiền bát gạo hơn hẳn mấy bộ lụa bóng bí mồ hôi trên sàn.',
+    text: 'Mình thuộc dạng khó tính về đồ mặc nhà, nhưng bộ này thì duyệt 10/10. Giặt qua hơn chục lần bằng nước lạnh rồi mà màu đỏ vẫn tươi mới, không hề bị co rút hay xù lông. Đáng đồng tiền bát gạo hơn hẳn mấy bộ lụa bóng bí mồ hôi trên sàn.',
   },
   {
     id: 'rv-8',
@@ -392,11 +389,11 @@ export const sampleReviews = [
     author: 'Yến Nhi B.',
     date: '15/08/2026',
     rating: 5,
-    color: 'Sọc Hồng',
+    color: 'Đỏ',
     size: 'M',
     verified: true,
     photo: null,
-    text: 'Cổ bẻ notch viền trắng may tỉ mỉ, phom quần suông che khuyết điểm đùi to cực tốt. Nhiều khi có bạn bè ghé chơi đột xuất mặc nguyên bộ này ra tiếp khách vẫn thấy tự tin, lịch sự như đồ mặc ngoài phố.',
+    text: 'Cổ bẻ notch viền đỏ may tỉ mỉ, phom quần suông che khuyết điểm đùi to cực tốt. Nhiều khi có bạn bè ghé chơi đột xuất mặc nguyên bộ này ra tiếp khách vẫn thấy tự tin, lịch sự như đồ mặc ngoài phố.',
   },
   {
     id: 'rv-6',
@@ -404,7 +401,7 @@ export const sampleReviews = [
     author: 'Thu Giang S.',
     date: '04/09/2026',
     rating: 4,
-    color: 'Sọc Hồng',
+    color: 'Đỏ',
     size: 'S',
     verified: true,
     photo: null,

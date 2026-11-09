@@ -13,7 +13,7 @@ export default function Section3FeaturedProducts() {
       id: 'classic-set',
       slug: 'the-classic-set',
       name: 'THE DAYBREAK SET',
-      image: '/images/classic-set-pink-main.jpg',
+      image: '/images/classic-set-red-main.jpg',
       price: 490000,
       originalPrice: null,
     },

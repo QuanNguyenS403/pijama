@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import storyPinkTeaImg from '../../assets/images/story-pink-tea.jpg'
+import storyRedBookImg from '../../assets/images/story-red-book.jpg'
 
 export default function Section7CustomerStory() {
   return (
@@ -57,8 +57,8 @@ export default function Section7CustomerStory() {
           >
             <div className="relative rounded-[4px] overflow-hidden shadow-2xl border-2 border-[#D4AF37]/30 bg-[#1E1510] aspect-[4/3] w-full group">
               <img
-                src={storyPinkTeaImg}
-                alt="Bộ sleepwear The Daybreak Set sọc hồng QuanNguyenS — Không mass production, tinh tế từng chi tiết"
+                src={storyRedBookImg}
+                alt="Bộ sleepwear The Daybreak Set sắc đỏ QuanNguyenS — Không mass production, tinh tế từng chi tiết"
                 loading="lazy"
                 decoding="async"
                 className="w-full h-full object-cover object-center group-hover:scale-103 transition-transform duration-700"

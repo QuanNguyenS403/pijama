@@ -1,5 +1,11 @@
 import nodemailer from 'nodemailer'
 import { loadEnvironment } from './envCheck.js'
+import {
+  isAutomatedTestEnvironment,
+  isEmailDeliveryDisabled,
+  partitionRecipients,
+  UNDELIVERABLE_EMAIL_MESSAGE,
+} from './emailRecipientGuard.js'
 
 let localTransporter = null
 
@@ -38,8 +44,8 @@ export async function sendEmailViaHttps(options) {
     loadEnvironment()
   } catch (_) {}
 
-  const { to, subject, html, text, fromName = 'QuanNguyenS' } = options
-  if (!to) {
+  const { to: rawTo, subject, html, text, fromName = 'QuanNguyenS', from } = options
+  if (!rawTo) {
     throw new Error('Thiếu địa chỉ email người nhận (to)')
   }
   if (!subject) {
@@ -48,6 +54,36 @@ export async function sendEmailViaHttps(options) {
   if (!html && !text) {
     throw new Error('Thiếu nội dung email (html hoặc text)')
   }
+
+  // ─────────────────────────────────────────────────────────────
+  // CHỐT AN TOÀN 0: Không bao giờ gửi email thật khi đang chạy test tự động
+  // (trước đây `npm test` gửi OTP thật tới otp_register_xxx@quannguyens.com -> bounce)
+  // ─────────────────────────────────────────────────────────────
+  if (isAutomatedTestEnvironment() || isEmailDeliveryDisabled()) {
+    console.log(`🧪 [EMAIL SANDBOX] Bỏ qua gửi thật tới ${rawTo} (Subject: ${subject})`)
+    return {
+      success: true,
+      transport: 'test_mock',
+      messageId: `mock_${Date.now()}`,
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // CHỐT AN TOÀN 1: Loại bỏ địa chỉ không thể nhận thư (domain test, không có MX...)
+  // tránh bounce làm giảm uy tín hộp thư gửi
+  // ─────────────────────────────────────────────────────────────
+  const { deliverable, rejected } = await partitionRecipients(rawTo)
+  if (rejected.length > 0) {
+    console.warn(`🚫 [EMAIL GUARD] Bỏ qua địa chỉ không nhận được thư: ${rejected.map((r) => `${r.address} (${r.reason})`).join(', ')}`)
+  }
+  if (deliverable.length === 0) {
+    const guardError = new Error(UNDELIVERABLE_EMAIL_MESSAGE)
+    guardError.status = 400
+    guardError.code = 'UNDELIVERABLE_RECIPIENT'
+    guardError.details = rejected
+    throw guardError
+  }
+  const to = deliverable.length === 1 ? deliverable[0] : deliverable
 
   const errors = []
 
@@ -170,8 +206,9 @@ export async function sendEmailViaHttps(options) {
       try {
         console.log(`📡 [EMAIL TRANSPORT 3] Thử gửi qua Localhost SMTP tới: ${to}...`)
         const user = (process.env.GMAIL_USER || 'quannguyens403@gmail.com').trim()
+        const fromHeader = from || `"${fromName}" <${user}>`
         const info = await transporter.sendMail({
-          from: `"${fromName}" <${user}>`,
+          from: fromHeader,
           to,
           subject,
           html,
@@ -214,6 +251,10 @@ export async function sendEmailViaHttps(options) {
  * Kiểm tra trạng thái cấu hình của hệ thống Email HTTPS
  */
 export function getEmailServiceStatus() {
+  try {
+    loadEnvironment()
+  } catch (_) {}
+
   const gasUrl = (
     process.env.GAS_EMAIL_WEBHOOK_URL ||
     process.env.GMAIL_APP_SCRIPT_URL ||

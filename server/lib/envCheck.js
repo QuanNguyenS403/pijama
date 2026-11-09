@@ -8,9 +8,18 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const projectRoot = path.resolve(__dirname, '../..')
 
+// Ghi nhớ các biến do chính loadEnvironment() nạp từ file (key -> value đã set).
+// Biến nào đang có giá trị trong process.env mà KHÔNG nằm trong map này (hoặc đã bị đổi giá trị)
+// là biến do môi trường bên ngoài cấp (cross-env, shell, Render dashboard, test runner...)
+// => TUYỆT ĐỐI không được ghi đè. Trước đây NODE_ENV=test của `npm test` bị .env ghi đè thành
+// "development", khiến bộ test gửi email OTP THẬT tới các địa chỉ giả (gây bounce Mail Delivery Subsystem).
+const fileManagedEnv = new Map()
+
 /**
  * Nạp thông minh biến môi trường từ .env, .env.development, .env.local
- * Nguyên tắc: Ưu tiên giá trị không rỗng, tránh việc file rỗng ghi đè file có dữ liệu thật.
+ * Nguyên tắc:
+ *  - Biến môi trường do bên ngoài cấp (process/shell/CI) luôn được ưu tiên, file .env không ghi đè.
+ *  - Giữa các file: ưu tiên giá trị không rỗng, tránh việc file rỗng ghi đè file có dữ liệu thật.
  */
 export function loadEnvironment(rootDir = process.cwd()) {
   const envFiles = ['.env', '.env.development', '.env.local']
@@ -23,10 +32,19 @@ export function loadEnvironment(rootDir = process.cwd()) {
           const parsed = dotenv.parse(fs.readFileSync(fullPath, 'utf-8'))
           for (const [key, value] of Object.entries(parsed)) {
             const valToSet = (key === 'GMAIL_APP_PASSWORD' && typeof value === 'string') ? value.replace(/\s+/g, '') : value
+            const current = process.env[key]
+            const isExternallyProvided =
+              current !== undefined &&
+              String(current).trim() !== '' &&
+              (!fileManagedEnv.has(key) || fileManagedEnv.get(key) !== current)
+            if (isExternallyProvided) continue
+
             if (valToSet && valToSet.trim() !== '') {
               process.env[key] = valToSet
-            } else if (process.env[key] === undefined) {
+              fileManagedEnv.set(key, valToSet)
+            } else if (current === undefined) {
               process.env[key] = valToSet
+              fileManagedEnv.set(key, valToSet)
             }
           }
         } catch (e) {
