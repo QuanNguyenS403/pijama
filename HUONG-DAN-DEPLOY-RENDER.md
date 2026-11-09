@@ -82,9 +82,14 @@ Tại trang cấu hình Web Service trên Render, cuộn xuống mục **Environ
 | `GOOGLE_PRIVATE_KEY` | `-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n` | Private Key của Google Service Account |
 | `GOOGLE_CLIENT_ID` | `745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com` | Google One-Tap Đăng nhập |
 | `VITE_GOOGLE_CLIENT_ID` | `745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com` | Client ID cho Frontend |
-| `TURNSTILE_SECRET_KEY` | `0x4AAAAAAFXbUZTWy-tGC4zUAtfGxzU07q4` | Chống bot spam đặt hàng Cloudflare |
-| `VITE_TURNSTILE_SITE_KEY` | `0x4AAAAAAFXbURX5lj6_klfx` | Site key hiển thị CAPTCHA vô hình |
-| `GMAIL_BRIDGE_SECRET` | `d9eb659e06d32f5e46ed778472a072fc7d1f7fb201e3b03bb6ed899e5c36ea44` | Khóa bí mật ký số HMAC bảo mật cho cầu nối Gmail Apps Script (`QNS_SECRET`) |
+| `TURNSTILE_SECRET_KEY` | `CHANGE_ME_CLOUDFLARE_TURNSTILE_SECRET` | Chống bot spam đặt hàng Cloudflare |
+| `VITE_TURNSTILE_SITE_KEY` | `CHANGE_ME_CLOUDFLARE_TURNSTILE_SITE_KEY` | Site key hiển thị CAPTCHA vô hình |
+| `GAS_EMAIL_WEBHOOK_URL` | `https://script.google.com/macros/s/CHANGE_ME_NEW_DEPLOYMENT_ID/exec` | URL Web App Apps Script MỚI gửi email OTP qua HTTPS (Port 443) |
+| `GAS_WEBHOOK_SECRET` | `CHANGE_ME_RANDOM_SECRET_KEY` | Khóa bí mật xác thực gửi email cho Apps Script (`QNS_SEND_SECRET`) |
+| `GMAIL_BRIDGE_SECRET` | `CHANGE_ME_HMAC_SECRET_FOR_BANK_SYNC` | Khóa bí mật ký số HMAC bảo mật cho đồng bộ biến động số dư ngân hàng (`QNS_SECRET`) |
+| `RESEND_API_KEY` | `re_CHANGE_ME_OPTIONAL_RESEND_KEY` | (Tùy chọn) API Key nhà cung cấp Resend dự phòng |
+| `RESEND_FROM_EMAIL` | `QuanNguyenS <support@quannguyens.com>` | (Tùy chọn) Địa chỉ gửi Resend với domain đã xác minh SPF/DKIM |
+| `EMAIL_GAS_TIMEOUT_MS` | `25000` | Thời gian timeout kết nối Apps Script (mặc định 25 giây cho cold-start) |
 | `BANK_EMAIL_ALLOWED_SENDERS` | `vietcombank@vietcombank.com.vn,ibanking@vietcombank.com.vn` | Danh sách email ngân hàng Vietcombank hợp lệ |
 | `BANK_EMAIL_AUTO_SETTLE` | `true` | Tự động xác nhận đơn hàng khi tiền về khớp 100% |
 | `SEPAY_WEBHOOK_API_KEY` | `[Mã API SePay của bạn]` | Key xác thực biến động số dư SePay (tùy chọn dự phòng) |

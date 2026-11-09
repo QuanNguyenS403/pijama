@@ -48,30 +48,30 @@ Gam màu Đỏ (Classic Red) biểu trưng cho năng lượng Hỏa — biểu t
         hex: "#80262F",          // representative swatch color (Đỏ Ruby / Đỏ Rượu)
         patternPreview: true,    // swatch preview
         patternType: "red",
-        stock: { S: 10, M: 8 },
+        stock: { S: 10, L: 8, M: 8 },
       },
     ],
 
-    // ─── SIZES — only S and M ────────────────────────────────────────────────
-    sizes: ["S", "M"],
+    // ─── SIZES — only S and L ────────────────────────────────────────────────
+    sizes: ["S", "L"],
 
     // ─── SIZE GUIDE — Bảng Size chuẩn hóa cho THE DAYBREAK SET ─────────────
     sizeGuide: {
       S: {
-        weight: "40–49 kg",
-        height: "150–160 cm",
-        chest: "82–88 cm",
-        waist: "62–70 cm",
-        trouserLength: "90 cm",
-        sleeveLength: "53,5 cm",
+        shirtLength: "62,0 cm",
+        chest: "110,0 cm",
+        sleeveLength: "54,0 cm",
+        maxWaist: "103,7 cm",
+        thigh: "69,1 cm",
+        trouserLength: "90,8 cm",
       },
-      M: {
-        weight: "50–58 kg",
-        height: "158–168 cm",
-        chest: "89–95 cm",
-        waist: "71–78 cm",
-        trouserLength: "92 cm",
-        sleeveLength: "54,5 cm",
+      L: {
+        shirtLength: "66,0 cm",
+        chest: "118,0 cm",
+        sleeveLength: "56,0 cm",
+        maxWaist: "103,7 cm",
+        thigh: "73,0 cm",
+        trouserLength: "94,8 cm",
       },
     },
 
@@ -154,13 +154,13 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
 
     images: {
       "Navy Plaid": [
-        "/images/classic-set-navy-main.jpg",
+        "/images/classic-set-navy-lookbook-main.jpg",
         "/images/classic-set-navy-thumb-1.jpg",
         "/images/classic-set-navy-thumb-2.jpg",
         "/images/classic-set-navy-thumb-3.jpg",
       ],
       "Caro Navy": [
-        "/images/classic-set-navy-main.jpg",
+        "/images/classic-set-navy-lookbook-main.jpg",
         "/images/classic-set-navy-thumb-1.jpg",
         "/images/classic-set-navy-thumb-2.jpg",
         "/images/classic-set-navy-thumb-3.jpg",
@@ -174,27 +174,27 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
         hex: "#222636",
         patternPreview: true,
         patternType: "plaid",
-        stock: { S: 50, M: 50 },
+        stock: { S: 50, L: 50, M: 50 },
       },
     ],
 
-    sizes: ['S', 'M'],
+    sizes: ['S', 'L'],
     sizeGuide: {
       S: {
-        shirtLength: '66 cm',
-        chest: '124 cm',
-        sleeveLength: '53 cm',
-        maxWaist: '80 cm',
-        thigh: '64 cm',
-        trouserLength: '98 cm',
+        shirtLength: '66,5 cm',
+        chest: '127,0 cm',
+        sleeveLength: '50,2 cm',
+        maxWaist: '≈108,0 cm',
+        thigh: '68,9 cm',
+        trouserLength: '96,3 cm',
       },
-      M: {
-        shirtLength: '68 cm',
-        chest: '132 cm',
-        sleeveLength: '55 cm',
-        maxWaist: '88 cm',
-        thigh: '68 cm',
-        trouserLength: '102 cm',
+      L: {
+        shirtLength: '70,5 cm',
+        chest: '135,0 cm',
+        sleeveLength: '54,2 cm',
+        maxWaist: '≈116,0 cm',
+        thigh: '72,8 cm',
+        trouserLength: '100,3 cm',
       },
     },
     fabric: '95% Modal Sợi Gỗ Tự Nhiên & 5% Spandex Cao Cấp',
@@ -320,7 +320,7 @@ export const sampleReviews = [
     color: 'Đỏ',
     size: 'S',
     verified: true,
-    photo: '/images/classic-set-red-thumb-1.jpg',
+    photo: '/images/reviews/review-red-1.jpg',
     text: 'Nhận hàng mở hộp ra ưng ngay cái nết đóng gói, thơm mùi hoa nhẹ. Bộ đỏ này chất vải mê thực sự, mềm mượt mát tay chứ không bị dính ráp da. Mình hay mặc từ phòng ngủ lững thững ra ban công nhâm nhi ly cafe sáng hoặc xuống nhận shipper mà vẫn rất lịch sự. Đường viền cúc và cổ notch may chỉn chu lắm, giặt máy túi giặt 3 lần rồi vẫn phẳng phiu không bị bai dão.',
   },
   {
@@ -332,7 +332,7 @@ export const sampleReviews = [
     color: 'Đỏ',
     size: 'S',
     verified: true,
-    photo: '/images/classic-set-red-thumb-2.jpg',
+    photo: '/images/reviews/review-red-2.jpg',
     text: 'Mình 49kg cao 1m58 chọn size S vừa vặn thoải mái, quần dài chạm mu bàn chân đi dép bệt rất tôn dáng. Vải mềm rũ như làn da thứ hai, đêm nằm phòng điều hòa ấm áp dễ chịu cực kỳ. Tone màu đỏ ruby sang trọng vừa phải, mặc lên nhìn da sáng bừng mà quý phái chứ không bị chói xíu nào.',
   },
   {
@@ -344,7 +344,7 @@ export const sampleReviews = [
     color: 'Đỏ',
     size: 'M',
     verified: true,
-    photo: '/images/classic-set-red-thumb-3.jpg',
+    photo: '/images/reviews/review-red-3.jpg',
     text: 'Đã mua bộ thứ 2 ở shop rồi. Form suông relaxed chuẩn kiểu homewear châu Âu, mặc đi lại quanh nhà nhẹ tênh không có cảm giác bị gò bó. Thích nhất là đường may giấu mép bên trong, lộn ra sờ không thấy cộm hay cọ xát vào da tí nào. Mẹ mình nhìn thấy khen quá trời nên bảo đặt thêm cho mẹ một bộ nữa.',
   },
   {
@@ -356,7 +356,7 @@ export const sampleReviews = [
     color: 'Đỏ',
     size: 'M',
     verified: true,
-    photo: '/images/classic-set-red-thumb-1.jpg',
+    photo: '/images/reviews/review-red-4.jpg',
     text: 'Đường kim mũi chỉ sắc sảo từng milimet luôn á, không thấy một sợi chỉ thừa nào. Da mình thuộc dạng siêu nhạy cảm, mặc đồ ngủ rẻ tiền một tí là ngứa ngáy nổi mẩn liền, mà mặc bộ này của QuanNguyenS ngủ một giấc tới sáng êm ru. Đóng hộp quà kèm thiệp chỉn chu, làm quà tặng bạn thân thì hết nước chấm.',
   },
   {
@@ -418,7 +418,7 @@ export const sampleReviews = [
     color: 'Caro Navy',
     size: 'S',
     verified: true,
-    photo: '/images/classic-set-navy-thumb-1.jpg',
+    photo: '/images/reviews/review-navy-1.jpg',
     text: 'Mê nhất cái cổ V khoét vừa vặn, thanh thoát lộ xương quai xanh mà không hề bị hở hay xộc xệch khi cúi xuống. Họa tiết caro navy nhìn ngoài đời màu trầm sâu và sang hơn trong ảnh nhiều. Tối đi làm về mệt mỏi tắm xong tròng bộ này vào là thấy nhẹ cả người.',
   },
   {
@@ -430,7 +430,7 @@ export const sampleReviews = [
     color: 'Caro Navy',
     size: 'S',
     verified: true,
-    photo: '/images/classic-set-navy-thumb-2.jpg',
+    photo: '/images/reviews/review-navy-2.jpg',
     text: 'Chất vải mềm mát lạnh tay, có độ co giãn nhẹ lăn trở cả đêm thoải mái không bị xoắn hay thít vào người. Quần cạp chun êm ru bụng không bị hằn vết đỏ. Bạn trai mình nhìn thấy còn khen bộ này nhìn nhã nhặn và có gu.',
   },
   {
@@ -442,7 +442,7 @@ export const sampleReviews = [
     color: 'Caro Navy',
     size: 'L',
     verified: true,
-    photo: '/images/classic-set-navy-thumb-3.jpg',
+    photo: '/images/reviews/review-navy-3.jpg',
     text: 'Bạn gái mua tặng mình Size L (mình 66kg cao 1m74). Áo dài qua mông nhẹ, form suông rộng rãi thoải mái cực kỳ. Chất vải dày dặn vừa phải, không lộ bên trong, mặc làm việc tại nhà hay bước xuống sảnh chung cư lấy đồ ăn đều đàng hoàng chỉn chu.',
   },
   {
@@ -454,7 +454,7 @@ export const sampleReviews = [
     color: 'Caro Navy',
     size: 'S',
     verified: true,
-    photo: '/images/classic-set-navy-detail.jpg',
+    photo: '/images/reviews/review-navy-4.jpg',
     text: 'Đường viền tương phản chạy dọc cổ V và miệng túi may chuẩn chỉnh từng nét, các ô kẻ caro khớp nhau tăm tắp chứng tỏ thợ may tay nghề cao. Đặt hàng 2 hôm là nhận được ngay tại Hà Nội, đóng gói cẩn thận.',
   },
   {
@@ -516,7 +516,7 @@ export const sampleReviews = [
     color: 'Sọc Nâu',
     size: 'M',
     verified: true,
-    photo: '/images/classic-set-brown-thumb-1.jpg',
+    photo: '/images/reviews/review-brown-1.jpg',
     text: 'Chất vải 100% Tencel Lyocell rủ đẹp không thể tả được! Bước đi ống quần bay bổng thướt tha, bóng mờ nhẹ tự nhiên quý phái y như lụa tơ tằm đắt đỏ tiền triệu mà lại dễ giặt giũ bảo quản hơn nhiều. Mặc vào người nhẹ bẫng như không.',
   },
   {
@@ -528,7 +528,7 @@ export const sampleReviews = [
     color: 'Sọc Nâu',
     size: 'M',
     verified: true,
-    photo: '/images/classic-set-brown-thumb-2.jpg',
+    photo: '/images/reviews/review-brown-2.jpg',
     text: 'Tone nâu mocha sọc này sang tây dã man, bạn nào da trắng hay ngăm mặc lên đều hợp. Vải sờ vào êm ái mát rượi, thấm hút mồ hôi siêu tốt. Buổi tối bật đèn vàng đọc sách nhâm nhi tách trà thấy bình yên thư thái vô cùng.',
   },
   {
@@ -540,7 +540,7 @@ export const sampleReviews = [
     color: 'Sọc Nâu',
     size: 'S',
     verified: true,
-    photo: '/images/classic-set-brown-thumb-3.jpg',
+    photo: '/images/reviews/review-brown-3.jpg',
     text: 'Dáng quần wide-leg hack chân dài đỉnh chóp luôn, mình 1m62 mặc vào nhìn như 1m70 vậy á. Mang đi resort nghỉ dưỡng chụp hình mà ai cũng tưởng set đồ thiết kế đi tiệc. Đường may giấu chỉ sắc sảo, không cọ xát da.',
   },
   {
@@ -552,7 +552,7 @@ export const sampleReviews = [
     color: 'Sọc Nâu',
     size: 'M',
     verified: true,
-    photo: '/images/classic-set-brown-detail.jpg',
+    photo: '/images/reviews/review-brown-4.jpg',
     text: 'Đặt may thủ công đợi gần tuần lễ nhưng nhận hàng thì thấy hoàn toàn bõ công chờ đợi. Đóng hộp cứng cáp, từng nếp gấp phẳng phiu tinh tế. Chất vải tencel rủ tự nhiên, mặc lên người toát ra vẻ thanh lịch sang trọng ngầm.',
   },
   {

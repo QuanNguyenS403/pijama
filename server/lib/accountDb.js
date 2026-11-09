@@ -1581,6 +1581,7 @@ export function savePendingRegistrationDb({
     )
   } catch (err) {
     console.error('Lỗi savePendingRegistrationDb:', err.message)
+    throw err
   }
 
   return { email: cleanEmail, expiresAt }
@@ -1673,6 +1674,7 @@ export function savePendingPasswordResetDb({
     `).run(cleanEmail, codeHash, salt, expiresAt, now)
   } catch (err) {
     console.error('Lỗi savePendingPasswordResetDb:', err.message)
+    throw err
   }
 
   return { email: cleanEmail, expiresAt }

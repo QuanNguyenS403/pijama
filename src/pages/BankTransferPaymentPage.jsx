@@ -271,7 +271,7 @@ export default function BankTransferPaymentPage() {
 
       <CartDrawer isOpen={cartDrawerOpen} onClose={() => setCartDrawerOpen(false)} />
       <Header onCartOpen={() => setCartDrawerOpen(true)} />
-      <div className="h-16 md:h-20" />
+      <div className="h-14 md:h-16" />
 
       <main className="max-w-[760px] mx-auto px-4 sm:px-6 py-10 md:py-16">
         {/* Verification Overlay when confirming */}

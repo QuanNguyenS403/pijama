@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function ProductImageGallery({
   images = [],
@@ -26,50 +26,66 @@ export default function ProductImageGallery({
   }, [images, selectedColor?.name])
 
   const [activeIndex, setActiveIndex] = useState(0)
-  const [lightboxOpen, setLightboxOpen] = useState(false)
-  const [lightboxIndex, setLightboxIndex] = useState(0)
+  const thumbnailRefs = useRef([])
 
   // Reset activeIndex whenever the color variant changes
   useEffect(() => {
     setActiveIndex(0)
   }, [selectedColor?.name])
 
-  const openLightbox = (i) => {
-    setLightboxIndex(i)
-    setLightboxOpen(true)
-    document.body.style.overflow = 'hidden'
-  }
-
-  const closeLightbox = useCallback(() => {
-    setLightboxOpen(false)
-    document.body.style.overflow = ''
-  }, [])
-
-  const lbPrev = () =>
-    setLightboxIndex((i) => (i - 1 + currentImages.length) % currentImages.length)
-  const lbNext = () =>
-    setLightboxIndex((i) => (i + 1) % currentImages.length)
-
-  const handleKeyLb = (e) => {
-    if (e.key === 'Escape') closeLightbox()
-    if (e.key === 'ArrowLeft') lbPrev()
-    if (e.key === 'ArrowRight') lbNext()
-  }
+  // Smooth scroll active thumbnail into view
+  useEffect(() => {
+    if (thumbnailRefs.current[activeIndex]) {
+      thumbnailRefs.current[activeIndex].scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'nearest',
+      })
+    }
+  }, [activeIndex])
 
   const currentMainImage = currentImages[activeIndex] || currentImages[0]
 
   return (
-    <>
-      <div className="flex flex-col gap-3.5">
-        {/* Main hero image */}
+    <div className="flex flex-row gap-2.5 sm:gap-3.5 md:gap-4 items-start w-full">
+      {/* Left: Vertical thumbnail strip */}
+      {currentImages.length > 1 && (
         <div
-          className="relative overflow-hidden bg-[#F5F0EB] border border-[#E8DFD5] cursor-zoom-in group rounded-[4px] w-full flex items-center justify-center aspect-[4/5] max-h-[640px] xl:max-h-[660px]"
-          onClick={() => openLightbox(activeIndex)}
-          role="button"
-          tabIndex={0}
-          aria-label={`Mở ảnh lớn ${productName}`}
-          onKeyDown={(e) => e.key === 'Enter' && openLightbox(activeIndex)}
+          className="shrink-0 flex flex-col gap-2 sm:gap-2.5 w-14 sm:w-18 lg:w-20 xl:w-22 overflow-y-auto no-scrollbar max-h-[520px] sm:max-h-[600px] xl:max-h-[640px]"
+          role="tablist"
+          aria-label="Danh sách ảnh thu nhỏ"
         >
+          {currentImages.map((img, i) => (
+            <motion.button
+              key={`${selectedColor?.name || 'default'}-${i}`}
+              ref={(el) => (thumbnailRefs.current[i] = el)}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.25, delay: i * 0.04 }}
+              onClick={() => setActiveIndex(i)}
+              aria-label={`Chọn ảnh ${i + 1}`}
+              aria-selected={i === activeIndex}
+              role="tab"
+              className={`shrink-0 w-full aspect-[4/5] overflow-hidden transition-all duration-200 rounded-[2px] cursor-pointer bg-[#F5F0EB] ${
+                i === activeIndex
+                  ? 'border-2 border-[#1A1614] shadow-md opacity-100 ring-2 ring-[#631521]/25 scale-[1.02]'
+                  : 'border border-[#E8DFD5] opacity-70 hover:opacity-100 hover:border-[#8C7E74]'
+              }`}
+            >
+              <img
+                src={img}
+                alt={`${productName} thumbnail ${i + 1}`}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            </motion.button>
+          ))}
+        </div>
+      )}
+
+      {/* Right: Main hero image */}
+      <div className="flex-1 min-w-0">
+        <div className="relative overflow-hidden bg-[#F5F0EB] border border-[#E8DFD5] group rounded-[4px] w-full flex items-center justify-center aspect-[4/5] max-h-[520px] sm:max-h-[600px] xl:max-h-[640px]">
           {/* Quick Prev / Next navigation buttons on desktop & mobile */}
           {currentImages.length > 1 && (
             <>
@@ -80,9 +96,9 @@ export default function ProductImageGallery({
                   setActiveIndex((i) => (i - 1 + currentImages.length) % currentImages.length)
                 }}
                 aria-label="Ảnh trước"
-                className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white text-[#1A1614] hover:bg-[#631521] hover:text-white flex items-center justify-center shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 active:scale-95 border border-[#E8DFD5]/80"
+                className="absolute left-2.5 sm:left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white text-[#1A1614] hover:bg-[#631521] hover:text-white flex items-center justify-center shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 active:scale-95 border border-[#E8DFD5]/80"
               >
-                <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
               </button>
               <button
                 type="button"
@@ -91,23 +107,19 @@ export default function ProductImageGallery({
                   setActiveIndex((i) => (i + 1) % currentImages.length)
                 }}
                 aria-label="Ảnh tiếp theo"
-                className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white text-[#1A1614] hover:bg-[#631521] hover:text-white flex items-center justify-center shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 active:scale-95 border border-[#E8DFD5]/80"
+                className="absolute right-2.5 sm:right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white text-[#1A1614] hover:bg-[#631521] hover:text-white flex items-center justify-center shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 active:scale-95 border border-[#E8DFD5]/80"
               >
-                <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
               </button>
             </>
           )}
 
           {/* Image index counter badge */}
           {currentImages.length > 1 && (
-            <div className="absolute bottom-3.5 left-3.5 z-10 bg-[#1A1614]/75 backdrop-blur-xs text-[#FAF8F5] text-[11px] font-sans font-medium px-2 py-0.5 rounded-[2px] tracking-wider pointer-events-none">
+            <div className="absolute bottom-3 left-3 sm:bottom-3.5 sm:left-3.5 z-10 bg-[#1A1614]/75 backdrop-blur-xs text-[#FAF8F5] text-[10px] sm:text-[11px] font-sans font-medium px-2 py-0.5 rounded-[2px] tracking-wider pointer-events-none">
               {activeIndex + 1} / {currentImages.length}
             </div>
           )}
-
-          <div className="absolute bottom-3.5 right-3.5 z-10 text-[#1A1614] bg-white/90 hover:bg-white p-2 rounded-full shadow-md transition-all">
-            <ZoomIn className="w-4 h-4" />
-          </div>
 
           <AnimatePresence mode="wait">
             <motion.img
@@ -122,129 +134,7 @@ export default function ProductImageGallery({
             />
           </AnimatePresence>
         </div>
-
-        {/* Thumbnail strip */}
-        {currentImages.length > 1 && (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={selectedColor?.name || 'thumbnails-default'}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="flex gap-2.5 overflow-x-auto pb-1 shrink-0 pt-0.5"
-            >
-              {currentImages.map((img, i) => (
-                <motion.button
-                  key={`${selectedColor?.name}-${i}`}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, delay: i * 0.04 }}
-                  onClick={() => setActiveIndex(i)}
-                  aria-label={`Chọn ảnh ${i + 1}`}
-                  className={`shrink-0 w-18 sm:w-22 lg:w-20 xl:w-24 aspect-[4/5] overflow-hidden transition-all duration-150 rounded-[3px] cursor-pointer ${
-                    i === activeIndex
-                      ? 'border-2 border-[#631521] shadow-md opacity-100 ring-2 ring-[#D4AF37]/40 scale-[1.02]'
-                      : 'border border-[#E8DFD5] opacity-70 hover:opacity-100 hover:border-[#631521]'
-                  }`}
-                >
-                  <img
-                    src={img}
-                    alt={`${productName} thumbnail ${i + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </motion.button>
-              ))}
-            </motion.div>
-          </AnimatePresence>
-        )}
       </div>
-
-      {/* Lightbox */}
-      <AnimatePresence>
-        {lightboxOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[150] bg-black/90 flex items-center justify-center"
-            onClick={closeLightbox}
-            onKeyDown={handleKeyLb}
-            tabIndex={-1}
-            ref={(el) => el && el.focus()}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Xem ảnh phóng to"
-          >
-            {/* Close */}
-            <button
-              onClick={closeLightbox}
-              className="absolute top-4 right-4 text-white/80 hover:text-[#D4AF37] z-10 p-2"
-              aria-label="Đóng"
-            >
-              <X className="w-7 h-7" />
-            </button>
-
-            {/* Prev */}
-            {currentImages.length > 1 && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  lbPrev()
-                }}
-                className="absolute left-4 text-white/80 hover:text-[#D4AF37] z-10 p-2"
-                aria-label="Ảnh trước"
-              >
-                <ChevronLeft className="w-8 h-8" />
-              </button>
-            )}
-
-            {/* Image */}
-            <motion.img
-              key={lightboxIndex}
-              src={currentImages[lightboxIndex]}
-              alt={`${productName} — ảnh ${lightboxIndex + 1}`}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className="max-h-[85vh] max-w-[85vw] object-contain rounded-[2px] border border-white/10"
-              onClick={(e) => e.stopPropagation()}
-            />
-
-            {/* Next */}
-            {currentImages.length > 1 && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  lbNext()
-                }}
-                className="absolute right-4 text-white/80 hover:text-[#D4AF37] z-10 p-2"
-                aria-label="Ảnh tiếp theo"
-              >
-                <ChevronRight className="w-8 h-8" />
-              </button>
-            )}
-
-            {/* Dots */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-              {currentImages.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setLightboxIndex(i)
-                  }}
-                  aria-label={`Ảnh ${i + 1}`}
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    i === lightboxIndex ? 'bg-[#D4AF37]' : 'bg-white/40'
-                  }`}
-                />
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+    </div>
   )
 }

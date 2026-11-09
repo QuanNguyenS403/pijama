@@ -351,7 +351,7 @@ export default function CheckoutPage() {
       <CartDrawer isOpen={cartDrawerOpen} onClose={() => setCartDrawerOpen(false)} />
       <Header onCartOpen={() => setCartDrawerOpen(true)} />
 
-      <div className="h-16 md:h-20" />
+      <div className="h-14 md:h-16" />
 
       <main className="max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 py-8 md:py-12">
         {/* Back Link */}

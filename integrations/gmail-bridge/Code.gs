@@ -384,7 +384,33 @@ function syncBankEmails() {
 
 
 /**
- * Endpoint kiểm tra trạng thái hoạt động khi mở URL Web App trên trình duyệt
+ * So sánh chuỗi an toàn chống Timing Attack (Constant-Time String Comparison)
+ */
+function safeStringEquals(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  if (a.length !== b.length) return false;
+  var result = 0;
+  for (var i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
+/**
+ * Trích xuất text thuần từ HTML (fallback khi client không gửi trường text)
+ */
+function stripHtmlToText(html) {
+  if (!html) return '';
+  return String(html)
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Endpoint kiểm tra trạng thái hoạt động khi mở URL Web App trên trình duyệt (A7: không lộ secret/config)
  */
 function doGet(e) {
   return ContentService.createTextOutput(
@@ -400,47 +426,205 @@ function doGet(e) {
 
 /**
  * Webhook nhận yêu cầu gửi email từ máy chủ QuanNguyenS qua HTTPS (Port 443)
- * Giúp vượt qua 100% rào cản firewall chặn cổng SMTP (465/587) trên các nền tảng đám mây như Render Free Tier.
+ * Đáp ứng toàn diện các tiêu chuẩn WP-A (A1 - A8):
+ *  - A1: Xác thực fail-closed bằng QNS_SEND_SECRET, chống Open Relay, kiểm tra timestamp drift.
+ *  - A2: Kết quả trung thực, bắt lỗi chính xác (QUOTA_EXCEEDED, INVALID_RECIPIENT, SERVICE_ERROR).
+ *  - A3: Idempotent theo requestId (CacheService 10 phút).
+ *  - A4: Validate đầu vào nghiêm ngặt (1 người nhận, cấm CRLF header injection, size limit).
+ *  - A5: Gửi cả text lẫn HTML body, đọc đúng fromName / name.
  */
 function doPost(e) {
   try {
     var rawBody = (e && e.postData && e.postData.contents) ? e.postData.contents : '{}';
-    var data = JSON.parse(rawBody);
-    var config = getBridgeConfig();
+    var data;
+    try {
+      data = JSON.parse(rawBody);
+    } catch (parseErr) {
+      return ContentService.createTextOutput(
+        JSON.stringify({ success: false, code: 'INVALID_JSON', error: 'Dữ liệu JSON không hợp lệ' })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
 
-    // Xác thực HMAC signature từ máy chủ nếu có cấu hình bí mật
-    var signature = (e && e.parameter && e.parameter.sig) || (e && e.headers && (e.headers['X-QNS-Signature'] || e.headers['x-qns-signature']));
-    var timestamp = (e && e.parameter && e.parameter.ts) || (e && e.headers && (e.headers['X-QNS-Timestamp'] || e.headers['x-qns-timestamp']));
+    if (data.action !== 'SEND_EMAIL') {
+      return ContentService.createTextOutput(
+        JSON.stringify({ success: false, code: 'UNSUPPORTED_ACTION', error: 'Action không hỗ trợ' })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
 
-    if (config.secret && signature && timestamp) {
-      var expected = computeHmacSignature(rawBody, config.secret, timestamp);
-      if (signature !== expected) {
-        return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'Chữ ký HMAC không hợp lệ' })).setMimeType(ContentService.MimeType.JSON);
+    // A1: Xác thực bắt buộc Script Property QNS_SEND_SECRET (fail-closed)
+    var props = PropertiesService.getScriptProperties();
+    var expectedSecret = props.getProperty('QNS_SEND_SECRET') || props.getProperty('QNS_SECRET');
+    if (!expectedSecret) {
+      return ContentService.createTextOutput(
+        JSON.stringify({
+          success: false,
+          code: 'NOT_CONFIGURED',
+          error: 'Cầu Apps Script chưa cấu hình Script Property QNS_SEND_SECRET trên Google Apps Script.'
+        })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var providedSecret = String(data.secret || '').trim();
+    if (!providedSecret || !safeStringEquals(providedSecret, expectedSecret)) {
+      return ContentService.createTextOutput(
+        JSON.stringify({
+          success: false,
+          code: 'UNAUTHORIZED',
+          error: 'Secret xác thực webhook không hợp lệ hoặc bị thiếu.'
+        })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // A1: Kiểm tra độ lệch thời gian timestamp (chống Replay Attack, cho phép lệch tối đa 5 phút)
+    var ts = Number(data.ts || data.timestamp || 0);
+    if (ts > 0) {
+      var now = Date.now();
+      if (Math.abs(now - ts) > 5 * 60 * 1000) {
+        return ContentService.createTextOutput(
+          JSON.stringify({
+            success: false,
+            code: 'TIMESTAMP_EXPIRED',
+            error: 'Timestamp của yêu cầu đã hết hạn hoặc lệch quá 5 phút so với đồng hồ máy chủ.'
+          })
+        ).setMimeType(ContentService.MimeType.JSON);
       }
     }
 
-    if (data.action === 'SEND_EMAIL') {
-      var to = String(data.to || '').trim();
-      var subject = String(data.subject || '').trim();
-      var htmlBody = String(data.html || '');
-      var fromName = String(data.fromName || 'QuanNguyenS').trim();
-
-      if (!to || !subject || !htmlBody) {
-        return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'Thiếu trường to, subject hoặc html' })).setMimeType(ContentService.MimeType.JSON);
+    // A3: Idempotency theo requestId (lưu trong CacheService 10 phút)
+    var requestId = String(data.requestId || '').trim();
+    var cache = CacheService.getScriptCache();
+    if (requestId && cache) {
+      var cached = cache.get('idemp_' + requestId);
+      if (cached) {
+        return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JSON);
       }
-
-      safeGoogleServiceCall(function() {
-        GmailApp.sendEmail(to, subject, '', {
-          htmlBody: htmlBody,
-          name: fromName
-        });
-      }, 'GmailApp.sendEmail');
-
-      return ContentService.createTextOutput(JSON.stringify({ success: true, message: 'Đã gửi email thành công qua Gmail Native Bridge' })).setMimeType(ContentService.MimeType.JSON);
     }
 
-    return ContentService.createTextOutput(JSON.stringify({ success: false, error: 'Action không hỗ trợ' })).setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() })).setMimeType(ContentService.MimeType.JSON);
+    // A4: Kiểm tra đầu vào nghiêm ngặt
+    var to = String(data.to || '').trim();
+    var subject = String(data.subject || '').trim();
+    var htmlBody = String(data.html || '');
+    var textBody = String(data.text || '').trim();
+    var fromName = String(data.fromName || data.name || 'QuanNguyenS').trim();
+
+    if (!to || !subject || (!htmlBody && !textBody)) {
+      return ContentService.createTextOutput(
+        JSON.stringify({ success: false, code: 'INVALID_INPUT', error: 'Thiếu trường to, subject hoặc nội dung thư' })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Chặn danh sách phân tách dấu phẩy hoặc chấm phẩy cho action gửi OTP (A4: đúng 1 người nhận)
+    if (to.indexOf(',') !== -1 || to.indexOf(';') !== -1) {
+      return ContentService.createTextOutput(
+        JSON.stringify({ success: false, code: 'INVALID_RECIPIENT', error: 'Chỉ chấp nhận duy nhất 1 địa chỉ email người nhận cho mỗi thư giao dịch.' })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Validate email format
+    var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(to) || to.length > 254) {
+      return ContentService.createTextOutput(
+        JSON.stringify({ success: false, code: 'INVALID_RECIPIENT', error: 'Địa chỉ email người nhận không hợp lệ.' })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Chống Header Injection qua CR/LF
+    if (/[\r\n]/.test(subject) || /[\r\n]/.test(fromName)) {
+      return ContentService.createTextOutput(
+        JSON.stringify({ success: false, code: 'HEADER_INJECTION_DETECTED', error: 'Tiêu đề hoặc tên người gửi không được chứa ký tự xuống dòng (CRLF).' })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Giới hạn kích thước payload
+    if (subject.length > 250 || htmlBody.length > 150 * 1024) {
+      return ContentService.createTextOutput(
+        JSON.stringify({ success: false, code: 'PAYLOAD_TOO_LARGE', error: 'Kích thước tiêu đề hoặc nội dung HTML vượt quá giới hạn an toàn.' })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // A4: Giới hạn tốc độ theo người nhận (tối đa 5 OTP trong 15 phút tới cùng 1 email)
+    if (cache) {
+      var recipientRateKey = 'rate_to_' + Utilities.base64Encode(to).slice(0, 40);
+      var currentCount = parseInt(cache.get(recipientRateKey) || '0', 10);
+      if (currentCount >= 5) {
+        return ContentService.createTextOutput(
+          JSON.stringify({ success: false, code: 'RECIPIENT_RATE_LIMITED', error: 'Địa chỉ email này đã nhận quá số lượng mã cho phép trong 15 phút. Vui lòng thử lại sau.' })
+        ).setMimeType(ContentService.MimeType.JSON);
+      }
+      cache.put(recipientRateKey, String(currentCount + 1), 900); // 15 phút
+    }
+
+    // A2: Kiểm tra hạn mức gửi còn lại trước khi gửi bằng MailApp.getRemainingDailyQuota()
+    var remainingQuota = 100;
+    try {
+      remainingQuota = MailApp.getRemainingDailyQuota();
+    } catch (quotaErr) {
+      Logger.log('Không thể đọc hạn mức gửi qua MailApp: ' + quotaErr.toString());
+    }
+
+    if (remainingQuota <= 0) {
+      return ContentService.createTextOutput(
+        JSON.stringify({
+          success: false,
+          code: 'QUOTA_EXCEEDED',
+          error: 'Hạn mức gửi email trong 24 giờ của Gmail đã chạm trần (0 còn lại). Vui lòng thử lại sau.'
+        })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Chuẩn bị nội dung text thuần (A5)
+    if (!textBody) {
+      textBody = stripHtmlToText(htmlBody);
+    }
+
+    var replyTo = props.getProperty('QNS_REPLY_TO') || 'support@quannguyens.com';
+
+    // A2: Gửi thư THỰC SỰ qua GmailApp và KHÔNG bọc safeGoogleServiceCall nuốt lỗi
+    try {
+      GmailApp.sendEmail(to, subject, textBody, {
+        htmlBody: htmlBody,
+        name: fromName,
+        replyTo: replyTo,
+      });
+
+      var successOutput = JSON.stringify({
+        success: true,
+        code: 'OK',
+        message: 'Đã gửi email thành công qua Gmail Native Bridge',
+        requestId: requestId,
+        remainingQuota: remainingQuota > 0 ? remainingQuota - 1 : 0,
+        timestamp: new Date().toISOString()
+      });
+
+      // A3: Cache kết quả thành công cho requestId trong 10 phút (600 giây)
+      if (requestId && cache) {
+        cache.put('idemp_' + requestId, successOutput, 600);
+      }
+
+      return ContentService.createTextOutput(successOutput).setMimeType(ContentService.MimeType.JSON);
+    } catch (sendErr) {
+      var errStr = sendErr.toString();
+      Logger.log('❌ Lỗi GmailApp.sendEmail: ' + errStr);
+
+      var failCode = 'SERVICE_ERROR';
+      if (/quota|limit|too many/i.test(errStr)) {
+        failCode = 'QUOTA_EXCEEDED';
+      } else if (/invalid|recipient|address/i.test(errStr)) {
+        failCode = 'INVALID_RECIPIENT';
+      }
+
+      var failOutput = JSON.stringify({
+        success: false,
+        code: failCode,
+        error: errStr,
+        requestId: requestId
+      });
+
+      return ContentService.createTextOutput(failOutput).setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch (fatalErr) {
+    return ContentService.createTextOutput(
+      JSON.stringify({ success: false, code: 'INTERNAL_ERROR', error: fatalErr.toString() })
+    ).setMimeType(ContentService.MimeType.JSON);
   }
 }

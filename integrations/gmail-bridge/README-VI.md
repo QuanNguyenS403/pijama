@@ -106,18 +106,48 @@ Apps Script chạy trên tài khoản Gmail tiêu chuẩn (miễn phí) có các
 
 ## 5. Triển Khai Web App Làm Cầu Nối Gửi Email HTTPS (Port 443 Fallback)
 
-> [!NOTE]
-> Khi máy chủ triển khai trên đám mây (như Render Free Tier chặn toàn bộ cổng SMTP 465/587), Google Apps Script Web App đóng vai trò làm cầu nối phát email trực tiếp qua giao thức HTTPS (Port 443) với độ tin cậy 100%.
+> [!IMPORTANT]
+> **CẢNH BÁO BẢO MẬT & XOAY URL TRIỂN KHAI:**
+> Do URL Web App cũ trước đây từng bị lộ trong cấu hình `render.yaml`, **bắt buộc phải tạo Bản triển khai MỚI (New Deployment)** để sinh ra một Web App URL hoàn toàn mới, đồng thời **lưu trữ (archive) hoặc xóa bản triển khai cũ** để vô hiệu hóa hoàn toàn URL cũ.
+>
+> Ngoài ra, hệ thống v3.1 yêu cầu cài đặt thuộc tính tập lệnh **`QNS_SEND_SECRET`** (tách biệt hoàn toàn với `QNS_SECRET` ngân hàng) để ngăn chặn kẻ xấu lợi dụng cầu Gmail gửi thư rác (Open Relay).
 
-### Các bước kích hoạt Web App:
+### Các bước triển khai Web App MỚI:
 1. Tại trình soạn thảo Apps Script, bấm nút **Triển khai (Deploy)** ở góc trên bên phải -> chọn **Bản triển khai mới (New deployment)**.
-2. Chọn loại: **Ứng dụng web (Web app)** (biểu tượng bánh răng).
-3. Điền thông tin:
-   - **Mô tả (Description):** `QNS Gmail HTTPS Email Dispatcher`
-   - **Thực thi dưới tên (Execute as):** `Tôi (your_account@gmail.com)`
+2. Bấm vào biểu tượng bánh răng bên cạnh "Chọn loại" -> Chọn **Ứng dụng web (Web app)**.
+3. Điền thông tin cấu hình:
+   - **Mô tả (Description):** `QNS Gmail HTTPS Email Dispatcher v3.1 (Secured)`
+   - **Thực thi dưới tên (Execute as):** `Tôi (quannguyens403@gmail.com)`
    - **Ai có quyền truy cập (Who has access):** `Bất kỳ ai (Anyone)`
-4. Bấm **Triển khai (Deploy)** và cấp quyền nếu được yêu cầu.
-5. Sao chép **URL ứng dụng web (Web app URL)** (có định dạng: `https://script.google.com/macros/s/.../exec`).
-6. Dán URL này vào biến môi trường máy chủ:
-   - File `.env` / `.env.local`: `GMAIL_APP_SCRIPT_URL=https://script.google.com/macros/s/.../exec`
-   - Hoặc Render Environment Settings: Thêm biến `GMAIL_APP_SCRIPT_URL`
+     *(Lưu ý: Bắt buộc chọn "Bất kỳ ai" vì máy chủ Render gọi qua HTTP mà không đăng nhập tài khoản Google. Mã nguồn `Code.gs` đã bảo vệ 100% bằng cơ chế xác thực bí mật `QNS_SEND_SECRET` fail-closed).*
+4. Bấm **Triển khai (Deploy)**. Nếu Google yêu cầu ủy quyền quyền mới (`gmail.send`), bấm **Xem lại quyền** và chấp thuận.
+5. Sao chép **URL ứng dụng web MỚI (Web app URL)** (dạng: `https://script.google.com/macros/s/AKfycb.../exec`).
+6. Vào mục **Cài đặt dự án (Project Settings)** -> **Các thuộc tính tập lệnh (Script Properties)**:
+   - Bấm **Thêm thuộc tính tập lệnh**.
+   - Tên thuộc tính: `QNS_SEND_SECRET`.
+   - Giá trị: Tạo một chuỗi ngẫu nhiên dài từ 32-64 ký tự (ví dụ sinh bằng `openssl rand -hex 32`).
+   - (Tùy chọn) Thêm `QNS_REPLY_TO`: `support@quannguyens.com`.
+   - Bấm **Lưu thuộc tính tập lệnh**.
+7. Cập nhật URL và Secret mới lên Render và máy chủ:
+   - Trên Render Dashboard (Environment Variables): Cập nhật `GAS_EMAIL_WEBHOOK_URL` bằng URL mới và `GAS_WEBHOOK_SECRET` bằng giá trị `QNS_SEND_SECRET`.
+   - Tuyệt đối **không commit URL và Secret này vào Git repo**.
+
+### Quản lý Hạn Mức Gửi & Nhật Ký Hoạt Động (Executions Log):
+1. **Xem nhật ký thực thi (Executions):**
+   - Ở thanh menu bên trái Apps Script, bấm biểu tượng **Lượt thực thi (Executions)**.
+   - Tại đây bạn có thể thấy từng lệnh gửi qua `doPost`: trạng thái Hoàn thành (Completed) hoặc Thất bại (Failed), thời gian thực thi (thường từ 800ms - 2s).
+2. **Hạn mức gửi của Gmail cá nhân:**
+   - Tài khoản `@gmail.com` tiêu chuẩn có hạn mức gửi tự động qua Apps Script là **100 người nhận / 24 giờ** (theo cơ chế 24-hour rolling window).
+   - Hàm `doPost` trong `Code.gs` tự động kiểm tra `MailApp.getRemainingDailyQuota()` trước mỗi lần gửi. Nếu hạn mức chạm 0, script sẽ từ chối ngay và trả mã lỗi `QUOTA_EXCEEDED` rõ ràng thay vì nuốt lỗi.
+
+### Tự Kiểm Thử Bằng Hàm Gửi Thư Thật Vào Hộp Thư Của Bạn:
+Để kiểm tra tài khoản Gmail và quyền gửi hoạt động bình thường, mở `Code.gs` trong Apps Script Editor, tìm hàm `testSendSelfEmail`, thay địa chỉ email của bạn và bấm **Chạy (Run)**:
+```javascript
+function testSendSelfEmail() {
+  var myEmail = 'quannguyens403@gmail.com'; // Thay bằng hộp thư của bạn
+  var quota = MailApp.getRemainingDailyQuota();
+  Logger.log('Hạn mức còn lại trong 24h: ' + quota);
+  GmailApp.sendEmail(myEmail, '[Test QNS] Thử nghiệm gửi qua Apps Script', 'Thư thử nghiệm từ Apps Script v3.1.');
+  Logger.log('Đã gửi thư thử nghiệm thành công.');
+}
+```

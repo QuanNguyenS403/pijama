@@ -126,7 +126,7 @@ export default function ProductDetailPage() {
       <Header onCartOpen={() => setCartDrawerOpen(true)} onAddToCart={handleAddToCart} />
 
       {/* Spacer for fixed header */}
-      <div className="h-16 md:h-20" />
+      <div className="h-14 md:h-16" />
 
       {/* Breadcrumb */}
       <div className="bg-[#FAF8F5] border-b border-[#E8DFD5]">
@@ -149,7 +149,7 @@ export default function ProductDetailPage() {
       <div className="w-full max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 py-8 md:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 xl:gap-12 items-start">
           {/* Left — Gallery (6 cols, STICKY trong suốt quá trình cuộn đọc thông tin bên phải) */}
-          <div className="lg:col-span-6 lg:sticky lg:top-24 xl:top-28 self-start flex justify-center lg:justify-start">
+          <div className="lg:col-span-6 lg:sticky lg:top-24 xl:top-28 z-10 self-start flex justify-center lg:justify-start">
             <div className="w-full max-w-[620px] xl:max-w-[660px]">
               <ProductImageGallery
                 images={product.images}

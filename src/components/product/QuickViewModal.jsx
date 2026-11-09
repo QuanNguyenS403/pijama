@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ShoppingBag } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -69,7 +70,9 @@ export default function QuickViewModal({ product, onClose, onAddToCart }) {
     onClose()
   }
 
-  return (
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <AnimatePresence>
       {product && (
         <>
@@ -78,7 +81,7 @@ export default function QuickViewModal({ product, onClose, onAddToCart }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm"
+            className="fixed inset-0 z-[200] bg-black/75 backdrop-blur-sm"
             onClick={onClose}
           />
           <motion.div
@@ -87,7 +90,7 @@ export default function QuickViewModal({ product, onClose, onAddToCart }) {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[101] m-auto h-fit max-h-[92vh] w-[calc(100%-2rem)] max-w-[800px] bg-[#FAF8F5] border border-[#E8DFD5] rounded-[4px] shadow-2xl overflow-y-auto pdp-scrollbar"
+            className="fixed inset-0 z-[201] m-auto h-fit max-h-[92vh] w-[calc(100%-2rem)] max-w-[800px] bg-[#FAF8F5] border border-[#E8DFD5] rounded-[4px] shadow-2xl overflow-y-auto pdp-scrollbar"
             role="dialog"
             aria-modal="true"
             aria-label={`Xem nhanh: ${product.name}`}
@@ -182,6 +185,7 @@ export default function QuickViewModal({ product, onClose, onAddToCart }) {
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }

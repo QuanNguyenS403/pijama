@@ -28,7 +28,7 @@ export default function CartPage() {
       <Header onCartOpen={() => setCartDrawerOpen(true)} />
 
       {/* Spacer */}
-      <div className="h-16 md:h-20" />
+      <div className="h-14 md:h-16" />
 
       {/* Breadcrumb */}
       <div className="bg-[#FAF8F5] border-b border-[#E8DFD5]">

@@ -242,11 +242,8 @@ export default function AccountPage() {
         if (!res.ok || !data.success) {
           throw new Error(data.error || 'Không thể gửi lại mã xác nhận')
         }
-        if (data.registered === false) {
-          throw new Error(`Email "${authEmail.trim()}" chưa được đăng ký trong hệ thống.`)
-        }
-        setResendCooldown(60)
-        setToast({ productName: 'Đã gửi lại mã xác nhận đến Gmail!', id: Date.now() })
+        setResendCooldown(data.cooldownSeconds || 60)
+        setToast({ productName: 'Đã gửi lại mã xác nhận đến email!', id: Date.now() })
       }
     } catch (err) {
       setAuthError(err.message || 'Lỗi gửi lại mã')
@@ -358,14 +355,10 @@ export default function AccountPage() {
           throw new Error(data.error || 'Không thể gửi mã xác nhận')
         }
 
-        if (data.registered === false) {
-          throw new Error(`Email "${authEmail.trim()}" chưa được đăng ký trong hệ thống. Quý khách vui lòng kiểm tra lại địa chỉ email hoặc chọn Đăng ký.`)
-        }
-
         setAuthMode('verify_otp')
         setOtpCode('')
-        setResendCooldown(60)
-        setToast({ productName: 'Mã xác nhận 6 chữ số đã được gửi đến Gmail!', id: Date.now() })
+        setResendCooldown(data.cooldownSeconds || 60)
+        setToast({ productName: 'Mã xác nhận 6 chữ số đã được gửi đến email!', id: Date.now() })
       } else if (authMode === 'verify_otp') {
         if (!otpCode || otpCode.trim().length !== 6) {
           throw new Error('Vui lòng nhập đủ 6 chữ số mã xác nhận')

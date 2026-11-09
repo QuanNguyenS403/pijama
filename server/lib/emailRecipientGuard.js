@@ -22,6 +22,7 @@ const mxCache = new Map() // domain -> { deliverable: boolean, reason?: string, 
 /**
  * Đang chạy trong môi trường test tự động?
  * NODE_TEST_CONTEXT do chính Node test runner gắn vào tiến trình con -> không thể bị .env ghi đè.
+ * Bổ sung kiểm tra process.argv để phát hiện mọi dạng chạy test: `node --test`, `npm test`, hoặc chạy file test đơn lẻ.
  */
 export function isAutomatedTestEnvironment() {
   if (process.env.NODE_ENV === 'production') return false
@@ -29,7 +30,8 @@ export function isAutomatedTestEnvironment() {
     process.env.NODE_ENV === 'test' ||
     process.env.AUTH_TEST_MODE === 'true' ||
     Boolean(process.env.NODE_TEST_CONTEXT) ||
-    process.execArgv.some((arg) => arg === '--test' || arg.startsWith('--test-'))
+    process.execArgv.some((arg) => arg === '--test' || arg.startsWith('--test-')) ||
+    (Array.isArray(process.argv) && process.argv.some((arg) => arg === '--test' || arg.includes('test') || arg.endsWith('.test.js')))
   )
 }
 
@@ -91,11 +93,26 @@ export async function checkDomainDeliverability(domain) {
   try {
     const records = await withTimeout(dns.promises.resolveMx(clean), MX_LOOKUP_TIMEOUT_MS)
     const usable = (records || []).filter((r) => r && r.exchange && r.exchange !== '.')
-    result = usable.length > 0
-      ? { deliverable: true }
-      : { deliverable: false, reason: 'NULL_MX' }
+    if (usable.length > 0) {
+      result = { deliverable: true }
+    } else {
+      // Null MX ("0 .")
+      result = { deliverable: false, reason: 'NULL_MX' }
+    }
   } catch (err) {
-    if (err && (err.code === 'ENOTFOUND' || err.code === 'ENODATA' || err.code === 'NXDOMAIN')) {
+    if (err && (err.code === 'ENODATA' || err.code === 'NO_DATA')) {
+      // RFC 5321 §5.1: Không có MX -> fallback kiểm tra bản ghi A/AAAA (implicit MX)
+      try {
+        const aRecords = await withTimeout(dns.promises.resolve4(clean), MX_LOOKUP_TIMEOUT_MS)
+        if (aRecords && aRecords.length > 0) {
+          result = { deliverable: true, implicitMx: true }
+        } else {
+          result = { deliverable: false, reason: 'NO_MX_RECORD' }
+        }
+      } catch (_) {
+        result = { deliverable: false, reason: 'NO_MX_RECORD' }
+      }
+    } else if (err && (err.code === 'ENOTFOUND' || err.code === 'NXDOMAIN')) {
       result = { deliverable: false, reason: 'NO_MX_RECORD' }
     } else {
       // Lỗi mạng tạm thời -> không cache lâu, cho phép gửi

@@ -137,7 +137,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Không thể gửi lại mã xác thực')
       }
-      setResendCooldown(60)
+      setResendCooldown(data.cooldownSeconds || 60)
       setSuccessMsg('Đã gửi lại mã xác thực 6 chữ số đến email!')
     } catch (err) {
       setErrorMsg(err.message || 'Lỗi gửi lại mã')
@@ -227,7 +227,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         if (data.requireOtp) {
           setActiveTab('verify_otp')
           setOtpCode('')
-          setResendCooldown(60)
+          setResendCooldown(data.cooldownSeconds || 60)
           setSuccessMsg(`Mã xác thực 6 chữ số đã được gửi đến email ${email.trim()}! Vui lòng nhập mã để hoàn tất.`)
           return
         }

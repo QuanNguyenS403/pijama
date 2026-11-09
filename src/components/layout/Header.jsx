@@ -225,7 +225,7 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
         )}
 
         <div className={`w-full max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10 flex items-center justify-between transition-all duration-300 ${
-          scrolled ? 'py-3' : 'py-3.5 md:py-4'
+          scrolled ? 'py-1.5 md:py-2' : 'py-2 md:py-2.5'
         }`}>
           {/* Logo */}
           <Link

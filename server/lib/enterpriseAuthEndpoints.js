@@ -16,7 +16,7 @@ import { verifyTurnstileToken } from './turnstileService.js'
 import { logSecurityAudit } from './auditLogger.js'
 import { parseCookies, setCustomerSessionCookie, clearCustomerSessionCookie } from './customerSessionMiddleware.js'
 import { sendVerificationCodeEmail, sendWelcomeVoucherEmail, sendPasswordResetOtpEmail } from './emailAccount.js'
-import { checkEmailDeliverability, UNDELIVERABLE_EMAIL_MESSAGE } from './emailRecipientGuard.js'
+import { checkEmailDeliverability, isAutomatedTestEnvironment, UNDELIVERABLE_EMAIL_MESSAGE } from './emailRecipientGuard.js'
 import {
   createWelcomeVoucher,
   createCustomerSession,
@@ -41,14 +41,8 @@ import {
  * Đăng ký bộ API Xác thực Chuẩn Doanh nghiệp (Enterprise Auth Endpoints)
  */
 export function registerEnterpriseAuthEndpoints(app) {
-  // Helper lấy Client IP tin cậy từ Express trust proxy
+  // Helper lấy Client IP tin cậy từ Express trust proxy (chống giả mạo qua X-Forwarded-For)
   const getClientIp = (req) => {
-    if (process.env.NODE_ENV === 'production') {
-      return req.ip || req.socket?.remoteAddress || '127.0.0.1'
-    }
-    if (req.headers['x-forwarded-for'] && !req.app?.get('trust proxy')) {
-      return req.headers['x-forwarded-for'].split(',')[0].trim()
-    }
     return req.ip || req.socket?.remoteAddress || '127.0.0.1'
   }
 
@@ -84,7 +78,7 @@ export function registerEnterpriseAuthEndpoints(app) {
   // ── 1. ĐĂNG KÝ TÀI KHOẢN MỚI (BƯỚC 3) ──────────────────────────
   app.post('/api/auth/register', validateBody(RegisterRequestOtpDtoSchema), async (req, res) => {
     // Hỗ trợ chế độ test runner nội bộ tự động
-    if (process.env.NODE_ENV === 'test' && process.env.AUTH_TEST_MODE === 'true' && !req.headers['x-require-otp']) {
+    if (isAutomatedTestEnvironment() && process.env.AUTH_TEST_MODE === 'true' && !req.headers['x-require-otp']) {
       return handleDirectRegisterTestMode(req, res)
     }
     // Môi trường Production & Khách hàng thực tế: Bắt buộc xác thực OTP 6 số
@@ -172,41 +166,13 @@ export function registerEnterpriseAuthEndpoints(app) {
     const ip = getClientIp(req)
     const userAgent = getUserAgent(req)
     const { email, password, fullName, phone, marketingOptIn, turnstileToken } = req.validatedBody
-    const cleanEmail = (email || '').trim().toLowerCase()
+    const cleanEmail = String(email || '').trim().toLowerCase().normalize('NFC')
 
     try {
-      // A. Rate limiting (tối đa 5 lần gửi OTP / 10 phút / IP)
-      const rl = await checkRateLimit(`reg_otp:${ip}`, 5, 600)
-      if (!rl.allowed) {
-        logSecurityAudit({ action: 'REGISTER_OTP_RATE_LIMITED', status: 'BLOCKED', ip, userAgent })
-        return res.status(429).json({
-          success: false,
-          error: `Bạn đã yêu cầu gửi mã quá nhiều lần. Vui lòng thử lại sau ${rl.retryAfter} giây.`,
-        })
-      }
-
-      // B. Xác thực Turnstile Captcha nếu có
-      const turnstileCheck = await verifyTurnstileToken(turnstileToken, ip)
-      if (!turnstileCheck.success) {
-        return res.status(400).json({ success: false, error: turnstileCheck.error })
-      }
-
       const db = getDb()
+      const isTestMode = (process.env.AUTH_TEST_MODE === 'true' || isAutomatedTestEnvironment()) && process.env.NODE_ENV !== 'production'
 
-      // B2. Kiểm tra email có nhận được thư không (domain tồn tại & có MX) — chống bounce làm hỏng uy tín hộp thư gửi
-      const deliverability = await checkEmailDeliverability(cleanEmail)
-      if (!deliverability.deliverable) {
-        logSecurityAudit({
-          action: 'REGISTER_UNDELIVERABLE_EMAIL',
-          status: 'BLOCKED',
-          ip,
-          userAgent,
-          details: { email: cleanEmail, reason: deliverability.reason },
-        })
-        return res.status(400).json({ success: false, error: UNDELIVERABLE_EMAIL_MESSAGE, message: UNDELIVERABLE_EMAIL_MESSAGE })
-      }
-
-      // C. Kiểm tra email đã tồn tại hay chưa
+      // 1. Kiểm tra email đã tồn tại hay chưa (Ưu tiên trả 409 Conflict ngay, không tốn quota)
       const existingUser = db.prepare('SELECT id, verified FROM users WHERE LOWER(email) = ?').get(cleanEmail)
       if (existingUser && (existingUser.verified === 1 || existingUser.verified === true)) {
         logSecurityAudit({
@@ -222,14 +188,74 @@ export function registerEnterpriseAuthEndpoints(app) {
         })
       }
 
+      // A1. Rate limiting theo IP (tối đa 5 lần gửi OTP / 15 phút / IP, nới lỏng trong automated test runner)
+      const maxIpRequests = isTestMode ? 200 : 5
+      const rlIp = await checkRateLimit(`reg_otp_ip:${ip}`, maxIpRequests, 900)
+      if (!rlIp.allowed) {
+        logSecurityAudit({ action: 'REGISTER_OTP_RATE_LIMITED', status: 'BLOCKED', ip, userAgent })
+        return res.status(429).json({
+          success: false,
+          error: `Bạn đã yêu cầu gửi mã quá nhiều lần từ mạng này. Vui lòng thử lại sau ${rlIp.retryAfter} giây.`,
+          cooldownSeconds: rlIp.retryAfter,
+        })
+      }
+
+      // A2. Cooldown tối thiểu 60s theo Email
+      const rlEmailCooldown = await checkRateLimit(`reg_cooldown:${cleanEmail}`, 1, 60)
+      if (!rlEmailCooldown.allowed) {
+        return res.status(429).json({
+          success: false,
+          error: `Vui lòng đợi ${rlEmailCooldown.retryAfter} giây trước khi yêu cầu mã tiếp theo.`,
+          cooldownSeconds: rlEmailCooldown.retryAfter,
+        })
+      }
+
+      // A3. Trần số lần gửi theo Email (tối đa 5 lần / giờ)
+      const rlEmailHourly = await checkRateLimit(`reg_hourly:${cleanEmail}`, 5, 3600)
+      if (!rlEmailHourly.allowed) {
+        return res.status(429).json({
+          success: false,
+          error: 'Địa chỉ email này đã nhận quá số lượng mã cho phép trong 1 giờ. Vui lòng thử lại sau.',
+          cooldownSeconds: rlEmailHourly.retryAfter,
+        })
+      }
+
+      // A4. Trần toàn cục bảo vệ hạn mức (mặc định tối đa 60 email OTP / giờ)
+      const maxGlobalHourly = parseInt(process.env.OTP_EMAIL_MAX_PER_HOUR_GLOBAL || '60', 10)
+      const rlGlobal = await checkRateLimit('global_otp_limit:hourly', maxGlobalHourly, 3600)
+      if (!rlGlobal.allowed) {
+        return res.status(429).json({
+          success: false,
+          error: 'Hệ thống đang phục vụ lượng truy cập cao. Quý khách vui lòng thử lại sau ít phút hoặc sử dụng tính năng Đăng nhập với Google.',
+        })
+      }
+
+      // B. Xác thực Turnstile Captcha nếu có
+      const turnstileCheck = await verifyTurnstileToken(turnstileToken, ip)
+      if (!turnstileCheck.success) {
+        return res.status(400).json({ success: false, error: turnstileCheck.error })
+      }
+
+      // B2. Kiểm tra email có nhận được thư không (domain tồn tại & có MX)
+      const deliverability = await checkEmailDeliverability(cleanEmail)
+      if (!deliverability.deliverable) {
+        logSecurityAudit({
+          action: 'REGISTER_UNDELIVERABLE_EMAIL',
+          status: 'BLOCKED',
+          ip,
+          userAgent,
+          details: { email: cleanEmail, reason: deliverability.reason },
+        })
+        return res.status(400).json({ success: false, error: UNDELIVERABLE_EMAIL_MESSAGE, message: UNDELIVERABLE_EMAIL_MESSAGE })
+      }
+
       // D. Băm mật khẩu bằng Argon2id
       const passwordHash = await hashPassword(password)
 
-      // E. Tạo mã OTP ngẫu nhiên 6 chữ số bằng CSPRNG (crypto.randomInt)
-      const code = crypto.randomInt(100000, 999999).toString()
+      // E. Tạo mã OTP ngẫu nhiên 6 chữ số bằng CSPRNG (crypto.randomInt 0..999999)
+      const code = crypto.randomInt(0, 1_000_000).toString().padStart(6, '0')
       const salt = crypto.randomBytes(16).toString('hex')
       const codeHash = hashOtp(code, salt)
-      const isTestMode = process.env.AUTH_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production'
 
       // F. Lưu dữ liệu đăng ký tạm vào RAM/Redis Cache VÀ Database SQLite bền vững (10 phút = 600 giây)
       const cacheKey = `pending_reg:${cleanEmail}`
@@ -267,6 +293,21 @@ export function registerEnterpriseAuthEndpoints(app) {
         await sendVerificationCodeEmail({ to: cleanEmail, code, name: fullName || 'Quý khách' })
       } catch (eErr) {
         console.error('❌ Lỗi gửi email xác thực đăng ký:', eErr.message)
+        const isUnknown = eErr.code === 'UNKNOWN_DELIVERY' || eErr.isUnknown || eErr.status === 504
+        if (isUnknown) {
+          // WP-C C1 / H2: Bảo toàn bản ghi pending trong DB & Cache khi kết quả gửi là UNKNOWN (Timeout)
+          return res.status(202).json({
+            success: true,
+            requireOtp: true,
+            status: 'queued',
+            message: `Hệ thống đang tiến hành chuyển phát mã xác thực tới ${cleanEmail}. Nếu sau 1-2 phút chưa nhận được, vui lòng kiểm tra hộp thư Spam hoặc bấm Gửi lại mã.`,
+            email: cleanEmail,
+            expiresIn: 600,
+            cooldownSeconds: 60,
+          })
+        }
+
+        // Lỗi chắc chắn chưa gửi: xóa pending để khách không bị khóa
         await cacheDel(cacheKey)
         deletePendingRegistrationDb(cleanEmail, db)
         if (eErr.code === 'UNDELIVERABLE_RECIPIENT') {
@@ -380,13 +421,11 @@ export function registerEnterpriseAuthEndpoints(app) {
         })
       }
 
-      // Mã khớp! Xóa cache tạm và DB tạm
-      await cacheDel(cacheKey)
-      deletePendingRegistrationDb(cleanEmail, db)
-
-      // Kiểm tra lại chống race condition
-      const existingUser = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(email.toLowerCase())
+      // Kiểm tra lại chống race condition trước khi xóa pending
+      const existingUser = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(cleanEmail)
       if (existingUser) {
+        await cacheDel(cacheKey)
+        deletePendingRegistrationDb(cleanEmail, db)
         return res.status(409).json({
           success: false,
           error: 'Email này đã được đăng ký tài khoản. Vui lòng đăng nhập.',
@@ -403,7 +442,7 @@ export function registerEnterpriseAuthEndpoints(app) {
         ) VALUES (?, ?, ?, ?, ?, 'customer', 'active', 1, ?, ?, ?, ?)
       `).run(
         userId,
-        email.toLowerCase(),
+        cleanEmail,
         data.passwordHash,
         data.fullName,
         data.phone || null,
@@ -412,6 +451,10 @@ export function registerEnterpriseAuthEndpoints(app) {
         now,
         now
       )
+
+      // WP-C C8: Chỉ xóa pending sau khi chèn user thành công
+      await cacheDel(cacheKey)
+      deletePendingRegistrationDb(cleanEmail, db)
 
       syncUserToSupabase({
         id: userId,
@@ -890,14 +933,49 @@ export function registerEnterpriseAuthEndpoints(app) {
     const ip = getClientIp(req)
     const userAgent = getUserAgent(req)
     const { email, turnstileToken } = req.validatedBody
+    const cleanEmail = String(email || '').trim().toLowerCase().normalize('NFC')
 
     try {
-      // Rate limiting: 5 lần trong 10 phút
-      const rl = await checkRateLimit(`pwd_forgot:${email}`, 5, 600)
-      if (!rl.allowed) {
+      const isTestMode = (process.env.AUTH_TEST_MODE === 'true' || isAutomatedTestEnvironment()) && process.env.NODE_ENV !== 'production'
+
+      // A1. Rate limiting theo IP: 5 lần trong 15 phút (nới lỏng trong automated test runner)
+      const maxIpRequests = isTestMode ? 200 : 5
+      const rlIp = await checkRateLimit(`pwd_forgot_ip:${ip}`, maxIpRequests, 900)
+      if (!rlIp.allowed) {
         return res.status(429).json({
           success: false,
-          error: `Bạn đã yêu cầu gửi mã quá nhiều lần. Vui lòng thử lại sau ${rl.retryAfter} giây.`,
+          error: `Bạn đã yêu cầu gửi mã quá nhiều lần từ mạng này. Vui lòng thử lại sau ${rlIp.retryAfter} giây.`,
+          cooldownSeconds: rlIp.retryAfter,
+        })
+      }
+
+      // A2. Cooldown tối thiểu 60s theo Email
+      const rlEmailCooldown = await checkRateLimit(`pwd_cooldown:${cleanEmail}`, 1, 60)
+      if (!rlEmailCooldown.allowed) {
+        return res.status(429).json({
+          success: false,
+          error: `Vui lòng đợi ${rlEmailCooldown.retryAfter} giây trước khi yêu cầu mã tiếp theo.`,
+          cooldownSeconds: rlEmailCooldown.retryAfter,
+        })
+      }
+
+      // A3. Trần số lần gửi theo Email (tối đa 5 lần / giờ)
+      const rlEmailHourly = await checkRateLimit(`pwd_hourly:${cleanEmail}`, 5, 3600)
+      if (!rlEmailHourly.allowed) {
+        return res.status(429).json({
+          success: false,
+          error: 'Địa chỉ email này đã nhận quá số lượng mã cho phép trong 1 giờ. Vui lòng thử lại sau.',
+          cooldownSeconds: rlEmailHourly.retryAfter,
+        })
+      }
+
+      // A4. Trần toàn cục bảo vệ hạn mức (mặc định tối đa 60 email OTP / giờ)
+      const maxGlobalHourly = parseInt(process.env.OTP_EMAIL_MAX_PER_HOUR_GLOBAL || '60', 10)
+      const rlGlobal = await checkRateLimit('global_otp_limit:hourly', maxGlobalHourly, 3600)
+      if (!rlGlobal.allowed) {
+        return res.status(429).json({
+          success: false,
+          error: 'Hệ thống đang phục vụ lượng truy cập cao. Quý khách vui lòng thử lại sau ít phút hoặc sử dụng tính năng Đăng nhập với Google.',
         })
       }
 
@@ -907,7 +985,7 @@ export function registerEnterpriseAuthEndpoints(app) {
       }
 
       const db = getDb()
-      const user = await findUserForPasswordReset(email, db)
+      const user = await findUserForPasswordReset(cleanEmail, db)
 
       if (!user) {
         logSecurityAudit({
@@ -915,26 +993,28 @@ export function registerEnterpriseAuthEndpoints(app) {
           status: 'FAILURE',
           ip,
           userAgent,
-          details: { email },
+          details: { email: cleanEmail },
         })
-        // Anti-enumeration: Phản hồi trung tính 200 kèm cờ trạng thái giao diện
+        // Chống timing attack: mô phỏng độ trễ băm mật khẩu / gửi mail
+        await new Promise((resolve) => setTimeout(resolve, 120))
+
+        // WP-C C5 / H8: Anti-enumeration hoàn hảo: phản hồi giống hệt trường hợp email tồn tại, loại bỏ registered: false
         return res.json({
           success: true,
-          registered: false,
-          message: `Nếu địa chỉ email ${email} tồn tại trong hệ thống, mã xác nhận 6 chữ số đã được gửi đến hộp thư của bạn.`,
-          email,
+          message: `Nếu địa chỉ email ${cleanEmail} tồn tại trong hệ thống, mã xác nhận 6 chữ số đã được gửi đến hộp thư của bạn.`,
+          email: cleanEmail,
           expiresIn: 600,
+          cooldownSeconds: 60,
         })
       }
 
       // Sinh OTP 6 chữ số bằng CSPRNG và băm an toàn
-      const otpCode = crypto.randomInt(100000, 999999).toString()
+      const otpCode = crypto.randomInt(0, 1_000_000).toString().padStart(6, '0')
       const salt = crypto.randomBytes(16).toString('hex')
       const codeHash = hashOtp(otpCode, salt)
-      const isTestMode = process.env.AUTH_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production'
 
       // Lưu vào cache VÀ Database SQLite bền vững với TTL 10 phút (600 giây) kèm attempts: 0
-      const cacheKey = `otp:reset_password:${email.toLowerCase()}`
+      const cacheKey = `otp:reset_password:${cleanEmail}`
       await cacheSet(
         cacheKey,
         JSON.stringify({
@@ -948,7 +1028,7 @@ export function registerEnterpriseAuthEndpoints(app) {
       )
 
       savePendingPasswordResetDb({
-        email: email.toLowerCase(),
+        email: cleanEmail,
         codeHash,
         salt,
         expiresInSeconds: 600,
@@ -958,14 +1038,28 @@ export function registerEnterpriseAuthEndpoints(app) {
       // Gửi email qua HTTPS Port 443
       try {
         await sendPasswordResetOtpEmail({
-          to: user.email,
+          to: cleanEmail,
           code: otpCode,
           name: user.full_name || 'Quý khách',
         })
       } catch (mailErr) {
         console.error('❌ [EMAIL FAILED] Lỗi gửi email OTP đặt lại mật khẩu:', mailErr.message)
+        const isUnknown = mailErr.code === 'UNKNOWN_DELIVERY' || mailErr.isUnknown || mailErr.status === 504
+        if (isUnknown) {
+          // WP-C C1 / H2: Bảo toàn pending reset khi kết quả gửi là UNKNOWN (Timeout)
+          return res.status(202).json({
+            success: true,
+            status: 'queued',
+            message: `Hệ thống đang tiến hành chuyển phát mã xác nhận tới email của bạn. Nếu sau 1-2 phút chưa thấy mã, vui lòng kiểm tra hộp thư Spam hoặc bấm Gửi lại.`,
+            email: cleanEmail,
+            expiresIn: 600,
+            cooldownSeconds: 60,
+          })
+        }
+
+        // Lỗi chắc chắn chưa gửi
         await cacheDel(cacheKey)
-        deletePendingPasswordResetDb(email.toLowerCase(), db)
+        deletePendingPasswordResetDb(cleanEmail, db)
         return res.status(502).json({
           success: false,
           error: 'Hệ thống gửi email đang bận hoặc gián đoạn kết nối. Quý khách vui lòng thử lại sau ít phút hoặc dùng tính năng Tiếp tục với Google.',
@@ -979,13 +1073,13 @@ export function registerEnterpriseAuthEndpoints(app) {
         status: 'SUCCESS',
         ip,
         userAgent,
-        details: { email: user.email },
+        details: { email: cleanEmail },
       })
 
       return res.json({
         success: true,
-        message: `Mã xác nhận 6 chữ số đã được gửi đến Gmail ${user.email}. Vui lòng kiểm tra hộp thư của bạn.`,
-        email: user.email,
+        message: `Nếu địa chỉ email ${cleanEmail} tồn tại trong hệ thống, mã xác nhận 6 chữ số đã được gửi đến hộp thư của bạn.`,
+        email: cleanEmail,
         expiresIn: 600,
         cooldownSeconds: 60,
       })

@@ -16,9 +16,23 @@ function getSenderEmail() {
 }
 
 /**
+ * Helper an toàn escape HTML chống tấn công Stored XSS / HTML Injection qua tên khách hàng
+ */
+export function escapeHtml(str) {
+  if (str === null || str === undefined) return ''
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+/**
  * Bộ phát email bọc thép (Multi-Transport Resilient Email Dispatcher)
  * Tự động gửi qua HTTPS Port 443 (Google Apps Script Webhook / Resend API)
  * Vượt 100% tường lửa chặn SMTP Render
+ * Chuyển tiếp text, headers và purpose (WP-B B7)
  */
 async function dispatchEmail(mailOptions) {
   const fromName = mailOptions.from
@@ -32,16 +46,38 @@ async function dispatchEmail(mailOptions) {
     text: mailOptions.text,
     from: mailOptions.from,
     fromName,
+    headers: mailOptions.headers,
+    purpose: mailOptions.purpose,
   })
 }
 
 
 /**
  * Gửi mã xác minh 6 số (chống tài khoản rác cho Google / Facebook / Email)
+ * Tuân thủ WP-B B5: escape HTML, không đưa OTP vào subject, có text thuần
  */
 export async function sendVerificationCodeEmail({ to, code, name = 'Quý khách' }) {
-  // Đã chuyển sang getResilientSmtpTransporter() và HTTPS Bridge bên trong dispatchEmail
+  const cleanCode = String(code || '').trim()
+  if (!/^\d{6}$/.test(cleanCode)) {
+    throw new Error('Mã OTP xác thực không đúng định dạng 6 chữ số')
+  }
+
   const user = getSenderEmail()
+  const safeName = escapeHtml(name)
+  const safeCode = escapeHtml(cleanCode)
+
+  const text = `Kính gửi ${name},
+
+Cảm ơn bạn đã quan tâm và khởi tạo tài khoản thành viên tại ${SHOP_NAME}.
+Mã xác minh của bạn: ${cleanCode}
+(Hiệu lực trong 10 phút, tối đa 5 lần thử)
+
+Lưu ý bảo mật: Tuyệt đối không chia sẻ mã này cho bất kỳ ai.
+Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.
+
+${SHOP_NAME} — Style to be lived in
+Hotline: ${SHOP_PHONE} · Email: ${user}
+`
 
   const html = `
     <!DOCTYPE html>
@@ -49,7 +85,7 @@ export async function sendVerificationCodeEmail({ to, code, name = 'Quý khách'
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Mã Xác Minh Tài Khoản — QuanNguyenS</title>
+      <title>Mã Xác Minh Tài Khoản — ${escapeHtml(SHOP_NAME)}</title>
     </head>
     <body style="margin: 0; padding: 0; background-color: #F5F0EB; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1A1614; -webkit-font-smoothing: antialiased;">
       <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed;">
@@ -61,7 +97,7 @@ export async function sendVerificationCodeEmail({ to, code, name = 'Quý khách'
               <tr>
                 <td align="center" style="padding: 32px 20px 24px 20px; background: linear-gradient(180deg, #4A0D17 0%, #631521 100%); border-bottom: 2px solid #D4AF37;">
                   <span style="display: block; font-family: 'Georgia', serif; font-size: 24px; font-weight: bold; color: #FAF8F5; letter-spacing: 0.15em; text-transform: uppercase;">
-                    QuanNguyenS
+                    ${escapeHtml(SHOP_NAME)}
                   </span>
                   <span style="display: block; font-size: 11px; color: #D4AF37; letter-spacing: 0.25em; text-transform: uppercase; margin-top: 4px;">
                     Style to be lived in
@@ -73,10 +109,10 @@ export async function sendVerificationCodeEmail({ to, code, name = 'Quý khách'
               <tr>
                 <td style="padding: 36px 32px 28px 32px;">
                   <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #4A3F38;">
-                    Kính gửi <strong>${name}</strong>,
+                    Kính gửi <strong>${safeName}</strong>,
                   </p>
                   <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #4A3F38;">
-                    Cảm ơn bạn đã quan tâm và khởi tạo tài khoản thành viên tại <strong>QuanNguyenS</strong>. Để bảo mật tài khoản và nhận ngay <strong>Voucher giảm 10% + Miễn phí vận chuyển cho đơn hàng đầu tiên</strong>, vui lòng nhập mã xác minh dưới đây:
+                    Cảm ơn bạn đã quan tâm và khởi tạo tài khoản thành viên tại <strong>${escapeHtml(SHOP_NAME)}</strong>. Để bảo mật tài khoản và nhận ngay <strong>Voucher giảm 10% + Miễn phí vận chuyển cho đơn hàng đầu tiên</strong>, vui lòng nhập mã xác minh dưới đây:
                   </p>
 
                   <!-- 6-digit Code Box -->
@@ -85,7 +121,7 @@ export async function sendVerificationCodeEmail({ to, code, name = 'Quý khách'
                       MÃ XÁC MINH CỦA BẠN
                     </span>
                     <span style="font-family: 'Georgia', monospace, sans-serif; font-size: 34px; font-weight: bold; letter-spacing: 10px; color: #631521; display: inline-block;">
-                      ${code}
+                      ${safeCode}
                     </span>
                     <span style="display: block; font-size: 12px; color: #8C7E74; margin-top: 10px;">
                       ⏱ Hiệu lực trong <strong>10 phút</strong> · Tối đa 5 lần thử
@@ -100,7 +136,7 @@ export async function sendVerificationCodeEmail({ to, code, name = 'Quý khách'
                   </div>
 
                   <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #4A3F38;">
-                    Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email hoặc liên hệ ngay hotline <strong>${SHOP_PHONE}</strong> để được hỗ trợ.
+                    Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email hoặc liên hệ ngay hotline <strong>${escapeHtml(SHOP_PHONE)}</strong> để được hỗ trợ.
                   </p>
                 </td>
               </tr>
@@ -109,13 +145,13 @@ export async function sendVerificationCodeEmail({ to, code, name = 'Quý khách'
               <tr>
                 <td style="padding: 24px 32px; background-color: #F5EFE6; border-top: 1px solid #E8DFD5; text-align: center;">
                   <p style="margin: 0 0 6px 0; font-size: 12px; color: #631521; font-weight: 600;">
-                    ${SHOP_NAME} — Style to be lived in
+                    ${escapeHtml(SHOP_NAME)} — Style to be lived in
                   </p>
                   <p style="margin: 0 0 4px 0; font-size: 11px; color: #8C7E74;">
-                    Hotline: ${SHOP_PHONE} · Email: ${user}
+                    Hotline: ${escapeHtml(SHOP_PHONE)} · Email: ${escapeHtml(user)}
                   </p>
                   <p style="margin: 0; font-size: 11px; color: #8C7E74;">
-                    ${SHOP_ADDRESS}
+                    ${escapeHtml(SHOP_ADDRESS)}
                   </p>
                 </td>
               </tr>
@@ -130,8 +166,10 @@ export async function sendVerificationCodeEmail({ to, code, name = 'Quý khách'
   return dispatchEmail({
     from: `"${SHOP_NAME}" <${user}>`,
     to,
-    subject: `[${SHOP_NAME}] Mã xác thực đăng ký tài khoản: ${code}`,
+    subject: `[${SHOP_NAME}] Mã xác thực đăng ký tài khoản`,
     html,
+    text,
+    purpose: 'REGISTER_OTP',
   })
 }
 
@@ -461,6 +499,7 @@ export async function sendGoogleRegisterSuccessEmail({
 
 /**
  * Gửi email thông báo Đăng nhập tài khoản Google thành công cho Khách hàng (Security Notice)
+ * Tuân thủ WP-B B6: Thư chính thức mang nhận diện thương hiệu QuanNguyenS, tuyệt đối không giả dạng Google / Google LLC
  */
 export async function sendGoogleLoginNotificationEmail({
   to,
@@ -469,9 +508,24 @@ export async function sendGoogleLoginNotificationEmail({
   ip = 'Không xác định',
   userAgent = '',
 }) {
-  // Đã chuyển sang getResilientSmtpTransporter() và HTTPS Bridge bên trong dispatchEmail
   const user = getSenderEmail()
-  const initialLetter = (name || to || 'Q').trim()[0].toUpperCase()
+  const safeName = escapeHtml(name)
+  const safeTo = escapeHtml(to)
+  const safeTimeStr = escapeHtml(timeStr)
+  const safeIp = escapeHtml(ip)
+
+  const text = `Kính gửi ${name},
+
+Hệ thống ghi nhận tài khoản của bạn (${to}) vừa đăng nhập thành công vào website ${SHOP_NAME} bằng liên kết Google.
+- Thời gian: ${timeStr}
+- Địa chỉ IP: ${ip}
+
+Nếu chính bạn vừa thực hiện đăng nhập, bạn có thể hoàn toàn yên tâm và không cần thao tác gì thêm.
+Nếu bạn không thực hiện hành động này, vui lòng liên hệ ngay với chúng tôi qua hotline ${SHOP_PHONE} để khóa phiên và bảo vệ tài khoản.
+
+${SHOP_NAME} — Style to be lived in
+Hotline: ${SHOP_PHONE} · Email: ${user}
+`
 
   const html = `
     <!DOCTYPE html>
@@ -479,187 +533,70 @@ export async function sendGoogleLoginNotificationEmail({
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Theo dõi dữ liệu trong Tài khoản Google của bạn</title>
+      <title>Thông Báo Đăng Nhập — ${escapeHtml(SHOP_NAME)}</title>
     </head>
-    <body style="margin: 0; padding: 0; background-color: #F8F9FA; font-family: 'Google Sans', Roboto, -apple-system, BlinkMacSystemFont, Arial, sans-serif; color: #202124;">
+    <body style="margin: 0; padding: 0; background-color: #F5F0EB; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1A1614; -webkit-font-smoothing: antialiased;">
       <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed;">
         <tr>
-          <td align="center" style="padding: 24px 12px;">
-            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; background-color: #FFFFFF; border: 1px solid #DADCE0; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(60,64,67,0.08);">
+          <td align="center" style="padding: 40px 15px;">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 540px; background-color: #FAF8F5; border: 1px solid #D4AF37; border-radius: 4px; box-shadow: 0 4px 20px rgba(99, 21, 33, 0.08); overflow: hidden;">
+              
+              <!-- Header -->
+              <tr>
+                <td align="center" style="padding: 32px 20px 24px 20px; background: linear-gradient(180deg, #4A0D17 0%, #631521 100%); border-bottom: 2px solid #D4AF37;">
+                  <span style="display: block; font-family: 'Georgia', serif; font-size: 24px; font-weight: bold; color: #FAF8F5; letter-spacing: 0.15em; text-transform: uppercase;">
+                    ${escapeHtml(SHOP_NAME)}
+                  </span>
+                  <span style="display: block; font-size: 11px; color: #D4AF37; letter-spacing: 0.25em; text-transform: uppercase; margin-top: 4px;">
+                    Style to be lived in
+                  </span>
+                </td>
+              </tr>
+
+              <!-- Content Body -->
               <tr>
                 <td style="padding: 36px 32px 28px 32px;">
-                  
-                  <!-- Google G Logo -->
-                  <div style="text-align: center; margin-bottom: 16px;">
-                    <svg width="40" height="40" viewBox="0 0 48 48" style="display: inline-block;">
-                      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.79l7.97-6.2z"/>
-                      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                    </svg>
-                  </div>
+                  <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #631521; font-weight: 600;">
+                    🛡️ Thông Báo Bảo Mật Đăng Nhập
+                  </h2>
+                  <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #4A3F38;">
+                    Kính gửi <strong>${safeName}</strong>,
+                  </p>
+                  <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #4A3F38;">
+                    Hệ thống ghi nhận tài khoản <strong>${safeTo}</strong> vừa đăng nhập thành công vào website <strong>${escapeHtml(SHOP_NAME)}</strong> bằng tài khoản Google của bạn.
+                  </p>
 
-                  <!-- Header Title -->
-                  <h1 style="margin: 0 0 14px 0; font-family: 'Google Sans', Roboto, Arial, sans-serif; font-size: 22px; font-weight: 400; color: #202124; text-align: center; line-height: 1.35;">
-                    Theo dõi dữ liệu trong Tài khoản Google của bạn
-                  </h1>
-
-                  <!-- User Account Badge -->
-                  <div style="text-align: center; margin-bottom: 24px;">
-                    <span style="display: inline-flex; align-items: center; justify-content: center; font-family: Roboto, Arial, sans-serif; font-size: 14px; font-weight: 500; color: #3C4043;">
-                      <span style="display: inline-block; width: 24px; height: 24px; border-radius: 50%; background-color: #E37400; color: #FFFFFF; font-size: 13px; font-weight: bold; line-height: 24px; text-align: center; margin-right: 8px;">
-                        ${initialLetter}
-                      </span>
-                      <span>${to}</span>
-                    </span>
-                  </div>
-
-                  <hr style="border: 0; border-top: 1px solid #E0E0E0; margin: 0 0 28px 0;" />
-
-                  <!-- Google Center Illustration -->
-                  <div style="text-align: center; margin-bottom: 28px;">
-                    <svg width="180" height="110" viewBox="0 0 240 140" fill="none" style="display: inline-block;">
-                      <!-- Device Body -->
-                      <rect x="85" y="15" width="70" height="110" rx="14" fill="#FFFFFF" stroke="#3C4043" stroke-width="2"/>
-                      <circle cx="120" cy="24" r="2.5" fill="#3C4043"/>
-                      
-                      <!-- Profile Avatar on Device -->
-                      <circle cx="120" cy="56" r="18" fill="#E8F0FE"/>
-                      <circle cx="120" cy="52" r="6" fill="#1A73E8"/>
-                      <path d="M109 68 C109 62, 131 62, 131 68" fill="#1A73E8"/>
-
-                      <!-- Share Outgoing Icon -->
-                      <circle cx="148" cy="28" r="10" fill="#D2E3FC"/>
-                      <path d="M148 24 L148 31 M145 27 L148 24 L151 27" stroke="#1A73E8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-
-                      <!-- Mail Envelope with Bell Badge -->
-                      <rect x="42" y="58" width="46" height="32" rx="4" fill="#FFFFFF" stroke="#3C4043" stroke-width="1.8"/>
-                      <path d="M42 60 L65 76 L88 60" stroke="#3C4043" stroke-width="1.8" stroke-linejoin="round"/>
-                      <circle cx="40" cy="56" r="11" fill="#1A73E8"/>
-                      <path d="M37 54 C37 51, 43 51, 43 54 L44 58 L36 58 Z M39 59 C39 60.5, 41 60.5, 41 59" fill="#FFFFFF"/>
-
-                      <!-- Connection / Data Toggles -->
-                      <rect x="144" y="66" width="34" height="18" rx="9" fill="#F1F3F4" stroke="#3C4043" stroke-width="1.5"/>
-                      <circle cx="153" cy="75" r="5" fill="#3C4043"/>
-                      <circle cx="170" cy="98" r="9" fill="#34A853"/>
-                      <path d="M170 94 L175 101 L165 101 Z" fill="#FFFFFF"/>
-                      <circle cx="140" cy="100" r="10" fill="#202124"/>
-                      <path d="M140 94 A6 6 0 1 1 134 100" stroke="#FFFFFF" stroke-width="1.8" fill="none"/>
-                    </svg>
-                  </div>
-
-                  <!-- Blue Info Box -->
-                  <div style="background-color: #E8F0FE; border-radius: 8px; padding: 18px 20px; margin-bottom: 24px; text-align: left;">
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%">
-                      <tr>
-                        <td width="32" valign="top" style="padding-right: 12px;">
-                          <div style="width: 22px; height: 22px; border-radius: 50%; background-color: #1A73E8; color: #FFFFFF; font-size: 13px; font-weight: bold; font-family: Arial, sans-serif; text-align: center; line-height: 22px;">i</div>
-                        </td>
-                        <td valign="top" style="font-family: Roboto, Arial, sans-serif; font-size: 13.5px; line-height: 1.5; color: #202124;">
-                          <p style="margin: 0 0 10px 0;">
-                            Chúng tôi gửi cho bạn email này vì bạn đã dùng tính năng Đăng nhập bằng Google để đăng nhập vào <strong>QuanNguyenS</strong> vào ngày <strong>${timeStr}</strong>.
-                          </p>
-                          <p style="margin: 0; color: #3C4043;">
-                            Email này tóm tắt thông tin mà bạn đã chia sẻ. Bạn không cần làm gì vào lúc này.
-                          </p>
-                        </td>
-                      </tr>
-                    </table>
-                  </div>
-
-                  <!-- Profile Data Received Box -->
-                  <div style="background-color: #F8F9FA; border-radius: 12px; padding: 20px 22px; margin-bottom: 24px; text-align: left;">
-                    <h3 style="margin: 0 0 18px 0; font-family: Roboto, Arial, sans-serif; font-size: 15px; font-weight: 500; color: #202124;">
-                      QuanNguyenS đã nhận được thông tin hồ sơ này
-                    </h3>
-                    
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 14px;">
-                      <tr>
-                        <td width="36" valign="middle" style="padding-right: 12px;">
-                          <div style="width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid #5F6368; text-align: center; line-height: 28px; font-size: 14px; color: #5F6368;">
-                            👤
-                          </div>
-                        </td>
-                        <td valign="middle" style="font-family: Roboto, Arial, sans-serif;">
-                          <div style="font-size: 14px; font-weight: 500; color: #202124;">${name}</div>
-                          <div style="font-size: 12px; color: #5F6368;">Tên và ảnh hồ sơ</div>
-                        </td>
-                      </tr>
-                    </table>
-
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 16px;">
-                      <tr>
-                        <td width="36" valign="middle" style="padding-right: 12px;">
-                          <div style="width: 28px; height: 28px; border-radius: 4px; border: 1.5px solid #5F6368; text-align: center; line-height: 28px; font-size: 14px; color: #5F6368;">
-                            ✉️
-                          </div>
-                        </td>
-                        <td valign="middle" style="font-family: Roboto, Arial, sans-serif;">
-                          <div style="font-size: 14px; font-weight: 500; color: #202124;">${to}</div>
-                          <div style="font-size: 12px; color: #5F6368;">Địa chỉ email</div>
-                        </td>
-                      </tr>
-                    </table>
-
-                    <div style="border-top: 1px solid #E0E0E0; padding-top: 14px; font-family: Roboto, Arial, sans-serif; font-size: 12.5px; color: #5F6368;">
-                      Email này cho biết thông tin bạn đã chia sẻ vào ngày <strong>${timeStr}</strong>
+                  <!-- Session Details Box -->
+                  <div style="background-color: #FAF5F0; border-left: 3px solid #631521; padding: 14px 16px; border-radius: 2px; margin-bottom: 24px; font-size: 13px; line-height: 1.6; color: #4A3F38;">
+                    <div style="margin-bottom: 6px;">
+                      <strong>⏱ Thời gian:</strong> ${safeTimeStr}
+                    </div>
+                    <div>
+                      <strong>🌐 Địa chỉ IP:</strong> ${safeIp}
                     </div>
                   </div>
 
-                  <!-- Account Disconnect Notice -->
-                  <p style="margin: 0 0 18px 0; font-family: Roboto, Arial, sans-serif; font-size: 13.5px; line-height: 1.55; color: #3C4043; text-align: left;">
-                    Nếu bạn muốn ngừng sử dụng tính năng Đăng nhập bằng Google với QuanNguyenS, hãy truy cập Tài khoản Google của bạn.
+                  <p style="margin: 0 0 16px 0; font-size: 13.5px; line-height: 1.6; color: #4A3F38;">
+                    Nếu đây chính là bạn, bạn có thể an tâm tiếp tục mua sắm mà không cần thực hiện thêm thao tác nào.
                   </p>
-
-                  <!-- Google Account CTA Button -->
-                  <div style="text-align: center; margin: 22px 0 26px 0;">
-                    <a href="https://myaccount.google.com/connections" target="_blank" style="display: inline-block; background-color: #0B57D0; color: #FFFFFF; font-size: 14px; font-weight: 500; text-decoration: none; padding: 12px 28px; border-radius: 24px; font-family: 'Google Sans', Roboto, Arial, sans-serif;">
-                      Truy cập Tài khoản Google
-                    </a>
-                  </div>
-
-                  <!-- Policies Links -->
-                  <p style="margin: 0 0 14px 0; font-family: Roboto, Arial, sans-serif; font-size: 13px; line-height: 1.55; color: #3C4043; text-align: left;">
-                    Xem <a href="${APP_URL}/chinh-sach" target="_blank" style="color: #0B57D0; text-decoration: underline;">Chính sách quyền riêng tư</a> và <a href="${APP_URL}/chinh-sach" target="_blank" style="color: #0B57D0; text-decoration: underline;">Điều khoản dịch vụ</a> của QuanNguyenS để hiểu cách QuanNguyenS sẽ xử lý và bảo vệ dữ liệu của bạn.
+                  <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #8C7E74;">
+                    Nếu bạn không thực hiện đăng nhập này, vui lòng liên hệ ngay với chúng tôi qua hotline <strong>${escapeHtml(SHOP_PHONE)}</strong> để được hỗ trợ khóa phiên và bảo vệ tài khoản.
                   </p>
+                </td>
+              </tr>
 
-                  <!-- Data Deletion Link -->
-                  <p style="margin: 0 0 24px 0; font-family: Roboto, Arial, sans-serif; font-size: 13px; line-height: 1.55; color: #3C4043; text-align: left;">
-                    Nếu bạn muốn xoá dữ liệu mà bạn đã chia sẻ với QuanNguyenS, hãy truy cập <a href="${APP_URL}/tai-khoan" target="_blank" style="color: #0B57D0; text-decoration: underline;">QuanNguyenS</a>.
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 24px 32px; background-color: #F5EFE6; border-top: 1px solid #E8DFD5; text-align: center;">
+                  <p style="margin: 0 0 6px 0; font-size: 12px; color: #631521; font-weight: 600;">
+                    ${escapeHtml(SHOP_NAME)} — Style to be lived in
                   </p>
-
-                  <!-- Google Security Box -->
-                  <div style="border: 1px solid #DADCE0; border-radius: 8px; padding: 14px 18px; margin-bottom: 26px; text-align: left;">
-                    <table border="0" cellpadding="0" cellspacing="0" width="100%">
-                      <tr>
-                        <td width="36" valign="top" style="padding-right: 12px;">
-                          <div style="width: 24px; height: 24px; line-height: 24px; font-size: 20px;">🛡️</div>
-                        </td>
-                        <td valign="top" style="font-family: Roboto, Arial, sans-serif;">
-                          <div style="font-size: 14px; font-weight: 600; color: #202124; margin-bottom: 3px;">
-                            An toàn hơn với Google
-                          </div>
-                          <div style="font-size: 12px; line-height: 1.5; color: #5F6368;">
-                            Tài khoản Google bảo vệ quyền riêng tư của bạn bằng tính năng bảo mật nâng cao được thiết kế để giữ an toàn cho dữ liệu của bạn
-                          </div>
-                        </td>
-                      </tr>
-                    </table>
-                  </div>
-
-                  <!-- Footer -->
-                  <div style="font-family: Roboto, Arial, sans-serif; font-size: 11px; line-height: 1.6; color: #5F6368; text-align: center; padding-top: 18px; border-top: 1px solid #E8EAED;">
-                    <p style="margin: 0 0 6px 0;">
-                      Chúng tôi gửi cho bạn email này để thông báo về những thay đổi quan trọng đối với Tài khoản Google và các dịch vụ bạn sử dụng.
-                    </p>
-                    <p style="margin: 0 0 6px 0;">
-                      Nếu không muốn nhận những email này, bạn có thể <a href="${APP_URL}/unsubscribe" target="_blank" style="color: #0B57D0; text-decoration: underline;">huỷ đăng ký</a>. Ngay cả khi huỷ đăng ký nhận những email này, bạn vẫn sẽ tiếp tục nhận được cảnh báo bảo mật.
-                    </p>
-                    <p style="margin: 8px 0 0 0; color: #80868B;">
-                      © 2026 Google LLC 1600 Amphitheatre Parkway, Mountain View, CA 94043 · Đối tác dịch vụ: QuanNguyenS Luxury (${SHOP_PHONE})
-                    </p>
-                  </div>
-
+                  <p style="margin: 0 0 4px 0; font-size: 11px; color: #8C7E74;">
+                    Hotline: ${escapeHtml(SHOP_PHONE)} · Email: ${escapeHtml(user)}
+                  </p>
+                  <p style="margin: 0; font-size: 11px; color: #8C7E74;">
+                    ${escapeHtml(SHOP_ADDRESS)}
+                  </p>
                 </td>
               </tr>
             </table>
@@ -673,8 +610,10 @@ export async function sendGoogleLoginNotificationEmail({
   return dispatchEmail({
     from: `"${SHOP_NAME}" <${user}>`,
     to,
-    subject: `Theo dõi dữ liệu trong Tài khoản Google của bạn`,
+    subject: `[${SHOP_NAME}] Thông báo đăng nhập thành công qua Google`,
     html,
+    text,
+    purpose: 'GOOGLE_LOGIN_ALERT',
   })
 }
 
@@ -790,10 +729,30 @@ export async function sendOwnerGoogleAuthNotification({
 
 /**
  * Gửi mã OTP xác nhận đặt lại mật khẩu qua Gmail
+ * Tuân thủ WP-B B5: escape HTML, không đưa OTP vào subject, có text thuần
  */
 export async function sendPasswordResetOtpEmail({ to, code, name = 'Quý khách' }) {
-  // Đã chuyển sang getResilientSmtpTransporter() và HTTPS Bridge bên trong dispatchEmail
+  const cleanCode = String(code || '').trim()
+  if (!/^\d{6}$/.test(cleanCode)) {
+    throw new Error('Mã OTP xác nhận đặt lại mật khẩu không đúng định dạng 6 chữ số')
+  }
+
   const user = getSenderEmail()
+  const safeName = escapeHtml(name)
+  const safeTo = escapeHtml(to)
+  const safeCode = escapeHtml(cleanCode)
+
+  const text = `Kính gửi ${name},
+
+Chúng tôi đã nhận được yêu cầu lấy lại mật khẩu cho tài khoản ${to} tại website ${SHOP_NAME}.
+Mã xác nhận của bạn: ${cleanCode}
+(Hiệu lực trong 10 phút, tối đa 5 lần nhập)
+
+Lưu ý bảo mật: Tuyệt đối không chia sẻ mã này cho bất kỳ ai. Nếu bạn không yêu cầu đặt lại mật khẩu, xin hãy bỏ qua email này.
+
+${SHOP_NAME} — Style to be lived in
+Hotline: ${SHOP_PHONE} · Email: ${user}
+`
 
   const html = `
     <!DOCTYPE html>
@@ -801,7 +760,7 @@ export async function sendPasswordResetOtpEmail({ to, code, name = 'Quý khách'
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Mã Xác Nhận Đặt Lại Mật Khẩu — ${SHOP_NAME}</title>
+      <title>Mã Xác Nhận Đặt Lại Mật Khẩu — ${escapeHtml(SHOP_NAME)}</title>
     </head>
     <body style="margin: 0; padding: 0; background-color: #F5F0EB; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1A1614; -webkit-font-smoothing: antialiased;">
       <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed;">
@@ -813,7 +772,7 @@ export async function sendPasswordResetOtpEmail({ to, code, name = 'Quý khách'
               <tr>
                 <td align="center" style="padding: 32px 20px 24px 20px; background: linear-gradient(180deg, #4A0D17 0%, #631521 100%); border-bottom: 2px solid #D4AF37;">
                   <span style="display: block; font-family: 'Georgia', serif; font-size: 24px; font-weight: bold; color: #FAF8F5; letter-spacing: 0.15em; text-transform: uppercase;">
-                    ${SHOP_NAME}
+                    ${escapeHtml(SHOP_NAME)}
                   </span>
                   <span style="display: block; font-size: 11px; color: #D4AF37; letter-spacing: 0.25em; text-transform: uppercase; margin-top: 4px;">
                     Style to be lived in
@@ -825,10 +784,10 @@ export async function sendPasswordResetOtpEmail({ to, code, name = 'Quý khách'
               <tr>
                 <td style="padding: 36px 32px 28px 32px;">
                   <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #4A3F38;">
-                    Kính gửi <strong>${name}</strong>,
+                    Kính gửi <strong>${safeName}</strong>,
                   </p>
                   <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #4A3F38;">
-                    Chúng tôi đã nhận được yêu cầu lấy lại mật khẩu cho tài khoản <strong>${to}</strong> tại website <strong>${SHOP_NAME}</strong>. Vui lòng sử dụng mã xác nhận gồm 6 chữ số dưới đây để tiến hành tạo mật khẩu mới:
+                    Chúng tôi đã nhận được yêu cầu lấy lại mật khẩu cho tài khoản <strong>${safeTo}</strong> tại website <strong>${escapeHtml(SHOP_NAME)}</strong>. Vui lòng sử dụng mã xác nhận gồm 6 chữ số dưới đây để tiến hành tạo mật khẩu mới:
                   </p>
 
                   <!-- 6-digit Code Box -->
@@ -837,7 +796,7 @@ export async function sendPasswordResetOtpEmail({ to, code, name = 'Quý khách'
                       MÃ XÁC NHẬN CỦA BẠN
                     </span>
                     <span style="font-family: 'Georgia', monospace, sans-serif; font-size: 34px; font-weight: bold; letter-spacing: 10px; color: #631521; display: inline-block;">
-                      ${code}
+                      ${safeCode}
                     </span>
                     <span style="display: block; font-size: 12px; color: #8C7E74; margin-top: 10px;">
                       ⏱ Hiệu lực trong <strong>10 phút</strong> · Tối đa 5 lần nhập
@@ -852,7 +811,7 @@ export async function sendPasswordResetOtpEmail({ to, code, name = 'Quý khách'
                   </div>
 
                   <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #4A3F38;">
-                    Cần hỗ trợ trực tiếp? Quý khách vui lòng liên hệ Hotline <strong>${SHOP_PHONE}</strong>.
+                    Cần hỗ trợ trực tiếp? Quý khách vui lòng liên hệ Hotline <strong>${escapeHtml(SHOP_PHONE)}</strong>.
                   </p>
                 </td>
               </tr>
@@ -861,13 +820,13 @@ export async function sendPasswordResetOtpEmail({ to, code, name = 'Quý khách'
               <tr>
                 <td style="padding: 24px 32px; background-color: #F5EFE6; border-top: 1px solid #E8DFD5; text-align: center;">
                   <p style="margin: 0 0 6px 0; font-size: 12px; color: #631521; font-weight: 600;">
-                    ${SHOP_NAME} — Style to be lived in
+                    ${escapeHtml(SHOP_NAME)} — Style to be lived in
                   </p>
                   <p style="margin: 0 0 4px 0; font-size: 11px; color: #8C7E74;">
-                    Hotline: ${SHOP_PHONE} · Email: ${user}
+                    Hotline: ${escapeHtml(SHOP_PHONE)} · Email: ${escapeHtml(user)}
                   </p>
                   <p style="margin: 0; font-size: 11px; color: #8C7E74;">
-                    ${SHOP_ADDRESS}
+                    ${escapeHtml(SHOP_ADDRESS)}
                   </p>
                 </td>
               </tr>
@@ -882,7 +841,9 @@ export async function sendPasswordResetOtpEmail({ to, code, name = 'Quý khách'
   return dispatchEmail({
     from: `"${SHOP_NAME}" <${user}>`,
     to,
-    subject: `[${SHOP_NAME}] Mã xác nhận đặt lại mật khẩu: ${code}`,
+    subject: `[${SHOP_NAME}] Mã xác nhận đặt lại mật khẩu`,
     html,
+    text,
+    purpose: 'PASSWORD_RESET_OTP',
   })
 }

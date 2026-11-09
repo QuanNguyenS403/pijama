@@ -21,7 +21,7 @@ export default function Section3FeaturedProducts() {
       id: 'cafe-look',
       slug: 'the-cafe-look',
       name: 'THE STILLWATER SET',
-      image: '/images/classic-set-navy-main.jpg',
+      image: '/images/classic-set-navy-lookbook-main.jpg',
       price: 550000,
       originalPrice: null,
     },
@@ -66,7 +66,7 @@ export default function Section3FeaturedProducts() {
               onClick={() => handleProductAction(product)}
             >
               {/* Image */}
-              <div className="relative aspect-[1/1.1] overflow-hidden bg-[#F5F0EB]">
+              <div className="relative aspect-[4/5] overflow-hidden bg-[#F5F0EB]">
                 <img
                   src={product.image}
                   alt={product.name}

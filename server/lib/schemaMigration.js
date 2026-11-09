@@ -174,6 +174,22 @@ export function runEnterpriseMigrations(database) {
         created_at INTEGER NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_active_reset_tokens_exp ON active_reset_tokens(expires_at);
+
+      -- BẢNG EMAIL OUTBOX (WP-B B8: Ghi nhận trạng thái gửi thực tế: queued, sent, failed, unknown)
+      CREATE TABLE IF NOT EXISTS email_outbox (
+        id TEXT PRIMARY KEY,
+        purpose TEXT NOT NULL,
+        recipient_hash TEXT,
+        recipient_masked TEXT NOT NULL,
+        status TEXT NOT NULL,
+        transport TEXT,
+        error_code TEXT,
+        attempts INTEGER NOT NULL DEFAULT 1,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_email_outbox_status ON email_outbox(status);
+      CREATE INDEX IF NOT EXISTS idx_email_outbox_created ON email_outbox(created_at);
     `)
   } catch (pendingErr) {
     console.warn('⚠️ [MIGRATION WARNING] Pending OTP tables migration:', pendingErr.message)

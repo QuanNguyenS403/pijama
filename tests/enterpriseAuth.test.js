@@ -4,7 +4,7 @@ import express from 'express'
 import http from 'http'
 import { registerAuthEndpoints } from '../server/lib/authEndpoints.js'
 import { customerSessionMiddleware } from '../server/lib/customerSessionMiddleware.js'
-import { cacheGet } from '../server/lib/cacheService.js'
+import { cacheGet, cacheDel } from '../server/lib/cacheService.js'
 
 describe('Enterprise Authentication Suite (8-Step Architecture)', () => {
   let server
@@ -228,6 +228,7 @@ describe('Enterprise Authentication Suite (8-Step Architecture)', () => {
     delete process.env.AUTH_TEST_MODE
 
     try {
+      const probeEmail = `quannguyen_probe_${Date.now()}@example.com`
       const manualEmail = `quannguyen_${Date.now()}@example.com`
       const manualPass = 'Top1Lux@2026'
 
@@ -236,7 +237,7 @@ describe('Enterprise Authentication Suite (8-Step Architecture)', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: manualEmail,
+          email: probeEmail,
           password: manualPass,
           fullName: 'Nguyễn Đức Quân Test',
           marketingOptIn: true,

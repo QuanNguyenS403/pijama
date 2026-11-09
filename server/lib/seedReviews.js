@@ -15,7 +15,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "rating": 5,
     "color": "Đỏ",
     "size": "S",
-    "photo": "/images/classic-set-red-thumb-1.jpg",
+    "photo": "/images/reviews/review-red-1.jpg",
     "text": "Mở hộp ra cái là ưng cái màu liền luôn á mấy bà ơi! Màu đỏ ngoài đời nhìn sang xỉu chứ khum bị sến chút nào, mặc lên nhìn da sáng bừng. Lúc mới khui ra ở phần gấu áo có vương vài cọng chỉ thừa nhỏ xíu nhưng mình lấy kéo bấm cái rẹt là xong, không ảnh hưởng gì tới hòa bình thế giới. Tầm giá 390k mà lên form tiểu thư thế này là quá ổn áp, hôm nào có lương lại ghé shop chốt thêm bộ nữa đổi gió!"
   },
   {
@@ -26,7 +26,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "rating": 5,
     "color": "Đỏ",
     "size": "M",
-    "photo": "/images/classic-set-red-thumb-2.jpg",
+    "photo": "/images/reviews/review-red-2.jpg",
     "text": "Săn được em này lúc đang giảm còn 390 cành phải gọi là hời thực sự. Mình 1m60 nặng 54kg mặc size M vừa xinh, dáng suông rộng rãi che được cái bắp tay to. Mặc bộ này chụp story gương trong phòng ngủ mà mấy đứa bạn cứ nhắn hỏi xin link mãi. Đường kim mũi chỉ nhìn chung ở mức vừa vặn với tầm giá, mặc ở nhà lăn lê thoải mái cực kỳ."
   },
   {
@@ -37,7 +37,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "rating": 4,
     "color": "Đỏ",
     "size": "S",
-    "photo": "/images/classic-set-red-thumb-3.jpg",
+    "photo": "/images/reviews/review-red-3.jpg",
     "text": "Cho shop 4 sao rưỡi nha (mà web chỉ cho bấm 4 hoặc 5 sao nên để 4 sao góp ý nhẹ nè). Điểm cộng to đùng là thiết kế cổ V lệch nhìn rất có gu, mặc lên người nhẹ nhàng dễ chịu lắm. Điểm trừ nhỏ là nếu lộn mặt trái ra soi kỹ thì đường may bên trong ở mức trung bình thui, chưa được sắc nét từng milimet đâu. Cơ mà mặc bên ngoài thì lên dáng vẫn xinh xắn, vẫn đáng để quay lại mua tiếp nha!"
   },
   {
@@ -48,7 +48,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "rating": 5,
     "color": "Đỏ",
     "size": "M",
-    "photo": "/images/classic-set-red-detail.jpg",
+    "photo": "/images/reviews/review-red-4.jpg",
     "text": "Cứu cánh cho những ngày lười thay đồ của tui đây rồi! Bình thường mặc đồ bộ ở nhà mỗi lần chạy xuống sảnh chung cư nhận đồ ship cứ bị ngại, từ ngày có bộ đỏ này là tự tin bước xuống luôn vì nhìn lịch sự, kín đáo mà vẫn trẻ trung. Mặc ngủ cả đêm không bị bức bí xíu nào, 10 điểm cho chiếc vibe này."
   },
   {
@@ -215,7 +215,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "rating": 5,
     "color": "Caro Navy",
     "size": "S",
-    "photo": "/images/classic-set-navy-thumb-1.jpg",
+    "photo": "/images/reviews/review-navy-1.jpg",
     "text": "Nhận hàng xong mới hiểu sao em này gắn mác bán chạy nhất trên web! Màu caro xanh navy phối với đường viền trắng nhìn ngoài đời cực kỳ tây luôn á. Sáng chủ nhật mình mặc nguyên bộ này xỏ thêm đôi dép sục chạy đi mua ly cafe đầu ngõ mà nhìn vẫn chỉn chu lịch sự chứ không hề giống đồ ngủ lôi thôi. Quá ưng cái bụng!"
   },
   {
@@ -226,7 +226,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "rating": 4,
     "color": "Caro Navy",
     "size": "M",
-    "photo": "/images/classic-set-navy-thumb-2.jpg",
+    "photo": "/images/reviews/review-navy-2.jpg",
     "text": "Form dáng bộ này thì khỏi bàn rồi, mặc lên nhìn có gu hẳn. Tuy nhiên mình soi kỹ phần đường may viền trắng ở cổ áo thì thấy có một đoạn nhỏ may hơi lượn nhẹ chứ chưa thẳng tắp 100%, kèm vài sợi chỉ dư. Tất nhiên nhìn khoảng cách bình thường thì chẳng ai thấy đâu, mặc lên vẫn đẹp mê nên mình để 4 sao khích lệ shop kiểm tra kỹ khâu may hơn xíu là hoàn hảo!"
   },
   {
@@ -237,7 +237,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "rating": 5,
     "color": "Caro Navy",
     "size": "S",
-    "photo": "/images/classic-set-navy-thumb-3.jpg",
+    "photo": "/images/reviews/review-navy-3.jpg",
     "text": "Bà nào thích gu tối giản, thanh lịch thì chốt ngay màu caro navy này đi đừng chần chừ! Màu xanh đậm làm da mình trắng bật lên mấy tông liền. Mặc vào người cảm giác vừa vặn, dễ chịu, tối nằm đọc sách hay lướt điện thoại đều thấy thoải mái cực kỳ."
   },
   {
@@ -248,7 +248,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "rating": 5,
     "color": "Caro Navy",
     "size": "M",
-    "photo": "/images/classic-set-navy-detail.jpg",
+    "photo": "/images/reviews/review-navy-4.jpg",
     "text": "Chiều qua mặc bộ này dắt bé cún đi dạo quanh nội khu mà mấy chị hàng xóm hỏi mua đồ ở đâu nhìn hay thế haha. Đường kim mũi chỉ theo mình thấy là ở mức ổn trong tầm giá 550k, đủ chắc chắn, còn kiểu dáng thì ăn đứt mấy bộ pijama đại trà ngoài thị trường. Sẽ tiếp tục ủng hộ shop!"
   },
   {
@@ -415,7 +415,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "rating": 5,
     "color": "Sọc Nâu",
     "size": "S",
-    "photo": "/images/classic-set-brown-thumb-1.jpg",
+    "photo": "/images/reviews/review-brown-1.jpg",
     "text": "Bình thường mình chúa ghét đợi hàng pre-order mà nhìn thấy bản phối sọc nâu quần ống rộng này trên web là phải bấm bụng đặt liền! Đợi đúng 8 ngày nhận được hàng, mở ra mặc thử cái là thấy bõ công chờ đợi thực sự. Dáng quần wide-leg suông rộng bước đi nhìn thướt tha, sang chảnh chuẩn quý cô châu Âu luôn."
   },
   {
@@ -426,7 +426,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "rating": 4,
     "color": "Sọc Nâu",
     "size": "M",
-    "photo": "/images/classic-set-brown-thumb-2.jpg",
+    "photo": "/images/reviews/review-brown-2.jpg",
     "text": "Màu sọc nâu trầm ấm cực kỳ hợp với tiết trời thu đông luôn á mọi người. Mình để 4 sao vì xét ở mức giá 750k thì phần đường may bên trong mới dừng ở mức trung bình khá thôi, chưa tới độ sắc sảo hoàn hảo từng đường kim mũi chỉ. Nhưng phải công nhận là cái phom quần ống rộng với màu sắc lên người quá xuất sắc, nhìn tổng thể vẫn sang nên mình hoàn toàn hài lòng!"
   },
   {
@@ -437,7 +437,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "rating": 5,
     "color": "Sọc Nâu",
     "size": "S",
-    "photo": "/images/classic-set-brown-thumb-3.jpg",
+    "photo": "/images/reviews/review-brown-3.jpg",
     "text": "Mặc bộ này đi lại trong nhà mà cảm giác như đang đi nghỉ dưỡng ở resort 5 sao vậy đó haha! Cái quần ống rộng thiết kế phóng khoáng cực kỳ, ngồi xếp bằng trên sofa hay nằm dài đều thoải mái tuyệt đối, không bị bó sát vào chân. Quá ưng cho một phiên bản giới hạn!"
   },
   {
@@ -448,7 +448,7 @@ export const INITIAL_SAMPLE_REVIEWS = [
     "rating": 4,
     "color": "Sọc Nâu",
     "size": "M",
-    "photo": "/images/classic-set-brown-detail.jpg",
+    "photo": "/images/reviews/review-brown-4.jpg",
     "text": "Lúc mới khui hàng ra thấy ở phần lai quần ống rộng có vương mấy sợi chỉ thừa chưa cắt kỹ nên hơi hẫng nhẹ, nhưng sau khi tự tay bấm gọn chỉ rồi ướm lên người thì mê chữ ê kéo dài nha! Lên dáng chuẩn chỉnh, tôn chiều cao cực kỳ, chắc chắn sẽ còn quay lại mua thêm mẫu khác của shop."
   },
   {
@@ -610,9 +610,10 @@ export const INITIAL_SAMPLE_REVIEWS = [
 export function seedInitialReviews(database) {
   const currentCount = database.prepare("SELECT COUNT(1) AS cnt FROM product_reviews WHERE source = 'imported'").get()?.cnt || 0
   const firstReviewText = database.prepare("SELECT body FROM product_reviews WHERE id = 'rv-1'").get()?.body || ''
+  const firstPhotoUrl = database.prepare("SELECT photo_url FROM review_photos WHERE review_id = 'rv-1'").get()?.photo_url || ''
 
-  // Nếu đã nạp đủ 54 reviews và nội dung khớp hoàn toàn với bản cập nhật mới nhất thì không cần nạp lại
-  if (currentCount === INITIAL_SAMPLE_REVIEWS.length && firstReviewText === INITIAL_SAMPLE_REVIEWS[0].text) {
+  // Nếu đã nạp đủ 54 reviews và ảnh/nội dung khớp hoàn toàn với bản cập nhật mới nhất thì không cần nạp lại
+  if (currentCount === INITIAL_SAMPLE_REVIEWS.length && firstReviewText === INITIAL_SAMPLE_REVIEWS[0].text && firstPhotoUrl === INITIAL_SAMPLE_REVIEWS[0].photo) {
     return
   }
 

@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 
@@ -13,7 +14,7 @@ export default function SizeGuideModal({ isOpen, onClose, sizeGuide = {} }) {
 
   const cleanNum = (val) => {
     if (!val && val !== 0) return '—'
-    const num = String(val).replace(/[^0-9.,–-]/g, '').trim()
+    const num = String(val).replace(/[^0-9.,–\-≈~]/g, '').trim()
     return num || String(val)
   }
 
@@ -23,7 +24,9 @@ export default function SizeGuideModal({ isOpen, onClose, sizeGuide = {} }) {
     return str.endsWith('cm') || str.endsWith('kg') ? str : `${str} cm`
   }
 
-  return (
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -32,12 +35,12 @@ export default function SizeGuideModal({ isOpen, onClose, sizeGuide = {} }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm"
             onClick={onClose}
           />
 
           {/* Modal Container */}
-          <div className="fixed inset-0 z-[121] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[201] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -268,6 +271,7 @@ export default function SizeGuideModal({ isOpen, onClose, sizeGuide = {} }) {
           </div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   )
 }

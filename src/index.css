@@ -125,6 +125,15 @@
   .pdp-scrollbar::-webkit-scrollbar-track { background: #E8DFD5; }
   .pdp-scrollbar::-webkit-scrollbar-thumb { background: #631521; }
 
+  /* Hide scrollbar utility */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
   .font-serif-italic {
     font-family: 'Inter', sans-serif !important;
     font-style: italic;

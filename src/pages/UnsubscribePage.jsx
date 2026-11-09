@@ -47,7 +47,7 @@ export default function UnsubscribePage() {
       <title>Hủy Nhận Email Marketing — QuanNguyenS</title>
       <Header />
 
-      <div className="h-16 md:h-20" />
+      <div className="h-14 md:h-16" />
 
       <main className="max-w-xl mx-auto px-4 py-16 flex-1 w-full flex items-center justify-center">
         <div className="bg-white p-8 sm:p-10 rounded-[4px] border border-[#E8DFD5] shadow-sm text-center w-full">
