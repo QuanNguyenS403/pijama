@@ -63,7 +63,7 @@ test('Reviews System: Toàn bộ quy trình Đánh Giá Thật Tự Động Phê
       customer: {
         fullName: 'Lê Thị Thu Trang',
         phone: testPhone,
-        email: 'test_review@quannguyens.com',
+        email: 'test_review@example.com',
       },
       items: [
         {
@@ -173,7 +173,7 @@ test('Reviews System: Toàn bộ quy trình Đánh Giá Thật Tự Động Phê
     assert.equal(resDuplicate.status, 409, 'Gửi trùng phải trả về 409 Conflict')
 
     // 8. TEST: Email mời đánh giá tôn trọng Unsubscribe
-    const unsubEmail = 'unsub_test@quannguyens.com'
+    const unsubEmail = 'unsub_test@example.com'
     unsubscribeAccount(unsubEmail)
     assert.equal(isEmailSuppressed(unsubEmail, database), true)
 

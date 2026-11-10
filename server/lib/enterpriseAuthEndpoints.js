@@ -35,6 +35,7 @@ import {
   saveActiveResetTokenDb,
   getActiveResetTokenDb,
   deleteActiveResetTokenDb,
+  isEmailBounceSuppressed,
 } from './accountDb.js'
 
 /**
@@ -237,7 +238,7 @@ export function registerEnterpriseAuthEndpoints(app) {
         return res.status(400).json({ success: false, error: turnstileCheck.error })
       }
 
-      // B2. Kiểm tra email có nhận được thư không (domain tồn tại & có MX)
+      // B2. Kiểm tra email có nhận được thư không (mẫu tổng hợp, domain tồn tại & có MX)
       const deliverability = await checkEmailDeliverability(cleanEmail)
       if (!deliverability.deliverable) {
         logSecurityAudit({
@@ -247,7 +248,22 @@ export function registerEnterpriseAuthEndpoints(app) {
           userAgent,
           details: { email: cleanEmail, reason: deliverability.reason },
         })
-        return res.status(400).json({ success: false, error: UNDELIVERABLE_EMAIL_MESSAGE, message: UNDELIVERABLE_EMAIL_MESSAGE })
+        return res.status(400).json({
+          success: false,
+          code: 'UNDELIVERABLE_RECIPIENT',
+          error: UNDELIVERABLE_EMAIL_MESSAGE,
+          message: UNDELIVERABLE_EMAIL_MESSAGE,
+        })
+      }
+
+      if (isEmailBounceSuppressed(cleanEmail, db)) {
+        const suppressedMsg = 'Địa chỉ email này hiện không thể nhận thư từ hệ thống. Vui lòng kiểm tra lại hoặc dùng một địa chỉ email khác (ví dụ: tenban@gmail.com).'
+        return res.status(400).json({
+          success: false,
+          code: 'RECIPIENT_SUPPRESSED',
+          error: suppressedMsg,
+          message: suppressedMsg,
+        })
       }
 
       // D. Băm mật khẩu bằng Argon2id
@@ -312,7 +328,20 @@ export function registerEnterpriseAuthEndpoints(app) {
         await cacheDel(cacheKey)
         deletePendingRegistrationDb(cleanEmail, db)
         if (eErr.code === 'UNDELIVERABLE_RECIPIENT') {
-          return res.status(400).json({ success: false, error: UNDELIVERABLE_EMAIL_MESSAGE, message: UNDELIVERABLE_EMAIL_MESSAGE })
+          return res.status(400).json({
+            success: false,
+            code: 'UNDELIVERABLE_RECIPIENT',
+            error: UNDELIVERABLE_EMAIL_MESSAGE,
+            message: UNDELIVERABLE_EMAIL_MESSAGE,
+          })
+        }
+        if (eErr.code === 'RECIPIENT_SUPPRESSED') {
+          return res.status(400).json({
+            success: false,
+            code: 'RECIPIENT_SUPPRESSED',
+            error: eErr.message,
+            message: eErr.message,
+          })
         }
         return res.status(502).json({
           success: false,
@@ -786,14 +815,20 @@ export function registerEnterpriseAuthEndpoints(app) {
 
     const otpDeliverability = await checkEmailDeliverability(email)
     if (!otpDeliverability.deliverable) {
-      return res.status(400).json({ success: false, error: UNDELIVERABLE_EMAIL_MESSAGE })
+      return res.status(400).json({ success: false, code: 'UNDELIVERABLE_RECIPIENT', error: UNDELIVERABLE_EMAIL_MESSAGE })
     }
+
+    if (isEmailBounceSuppressed(email)) {
+      const suppressedMsg = 'Địa chỉ email này hiện không thể nhận thư từ hệ thống. Vui lòng kiểm tra lại hoặc dùng một địa chỉ email khác (ví dụ: tenban@gmail.com).'
+      return res.status(400).json({ success: false, code: 'RECIPIENT_SUPPRESSED', error: suppressedMsg })
+    }
+
+    const isTestMode = process.env.AUTH_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production'
 
     // Sinh OTP 6 chữ số bằng CSPRNG và băm an toàn
     const otpCode = crypto.randomInt(100000, 999999).toString()
     const salt = crypto.randomBytes(16).toString('hex')
     const codeHash = hashOtp(otpCode, salt)
-    const isTestMode = process.env.AUTH_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production'
 
     // Lưu vào Redis / Memory Cache với TTL 5 phút (300 giây)
     const cacheKey = `otp:${purpose}:${email.toLowerCase()}`
@@ -823,6 +858,9 @@ export function registerEnterpriseAuthEndpoints(app) {
       console.warn('⚠️ Lỗi gửi email OTP:', mailErr.message)
       if (!isTestMode) {
         await cacheDel(cacheKey)
+        if (mailErr.code === 'UNDELIVERABLE_RECIPIENT' || mailErr.code === 'RECIPIENT_SUPPRESSED') {
+          return res.status(400).json({ success: false, code: mailErr.code, error: mailErr.message })
+        }
         return res.status(502).json({
           success: false,
           error: 'Hệ thống gửi email đang bận hoặc gián đoạn kết nối. Quý khách vui lòng thử lại sau giây lát.',
@@ -985,7 +1023,34 @@ export function registerEnterpriseAuthEndpoints(app) {
         return res.status(400).json({ success: false, error: turnstileCheck.error })
       }
 
+      const deliverability = await checkEmailDeliverability(cleanEmail)
+      if (!deliverability.deliverable) {
+        logSecurityAudit({
+          action: 'PASSWORD_RESET_UNDELIVERABLE_EMAIL',
+          status: 'BLOCKED',
+          ip,
+          userAgent,
+          details: { email: cleanEmail, reason: deliverability.reason },
+        })
+        return res.status(400).json({
+          success: false,
+          code: 'UNDELIVERABLE_RECIPIENT',
+          error: UNDELIVERABLE_EMAIL_MESSAGE,
+          message: UNDELIVERABLE_EMAIL_MESSAGE,
+        })
+      }
+
       const db = getDb()
+      if (isEmailBounceSuppressed(cleanEmail, db)) {
+        const suppressedMsg = 'Địa chỉ email này hiện không thể nhận thư từ hệ thống. Vui lòng kiểm tra lại hoặc liên hệ hỗ trợ.'
+        return res.status(400).json({
+          success: false,
+          code: 'RECIPIENT_SUPPRESSED',
+          error: suppressedMsg,
+          message: suppressedMsg,
+        })
+      }
+
       const user = await findUserForPasswordReset(cleanEmail, db)
 
       if (!user) {
@@ -1061,6 +1126,14 @@ export function registerEnterpriseAuthEndpoints(app) {
         // Lỗi chắc chắn chưa gửi
         await cacheDel(cacheKey)
         deletePendingPasswordResetDb(cleanEmail, db)
+        if (mailErr.code === 'UNDELIVERABLE_RECIPIENT' || mailErr.code === 'RECIPIENT_SUPPRESSED') {
+          return res.status(400).json({
+            success: false,
+            code: mailErr.code,
+            error: mailErr.message,
+            message: mailErr.message,
+          })
+        }
         return res.status(502).json({
           success: false,
           error: 'Hệ thống gửi email đang bận hoặc gián đoạn kết nối. Quý khách vui lòng thử lại sau ít phút hoặc dùng tính năng Tiếp tục với Google.',

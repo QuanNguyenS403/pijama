@@ -2,6 +2,7 @@ import { generateUnsubscribeToken } from './authCrypto.js'
 import crypto from 'crypto'
 import { loadEnvironment } from './envCheck.js'
 import { sendEmailViaHttps } from './httpsEmailService.js'
+import { isAutomatedTestEnvironment, isNodeTestRunner } from './emailRecipientGuard.js'
 
 const SHOP_NAME = process.env.SHOP_NAME || 'QuanNguyenS'
 const SHOP_PHONE = process.env.SHOP_PHONE || '0973 486 218'
@@ -10,7 +11,7 @@ const APP_URL = process.env.APP_URL || process.env.CLIENT_ORIGIN || 'http://loca
 
 function getSenderEmail() {
   try {
-    if (process.env.NODE_ENV !== 'test') {
+    if (!isNodeTestRunner() && !isAutomatedTestEnvironment()) {
       loadEnvironment()
     }
   } catch (_) {}

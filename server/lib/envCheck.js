@@ -3,6 +3,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import dotenv from 'dotenv'
 import crypto from 'crypto'
+import { isNodeTestRunner } from './emailRecipientGuard.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -15,15 +16,30 @@ const projectRoot = path.resolve(__dirname, '../..')
 // "development", khiến bộ test gửi email OTP THẬT tới các địa chỉ giả (gây bounce Mail Delivery Subsystem).
 const fileManagedEnv = new Map()
 
+// Các biến điều khiển môi trường chạy & gửi email thật: TUYỆT ĐỐI không được nạp/ghi đè từ .env khi đang ở test runner
+const TEST_RUNNER_PROTECTED_KEYS = new Set([
+  'NODE_ENV',
+  'NODE_TEST_CONTEXT',
+  'EMAIL_REAL_SEND',
+  'AUTH_TEST_MODE',
+  'EMAIL_DELIVERY_DISABLED',
+])
+
 /**
  * Nạp thông minh biến môi trường từ .env, .env.development, .env.local
  * Nguyên tắc:
  *  - Biến môi trường do bên ngoài cấp (process/shell/CI) luôn được ưu tiên, file .env không ghi đè.
+ *  - Trong Node test runner (NODE_ENV=test / NODE_TEST_CONTEXT / --test), không bao giờ nạp/ghi đè
+ *    NODE_ENV, NODE_TEST_CONTEXT, EMAIL_REAL_SEND, AUTH_TEST_MODE từ file .env.
  *  - Giữa các file: ưu tiên giá trị không rỗng, tránh việc file rỗng ghi đè file có dữ liệu thật.
  */
-export function loadEnvironment(rootDir = process.cwd()) {
+export function loadEnvironment(rootDir = process.cwd(), options = {}) {
+  const { onlyRootDir = false } = options || {}
+  const inTestRunner = isNodeTestRunner()
   const envFiles = ['.env', '.env.development', '.env.local']
-  const candidateDirs = Array.from(new Set([rootDir, path.resolve(rootDir, 'pijama'), projectRoot]))
+  const candidateDirs = onlyRootDir
+    ? [rootDir]
+    : Array.from(new Set([rootDir, path.resolve(rootDir, 'pijama'), projectRoot]))
   for (const dir of candidateDirs) {
     for (const file of envFiles) {
       const fullPath = path.resolve(dir, file)
@@ -31,6 +47,7 @@ export function loadEnvironment(rootDir = process.cwd()) {
         try {
           const parsed = dotenv.parse(fs.readFileSync(fullPath, 'utf-8'))
           for (const [key, value] of Object.entries(parsed)) {
+            if (inTestRunner && TEST_RUNNER_PROTECTED_KEYS.has(key)) continue
             const valToSet = (key === 'GMAIL_APP_PASSWORD' && typeof value === 'string') ? value.replace(/\s+/g, '') : value
             const current = process.env[key]
             const isExternallyProvided =
@@ -192,26 +209,41 @@ export function validateEnvironment(env = process.env) {
     }
   }
 
-  // Kiểm tra phương thức gửi email: Ưu tiên HTTPS Bridge (GAS / Resend), Fallback SMTP (GMAIL_APP_PASSWORD)
+  // Kiểm tra phương thức gửi email: Ưu tiên HTTPS Bridge (GAS / Resend).
+  // Lưu ý: Render chặn outbound SMTP (25/465/587) và Production chỉ gửi qua HTTPS nên SMTP không tính là đường gửi hợp lệ ở Render/Production.
+  const isRender = Boolean(effectiveEnv.RENDER || effectiveEnv.RENDER_EXTERNAL_URL || effectiveEnv.RENDER_SERVICE_ID)
   const gasUrl = effectiveEnv.GAS_EMAIL_WEBHOOK_URL || effectiveEnv.GMAIL_APP_SCRIPT_URL || effectiveEnv.GMAIL_BRIDGE_WEBHOOK_URL
   const gasSecret = effectiveEnv.GAS_WEBHOOK_SECRET || effectiveEnv.GMAIL_BRIDGE_SECRET
   const hasGasBridge = Boolean(gasUrl && String(gasUrl).trim() && !isPlaceholder(gasUrl) && gasSecret && String(gasSecret).trim() && !isPlaceholder(gasSecret))
   const resendKeyCheck = checkVar('RESEND_API_KEY', true)
-  const hasResend = resendKeyCheck.status === 'OK'
+  const resendFromCheck = checkVar('RESEND_FROM_EMAIL', false)
+  const hasResendKey = resendKeyCheck.status === 'OK'
+  const hasVerifiedResendFrom =
+    resendFromCheck.status === 'OK' && !String(effectiveEnv.RESEND_FROM_EMAIL || '').toLowerCase().includes('@resend.dev')
+  const hasResend = Boolean(hasResendKey && (!isProd || hasVerifiedResendFrom))
   const gmailPassCheck = checkVar('GMAIL_APP_PASSWORD', true, (v) => (v.replace(/\s+/g, '').length === 16 ? true : 'Mật khẩu ứng dụng Gmail phải gồm đúng 16 ký tự'))
   const hasSmtp = gmailPassCheck.status === 'OK'
+  const hasUsableEmailDelivery = hasGasBridge || hasResend || (!isRender && !isProd && hasSmtp)
 
   results.featureGated.push(checkVar('GAS_EMAIL_WEBHOOK_URL', false))
   results.featureGated.push(checkVar('GAS_WEBHOOK_SECRET', true))
   results.featureGated.push(resendKeyCheck)
   results.featureGated.push(gmailPassCheck)
 
-  if (!hasGasBridge && !hasResend && !hasSmtp) {
-    const msg = 'Chưa cấu hình đầy đủ gửi email: Cần (GAS_EMAIL_WEBHOOK_URL + GAS_WEBHOOK_SECRET) hoặc RESEND_API_KEY hoặc GMAIL_APP_PASSWORD'
+  if (hasResendKey && isProd && !hasVerifiedResendFrom) {
+    results.warnings.push('[RESEND CONFIG] RESEND_API_KEY đã bật nhưng thiếu RESEND_FROM_EMAIL hợp lệ (không dùng @resend.dev ở Production)')
+  }
+
+  if (!hasUsableEmailDelivery) {
+    const smtpNote = (isRender || isProd) && hasSmtp
+      ? ' (Lưu ý: GMAIL_APP_PASSWORD/SMTP không hợp lệ trên Render/Production vì outbound SMTP bị chặn)'
+      : ''
+    const msg = `Chưa cấu hình đầy đủ gửi email HTTPS: Cần (GAS_EMAIL_WEBHOOK_URL + GAS_WEBHOOK_SECRET) hoặc (RESEND_API_KEY + RESEND_FROM_EMAIL hợp lệ)${smtpNote}`
     if (effectiveEnv.REQUIRE_EMAIL_DELIVERY === 'true' && isProd) {
       results.errors.push(`[BẮT BUỘC PROD] ${msg}`)
     } else if (isProd) {
-      results.warnings.push(`[CHẾ ĐỘ DEGRADED] ${msg} — Web vẫn khởi chạy nhưng chức năng gửi email tạm ngưng cho đến khi bổ sung khóa`)
+      results.emailDeliveryMissingInProd = true
+      results.warnings.push(`[CHẾ ĐỘ DEGRADED] ${msg} — Web vẫn khởi chạy nhưng chức năng gửi email sẽ từ chối fail-closed; khuyến nghị đặt REQUIRE_EMAIL_DELIVERY=true trên Render`)
     } else {
       results.warnings.push(`[THIẾU DEV] ${msg}`)
     }
@@ -380,6 +412,10 @@ export function printEnvReport(results) {
     for (const e of results.errors) {
       console.log(`  ❌ ${e}`)
     }
+  }
+
+  if (results.emailDeliveryMissingInProd) {
+    console.error('❌ [EMAIL DELIVERY ERROR] Production đang thiếu cấu hình gửi email HTTPS hợp lệ (GAS_EMAIL_WEBHOOK_URL+GAS_WEBHOOK_SECRET hoặc RESEND_API_KEY+RESEND_FROM_EMAIL). Đặt REQUIRE_EMAIL_DELIVERY=true để chặn khởi động khi thiếu.')
   }
 
   if (results.warnings.length > 0) {

@@ -1,28 +1,49 @@
 import Database from 'better-sqlite3'
 import path from 'path'
 import fs from 'fs'
+import os from 'os'
 import crypto from 'crypto'
 import { fileURLToPath } from 'url'
 import { hashOtpCode, generateSalt, verifyOtpCode, hashSessionToken, hashClientMetadata } from './authCrypto.js'
 import { runEnterpriseMigrations } from './schemaMigration.js'
 import { getSupabase, isSupabaseConfigured } from './supabaseClient.js'
+import { isAutomatedTestEnvironment, isNodeTestRunner, extractEmailAddress } from './emailRecipientGuard.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // Thư mục lưu trữ database độc lập cho tài khoản & voucher
 const dataDir = path.resolve(__dirname, '../data')
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true })
+
+const isTestEnv = isNodeTestRunner() || isAutomatedTestEnvironment()
+
+function resolveAccountDbPath() {
+  const envDbRaw = String(process.env.ACCOUNT_DB_FILE || '').trim()
+  if (isTestEnv) {
+    if (envDbRaw) {
+      const resolvedEnvDb = path.resolve(envDbRaw)
+      const isInsideRealDataDir =
+        resolvedEnvDb === dataDir || resolvedEnvDb.startsWith(dataDir + path.sep)
+      if (!isInsideRealDataDir) {
+        return resolvedEnvDb
+      }
+    }
+    return path.join(os.tmpdir(), `qns-test-${process.pid}`, 'accounts.test.db')
+  }
+  return envDbRaw ? path.resolve(envDbRaw) : path.resolve(dataDir, 'accounts.db')
 }
 
-const isTestEnv =
-  process.env.NODE_ENV === 'test' ||
-  Boolean(process.env.ACCOUNT_DB_FILE) ||
-  process.argv.some((arg) => typeof arg === 'string' && (arg.includes('node:test') || arg.includes('tests/') || arg.includes('verify-all')))
+const dbPath = resolveAccountDbPath()
+const dbParentDir = path.dirname(dbPath)
+if (!fs.existsSync(dbParentDir)) {
+  fs.mkdirSync(dbParentDir, { recursive: true })
+}
 
-const dbPath = process.env.ACCOUNT_DB_FILE || (isTestEnv ? path.resolve(dataDir, 'accounts.test.db') : path.resolve(dataDir, 'accounts.db'))
 let db = null
+
+export function getAccountDbPath() {
+  return dbPath
+}
 
 export function getDb() {
   if (!db) {
@@ -613,10 +634,12 @@ export function getAllVerifiedAccounts() {
 
 /**
  * Lấy danh sách người nhận email marketing hợp lệ theo đúng quy định:
- * verified = 1, email có sẵn, marketing_email_opt_in = 1, suppressed = 0
+ * verified = 1, email có sẵn, marketing_email_opt_in = 1, suppressed = 0, synthetic_flag = 0,
+ * không nằm trong marketing_unsubscribes và không nằm trong email_suppressions (bounce).
  */
 export function getMarketingAudience() {
   const database = getDb()
+  ensureEmailSafetyTables(database)
   const rows = database.prepare(`
     SELECT a.* FROM accounts a
     WHERE a.verified = 1 
@@ -624,9 +647,13 @@ export function getMarketingAudience() {
       AND a.email != ''
       AND a.marketing_email_opt_in = 1
       AND (a.suppressed IS NULL OR a.suppressed = 0)
+      AND (a.synthetic_flag IS NULL OR a.synthetic_flag = 0)
       AND LOWER(a.email) NOT IN (SELECT LOWER(email) FROM marketing_unsubscribes)
+      AND LOWER(a.email) NOT IN (SELECT LOWER(email) FROM users WHERE synthetic_flag = 1 AND email IS NOT NULL)
   `).all()
-  return rows.map(formatAccountRow)
+  return rows
+    .filter((row) => !isEmailBounceSuppressed(row.email, database))
+    .map(formatAccountRow)
 }
 
 export function getAccountStats() {
@@ -1417,7 +1444,7 @@ export async function findUserForPasswordReset(email, database = getDb()) {
  * Đồng bộ toàn bộ người dùng từ Supabase Cloud về SQLite khi khởi động máy chủ
  */
 export async function syncUsersFromSupabase(database = getDb()) {
-  if (process.env.NODE_ENV === 'test' || process.env.AUTH_TEST_MODE === 'true') return 0
+  if (isNodeTestRunner() || isAutomatedTestEnvironment()) return 0
   if (!isSupabaseConfigured()) return 0
   const client = getSupabase()
   if (!client) return 0
@@ -1508,7 +1535,7 @@ export async function syncUsersFromSupabase(database = getDb()) {
  * Đẩy một người dùng lên Supabase Cloud khi tạo mới hoặc cập nhật mật khẩu
  */
 export async function syncUserToSupabase(user) {
-  if (process.env.NODE_ENV === 'test' || process.env.AUTH_TEST_MODE === 'true') return
+  if (isNodeTestRunner() || isAutomatedTestEnvironment()) return
   if (!isSupabaseConfigured() || !user || (!user.id && !user.email)) return
   const client = getSupabase()
   if (!client) return
@@ -1833,4 +1860,201 @@ export function deleteActiveResetTokenDb(resetToken, database = getDb()) {
   try {
     database.prepare('DELETE FROM active_reset_tokens WHERE reset_token = ?').run(resetToken)
   } catch (_) {}
+}
+
+// ─────────────────────────────────────────────────────────────
+// QUẢN LÝ DANH SÁCH CHẶN BOUNCE (EMAIL_SUPPRESSIONS) & SYNTHETIC GUARD (WP-3 / WP-5)
+// ─────────────────────────────────────────────────────────────
+
+export function hashEmailNormalized(email) {
+  const clean = extractEmailAddress(email)
+  if (!clean) return ''
+  return crypto.createHash('sha256').update(clean).digest('hex')
+}
+
+function maskEmailForStorage(email) {
+  const clean = extractEmailAddress(email)
+  if (!clean) return '***'
+  const at = clean.indexOf('@')
+  if (at === -1) return '***'
+  if (at <= 2) return '***' + clean.slice(at)
+  return clean.slice(0, 2) + '***' + clean.slice(at)
+}
+
+let ensuredSafetyDbs = new WeakSet()
+export function ensureEmailSafetyTables(database = getDb()) {
+  if (!database || ensuredSafetyDbs.has(database)) return
+  try {
+    database.exec(`
+      CREATE TABLE IF NOT EXISTS email_suppressions (
+        email_hash TEXT PRIMARY KEY,
+        email_masked TEXT NOT NULL,
+        reason TEXT NOT NULL CHECK(reason IN ('HARD_BOUNCE', 'DELAY_TIMEOUT', 'MANUAL')),
+        first_seen TEXT NOT NULL,
+        last_seen TEXT NOT NULL,
+        count INTEGER NOT NULL DEFAULT 1,
+        source TEXT NOT NULL DEFAULT 'bounce_webhook',
+        is_active INTEGER NOT NULL DEFAULT 1,
+        note TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_email_suppressions_email_hash ON email_suppressions(email_hash);
+      CREATE INDEX IF NOT EXISTS idx_email_suppressions_active ON email_suppressions(is_active, last_seen);
+
+      CREATE TABLE IF NOT EXISTS email_bounce_requests (
+        request_id TEXT PRIMARY KEY,
+        nonce TEXT,
+        received_at INTEGER NOT NULL,
+        source TEXT NOT NULL
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_email_bounce_requests_nonce ON email_bounce_requests(nonce) WHERE nonce IS NOT NULL;
+      CREATE INDEX IF NOT EXISTS idx_email_bounce_requests_received ON email_bounce_requests(received_at);
+    `)
+
+    try {
+      const userCols = database.prepare('PRAGMA table_info(users)').all().map((c) => c.name)
+      if (userCols.length > 0 && !userCols.includes('synthetic_flag')) {
+        database.exec('ALTER TABLE users ADD COLUMN synthetic_flag INTEGER NOT NULL DEFAULT 0')
+      }
+      if (userCols.length > 0 && !userCols.includes('synthetic_reason')) {
+        database.exec('ALTER TABLE users ADD COLUMN synthetic_reason TEXT')
+      }
+    } catch (_) {}
+
+    try {
+      const accCols = database.prepare('PRAGMA table_info(accounts)').all().map((c) => c.name)
+      if (accCols.length > 0 && !accCols.includes('synthetic_flag')) {
+        database.exec('ALTER TABLE accounts ADD COLUMN synthetic_flag INTEGER NOT NULL DEFAULT 0')
+      }
+      if (accCols.length > 0 && !accCols.includes('synthetic_reason')) {
+        database.exec('ALTER TABLE accounts ADD COLUMN synthetic_reason TEXT')
+      }
+    } catch (_) {}
+
+    ensuredSafetyDbs.add(database)
+  } catch (err) {
+    console.warn('⚠️ [EMAIL SAFETY TABLES] Lỗi khởi tạo bảng:', err.message)
+  }
+}
+
+export function __resetEmailSafetyTablesCacheForTests() {
+  ensuredSafetyDbs = new WeakSet()
+}
+
+const VALID_SUPPRESSION_REASONS = new Set(['HARD_BOUNCE', 'DELAY_TIMEOUT', 'MANUAL'])
+
+export function recordEmailSuppression({
+  email,
+  reason = 'HARD_BOUNCE',
+  source = 'bounce_webhook',
+  detectedAt = null,
+  note = null,
+  database = getDb(),
+}) {
+  ensureEmailSafetyTables(database)
+  const cleanEmail = extractEmailAddress(email)
+  if (!cleanEmail || !cleanEmail.includes('@')) return null
+  const emailHash = hashEmailNormalized(cleanEmail)
+  const emailMasked = maskEmailForStorage(cleanEmail)
+  const safeReason = VALID_SUPPRESSION_REASONS.has(reason) ? reason : 'HARD_BOUNCE'
+  const seenAt = detectedAt && !Number.isNaN(Date.parse(detectedAt)) ? new Date(detectedAt).toISOString() : new Date().toISOString()
+
+  database.prepare(`
+    INSERT INTO email_suppressions (email_hash, email_masked, reason, first_seen, last_seen, count, source, is_active, note)
+    VALUES (?, ?, ?, ?, ?, 1, ?, 1, ?)
+    ON CONFLICT(email_hash) DO UPDATE SET
+      reason = CASE WHEN email_suppressions.reason = 'HARD_BOUNCE' THEN 'HARD_BOUNCE' ELSE excluded.reason END,
+      last_seen = excluded.last_seen,
+      count = email_suppressions.count + 1,
+      source = excluded.source,
+      is_active = 1,
+      note = COALESCE(excluded.note, email_suppressions.note)
+  `).run(emailHash, emailMasked, safeReason, seenAt, seenAt, String(source || 'bounce_webhook').slice(0, 64), note ? String(note).slice(0, 200) : null)
+
+  return { emailHash, emailMasked, reason: safeReason, seenAt }
+}
+
+export function getEmailBounceSuppression(email, database = getDb()) {
+  const emailHash = hashEmailNormalized(email)
+  if (!emailHash) return null
+  try {
+    ensureEmailSafetyTables(database)
+    const row = database.prepare(`
+      SELECT email_hash, email_masked, reason, first_seen, last_seen, count, source, is_active
+      FROM email_suppressions
+      WHERE email_hash = ? AND is_active = 1
+      LIMIT 1
+    `).get(emailHash)
+    return row || null
+  } catch (_) {
+    return null
+  }
+}
+
+export function isEmailBounceSuppressed(email, database = getDb()) {
+  return Boolean(getEmailBounceSuppression(email, database))
+}
+
+export function removeEmailSuppression(email, { note = 'manual_unsuppress', database = getDb() } = {}) {
+  const emailHash = hashEmailNormalized(email)
+  if (!emailHash) return false
+  ensureEmailSafetyTables(database)
+  const info = database.prepare(`
+    UPDATE email_suppressions
+    SET is_active = 0, note = ?
+    WHERE email_hash = ? AND is_active = 1
+  `).run(String(note || 'manual_unsuppress').slice(0, 200), emailHash)
+  return (info.changes || 0) > 0
+}
+
+export function listEmailSuppressions({ activeOnly = true, limit = 100 } = {}, database = getDb()) {
+  ensureEmailSafetyTables(database)
+  const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 500)
+  const sql = activeOnly
+    ? 'SELECT email_hash, email_masked, reason, first_seen, last_seen, count, source, is_active FROM email_suppressions WHERE is_active = 1 ORDER BY last_seen DESC LIMIT ?'
+    : 'SELECT email_hash, email_masked, reason, first_seen, last_seen, count, source, is_active FROM email_suppressions ORDER BY last_seen DESC LIMIT ?'
+  return database.prepare(sql).all(safeLimit)
+}
+
+export function recordBounceRequestIfNew({ requestId, nonce = null, source = 'apps_script_bounce_reader', database = getDb() }) {
+  ensureEmailSafetyTables(database)
+  const now = Date.now()
+  // Dọn các requestId cũ hơn 7 ngày để bảng luôn gọn
+  try {
+    database.prepare('DELETE FROM email_bounce_requests WHERE received_at < ?').run(now - 7 * 24 * 60 * 60 * 1000)
+  } catch (_) {}
+
+  const cleanReqId = String(requestId || '').trim()
+  const cleanNonce = nonce ? String(nonce).trim() : null
+
+  return database.transaction(() => {
+    const existingReq = database.prepare('SELECT request_id FROM email_bounce_requests WHERE request_id = ?').get(cleanReqId)
+    if (existingReq) {
+      return { status: 'duplicate_request_id' }
+    }
+    if (cleanNonce) {
+      const existingNonce = database.prepare('SELECT request_id FROM email_bounce_requests WHERE nonce = ?').get(cleanNonce)
+      if (existingNonce) {
+        return { status: 'duplicate_nonce' }
+      }
+    }
+    database.prepare(`
+      INSERT INTO email_bounce_requests (request_id, nonce, received_at, source)
+      VALUES (?, ?, ?, ?)
+    `).run(cleanReqId, cleanNonce, now, String(source || 'apps_script_bounce_reader').slice(0, 64))
+    return { status: 'ok' }
+  })()
+}
+
+export function isSyntheticAccountEmail(email, database = getDb()) {
+  const cleanEmail = extractEmailAddress(email)
+  if (!cleanEmail) return false
+  try {
+    ensureEmailSafetyTables(database)
+    const acc = database.prepare('SELECT 1 FROM accounts WHERE LOWER(email) = ? AND synthetic_flag = 1 LIMIT 1').get(cleanEmail)
+    if (acc) return true
+    const usr = database.prepare('SELECT 1 FROM users WHERE LOWER(email) = ? AND synthetic_flag = 1 LIMIT 1').get(cleanEmail)
+    return Boolean(usr)
+  } catch (_) {
+    return false
+  }
 }

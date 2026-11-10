@@ -182,7 +182,7 @@ export function runEnterpriseMigrations(database) {
       );
       CREATE INDEX IF NOT EXISTS idx_active_reset_tokens_exp ON active_reset_tokens(expires_at);
 
-      -- BẢNG EMAIL OUTBOX (WP-B B8: Ghi nhận trạng thái gửi thực tế: queued, sent, failed, unknown)
+      -- BẢNG EMAIL OUTBOX (WP-B B8: Ghi nhận trạng thái gửi thực tế: queued, sent, sent_unverified_domain, sandboxed, suppressed, blocked_mx, blocked_synthetic, failed, unknown)
       CREATE TABLE IF NOT EXISTS email_outbox (
         id TEXT PRIMARY KEY,
         purpose TEXT NOT NULL,
@@ -197,9 +197,55 @@ export function runEnterpriseMigrations(database) {
       );
       CREATE INDEX IF NOT EXISTS idx_email_outbox_status ON email_outbox(status);
       CREATE INDEX IF NOT EXISTS idx_email_outbox_created ON email_outbox(created_at);
+
+      -- BẢNG DANH SÁCH CHẶN GỬI THƯ DO BOUNCE / DELAY / CHẶN THỦ CÔNG (WP-3.1)
+      CREATE TABLE IF NOT EXISTS email_suppressions (
+        email_hash TEXT PRIMARY KEY,
+        email_masked TEXT NOT NULL,
+        reason TEXT NOT NULL CHECK(reason IN ('HARD_BOUNCE', 'DELAY_TIMEOUT', 'MANUAL')),
+        first_seen TEXT NOT NULL,
+        last_seen TEXT NOT NULL,
+        count INTEGER NOT NULL DEFAULT 1,
+        source TEXT NOT NULL DEFAULT 'bounce_webhook',
+        is_active INTEGER NOT NULL DEFAULT 1,
+        note TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_email_suppressions_email_hash ON email_suppressions(email_hash);
+      CREATE INDEX IF NOT EXISTS idx_email_suppressions_active ON email_suppressions(is_active, last_seen);
+
+      -- BẢNG CHỐNG PHÁT LẠI / IDEMPOTENCY CHO WEBHOOK BOUNCE (WP-3.3)
+      CREATE TABLE IF NOT EXISTS email_bounce_requests (
+        request_id TEXT PRIMARY KEY,
+        nonce TEXT,
+        received_at INTEGER NOT NULL,
+        source TEXT NOT NULL
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_email_bounce_requests_nonce ON email_bounce_requests(nonce) WHERE nonce IS NOT NULL;
+      CREATE INDEX IF NOT EXISTS idx_email_bounce_requests_received ON email_bounce_requests(received_at);
     `)
   } catch (pendingErr) {
     console.warn('⚠️ [MIGRATION WARNING] Pending OTP tables migration:', pendingErr.message)
+  }
+
+  // 4d. BỔ SUNG CỘT SYNTHETIC_FLAG CHO USERS & ACCOUNTS (WP-5.3 / WP-5.4)
+  try {
+    const userCols = database.prepare('PRAGMA table_info(users)').all().map((c) => c.name)
+    if (userCols.length > 0 && !userCols.includes('synthetic_flag')) {
+      database.exec('ALTER TABLE users ADD COLUMN synthetic_flag INTEGER NOT NULL DEFAULT 0')
+    }
+    if (userCols.length > 0 && !userCols.includes('synthetic_reason')) {
+      database.exec('ALTER TABLE users ADD COLUMN synthetic_reason TEXT')
+    }
+
+    const accountCols = database.prepare('PRAGMA table_info(accounts)').all().map((c) => c.name)
+    if (accountCols.length > 0 && !accountCols.includes('synthetic_flag')) {
+      database.exec('ALTER TABLE accounts ADD COLUMN synthetic_flag INTEGER NOT NULL DEFAULT 0')
+    }
+    if (accountCols.length > 0 && !accountCols.includes('synthetic_reason')) {
+      database.exec('ALTER TABLE accounts ADD COLUMN synthetic_reason TEXT')
+    }
+  } catch (synErr) {
+    console.warn('⚠️ [MIGRATION WARNING] Synthetic flag column migration:', synErr.message)
   }
 
   // 5. ĐỒNG BỘ TƯƠNG THÍCH NGƯỢC (Backfill từ bảng accounts cũ sang users nếu có)

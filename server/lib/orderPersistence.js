@@ -1,21 +1,33 @@
 import fs from 'fs'
 import path from 'path'
+import os from 'os'
 import { fileURLToPath } from 'url'
 import { getSupabase } from './supabaseClient.js'
 import { upsertOrderToDb, getOrderFromDb, deleteOrderFromDb, getDb } from './accountDb.js'
 import { handleOrderDeliveredHook, handleOrderCancelledHook } from './loyalty/orderHook.js'
+import { isAutomatedTestEnvironment, isNodeTestRunner } from './emailRecipientGuard.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const DATA_DIR = path.resolve(__dirname, '../data')
-const isTestEnv =
-  process.env.NODE_ENV === 'test' ||
-  Boolean(process.env.ORDER_STORE_FILE) ||
-  process.argv.some((arg) => typeof arg === 'string' && (arg.includes('node:test') || arg.includes('tests/') || arg.includes('verify-all')))
+const isTestEnv = isNodeTestRunner() || isAutomatedTestEnvironment()
+
+function resolveTestSafeFilePath(envVarValue, defaultProdName, defaultTestName) {
+  const raw = String(envVarValue || '').trim()
+  if (isTestEnv) {
+    if (raw) {
+      const resolved = path.resolve(raw)
+      const isInsideRealDataDir = resolved === DATA_DIR || resolved.startsWith(DATA_DIR + path.sep)
+      if (!isInsideRealDataDir) return resolved
+    }
+    return path.join(os.tmpdir(), `qns-test-${process.pid}`, defaultTestName)
+  }
+  return raw ? path.resolve(raw) : path.join(DATA_DIR, defaultProdName)
+}
 
 function syncOrderToSupabase(order) {
-  if (isTestEnv || !order) return
+  if (isNodeTestRunner() || isAutomatedTestEnvironment() || !order) return
   try {
     const client = getSupabase()
     if (!client) return
@@ -47,19 +59,17 @@ function syncOrderToSupabase(order) {
   }
 }
 
-const STORE_FILE =
-  process.env.ORDER_STORE_FILE ||
-  (isTestEnv ? path.join(DATA_DIR, 'orders_store.test.json') : path.join(DATA_DIR, 'orders_store.json'))
-const TX_FILE =
-  process.env.TX_STORE_FILE ||
-  (isTestEnv ? path.join(DATA_DIR, 'processed_tx.test.json') : path.join(DATA_DIR, 'processed_tx.json'))
+const STORE_FILE = resolveTestSafeFilePath(process.env.ORDER_STORE_FILE, 'orders_store.json', 'orders_store.test.json')
+const TX_FILE = resolveTestSafeFilePath(process.env.TX_STORE_FILE, 'processed_tx.json', 'processed_tx.test.json')
 
-// Ensure directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  try {
-    fs.mkdirSync(DATA_DIR, { recursive: true })
-  } catch (e) {
-    console.warn('Cannot create data directory:', e.message)
+// Ensure target directory exists (test mode luôn nằm ngoài server/data)
+for (const targetDir of new Set([path.dirname(STORE_FILE), path.dirname(TX_FILE)])) {
+  if (!fs.existsSync(targetDir)) {
+    try {
+      fs.mkdirSync(targetDir, { recursive: true })
+    } catch (e) {
+      console.warn('Cannot create data directory:', e.message)
+    }
   }
 }
 

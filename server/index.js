@@ -29,7 +29,7 @@ import { validateEnvironment, printEnvReport, loadEnvironment } from './lib/envC
 const isNodeTestRunner =
   Boolean(process.env.NODE_TEST_CONTEXT) ||
   process.execArgv.some((arg) => arg === '--test' || arg.startsWith('--test-'))
-if (process.env.NODE_ENV !== 'test' && !isNodeTestRunner) {
+if (String(process.env.NODE_ENV || '').trim().toLowerCase() !== 'test' && !isNodeTestRunner) {
   loadEnvironment()
 }
 
@@ -215,16 +215,28 @@ const lookupLimiter = createRateLimiter({
   message: 'Yêu cầu tra cứu quá thường xuyên. Vui lòng thử lại sau 1 phút.',
 })
 
-// ── 0. Chẩn đoán trạng thái kết nối Email HTTPS (Port 443) — Yêu cầu quyền Admin ─
+const internalBounceLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: 'Quá nhiều yêu cầu ghi nhận bounce trong thời gian ngắn. Vui lòng thử lại sau.',
+})
+
+// ── 0. Chẩn đoán trạng thái kết nối Email HTTPS (Port 443) & Chỉ số 24h — Yêu cầu quyền Admin ─
 app.get('/api/health/email', requireAdminAuth, async (req, res) => {
   try {
     const result = await verifyTransporter()
+    const { getEmailServiceStatus } = await import('./lib/httpsEmailService.js')
+    const serviceStatus = getEmailServiceStatus()
     if (result && result.success) {
       return res.json({
         emailReady: true,
         transports: result.transports,
         user: maskEmail((process.env.GMAIL_USER || '').trim()) || null,
         ownerEmail: maskEmail((process.env.OWNER_EMAIL || '').trim()) || null,
+        sendMode: serviceStatus.sendMode,
+        replyToConfigured: serviceStatus.replyToConfigured,
+        activeSuppressions: serviceStatus.activeSuppressions,
+        metrics24h: serviceStatus.metrics24h,
         message: 'Hệ thống Email HTTPS (Port 443) sẵn sàng hoạt động!',
       })
     } else {
@@ -233,6 +245,10 @@ app.get('/api/health/email', requireAdminAuth, async (req, res) => {
         error: result?.error || 'Chưa cấu hình dịch vụ gửi email HTTPS',
         user: maskEmail((process.env.GMAIL_USER || '').trim()) || null,
         ownerEmail: maskEmail((process.env.OWNER_EMAIL || '').trim()) || null,
+        sendMode: serviceStatus.sendMode,
+        replyToConfigured: serviceStatus.replyToConfigured,
+        activeSuppressions: serviceStatus.activeSuppressions,
+        metrics24h: serviceStatus.metrics24h,
       })
     }
   } catch (err) {
@@ -353,6 +369,133 @@ app.post('/api/payment/bank-email', async (req, res) => {
   } catch (err) {
     console.error('Lỗi tiếp nhận email biến động số dư:', err)
     return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Lỗi tiếp nhận giao dịch email') })
+  }
+})
+
+// ── 1d. API Tiếp Nhận Báo Cáo Bounce Nội Bộ (Apps Script Bounce Reader -> Suppression List - WP-3.3) ──
+app.post('/api/internal/email-bounces', internalBounceLimiter, async (req, res) => {
+  try {
+    const rawSize = Buffer.byteLength(req.rawBody || '', 'utf8')
+    if (rawSize > 32 * 1024) {
+      return res.status(413).json({ success: false, code: 'PAYLOAD_TOO_LARGE', error: 'Kích thước payload vượt quá giới hạn cho phép.' })
+    }
+
+    const { verifyBridgeHmac } = await import('./lib/gmailBridgeAuth.js')
+    const auth = verifyBridgeHmac(req)
+    if (!auth.valid) {
+      logSecurityAudit({
+        userId: 'internal_bridge',
+        action: 'EMAIL_BOUNCE_INGEST_UNAUTHORIZED',
+        status: 'BLOCKED',
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+      })
+      return res.status(auth.status || 401).json({ success: false, error: auth.error })
+    }
+
+    const { z } = await import('zod')
+    const bounceSchema = z.object({
+      requestId: z.string().trim().min(6).max(128),
+      nonce: z.string().trim().min(6).max(128).optional(),
+      source: z.string().trim().min(1).max(64).default('apps_script_bounce_reader'),
+      bounces: z
+        .array(
+          z.object({
+            email: z.string().trim().min(3).max(254),
+            reason: z.enum(['HARD_BOUNCE', 'DELAY_TIMEOUT', 'MANUAL']).default('HARD_BOUNCE'),
+            detectedAt: z.string().trim().max(64).optional(),
+            messageId: z.string().trim().min(1).max(128).optional(),
+          })
+        )
+        .max(50, 'Tối đa 50 phần tử bounce mỗi yêu cầu'),
+    })
+
+    const parsed = bounceSchema.safeParse(req.body)
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_PAYLOAD',
+        error: 'Dữ liệu bounce không hợp lệ',
+      })
+    }
+
+    const { requestId, nonce, source, bounces } = parsed.data
+    const { recordBounceRequestIfNew, recordEmailSuppression } = await import('./lib/accountDb.js')
+
+    const replayStatus = recordBounceRequestIfNew({ requestId, nonce: nonce || null, source })
+    if (replayStatus.status === 'duplicate_nonce') {
+      logSecurityAudit({
+        userId: 'internal_bridge',
+        action: 'EMAIL_BOUNCE_REPLAY_BLOCKED',
+        status: 'BLOCKED',
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: { requestId, source },
+      })
+      return res.status(409).json({
+        success: false,
+        code: 'REPLAY_DETECTED',
+        error: 'Yêu cầu đã được xử lý trước đó.',
+      })
+    }
+    if (replayStatus.status === 'duplicate_request_id') {
+      return res.status(200).json({
+        success: true,
+        deduplicated: true,
+        recorded: 0,
+      })
+    }
+
+    let recorded = 0
+    let skipped = 0
+    const maskedEntries = []
+
+    for (const item of bounces) {
+      const candidate = String(item.email || '').trim().toLowerCase()
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(candidate)) {
+        skipped++
+        continue
+      }
+      const saved = recordEmailSuppression({
+        email: candidate,
+        reason: item.reason,
+        source,
+        detectedAt: item.detectedAt || null,
+        note: item.messageId ? `msg:${item.messageId.slice(0, 64)}` : null,
+      })
+      if (saved) {
+        recorded++
+        maskedEntries.push(`${saved.emailMasked}:${saved.reason}`)
+      } else {
+        skipped++
+      }
+    }
+
+    logSecurityAudit({
+      userId: 'internal_bridge',
+      action: 'EMAIL_BOUNCES_INGESTED',
+      status: 'SUCCESS',
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+      details: {
+        requestId,
+        source,
+        total: bounces.length,
+        recorded,
+        skipped,
+        maskedEntries: maskedEntries.slice(0, 10),
+      },
+    })
+
+    return res.status(200).json({
+      success: true,
+      deduplicated: false,
+      recorded,
+      skipped,
+    })
+  } catch (err) {
+    console.error('Lỗi tiếp nhận bounce email nội bộ:', err)
+    return res.status(500).json({ success: false, error: 'Không thể xử lý yêu cầu ghi nhận bounce.' })
   }
 })
 
@@ -1189,7 +1332,7 @@ function withStartupTimeout(promise, ms, label) {
 }
 
 // Kiểm tra toàn vẹn cấu hình môi trường (Fail-Closed đối với khóa bảo mật lõi)
-if (process.env.NODE_ENV !== 'test') {
+if (String(process.env.NODE_ENV || '').trim().toLowerCase() !== 'test' && !isNodeTestRunner) {
   const envResults = validateEnvironment(process.env)
   printEnvReport(envResults)
   if (envResults.hasFatalErrors) {
@@ -1226,7 +1369,7 @@ if (process.env.NO_AUTO_LISTEN !== 'true') {
         }
       })(),
 
-      // 2. Kiểm tra Email Transporter
+      // 2. Kiểm tra Email Transporter & Header Sender (WP-1.4 / WP-4.1)
       (async () => {
         try {
           const emailRes = await verifyTransporter()
@@ -1235,7 +1378,15 @@ if (process.env.NO_AUTO_LISTEN !== 'true') {
             console.log('✅ HTTPS/SMTP Email kết nối thành công.')
           } else {
             emailStatus = { ready: false, error: emailRes?.error || 'Chưa cấu hình dịch vụ gửi email' }
-            console.warn('⚠️ Email chưa sẵn sàng:', emailRes?.error)
+            if (process.env.NODE_ENV === 'production') {
+              console.error('❌ [PRODUCTION EMAIL ERROR] Production không có đường gửi email HTTPS hợp lệ:', emailRes?.error)
+            } else {
+              console.warn('⚠️ Email chưa sẵn sàng:', emailRes?.error)
+            }
+          }
+          if (process.env.NODE_ENV === 'production') {
+            const { validateEmailSenderHeaders } = await import('./lib/httpsEmailService.js')
+            await withStartupTimeout(validateEmailSenderHeaders(), 5000, 'Email sender header MX check').catch(() => {})
           }
         } catch (emailErr) {
           emailStatus = { ready: false, error: safeErrorMessage(emailErr, 'Lỗi kiểm tra dịch vụ email') }

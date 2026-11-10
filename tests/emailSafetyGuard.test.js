@@ -9,7 +9,7 @@ import {
 } from '../server/lib/emailRecipientGuard.js'
 
 /**
- * Hồi quy cho sự cố: `npm test` gửi email OTP THẬT tới otp_register_xxx@quannguyens.com
+ * Hồi quy cho sự cố: `npm test` gửi email OTP THẬT tới otp_register_xxx@<domain-shop>
  * (do .env ghi đè NODE_ENV=test thành development) -> Gmail trả về "Mail Delivery Subsystem".
  */
 describe('Email Safety Guard — chống gửi email thật khi chạy test & chống bounce', () => {
@@ -43,7 +43,7 @@ describe('Email Safety Guard — chống gửi email thật khi chạy test & ch
     }
 
     const result = await sendEmailViaHttps({
-      to: `otp_register_${Date.now()}@quannguyens.com`,
+      to: `otp_register_${Date.now()}@example.invalid`,
       subject: '[QuanNguyenS] Mã xác thực đăng ký tài khoản: 123456',
       html: '<p>123456</p>',
     })
