@@ -490,9 +490,31 @@ describe('Backend Security & Infrastructure Hardening Suite', () => {
       const ciRes = validateEnvironment(ciSmokeEnv)
       assert.equal(ciRes.hasFatalErrors, false, `CI smoke env thiếu biến: ${ciRes.errors.join('; ')}`)
       assert.equal(ciRes.isValid, true)
+
+      // Môi trường Render tối thiểu với 5 khóa bảo mật (chưa cấu hình GAS_WEBHOOK_SECRET / PORT / APP_URL) vẫn phải cho phép boot ở chế độ degraded
+      const minimalRenderEnv = {
+        NODE_ENV: 'production',
+        RENDER: 'true',
+        ADMIN_PASSWORD: TEST_ENV.ADMIN_PASSWORD,
+        ADMIN_SESSION_SECRET: TEST_ENV.ADMIN_SESSION_SECRET,
+        ORDER_TOKEN_SECRET: TEST_ENV.ORDER_TOKEN_SECRET,
+        CUSTOMER_AUTH_SECRET: TEST_ENV.CUSTOMER_AUTH_SECRET,
+        JWT_SECRET: TEST_ENV.JWT_SECRET,
+        AUTH_TEST_MODE: 'false',
+      }
+      const minimalRes = validateEnvironment(minimalRenderEnv)
+      assert.equal(minimalRes.hasFatalErrors, false, `Minimal Render env không nên chặn boot: ${minimalRes.errors.join('; ')}`)
+      assert.ok(minimalRes.warnings.some((w) => w.includes('CHẾ ĐỘ DEGRADED')))
     } finally {
       restoreTestEnv(snapshot)
     }
+  })
+
+  it('[RENDER-DEPLOY] /livez phản hồi 200 OK nhanh không phụ thuộc middleware session', async () => {
+    const res = await fetch(`${baseUrl}/livez`)
+    assert.equal(res.status, 200)
+    const body = await res.json()
+    assert.equal(body.status, 'alive')
   })
 })
 

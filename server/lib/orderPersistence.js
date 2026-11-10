@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { getSupabase } from './supabaseClient.js'
-import { upsertOrderToDb, getOrderFromDb, deleteOrderFromDb } from './accountDb.js'
+import { upsertOrderToDb, getOrderFromDb, deleteOrderFromDb, getDb } from './accountDb.js'
 import { handleOrderDeliveredHook, handleOrderCancelledHook } from './loyalty/orderHook.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -73,14 +73,26 @@ function loadFromDisk() {
     if (fs.existsSync(STORE_FILE)) {
       const data = JSON.parse(fs.readFileSync(STORE_FILE, 'utf-8') || '[]')
       if (Array.isArray(data)) {
+        const validOrders = []
         data.forEach((order) => {
           if (order && order.orderId) {
             ordersMap.set(order.orderId, order)
-            try {
-              upsertOrderToDb(order)
-            } catch {}
+            validOrders.push(order)
           }
         })
+        if (validOrders.length > 0) {
+          try {
+            const db = getDb()
+            const syncAll = db.transaction((orders) => {
+              for (const ord of orders) {
+                try {
+                  upsertOrderToDb(ord, db)
+                } catch {}
+              }
+            })
+            syncAll(validOrders)
+          } catch {}
+        }
       }
       console.log(`📦 [PERSISTENCE] Đã khôi phục ${ordersMap.size} đơn hàng từ disk và đồng bộ vào Database SQLite.`)
     }

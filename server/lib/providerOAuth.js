@@ -1,5 +1,3 @@
-import { google } from 'googleapis'
-
 /**
  * Xác thực Google Identity Services ID Token chính thức qua googleapis
  * Kiểm tra chữ ký số mật mã, audience (Client ID), issuer, expiry và email_verified
@@ -48,7 +46,8 @@ export async function verifyGoogleIdToken(idToken, { clientIdOverride = null } =
     throw new Error('Xác thực Google ID token thất bại: Chỉ chấp nhận Google ID Token hợp lệ (JWT 3 phần). Không chấp nhận Access Token không kiểm audience.')
   }
 
-  // 3. Xác thực Google ID Token chính thức qua googleapis OAuth2Client
+  // 3. Xác thực Google ID Token chính thức qua googleapis OAuth2Client (lazy-load để khởi động server tức thì)
+  const { google } = await import('googleapis')
   const client = new google.auth.OAuth2(clientId)
   try {
     const ticket = await client.verifyIdToken({

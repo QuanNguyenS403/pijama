@@ -71,3 +71,11 @@ services:
         value: https://script.google.com/macros/s/AKfycbxsGaymlrhGlmUdlV49ma1bnYr42Fle3UP-KvPdhLIFBZLQH0Q9JpXfCUaqOvAbkUg5/exec
       - key: GAS_EMAIL_WEBHOOK_URL
         value: https://script.google.com/macros/s/AKfycbxsGaymlrhGlmUdlV49ma1bnYr42Fle3UP-KvPdhLIFBZLQH0Q9JpXfCUaqOvAbkUg5/exec
+      - key: GAS_WEBHOOK_SECRET
+        sync: false
+      - key: GMAIL_BRIDGE_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: VIETTELPOST_WEBHOOK_SECRET
+        sync: false

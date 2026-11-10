@@ -1,3 +1,4 @@
+import './lib/bootstrapEnv.js'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
@@ -24,8 +25,11 @@ import { calculateShippingDistance } from './lib/distanceService.js'
 import { trackOrderUniversal, queryViettelPostTracking } from './lib/viettelPostService.js'
 import { validateEnvironment, printEnvReport, loadEnvironment } from './lib/envCheck.js'
 
-// Nạp toàn bộ biến môi trường từ .env / .env.development / .env.local (trừ lúc chạy automated test để cô lập khỏi secrets thật)
-if (process.env.NODE_ENV !== 'test') {
+// Đảm bảo nạp môi trường nếu module được import trong ngữ cảnh đặc biệt
+const isNodeTestRunner =
+  Boolean(process.env.NODE_TEST_CONTEXT) ||
+  process.execArgv.some((arg) => arg === '--test' || arg.startsWith('--test-'))
+if (process.env.NODE_ENV !== 'test' && !isNodeTestRunner) {
   loadEnvironment()
 }
 
@@ -33,7 +37,14 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const app = express()
-const PORT = process.env.PORT || 3001
+const rawPort = String(process.env.PORT || '').trim()
+const parsedPort = Number.parseInt(rawPort, 10)
+const isRenderEnv = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL || process.env.RENDER_SERVICE_ID)
+const PORT = Number.isFinite(parsedPort) && parsedPort > 0 ? parsedPort : (isRenderEnv ? 10000 : 3001)
+
+if (process.env.NODE_ENV !== 'test') {
+  console.log(`⏳ [BOOT] Khởi tạo QuanNguyenS Server (NODE_ENV=${process.env.NODE_ENV || 'development'}, PORT=${PORT}, RENDER=${isRenderEnv})...`)
+}
 
 export function safeErrorMessage(err, fallback = 'Đã có lỗi xảy ra trên máy chủ.') {
   return process.env.NODE_ENV === 'production' ? fallback : (err?.message || fallback)
@@ -52,7 +63,7 @@ app.set('trust proxy', 1)
 
 // ── P0-5: Cấu hình CORS chặt chẽ ───────────────────────────────
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim())
+  ? process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim().replace(/\/+$/, '')).filter(Boolean)
   : [
       'http://localhost:3000',
       'http://localhost:5173',
@@ -64,8 +75,12 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
       'https://www.quannguyens.vn',
     ]
 
-if (process.env.RENDER_EXTERNAL_URL && !allowedOrigins.includes(process.env.RENDER_EXTERNAL_URL)) {
-  allowedOrigins.push(process.env.RENDER_EXTERNAL_URL)
+const cleanRenderExternalUrl = process.env.RENDER_EXTERNAL_URL
+  ? String(process.env.RENDER_EXTERNAL_URL).trim().replace(/\/+$/, '')
+  : ''
+
+if (cleanRenderExternalUrl && !allowedOrigins.includes(cleanRenderExternalUrl)) {
+  allowedOrigins.push(cleanRenderExternalUrl)
 }
 
 app.use(
@@ -75,7 +90,7 @@ app.use(
       if (!origin) return callback(null, true)
       if (
         allowedOrigins.includes(origin) ||
-        (process.env.RENDER_EXTERNAL_URL && origin === process.env.RENDER_EXTERNAL_URL) ||
+        (cleanRenderExternalUrl && origin === cleanRenderExternalUrl) ||
         process.env.NODE_ENV !== 'production'
       ) {
         return callback(null, true)
@@ -132,35 +147,7 @@ app.use(
   })
 )
 
-app.use(
-  express.json({
-    verify: (req, res, buf) => {
-      req.rawBody = buf ? buf.toString('utf8') : ''
-    },
-  })
-)
-app.use(customerSessionMiddleware)
-
-// ── P0-5: Rate Limiters cho từng nhóm API nhạy cảm ─────────────
-const submitOrderLimiter = createRateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 phút
-  max: 15, // Tối đa 15 đơn hàng / 15 phút / IP
-  message: 'Bạn đã đặt đơn quá nhiều lần liên tiếp. Vui lòng chờ ít phút hoặc gọi hotline 0973 486 218.',
-})
-
-const generateQrLimiter = createRateLimiter({
-  windowMs: 5 * 60 * 1000,
-  max: 30,
-  message: 'Yêu cầu tạo mã QR quá nhanh. Vui lòng thử lại sau giây lát.',
-})
-
-const lookupLimiter = createRateLimiter({
-  windowMs: 60 * 1000,
-  max: 20,
-  message: 'Yêu cầu tra cứu quá thường xuyên. Vui lòng thử lại sau 1 phút.',
-})
-
-// Readiness & Liveness Tracking
+// Readiness & Liveness Tracking (Đăng ký sớm trước session/JSON middleware để Render /livez luôn phản hồi 0ms)
 let isServerReady = false
 let sheetStatus = { ready: false, error: null }
 let emailStatus = { ready: false, error: null }
@@ -198,6 +185,34 @@ app.get('/api/health', (req, res) => {
     email: emailStatus,
     timestamp: new Date().toISOString(),
   })
+})
+
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf ? buf.toString('utf8') : ''
+    },
+  })
+)
+app.use(customerSessionMiddleware)
+
+// ── P0-5: Rate Limiters cho từng nhóm API nhạy cảm ─────────────
+const submitOrderLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 phút
+  max: 15, // Tối đa 15 đơn hàng / 15 phút / IP
+  message: 'Bạn đã đặt đơn quá nhiều lần liên tiếp. Vui lòng chờ ít phút hoặc gọi hotline 0973 486 218.',
+})
+
+const generateQrLimiter = createRateLimiter({
+  windowMs: 5 * 60 * 1000,
+  max: 30,
+  message: 'Yêu cầu tạo mã QR quá nhanh. Vui lòng thử lại sau giây lát.',
+})
+
+const lookupLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: 'Yêu cầu tra cứu quá thường xuyên. Vui lòng thử lại sau 1 phút.',
 })
 
 // ── 0. Chẩn đoán trạng thái kết nối Email HTTPS (Port 443) — Yêu cầu quyền Admin ─
@@ -1160,12 +1175,26 @@ app.use((err, req, res, next) => {
   })
 })
 
-// Kiểm tra toàn vẹn cấu hình môi trường (Fail-Closed)
+function withStartupTimeout(promise, ms, label) {
+  let timer = null
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`${label} timeout sau ${ms}ms`)), ms)
+      if (timer.unref) timer.unref()
+    }),
+  ]).finally(() => {
+    if (timer) clearTimeout(timer)
+  })
+}
+
+// Kiểm tra toàn vẹn cấu hình môi trường (Fail-Closed đối với khóa bảo mật lõi)
 if (process.env.NODE_ENV !== 'test') {
   const envResults = validateEnvironment(process.env)
   printEnvReport(envResults)
   if (envResults.hasFatalErrors) {
-    console.error('🛑 [CRITICAL ERROR] Thiếu biến môi trường bắt buộc ở chế độ Production. Dừng khởi động!')
+    console.error('🛑 [CRITICAL ERROR] Thiếu/sai biến môi trường bắt buộc ở chế độ Production. Dừng khởi động!')
+    console.error('🛑 [CRITICAL DETAILS]:', envResults.errors.join(' | '))
     process.exit(1)
   }
 }
@@ -1176,53 +1205,62 @@ let server = null
 if (process.env.NO_AUTO_LISTEN !== 'true') {
   server = app.listen(PORT, '0.0.0.0', async () => {
     console.log(`\n======================================================`)
-    console.log(`🚀 QuanNguyenS Order Server đang chạy tại: http://localhost:${PORT}`)
+    console.log(`🚀 QuanNguyenS Order Server đang lắng nghe tại: http://0.0.0.0:${PORT} (NODE_ENV=${process.env.NODE_ENV || 'development'})`)
     console.log(`======================================================`)
 
-    // Kiểm tra Sheet (chế độ degraded an toàn nếu thiếu credentials)
-    try {
-      if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_SHEET_ID) {
-        await initializeSheet()
-        sheetStatus = { ready: true, error: null }
-        console.log('✅ Google Sheets kết nối thành công.')
-      } else {
-        sheetStatus = { ready: false, error: 'Chưa cấu hình Google Service Account trong .env (đơn hàng lưu tại local disk storage)' }
-        console.warn('⚠️ [DEGRADED MODE] Google Service Account chưa được cấu hình. Đơn hàng lưu tại local persistence storage.')
-      }
-    } catch (sheetErr) {
-      sheetStatus = { ready: false, error: safeErrorMessage(sheetErr, 'Lỗi kết nối Google Sheets') }
-      console.warn('⚠️ [DEGRADED MODE] Google Sheets init warning:', sheetErr.message)
-    }
-
-    // Kiểm tra Email Transporter
-    try {
-      const emailRes = await verifyTransporter()
-      if (emailRes?.success) {
-        emailStatus = { ready: true, error: null }
-        console.log('✅ HTTPS/SMTP Email kết nối thành công.')
-      } else {
-        emailStatus = { ready: false, error: emailRes?.error || 'Chưa cấu hình dịch vụ gửi email' }
-        console.warn('⚠️ Email chưa sẵn sàng:', emailRes?.error)
-      }
-    } catch (emailErr) {
-      emailStatus = { ready: false, error: safeErrorMessage(emailErr, 'Lỗi kiểm tra dịch vụ email') }
-      console.warn('⚠️ Email warning:', emailErr.message)
-    }
-
-    // ── Đồng bộ người dùng từ Supabase Cloud vào SQLite khi khởi động (DATA-PERSISTENCE) ──
-    try {
-      const { isSupabaseConfigured } = await import('./lib/supabaseClient.js')
-      if (isSupabaseConfigured()) {
-        const { syncUsersFromSupabase } = await import('./lib/accountDb.js')
-        const syncedCount = await syncUsersFromSupabase()
-        if (syncedCount > 0) {
-          console.log(`👥 [SUPABASE SYNC] Đã tự động đồng bộ ${syncedCount} tài khoản người dùng từ Supabase Cloud vào SQLite.`)
+    const initTasks = [
+      // 1. Kiểm tra Google Sheets (chế độ degraded an toàn nếu thiếu credentials hoặc quá thời gian)
+      (async () => {
+        try {
+          if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_SHEET_ID) {
+            await withStartupTimeout(initializeSheet(), 10000, 'Google Sheets init')
+            sheetStatus = { ready: true, error: null }
+            console.log('✅ Google Sheets kết nối thành công.')
+          } else {
+            sheetStatus = { ready: false, error: 'Chưa cấu hình Google Service Account trong .env (đơn hàng lưu tại local disk storage)' }
+            console.warn('⚠️ [DEGRADED MODE] Google Service Account chưa được cấu hình. Đơn hàng lưu tại local persistence storage.')
+          }
+        } catch (sheetErr) {
+          sheetStatus = { ready: false, error: safeErrorMessage(sheetErr, 'Lỗi kết nối Google Sheets') }
+          console.warn('⚠️ [DEGRADED MODE] Google Sheets init warning:', sheetErr.message)
         }
-      }
-    } catch (syncErr) {
-      console.warn('⚠️ [SUPABASE SYNC] Không thể đồng bộ tài khoản người dùng từ Supabase:', syncErr.message)
-    }
+      })(),
 
+      // 2. Kiểm tra Email Transporter
+      (async () => {
+        try {
+          const emailRes = await verifyTransporter()
+          if (emailRes?.success) {
+            emailStatus = { ready: true, error: null }
+            console.log('✅ HTTPS/SMTP Email kết nối thành công.')
+          } else {
+            emailStatus = { ready: false, error: emailRes?.error || 'Chưa cấu hình dịch vụ gửi email' }
+            console.warn('⚠️ Email chưa sẵn sàng:', emailRes?.error)
+          }
+        } catch (emailErr) {
+          emailStatus = { ready: false, error: safeErrorMessage(emailErr, 'Lỗi kiểm tra dịch vụ email') }
+          console.warn('⚠️ Email warning:', emailErr.message)
+        }
+      })(),
+
+      // 3. Đồng bộ người dùng từ Supabase Cloud vào SQLite khi khởi động (DATA-PERSISTENCE)
+      (async () => {
+        try {
+          const { isSupabaseConfigured } = await import('./lib/supabaseClient.js')
+          if (isSupabaseConfigured()) {
+            const { syncUsersFromSupabase } = await import('./lib/accountDb.js')
+            const syncedCount = await withStartupTimeout(syncUsersFromSupabase(), 10000, 'Supabase user sync')
+            if (syncedCount > 0) {
+              console.log(`👥 [SUPABASE SYNC] Đã tự động đồng bộ ${syncedCount} tài khoản người dùng từ Supabase Cloud vào SQLite.`)
+            }
+          }
+        } catch (syncErr) {
+          console.warn('⚠️ [SUPABASE SYNC] Không thể đồng bộ tài khoản người dùng từ Supabase:', syncErr.message)
+        }
+      })(),
+    ]
+
+    await Promise.allSettled(initTasks)
     isServerReady = true
 
     // ── Khởi động Background Job quét đơn hàng quá hạn thanh toán VietQR (WP4) ──
@@ -1288,6 +1326,11 @@ if (process.env.NO_AUTO_LISTEN !== 'true') {
       if (cleanupTimer.unref) cleanupTimer.unref()
       server.cleanupTimer = cleanupTimer
     }).catch(() => {})
+  })
+
+  server.on('error', (err) => {
+    console.error('❌ [SERVER LISTEN ERROR]: Không thể mở cổng HTTP', PORT, err)
+    process.exit(1)
   })
 }
 

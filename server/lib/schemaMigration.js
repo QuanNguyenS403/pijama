@@ -108,6 +108,13 @@ export function runEnterpriseMigrations(database) {
           resolved_at TEXT,
           resolved_by TEXT,
           resolution_note TEXT,
+          fingerprint TEXT,
+          message_id TEXT,
+          bank_time TEXT,
+          bank_ref TEXT,
+          account_last4 TEXT,
+          sender TEXT,
+          trust TEXT,
           created_at TEXT NOT NULL
         );
       `)

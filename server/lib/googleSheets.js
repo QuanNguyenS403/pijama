@@ -1,19 +1,29 @@
-import { google } from 'googleapis'
 import { orderPersistence } from './orderPersistence.js'
 
+let cachedGoogle = null
+async function getGoogle() {
+  if (!cachedGoogle) {
+    const mod = await import('googleapis')
+    cachedGoogle = mod.google
+  }
+  return cachedGoogle
+}
+
 // ── Auth với Google Service Account ─────────────────────
-const getAuth = () => {
+const getSheetsClient = async () => {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
     throw new Error('Thiếu cấu hình GOOGLE_SERVICE_ACCOUNT_EMAIL hoặc GOOGLE_PRIVATE_KEY trong .env')
   }
 
-  return new google.auth.GoogleAuth({
+  const google = await getGoogle()
+  const auth = new google.auth.GoogleAuth({
     credentials: {
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
     },
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   })
+  return google.sheets({ version: 'v4', auth })
 }
 
 // ── Tên các sheet tabs trong file Google Sheets ─────────────────
@@ -143,8 +153,7 @@ export const ensureSheetsExist = async (sheets, spreadsheetId) => {
 // ── Khởi tạo sheet (tự động tạo tabs và headers nếu chưa có) ───────────────────
 export const initializeSheet = async () => {
   try {
-    const auth = getAuth()
-    const sheets = google.sheets({ version: 'v4', auth })
+    const sheets = await getSheetsClient()
     const spreadsheetId = process.env.GOOGLE_SHEET_ID
 
     if (!spreadsheetId) {
@@ -209,8 +218,7 @@ export const initializeSheet = async () => {
 
 // ── Hàm chính: Ghi đơn hàng vào sheet ─────────────────
 export const appendOrderToSheet = async (order) => {
-  const auth = getAuth()
-  const sheets = google.sheets({ version: 'v4', auth })
+  const sheets = await getSheetsClient()
   const spreadsheetId = process.env.GOOGLE_SHEET_ID
 
   if (!spreadsheetId) {
@@ -361,8 +369,7 @@ export const fetchAllOrdersFromSheetCached = async ({ forceRefresh = false } = {
 
   inFlightSheetFetchPromise = (async () => {
     try {
-      const auth = getAuth()
-      const sheets = google.sheets({ version: 'v4', auth })
+      const sheets = await getSheetsClient()
       const spreadsheetId = process.env.GOOGLE_SHEET_ID
       if (!spreadsheetId) return []
 
@@ -484,8 +491,7 @@ export const updateOrderStatusInSheet = async (orderId, newStatus, note = '', tr
       return
     }
 
-    const auth = getAuth()
-    const sheets = google.sheets({ version: 'v4', auth })
+    const sheets = await getSheetsClient()
     const spreadsheetId = process.env.GOOGLE_SHEET_ID
     if (!spreadsheetId) return
 
@@ -565,8 +571,7 @@ export const updateOrderStatusInSheet = async (orderId, newStatus, note = '', tr
 
 // ── Đồng bộ danh mục chi tiết sản phẩm Pyjama lên Google Sheet ─────────────────
 export const syncProductCatalogToSheet = async () => {
-  const auth = getAuth()
-  const sheets = google.sheets({ version: 'v4', auth })
+  const sheets = await getSheetsClient()
   const spreadsheetId = process.env.GOOGLE_SHEET_ID
   if (!spreadsheetId) throw new Error('Thiếu GOOGLE_SHEET_ID trong .env')
 
@@ -625,8 +630,7 @@ export const syncProductCatalogToSheet = async () => {
 
 // ── Đồng bộ toàn diện: Cả danh mục Pyjama, Đơn Hàng và Chi Tiết SP ─────────────
 export const syncAllToGoogleSheets = async () => {
-  const auth = getAuth()
-  const sheets = google.sheets({ version: 'v4', auth })
+  const sheets = await getSheetsClient()
   const spreadsheetId = process.env.GOOGLE_SHEET_ID
   if (!spreadsheetId) throw new Error('Thiếu GOOGLE_SHEET_ID trong .env')
 

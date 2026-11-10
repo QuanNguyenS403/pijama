@@ -61,16 +61,19 @@ Tại trang cấu hình Web Service trên Render, cuộn xuống mục **Environ
 |---|---|---|
 | `NODE_VERSION` | `22.14.0` | **Bắt buộc**: Render sẽ dùng Node.js 22 |
 | `NODE_ENV` | `production` | **Bắt buộc**: Kích hoạt chế độ Production |
-| `GAS_EMAIL_WEBHOOK_URL` | `https://script.google.com/macros/s/.../exec` | **Quan trọng**: Webhook Google Apps Script gửi mail cổng HTTPS 443 |
-| `GAS_WEBHOOK_SECRET` | `QNS_WEBHOOK_SECRET_2026` | Khóa bí mật khớp với file Code.gs trong Google Apps Script |
+| `ADMIN_PASSWORD` | `[Mật khẩu quản trị của bạn]` | **Bắt buộc** (tối thiểu 8 ký tự): Mật khẩu vào `/admin/orders` |
+| `ADMIN_SESSION_SECRET` | `[Chuỗi ngẫu nhiên >= 32 ký tự]` | **Bắt buộc**: Khóa ký session Admin (tách riêng khỏi `JWT_SECRET`) |
+| `ORDER_TOKEN_SECRET` | `[Chuỗi ngẫu nhiên >= 32 ký tự]` | **Bắt buộc**: Khóa ký `trackingToken` đơn hàng |
+| `CUSTOMER_AUTH_SECRET` | `[Chuỗi ngẫu nhiên >= 32 ký tự]` | **Bắt buộc**: Khóa bảo mật phiên & link hủy đăng ký khách hàng |
+| `JWT_SECRET` | `[Chuỗi ngẫu nhiên >= 32 ký tự]` | **Bắt buộc**: Khóa ký JWT Access Token |
+| `GAS_EMAIL_WEBHOOK_URL` | `https://script.google.com/macros/s/.../exec` | URL Web App Apps Script gửi email OTP qua HTTPS (Port 443) |
+| `GAS_WEBHOOK_SECRET` | `[Khóa bí mật khớp QNS_SEND_SECRET]` | Khóa xác thực gửi email qua Apps Script |
+| `GMAIL_BRIDGE_SECRET` | `[Chuỗi ngẫu nhiên >= 32 ký tự]` | Khóa ký HMAC đồng bộ biến động số dư ngân hàng (`QNS_SECRET`) |
 | `RESEND_API_KEY` | `[Mã API Resend của bạn]` | (Tùy chọn) Dự phòng Dual-Transport qua Resend HTTP API |
+| `RESEND_FROM_EMAIL` | `QuanNguyenS <support@quannguyens.com>` | (Tùy chọn) Địa chỉ gửi Resend với domain đã xác minh SPF/DKIM |
+| `EMAIL_GAS_TIMEOUT_MS` | `25000` | Thời gian timeout kết nối Apps Script (mặc định 25 giây) |
 | `GMAIL_USER` | `quannguyens403@gmail.com` | Email người gửi mặc định |
 | `OWNER_EMAIL` | `quannguyens403@gmail.com` | Email nhận thông báo khi có khách đặt hàng |
-| `ADMIN_PASSWORD` | `[Mật khẩu quản trị của bạn]` | Mật khẩu vào trang quản lý đơn /admin/orders |
-| `ADMIN_SESSION_SECRET` | `quannguyens_admin_secret_session_key_2026_super_secure` | Chuỗi bảo mật phiên Admin (tối thiểu 32 ký tự) |
-| `ORDER_TOKEN_SECRET` | `quannguyens_order_token_secret_key_2026_super_secure` | Chuỗi bảo mật mã đơn khách hàng |
-| `CUSTOMER_AUTH_SECRET` | `quannguyens_customer_auth_secret_key_2026_super_secure` | Chuỗi bảo mật tài khoản khách |
-| `JWT_SECRET` | `quannguyens_jwt_super_secret_key_2026_production` | Chuỗi bí mật JWT |
 | `BANK_CODE` | `VCB` | Mã ngân hàng nhận chuyển khoản (Vietcombank) |
 | `BANK_ACCOUNT_NUMBER` | `1050773506` | Số tài khoản nhận tiền |
 | `BANK_ACCOUNT_NAME` | `NGUYEN DUC QUAN` | Tên chủ tài khoản |
@@ -81,21 +84,18 @@ Tại trang cấu hình Web Service trên Render, cuộn xuống mục **Environ
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | `[Email service account]` | Google Cloud Service Account |
 | `GOOGLE_PRIVATE_KEY` | `-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n` | Private Key của Google Service Account |
 | `GOOGLE_CLIENT_ID` | `745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com` | Google One-Tap Đăng nhập |
-| `VITE_GOOGLE_CLIENT_ID` | `745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com` | Client ID cho Frontend |
-| `TURNSTILE_SECRET_KEY` | `CHANGE_ME_CLOUDFLARE_TURNSTILE_SECRET` | Chống bot spam đặt hàng Cloudflare |
-| `VITE_TURNSTILE_SITE_KEY` | `CHANGE_ME_CLOUDFLARE_TURNSTILE_SITE_KEY` | Site key hiển thị CAPTCHA vô hình |
-| `GAS_EMAIL_WEBHOOK_URL` | `https://script.google.com/macros/s/CHANGE_ME_NEW_DEPLOYMENT_ID/exec` | URL Web App Apps Script MỚI gửi email OTP qua HTTPS (Port 443) |
-| `GAS_WEBHOOK_SECRET` | `CHANGE_ME_RANDOM_SECRET_KEY` | Khóa bí mật xác thực gửi email cho Apps Script (`QNS_SEND_SECRET`) |
-| `GMAIL_BRIDGE_SECRET` | `CHANGE_ME_HMAC_SECRET_FOR_BANK_SYNC` | Khóa bí mật ký số HMAC bảo mật cho đồng bộ biến động số dư ngân hàng (`QNS_SECRET`) |
-| `RESEND_API_KEY` | `re_CHANGE_ME_OPTIONAL_RESEND_KEY` | (Tùy chọn) API Key nhà cung cấp Resend dự phòng |
-| `RESEND_FROM_EMAIL` | `QuanNguyenS <support@quannguyens.com>` | (Tùy chọn) Địa chỉ gửi Resend với domain đã xác minh SPF/DKIM |
-| `EMAIL_GAS_TIMEOUT_MS` | `25000` | Thời gian timeout kết nối Apps Script (mặc định 25 giây cho cold-start) |
+| `VITE_GOOGLE_CLIENT_ID` | `745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com` | Client ID cho Frontend (phải trùng `GOOGLE_CLIENT_ID`) |
+| `TURNSTILE_SECRET_KEY` | `[Cloudflare Turnstile Secret]` | (Tùy chọn) Chống bot spam đặt hàng Cloudflare |
+| `VITE_TURNSTILE_SITE_KEY` | `[Cloudflare Turnstile Site Key]` | (Tùy chọn) Site key hiển thị CAPTCHA |
 | `BANK_EMAIL_ALLOWED_SENDERS` | `vietcombank@vietcombank.com.vn,ibanking@vietcombank.com.vn` | Danh sách email ngân hàng Vietcombank hợp lệ |
 | `BANK_EMAIL_AUTO_SETTLE` | `true` | Tự động xác nhận đơn hàng khi tiền về khớp 100% |
 | `SEPAY_WEBHOOK_API_KEY` | `[Mã API SePay của bạn]` | Key xác thực biến động số dư SePay (tùy chọn dự phòng) |
 
-> 💡 **Mẹo:** Bạn có thể mở file `.env.local` trên máy tính của bạn, copy chính xác các giá trị bạn đang dùng và dán vào Render.
-> Dự án đã được tối ưu: Biến `APP_URL` và `ALLOWED_ORIGINS` sẽ **tự động nhận diện** tên miền Render cấp (`https://qns-clothes.onrender.com`), bạn không cần phải tự cấu hình lại!
+> ⚠️ **Cảnh báo quan trọng khi copy từ `.env.local`:**
+> - **KHÔNG** dán các biến local vào Render: `PORT=3001`, `NODE_ENV=development`, `APP_URL=http://localhost:3000`, `VITE_BACKEND_URL=http://localhost:3001`, `REDIS_URL=redis://localhost:6379`, hoặc `AUTH_TEST_MODE=...`.
+> - Hãy để Render tự cấp `PORT` (`10000`) và `RENDER_EXTERNAL_URL` — server sẽ tự động nhận diện `APP_URL` và `ALLOWED_ORIGINS`.
+> - Đảm bảo **Start Command** trên Render là `npm start` (KHÔNG dùng `npm run preview` hay `npm run dev`), và **Health Check Path** là `/livez`.
+> - Nếu deploy bị lỗi `Port scan timeout reached`, hãy mở tab **Logs** (Runtime Logs) trên Render Dashboard để xem dòng `🛑 [CRITICAL ERROR]` hoặc `🛑 [CRITICAL DETAILS]` báo chính xác biến nào đang thiếu/sai.
 
 4. Nhấn **Create Web Service**. Render sẽ bắt đầu clone code từ GitHub, cài đặt thư viện và build web tự động trong khoảng 2-3 phút.
 

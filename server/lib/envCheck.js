@@ -56,11 +56,13 @@ export function loadEnvironment(rootDir = process.cwd()) {
 
   // Tự động nhận diện môi trường Render.com
   if (process.env.RENDER_EXTERNAL_URL) {
+    const cleanRenderUrl = String(process.env.RENDER_EXTERNAL_URL).trim().replace(/\/+$/, '')
+    process.env.RENDER_EXTERNAL_URL = cleanRenderUrl
     if (!process.env.APP_URL) {
-      process.env.APP_URL = process.env.RENDER_EXTERNAL_URL
+      process.env.APP_URL = cleanRenderUrl
     }
     if (!process.env.ALLOWED_ORIGINS) {
-      process.env.ALLOWED_ORIGINS = `${process.env.RENDER_EXTERNAL_URL},https://quannguyens.com,https://www.quannguyens.com`
+      process.env.ALLOWED_ORIGINS = `${cleanRenderUrl},https://quannguyens.com,https://www.quannguyens.com`
     }
   }
 
@@ -96,11 +98,13 @@ export function validateEnvironment(env = process.env) {
   // Tạo bản sao env an toàn để tự động suy diễn trên Render nếu cần (không làm bẩn process.env thật khi test)
   const effectiveEnv = { ...env }
   if (effectiveEnv.RENDER_EXTERNAL_URL) {
+    const cleanRenderUrl = String(effectiveEnv.RENDER_EXTERNAL_URL).trim().replace(/\/+$/, '')
+    effectiveEnv.RENDER_EXTERNAL_URL = cleanRenderUrl
     if (!effectiveEnv.APP_URL) {
-      effectiveEnv.APP_URL = effectiveEnv.RENDER_EXTERNAL_URL
+      effectiveEnv.APP_URL = cleanRenderUrl
     }
     if (!effectiveEnv.ALLOWED_ORIGINS) {
-      effectiveEnv.ALLOWED_ORIGINS = `${effectiveEnv.RENDER_EXTERNAL_URL},https://quannguyens.com,https://www.quannguyens.com`
+      effectiveEnv.ALLOWED_ORIGINS = `${cleanRenderUrl},https://quannguyens.com,https://www.quannguyens.com`
     }
   }
 
@@ -152,33 +156,36 @@ export function validateEnvironment(env = process.env) {
 
   // ---------------------------------------------------------------------------
   // Nhóm A: Bắt buộc cốt lõi (Required Core)
+  // Chỉ những biến an ninh / định danh cốt lõi mới chặn khởi động (fail-closed)
   // ---------------------------------------------------------------------------
   const requiredSpecs = [
-    { name: 'NODE_ENV', isSecret: false },
-    { name: 'PORT', isSecret: false },
-    { name: 'APP_URL', isSecret: false },
-    { name: 'ALLOWED_ORIGINS', isSecret: false },
-    { name: 'ADMIN_PASSWORD', isSecret: true, validator: (v) => v.length >= 8 || 'Mật khẩu admin quá ngắn (< 8 ký tự)' },
-    { name: 'ADMIN_SESSION_SECRET', isSecret: true, validator: (v) => v.length >= 32 || 'Secret phiên admin quá ngắn (< 32 ký tự)' },
-    { name: 'ORDER_TOKEN_SECRET', isSecret: true, validator: (v) => v.length >= 32 || 'Secret token đơn quá ngắn (< 32 ký tự)' },
-    { name: 'CUSTOMER_AUTH_SECRET', isSecret: true, validator: (v) => v.length >= 32 || 'Secret auth khách quá ngắn (< 32 ký tự)' },
-    { name: 'JWT_SECRET', isSecret: true, validator: (v) => v.length >= 32 || 'JWT Secret quá ngắn (< 32 ký tự)' },
-    { name: 'GMAIL_USER', isSecret: false, validator: (v) => v.includes('@') || 'Gmail user không hợp lệ' },
-    { name: 'OWNER_EMAIL', isSecret: false },
-    { name: 'BANK_CODE', isSecret: false },
-    { name: 'BANK_ACCOUNT_NUMBER', isSecret: false },
-    { name: 'BANK_ACCOUNT_NAME', isSecret: false },
-    { name: 'SHOP_NAME', isSecret: false },
-    { name: 'SHOP_PHONE', isSecret: false },
-    { name: 'SHOP_ADDRESS', isSecret: false },
+    { name: 'NODE_ENV', isSecret: false, fatalInProd: true },
+    { name: 'PORT', isSecret: false, fatalInProd: false },
+    { name: 'APP_URL', isSecret: false, fatalInProd: false },
+    { name: 'ALLOWED_ORIGINS', isSecret: false, fatalInProd: false },
+    { name: 'ADMIN_PASSWORD', isSecret: true, fatalInProd: true, validator: (v) => v.length >= 8 || 'Mật khẩu admin quá ngắn (< 8 ký tự)' },
+    { name: 'ADMIN_SESSION_SECRET', isSecret: true, fatalInProd: true, validator: (v) => v.length >= 32 || 'Secret phiên admin quá ngắn (< 32 ký tự)' },
+    { name: 'ORDER_TOKEN_SECRET', isSecret: true, fatalInProd: true, validator: (v) => v.length >= 32 || 'Secret token đơn quá ngắn (< 32 ký tự)' },
+    { name: 'CUSTOMER_AUTH_SECRET', isSecret: true, fatalInProd: true, validator: (v) => v.length >= 32 || 'Secret auth khách quá ngắn (< 32 ký tự)' },
+    { name: 'JWT_SECRET', isSecret: true, fatalInProd: true, validator: (v) => v.length >= 32 || 'JWT Secret quá ngắn (< 32 ký tự)' },
+    { name: 'GMAIL_USER', isSecret: false, fatalInProd: false, validator: (v) => v.includes('@') || 'Gmail user không hợp lệ' },
+    { name: 'OWNER_EMAIL', isSecret: false, fatalInProd: false },
+    { name: 'BANK_CODE', isSecret: false, fatalInProd: false },
+    { name: 'BANK_ACCOUNT_NUMBER', isSecret: false, fatalInProd: false },
+    { name: 'BANK_ACCOUNT_NAME', isSecret: false, fatalInProd: false },
+    { name: 'SHOP_NAME', isSecret: false, fatalInProd: false },
+    { name: 'SHOP_PHONE', isSecret: false, fatalInProd: false },
+    { name: 'SHOP_ADDRESS', isSecret: false, fatalInProd: false },
   ]
 
   for (const spec of requiredSpecs) {
     const res = checkVar(spec.name, spec.isSecret, spec.validator)
     results.required.push(res)
     if (res.status !== 'OK') {
-      if (isProd) {
+      if (isProd && spec.fatalInProd) {
         results.errors.push(`[BẮT BUỘC PROD] ${res.name}: ${res.status}${res.message ? ` (${res.message})` : ''}`)
+      } else if (isProd) {
+        results.warnings.push(`[CẤU HÌNH MẶC ĐỊNH / DEGRADED] ${res.name}: ${res.status}${res.message ? ` (${res.message})` : ''}`)
       } else {
         results.warnings.push(`[THIẾU DEV] ${res.name}: ${res.status}${res.message ? ` (${res.message})` : ''}`)
       }
@@ -200,9 +207,11 @@ export function validateEnvironment(env = process.env) {
   results.featureGated.push(gmailPassCheck)
 
   if (!hasGasBridge && !hasResend && !hasSmtp) {
-    const msg = 'Thiếu cấu hình gửi email: Cần ít nhất (GAS_EMAIL_WEBHOOK_URL + GAS_WEBHOOK_SECRET) hoặc RESEND_API_KEY hoặc GMAIL_APP_PASSWORD'
-    if (isProd) {
+    const msg = 'Chưa cấu hình đầy đủ gửi email: Cần (GAS_EMAIL_WEBHOOK_URL + GAS_WEBHOOK_SECRET) hoặc RESEND_API_KEY hoặc GMAIL_APP_PASSWORD'
+    if (effectiveEnv.REQUIRE_EMAIL_DELIVERY === 'true' && isProd) {
       results.errors.push(`[BẮT BUỘC PROD] ${msg}`)
+    } else if (isProd) {
+      results.warnings.push(`[CHẾ ĐỘ DEGRADED] ${msg} — Web vẫn khởi chạy nhưng chức năng gửi email tạm ngưng cho đến khi bổ sung khóa`)
     } else {
       results.warnings.push(`[THIẾU DEV] ${msg}`)
     }
@@ -283,15 +292,22 @@ export function validateEnvironment(env = process.env) {
   const forbiddenVars = ['AUTH_TEST_MODE', 'ORDER_STORE_FILE', 'TX_STORE_FILE', 'ACCOUNT_DB_FILE']
   for (const name of forbiddenVars) {
     const val = effectiveEnv[name]
-    const exists = val !== undefined && val !== null && String(val).trim() !== ''
-    if (exists) {
-      const item = { name, status: isProd ? 'CẤM' : 'ĐANG BẬT', value: exists }
-      results.forbidden.push(item)
-      if (isProd) {
-        results.errors.push(`[NGUY HIỂM PROD] Biến ${name} đang được bật ở môi trường Production! Hãy gỡ bỏ ngay.`)
-      } else {
-        results.warnings.push(`[CẢNH BÁO DEV] Biến ghi đè ${name} đang bật (${val})`)
-      }
+    const trimmed = val !== undefined && val !== null ? String(val).trim() : ''
+    const exists = trimmed !== ''
+    if (!exists) continue
+
+    // Cho phép AUTH_TEST_MODE=false/0 (cảnh báo dọn sạch), chỉ chặn cứng khi bật true/1
+    if (name === 'AUTH_TEST_MODE' && !/^(true|1|yes|on)$/i.test(trimmed)) {
+      results.warnings.push(`[DỌN DẸP ENV] Biến AUTH_TEST_MODE="${trimmed}" đang tắt nhưng nên xóa hẳn khỏi Production env.`)
+      continue
+    }
+
+    const item = { name, status: isProd ? 'CẤM' : 'ĐANG BẬT', value: exists }
+    results.forbidden.push(item)
+    if (isProd) {
+      results.errors.push(`[NGUY HIỂM PROD] Biến ${name} đang được bật ở môi trường Production! Hãy gỡ bỏ ngay.`)
+    } else {
+      results.warnings.push(`[CẢNH BÁO DEV] Biến ghi đè ${name} đang bật (${val})`)
     }
   }
 
@@ -377,7 +393,12 @@ export function printEnvReport(results) {
   if (results.hasFatalErrors) {
     console.log('⛔ KẾT LUẬN: KHÔNG ĐỦ ĐIỀU KIỆN KHỞI CHẠY PRODUCTION (FAIL-CLOSED).')
   } else if (results.warnings.length > 0 || results.errors.length > 0) {
-    console.log('⚠️ KẾT LUẬN: ĐỦ ĐIỀU KIỆN CHẠY DEV (CÁC TÍNH NĂNG THIẾU KHÓA SẼ TỰ CHUYỂN SANG CHẾ ĐỘ DEGRADED).')
+    const isProdEnv = String(results.environment || '').toLowerCase().includes('production')
+    console.log(
+      isProdEnv
+        ? '⚠️ KẾT LUẬN: ĐỦ ĐIỀU KIỆN CHẠY PRODUCTION (CÁC TÍNH NĂNG THIẾU KHÓA CHẠY Ở CHẾ ĐỘ DEGRADED AN TOÀN).'
+        : '⚠️ KẾT LUẬN: ĐỦ ĐIỀU KIỆN CHẠY DEV (CÁC TÍNH NĂNG THIẾU KHÓA SẼ TỰ CHUYỂN SANG CHẾ ĐỘ DEGRADED).'
+    )
   } else {
     console.log('✅ KẾT LUẬN: TOÀN BỘ CẤU HÌNH HỢP LỆ VÀ SẴN SÀNG HOẠT ĐỘNG 100%!')
   }
