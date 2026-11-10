@@ -695,6 +695,20 @@ export function registerLoyaltyEndpoints(app) {
         entry: result.entry,
       })
     } catch (err) {
+      console.error('❌ [ADJUST POINTS ERROR]', err)
+      const isProd = process.env.NODE_ENV === 'production'
+      const isExpectedValidation =
+        err?.message &&
+        (err.message.includes('Số điểm điều chỉnh') ||
+          err.message.includes('lý do điều chỉnh') ||
+          err.message.includes('tối đa ±') ||
+          err.message.includes('số dư hiện tại'))
+      if (!isExpectedValidation) {
+        return res.status(500).json({
+          success: false,
+          error: isProd ? 'Không thể điều chỉnh điểm lúc này' : err.message,
+        })
+      }
       return res.status(400).json({ success: false, error: err.message })
     }
   })
@@ -797,7 +811,12 @@ export function registerLoyaltyEndpoints(app) {
       const result = runAllDailyLoyaltyJobs(new Date())
       return res.status(200).json({ success: true, result })
     } catch (err) {
-      return res.status(500).json({ success: false, error: err.message })
+      console.error('❌ [LOYALTY JOBS ERROR]', err)
+      const isProd = process.env.NODE_ENV === 'production'
+      return res.status(500).json({
+        success: false,
+        error: isProd ? 'Không thể chạy tiến trình Loyalty lúc này' : err.message,
+      })
     }
   })
 }

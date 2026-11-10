@@ -95,7 +95,7 @@ export function recordEmailOutbox({ id, purpose = 'TRANSACTIONAL', recipient, st
  */
 export async function sendEmailViaHttps(options) {
   try {
-    if (!process.env.__ENV_LOADED && !options?._skipEnvLoad) {
+    if (process.env.NODE_ENV !== 'test' && !process.env.__ENV_LOADED && !options?._skipEnvLoad) {
       loadEnvironment()
       process.env.__ENV_LOADED = 'true'
     }
@@ -401,7 +401,9 @@ export async function sendEmailViaHttps(options) {
  */
 export function getEmailServiceStatus() {
   try {
-    loadEnvironment()
+    if (process.env.NODE_ENV !== 'test') {
+      loadEnvironment()
+    }
   } catch (_) {}
 
   const gasUrl = (

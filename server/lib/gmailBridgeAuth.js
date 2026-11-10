@@ -47,6 +47,27 @@ export function safeTimingCompare(aHex, bHex) {
   }
 }
 
+const seenSignatures = new Map()
+
+export function clearBridgeReplayCache() {
+  seenSignatures.clear()
+}
+
+function recordSignatureIfNotReplay(sigHex, timestampSec = 0) {
+  const cleanSig = String(sigHex || '').trim().toLowerCase()
+  const now = Date.now()
+  for (const [key, exp] of seenSignatures.entries()) {
+    if (exp <= now) seenSignatures.delete(key)
+  }
+  if (seenSignatures.has(cleanSig)) {
+    return false
+  }
+  // Giữ Cache cho tới hết cửa sổ chấp nhận cả trong trường hợp forward clock skew (+300s)
+  const reqExpiryMs = Math.max(now, Number(timestampSec || 0) * 1000) + 310 * 1000
+  seenSignatures.set(cleanSig, reqExpiryMs)
+  return true
+}
+
 /**
  * Xác thực request từ Apps Script gửi về /api/payment/bank-email
  * @param {import('express').Request} req
@@ -98,25 +119,42 @@ export function verifyBridgeHmac(req) {
   // 3. Lấy body thô (giữ nguyên từng byte)
   const rawBody = req.rawBody || (typeof req.body === 'string' ? req.body : JSON.stringify(req.body || {}))
 
+  let matched = false
+  let usingPreviousSecret = false
+
   // 4. Kiểm tra chữ ký với primary secret
   if (primarySecret) {
     const expectedSig = computeBridgeSignature(rawBody, primarySecret, ts)
     if (safeTimingCompare(sigHeader, expectedSig)) {
-      return { valid: true }
+      matched = true
     }
   }
 
   // 5. Hỗ trợ xoay khóa: kiểm tra với previous secret (nếu có)
-  if (prevSecret) {
+  if (!matched && prevSecret) {
     const prevExpectedSig = computeBridgeSignature(rawBody, prevSecret, ts)
     if (safeTimingCompare(sigHeader, prevExpectedSig)) {
-      return { valid: true, usingPreviousSecret: true }
+      matched = true
+      usingPreviousSecret = true
     }
   }
 
-  return {
-    valid: false,
-    status: 401,
-    error: 'Chữ ký HMAC không khớp (Unauthorized request)',
+  if (!matched) {
+    return {
+      valid: false,
+      status: 401,
+      error: 'Chữ ký HMAC không khớp (Unauthorized request)',
+    }
   }
+
+  // 6. Chống Replay Attack trong cửa sổ 300 giây
+  if (!recordSignatureIfNotReplay(sigHeader, ts)) {
+    return {
+      valid: false,
+      status: 401,
+      error: 'Chữ ký yêu cầu đã được sử dụng (Replay attack detected)',
+    }
+  }
+
+  return usingPreviousSecret ? { valid: true, usingPreviousSecret: true } : { valid: true }
 }

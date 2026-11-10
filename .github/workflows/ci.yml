@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [22.x]
+        node-version: ['22.14.0']
 
     steps:
       - name: Checkout Code
@@ -38,8 +38,33 @@ jobs:
       - name: Rebuild Native Addons (better-sqlite3)
         run: npm rebuild better-sqlite3
 
-      - name: Run Automated Test Suite (Security, Payment, Stock, Integrity)
-        run: npm test
+      - name: Run Automated Test Suite & Verify Minimum Coverage
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test | tee /tmp/test-output.txt
+          node -e '
+            const fs = require("fs");
+            const out = fs.readFileSync("/tmp/test-output.txt", "utf8");
+            const testMatches = [...out.matchAll(/^[ℹ#]\s*tests\s+(\d+)/gm)];
+            const failMatches = [...out.matchAll(/^[ℹ#]\s*fail\s+(\d+)/gm)];
+            const total = Number(testMatches[testMatches.length - 1]?.[1] || 0);
+            const fail = Number(failMatches[failMatches.length - 1]?.[1] ?? -1);
+            console.log("CI test floor check -> total:", total, "fail:", fail);
+            if (total < 195) {
+              console.error("Expected >= 195 executed tests (check glob/discovery)!");
+              process.exit(1);
+            }
+            if (fail !== 0) {
+              console.error("Test suite had failures:", fail);
+              process.exit(1);
+            }
+          '
+
+      - name: Audit Production Dependencies
+        run: |
+          npm audit --omit=dev --audit-level=critical
+          npm audit --omit=dev || true
 
       - name: Build Production Frontend Artifacts
         run: npm run build
@@ -52,6 +77,37 @@ jobs:
       - name: Verify Production Dependencies Only
         run: npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 
-      - name: Smoke Test Production Startup
+      - name: Verify Fail-Closed On Missing Production Secrets
+        run: |
+          if env -u CI NODE_ENV=production npm start; then
+            echo "ERROR: Server started in production without required secrets!"
+            exit 1
+          else
+            echo "OK: Server correctly refused to start without required production secrets"
+          fi
+
+      - name: Smoke Test Production Startup With Required Env
+        env:
+          CI: ''
+          PORT: '3999'
+          APP_URL: 'https://ci-smoke.example.invalid'
+          ALLOWED_ORIGINS: 'https://ci-smoke.example.invalid'
+          ADMIN_PASSWORD: 'ci-smoke-dummy-admin-password-32ch'
+          ADMIN_SESSION_SECRET: 'ci-smoke-dummy-admin-session-secret-32c'
+          ORDER_TOKEN_SECRET: 'ci-smoke-dummy-order-token-secret-32ch'
+          CUSTOMER_AUTH_SECRET: 'ci-smoke-dummy-customer-auth-secret-32ch'
+          JWT_SECRET: 'ci-smoke-dummy-jwt-secret-key-length-32ch'
+          GMAIL_USER: 'ci-smoke@example.invalid'
+          OWNER_EMAIL: 'owner-smoke@example.invalid'
+          GAS_EMAIL_WEBHOOK_URL: 'https://script.google.com/macros/s/ci-smoke/exec'
+          GAS_WEBHOOK_SECRET: 'ci-smoke-dummy-gas-webhook-secret-32ch'
+          GMAIL_BRIDGE_SECRET: 'ci-smoke-dummy-gmail-bridge-secret-32c'
+          SEPAY_WEBHOOK_API_KEY: 'ci-smoke-dummy-sepay-webhook-key-32chars'
+          BANK_CODE: 'VCB'
+          BANK_ACCOUNT_NUMBER: '1050773506'
+          BANK_ACCOUNT_NAME: 'NGUYEN DUC QUAN'
+          SHOP_NAME: 'QuanNguyenS'
+          SHOP_PHONE: '0981753082'
+          SHOP_ADDRESS: 'Amber Riverside, 622 Minh Khai, Vinh Tuy, Ha Noi'
         run: |
           timeout 5s npm start || if [ $? -eq 124 ]; then echo "Server started and ran for 5s cleanly"; else exit $?; fi

@@ -98,6 +98,15 @@ function maskPhone(phone) {
   return `${phone.slice(0, 3)}***${phone.slice(-3)}`
 }
 
+function safeAuthError(err, fallback) {
+  if (process.env.NODE_ENV === 'production') return fallback
+  return err?.message ? `${fallback}: ${err.message}` : fallback
+}
+
+function safeRawError(err, fallback) {
+  return process.env.NODE_ENV === 'production' ? fallback : (err?.message || fallback)
+}
+
 // Helper: Delay giữa các lượt gửi broadcast
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -162,7 +171,7 @@ export function registerAuthEndpoints(app) {
         console.warn('⛔ [GOOGLE AUTH REJECTED] Xác thực Google token thất bại:', tokenErr.message)
         return res.status(401).json({
           success: false,
-          error: 'Xác thực Google ID token không thành công: ' + tokenErr.message,
+          error: safeAuthError(tokenErr, 'Xác thực Google ID token không thành công'),
         })
       }
 
@@ -319,7 +328,7 @@ export function registerAuthEndpoints(app) {
       console.error('Google Auth error:', err)
       return res.status(500).json({
         success: false,
-        error: 'Lỗi máy chủ trong quá trình xác thực Google: ' + err.message,
+        error: safeAuthError(err, 'Lỗi máy chủ trong quá trình xác thực Google'),
       })
     }
   })
@@ -351,7 +360,7 @@ export function registerAuthEndpoints(app) {
         console.warn('⛔ [FACEBOOK AUTH REJECTED] Xác thực Facebook token thất bại:', tokenErr.message)
         return res.status(401).json({
           success: false,
-          error: 'Xác thực Facebook token không thành công: ' + tokenErr.message,
+          error: safeAuthError(tokenErr, 'Xác thực Facebook token không thành công'),
         })
       }
 
@@ -449,7 +458,10 @@ export function registerAuthEndpoints(app) {
       })
     } catch (err) {
       console.error('Facebook Auth error:', err)
-      return res.status(500).json({ success: false, error: 'Lỗi xác thực Facebook: ' + err.message })
+      return res.status(500).json({
+        success: false,
+        error: safeAuthError(err, 'Lỗi xác thực Facebook'),
+      })
     }
   })
 
@@ -604,7 +616,7 @@ export function registerAuthEndpoints(app) {
       })
     } catch (err) {
       console.error('Verify OTP error:', err)
-      return res.status(500).json({ success: false, error: err.message || 'Lỗi xác minh mã' })
+      return res.status(500).json({ success: false, error: safeRawError(err, 'Lỗi xác minh mã') })
     }
   })
 
@@ -673,12 +685,12 @@ export function registerAuthEndpoints(app) {
           target: maskEmail(cleanTarget),
           cooldownSeconds: 60,
           message: `Đã gửi lại mã xác minh mới tới ${maskEmail(cleanTarget)}`,
-          ...(process.env.AUTH_TEST_MODE === 'true' && { mockCode: code }),
+          ...(process.env.AUTH_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production' && { mockCode: code }),
         })
       }
     } catch (err) {
       console.error('Resend OTP error:', err)
-      return res.status(500).json({ success: false, error: err.message || 'Lỗi gửi lại mã' })
+      return res.status(500).json({ success: false, error: safeRawError(err, 'Lỗi gửi lại mã') })
     }
   })
 
@@ -783,7 +795,7 @@ export function registerAuthEndpoints(app) {
       return res.json(result)
     } catch (err) {
       console.error('Validate voucher error:', err)
-      return res.status(500).json({ isValid: false, error: err.message })
+      return res.status(500).json({ isValid: false, error: safeRawError(err, 'Lỗi kiểm tra voucher') })
     }
   })
 
@@ -797,7 +809,7 @@ export function registerAuthEndpoints(app) {
       })
     } catch (err) {
       console.error('Get my voucher error:', err)
-      return res.status(500).json({ success: false, error: err.message })
+      return res.status(500).json({ success: false, error: safeRawError(err, 'Không thể tải voucher') })
     }
   })
 
@@ -874,7 +886,7 @@ export function registerAuthEndpoints(app) {
       })
     } catch (err) {
       console.error('Update preferences error:', err)
-      return res.status(500).json({ success: false, error: err.message })
+      return res.status(500).json({ success: false, error: safeRawError(err, 'Không thể cập nhật tùy chọn email') })
     }
   })
 
@@ -918,11 +930,11 @@ export function registerAuthEndpoints(app) {
         target: maskEmail(cleanEmail),
         cooldownSeconds: 60,
         message: `Mã xác minh đã được gửi về ${maskEmail(cleanEmail)}`,
-        ...(process.env.AUTH_TEST_MODE === 'true' && { mockCode: code }),
+        ...(process.env.AUTH_TEST_MODE === 'true' && process.env.NODE_ENV !== 'production' && { mockCode: code }),
       })
     } catch (err) {
       console.error('Link email send OTP error:', err)
-      return res.status(500).json({ success: false, error: err.message || 'Lỗi gửi mã xác minh email' })
+      return res.status(500).json({ success: false, error: safeRawError(err, 'Lỗi gửi mã xác minh email') })
     }
   })
 
@@ -961,7 +973,7 @@ export function registerAuthEndpoints(app) {
       })
     } catch (err) {
       console.error('Link email verify error:', err)
-      return res.status(500).json({ success: false, error: err.message })
+      return res.status(500).json({ success: false, error: safeRawError(err, 'Lỗi xác minh liên kết email') })
     }
   })
 
@@ -1007,7 +1019,8 @@ export function registerAuthEndpoints(app) {
       })
     } catch (err) {
       console.error('Admin broadcast stats error:', err)
-      return res.status(500).json({ success: false, error: err.message })
+      const errMsg = process.env.NODE_ENV === 'production' ? 'Lỗi máy chủ khi thống kê broadcast' : err.message
+      return res.status(500).json({ success: false, error: errMsg })
     }
   })
 
@@ -1027,6 +1040,14 @@ export function registerAuthEndpoints(app) {
       const audience = getMarketingAudience()
 
       if (audience.length === 0) {
+        logSecurityAudit({
+          userId: 'admin',
+          action: 'ADMIN_BROADCAST_SEND',
+          status: 'SUCCESS',
+          ip: req.ip,
+          userAgent: req.headers['user-agent'],
+          details: { subject: subject.trim(), broadcastType, recipientsCount: 0 },
+        })
         return res.json({
           success: true,
           count: 0,
@@ -1064,6 +1085,21 @@ export function registerAuthEndpoints(app) {
         content: contentHtml.trim(),
         recipients_count: sentCount,
         broadcast_type: broadcastType.trim(),
+      })
+
+      logSecurityAudit({
+        userId: 'admin',
+        action: 'ADMIN_BROADCAST_SEND',
+        status: 'SUCCESS',
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: {
+          subject: subject.trim(),
+          broadcastType: broadcastType.trim(),
+          total: audience.length,
+          sentCount,
+          failedCount,
+        },
       })
 
       return res.json({

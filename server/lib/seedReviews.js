@@ -608,19 +608,28 @@ export const INITIAL_SAMPLE_REVIEWS = [
 ]
 
 export function seedInitialReviews(database) {
-  const currentCount = database.prepare("SELECT COUNT(1) AS cnt FROM product_reviews WHERE source = 'imported'").get()?.cnt || 0
-  const firstReviewText = database.prepare("SELECT body FROM product_reviews WHERE id = 'rv-1'").get()?.body || ''
+  // P0 / R2: Mặc định TẮT ở production trừ khi chủ shop chủ động bật qua REVIEW_SEED_ENABLED=true
+  const isProd = process.env.NODE_ENV === 'production'
+  const isSeedExplicitlyEnabled = process.env.REVIEW_SEED_ENABLED === 'true'
+  if (isProd && !isSeedExplicitlyEnabled) {
+    return
+  }
+
+  const currentCount = database.prepare("SELECT COUNT(1) AS cnt FROM product_reviews WHERE source = 'sample'").get()?.cnt || 0
+  const firstReviewText = database.prepare("SELECT body FROM product_reviews WHERE id = 'rv-1' AND source = 'sample'").get()?.body || ''
   const firstPhotoUrl = database.prepare("SELECT photo_url FROM review_photos WHERE review_id = 'rv-1'").get()?.photo_url || ''
 
-  // Nếu đã nạp đủ 54 reviews và ảnh/nội dung khớp hoàn toàn với bản cập nhật mới nhất thì không cần nạp lại
+  // Nếu đã nạp đủ 54 reviews mẫu và ảnh/nội dung khớp hoàn toàn thì không cần nạp lại
   if (currentCount === INITIAL_SAMPLE_REVIEWS.length && firstReviewText === INITIAL_SAMPLE_REVIEWS[0].text && firstPhotoUrl === INITIAL_SAMPLE_REVIEWS[0].photo) {
     return
   }
 
-  // Đồng bộ lại 54 reviews mẫu chuẩn hóa vào database trong transaction an toàn
+  // Đồng bộ lại 54 reviews mẫu vào database trong transaction an toàn
+  // TUYỆT ĐỐI CHỈ xóa source='sample' hoặc các id mẫu cũ ('rv-1'..'rv-54'), không bao giờ xóa reviews thật do script nhập
   database.transaction(() => {
-    database.prepare("DELETE FROM review_photos WHERE review_id IN (SELECT id FROM product_reviews WHERE source = 'imported')").run()
-    database.prepare("DELETE FROM product_reviews WHERE source = 'imported'").run()
+    const sampleIdList = INITIAL_SAMPLE_REVIEWS.map((r) => `'${r.id}'`).join(',')
+    database.prepare(`DELETE FROM review_photos WHERE review_id IN (SELECT id FROM product_reviews WHERE source = 'sample' OR id IN (${sampleIdList}))`).run()
+    database.prepare(`DELETE FROM product_reviews WHERE source = 'sample' OR (source = 'imported' AND id IN (${sampleIdList}))`).run()
 
     const insertReviewStmt = database.prepare(`
       INSERT INTO product_reviews (
@@ -629,7 +638,7 @@ export function seedInitialReviews(database) {
         shop_reply, shop_replied_at, created_at, moderated_at
       ) VALUES (
         ?, ?, NULL, ?, ?, ?, ?,
-        'approved', NULL, 1, 'imported', NULL,
+        'approved', NULL, 0, 'sample', NULL,
         NULL, NULL, ?, ?
       )
     `)

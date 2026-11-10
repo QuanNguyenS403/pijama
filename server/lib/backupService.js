@@ -6,28 +6,33 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const DATA_DIR = path.resolve(__dirname, '../data')
-const BACKUP_DIR = path.resolve(DATA_DIR, 'backups')
+const getBackupDir = () =>
+  process.env.BACKUP_DIR ? path.resolve(process.env.BACKUP_DIR) : path.resolve(DATA_DIR, 'backups')
 const MAX_BACKUPS_RETAINED = 14
 
 export function ensureBackupDir() {
-  if (!fs.existsSync(BACKUP_DIR)) {
-    fs.mkdirSync(BACKUP_DIR, { recursive: true })
+  const backupDir = getBackupDir()
+  if (!fs.existsSync(backupDir)) {
+    fs.mkdirSync(backupDir, { recursive: true })
   }
+  return backupDir
 }
 
 /**
- * Tự động tạo bản sao lưu snapshot của orders_store.json và accounts.db
+ * Tự động tạo bản sao lưu snapshot của orders_store.json, processed_tx.json và accounts.db
  */
 export async function performDatabaseBackup() {
-  ensureBackupDir()
+  const backupDir = ensureBackupDir()
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-  const results = { ordersStore: false, accountsDb: false, timestamp }
+  const results = { ordersStore: false, processedTx: false, accountsDb: false, timestamp, backupDir }
 
   // 1. Sao lưu orders_store.json
-  const ordersFile = path.resolve(DATA_DIR, 'orders_store.json')
+  const ordersFile = process.env.ORDER_STORE_FILE
+    ? path.resolve(process.env.ORDER_STORE_FILE)
+    : path.resolve(DATA_DIR, 'orders_store.json')
   if (fs.existsSync(ordersFile)) {
     try {
-      const backupPath = path.resolve(BACKUP_DIR, `orders_store_${timestamp}.json`)
+      const backupPath = path.resolve(backupDir, `orders_store_${timestamp}.json`)
       fs.copyFileSync(ordersFile, backupPath)
       results.ordersStore = true
       console.log(`💾 [BACKUP] Đã sao lưu orders_store.json -> ${path.basename(backupPath)}`)
@@ -36,12 +41,27 @@ export async function performDatabaseBackup() {
     }
   }
 
+  // 1b. Sao lưu processed_tx.json (chống replay giao dịch ngân hàng sau khôi phục)
+  const txFile = process.env.TX_STORE_FILE
+    ? path.resolve(process.env.TX_STORE_FILE)
+    : path.resolve(DATA_DIR, 'processed_tx.json')
+  if (fs.existsSync(txFile)) {
+    try {
+      const txBackupPath = path.resolve(backupDir, `processed_tx_${timestamp}.json`)
+      fs.copyFileSync(txFile, txBackupPath)
+      results.processedTx = true
+      console.log(`💾 [BACKUP] Đã sao lưu processed_tx.json -> ${path.basename(txBackupPath)}`)
+    } catch (err) {
+      console.warn('⚠️ Lỗi sao lưu processed_tx.json:', err.message)
+    }
+  }
+
   // 2. Sao lưu accounts.db (SQLite native online backup)
   try {
     const { getDb } = await import('./accountDb.js')
     const db = getDb()
     if (db && typeof db.backup === 'function') {
-      const backupPath = path.resolve(BACKUP_DIR, `accounts_${timestamp}.db`)
+      const backupPath = path.resolve(backupDir, `accounts_${timestamp}.db`)
       await db.backup(backupPath)
       results.accountsDb = true
       console.log(`💾 [BACKUP] Đã sao lưu accounts.db qua SQLite API -> ${path.basename(backupPath)}`)
@@ -51,16 +71,17 @@ export async function performDatabaseBackup() {
   }
 
   // 3. Dọn dẹp bản sao lưu cũ, chỉ giữ lại số lượng hợp lý
-  pruneOldBackups()
+  pruneOldBackups(backupDir)
 
   return results
 }
 
-function pruneOldBackups() {
+function pruneOldBackups(backupDir = getBackupDir()) {
   try {
-    const files = fs.readdirSync(BACKUP_DIR)
+    const files = fs.readdirSync(backupDir)
     const backupGroups = {
       orders: files.filter((f) => f.startsWith('orders_store_')).sort(),
+      tx: files.filter((f) => f.startsWith('processed_tx_')).sort(),
       accounts: files.filter((f) => f.startsWith('accounts_')).sort(),
     }
 
@@ -69,7 +90,7 @@ function pruneOldBackups() {
         const toDelete = group.slice(0, group.length - MAX_BACKUPS_RETAINED)
         toDelete.forEach((file) => {
           try {
-            fs.unlinkSync(path.join(BACKUP_DIR, file))
+            fs.unlinkSync(path.join(backupDir, file))
           } catch {}
         })
       }

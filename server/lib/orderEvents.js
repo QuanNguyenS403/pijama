@@ -2,13 +2,17 @@
 // Quản lý kết nối Server-Sent Events (SSE) và broadcast trạng thái đơn hàng bảo mật thời gian thực
 import { verifyAdminSessionToken } from './adminAuth.js'
 import { verifyTrackingToken } from './orderTokenService.js'
+import { orderPersistence } from './orderPersistence.js'
 
 // Lưu các client kèm theo scope truy cập
-// clientObj: { res, orderId, isAdmin }
+// clientObj: { res, orderId, isAdmin, ip }
 const sseClients = new Set()
+const ipConnectionCount = new Map()
+const MAX_SSE_GLOBAL = 100
+const MAX_SSE_PER_IP = 5
 
 /**
- * Đăng ký client SSE mới với kiểm tra scope bảo mật (SEC-003)
+ * Đăng ký client SSE mới với kiểm tra scope bảo mật (SEC-003 & P2-API-5)
  * @param {import('express').Request} req
  * @param {import('express').Response} res 
  */
@@ -24,28 +28,56 @@ export function addSseClient(req, res) {
     res.setHeader('Access-Control-Allow-Credentials', 'true')
   }
 
-  // Xác thực quyền truy cập channel
-  const token = req.query.token || req.headers['x-admin-token'] || ''
-  const orderId = req.query.orderId || null
-  const phone = req.query.phone || ''
+  const clientIp = req.ip || req.socket?.remoteAddress || 'unknown'
+  const currentIpCount = ipConnectionCount.get(clientIp) || 0
 
+  if (sseClients.size >= MAX_SSE_GLOBAL) {
+    return res.status(503).json({ success: false, error: 'Máy chủ tạm thời bận, số lượng kết nối SSE đã đạt giới hạn tối đa.' })
+  }
+  if (currentIpCount >= MAX_SSE_PER_IP) {
+    return res.status(429).json({ success: false, error: 'Quá nhiều kết nối SSE đồng thời từ địa chỉ IP của bạn.' })
+  }
+
+  // Xác thực quyền truy cập channel
+  const authHeader = req.headers['authorization'] || ''
+  const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : ''
+  const adminHeaderToken = req.headers['x-admin-token'] ? String(req.headers['x-admin-token']).trim() : ''
+  const queryToken = req.query.token ? String(req.query.token).trim() : ''
+
+  // Admin token ưu tiên từ header để tránh lộ trong access log
+  const adminCandidate = adminHeaderToken || bearerToken || (process.env.NODE_ENV !== 'production' ? queryToken : '')
   let isAdmin = false
-  if (token) {
-    const adminCheck = verifyAdminSessionToken(String(token))
+  if (adminCandidate) {
+    const adminCheck = verifyAdminSessionToken(adminCandidate)
     if (adminCheck.isValid) {
       isAdmin = true
     }
   }
 
-  // Nếu không phải admin và có orderId, kiểm tra tracking token hoặc cho phép lắng nghe đúng orderId đó
-  let scopedOrderId = orderId
-  if (!isAdmin && !scopedOrderId) {
-    return res.status(400).json({ success: false, error: 'Yêu cầu cung cấp orderId để lắng nghe trạng thái đơn hàng.' })
-  }
-  if (!isAdmin && orderId && token) {
-    const isOwner = verifyTrackingToken(orderId, phone, String(token))
-    if (!isOwner && process.env.NODE_ENV === 'production') {
-      return res.status(401).json({ success: false, error: 'Unauthorized SSE connection' })
+  const orderId = req.query.orderId ? String(req.query.orderId).trim() : null
+  const phone = req.query.phone ? String(req.query.phone).trim() : ''
+  const clientToken = queryToken || bearerToken
+
+  // Khách hàng thường bắt buộc phải có orderId và tracking token hợp lệ
+  if (!isAdmin) {
+    if (!orderId) {
+      return res.status(400).json({ success: false, error: 'Yêu cầu cung cấp orderId để lắng nghe trạng thái đơn hàng.' })
+    }
+    if (!clientToken) {
+      return res.status(401).json({ success: false, error: 'Unauthorized: Yêu cầu tracking token để kết nối SSE.', code: 'TOKEN_REQUIRED' })
+    }
+    let isOwner = false
+    try {
+      const existingOrder = orderPersistence.get(orderId)
+      const orderPhone = existingOrder?.customer?.phone || existingOrder?.customerPhone || ''
+      isOwner = existingOrder
+        ? verifyTrackingToken(orderId, orderPhone, clientToken)
+        : verifyTrackingToken(orderId, phone, clientToken)
+    } catch (err) {
+      return res.status(500).json({ success: false, error: 'Hệ thống xác thực đơn hàng chưa sẵn sàng.' })
+    }
+    if (!isOwner) {
+      return res.status(401).json({ success: false, error: 'Unauthorized SSE connection: Tracking token không hợp lệ.', code: 'INVALID_TOKEN' })
     }
   }
 
@@ -61,9 +93,10 @@ export function addSseClient(req, res) {
   res.write(`retry: 3000\n`)
   res.write(`event: connected\ndata: ${JSON.stringify({ timestamp: new Date().toISOString(), status: 'connected' })}\n\n`)
 
-  const clientInfo = { res, orderId: scopedOrderId, isAdmin }
+  const clientInfo = { res, orderId: isAdmin ? null : orderId, isAdmin, ip: clientIp }
   sseClients.add(clientInfo)
-  console.log(`🔌 [SSE] Client kết nối (Scope: ${isAdmin ? 'ALL_ADMIN' : scopedOrderId || 'PUBLIC_CHANNEL'}). Tổng clients: ${sseClients.size}`)
+  ipConnectionCount.set(clientIp, currentIpCount + 1)
+  console.log(`🔌 [SSE] Client kết nối (Scope: ${isAdmin ? 'ALL_ADMIN' : orderId}). Tổng clients: ${sseClients.size}`)
 
   // Keep-alive ping mỗi 25s chống timeout proxy/gateway
   const pingInterval = setInterval(() => {
@@ -78,6 +111,12 @@ export function addSseClient(req, res) {
   res.on('close', () => {
     clearInterval(pingInterval)
     sseClients.delete(clientInfo)
+    const count = ipConnectionCount.get(clientIp) || 1
+    if (count <= 1) {
+      ipConnectionCount.delete(clientIp)
+    } else {
+      ipConnectionCount.set(clientIp, count - 1)
+    }
     console.log(`🔌 [SSE] Client đã ngắt kết nối. Còn lại: ${sseClients.size}`)
   })
 }

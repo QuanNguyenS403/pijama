@@ -130,9 +130,11 @@ export async function handlePaymentWebhook(req) {
     }
     const secretStr = String(expectedSecret).trim()
 
+    const bufClient = Buffer.from(clientSecret, 'utf8')
+    const bufExpected = Buffer.from(secretStr, 'utf8')
     let isSecretValid = false
-    if (clientSecret.length === secretStr.length && secretStr.length > 0) {
-      isSecretValid = crypto.timingSafeEqual(Buffer.from(clientSecret), Buffer.from(secretStr))
+    if (bufClient.length === bufExpected.length && bufExpected.length > 0) {
+      isSecretValid = crypto.timingSafeEqual(bufClient, bufExpected)
     }
 
     if (!isSecretValid) {
@@ -399,7 +401,11 @@ export async function handlePaymentWebhook(req) {
     }
   } catch (error) {
     console.error('❌ Lỗi xử lý Webhook:', error)
-    return { status: 500, data: { success: false, error: error.message } }
+    const isProd = process.env.NODE_ENV === 'production'
+    return {
+      status: 500,
+      data: { success: false, error: isProd ? 'Đã có lỗi xảy ra khi xử lý webhook thanh toán.' : error.message },
+    }
   }
 }
 

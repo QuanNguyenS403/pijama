@@ -1,6 +1,7 @@
 // server/lib/adminAuth.js
 import crypto from 'crypto'
 import { createRateLimiter } from './rateLimiter.js'
+import { revokeAdminTokenDb, isTokenRevokedDb } from './accountDb.js'
 
 /**
  * Rate limiter cho route Admin Login:
@@ -13,12 +14,16 @@ export const adminLoginLimiter = createRateLimiter({
 })
 
 const revokedTokens = new Set()
-const isProd = process.env.NODE_ENV === 'production'
-const ADMIN_SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || process.env.JWT_SECRET || (isProd ? null : 'qns-admin-session-secret-key-2026')
-if (!ADMIN_SESSION_SECRET && isProd) {
-  console.error('⛔ [CRITICAL SECURITY] ADMIN_SESSION_SECRET chưa được cấu hình trong môi trường production!')
-}
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000 // 8 giờ
+
+function getAdminSessionSecret() {
+  const isProd = process.env.NODE_ENV === 'production'
+  const secret = process.env.ADMIN_SESSION_SECRET || (isProd ? null : (process.env.JWT_SECRET || 'qns-admin-session-secret-key-2026'))
+  if (!secret) {
+    throw new Error('⛔ [CRITICAL SECURITY] ADMIN_SESSION_SECRET chưa được cấu hình trong môi trường production!')
+  }
+  return secret
+}
 
 /**
  * Tạo signed admin session token
@@ -28,7 +33,8 @@ export function generateAdminSessionToken() {
   const expiresAt = issuedAt + SESSION_TTL_MS
   const nonce = crypto.randomBytes(16).toString('hex')
   const payload = `${issuedAt}:${expiresAt}:${nonce}`
-  const signature = crypto.createHmac('sha256', ADMIN_SESSION_SECRET).update(payload).digest('hex')
+  const secret = getAdminSessionSecret()
+  const signature = crypto.createHmac('sha256', secret).update(payload).digest('hex')
   return `${payload}.${signature}`
 }
 
@@ -37,15 +43,24 @@ export function generateAdminSessionToken() {
  */
 export function verifyAdminSessionToken(token) {
   if (!token || typeof token !== 'string') return { isValid: false, error: 'Thiếu admin session token' }
-  if (revokedTokens.has(token)) return { isValid: false, error: 'Phiên làm việc đã bị thu hồi' }
+  if (revokedTokens.has(token) || isTokenRevokedDb(token)) return { isValid: false, error: 'Phiên làm việc đã bị thu hồi' }
 
   const parts = token.split('.')
   if (parts.length !== 2) return { isValid: false, error: 'Định dạng token không hợp lệ' }
 
   const [payload, signature] = parts
-  const expectedSignature = crypto.createHmac('sha256', ADMIN_SESSION_SECRET).update(payload).digest('hex')
+  let secret = ''
+  try {
+    secret = getAdminSessionSecret()
+  } catch (err) {
+    return { isValid: false, error: err.message }
+  }
 
-  if (expectedSignature.length !== signature.length || !crypto.timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(signature))) {
+  const expectedSignature = crypto.createHmac('sha256', secret).update(payload).digest('hex')
+  const bufExpected = Buffer.from(expectedSignature, 'utf8')
+  const bufActual = Buffer.from(String(signature), 'utf8')
+
+  if (bufExpected.length !== bufActual.length || !crypto.timingSafeEqual(bufExpected, bufActual)) {
     return { isValid: false, error: 'Chữ ký token quản trị viên không hợp lệ' }
   }
 
@@ -87,12 +102,22 @@ export function requireAdminAuth(req, res, next) {
 }
 
 /**
- * Thu hồi session
+ * Thu hồi session (lưu cả in-memory Set và SQLite DB để sống sót qua restarts)
  */
 export function revokeAdminToken(token) {
-  if (token) {
-    revokedTokens.add(token)
-  }
+  if (!token) return
+  revokedTokens.add(token)
+  try {
+    const parts = token.split('.')
+    let expiresAt = Date.now() + SESSION_TTL_MS
+    if (parts.length === 2) {
+      const payloadParts = parts[0].split(':')
+      if (payloadParts.length >= 2 && !isNaN(Number(payloadParts[1]))) {
+        expiresAt = Number(payloadParts[1])
+      }
+    }
+    revokeAdminTokenDb(token, expiresAt)
+  } catch (_) {}
 }
 
 /**

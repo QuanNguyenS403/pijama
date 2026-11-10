@@ -10,7 +10,9 @@ const APP_URL = process.env.APP_URL || process.env.CLIENT_ORIGIN || 'http://loca
 
 function getSenderEmail() {
   try {
-    loadEnvironment()
+    if (process.env.NODE_ENV !== 'test') {
+      loadEnvironment()
+    }
   } catch (_) {}
   return (process.env.GMAIL_USER || 'quannguyens403@gmail.com').trim()
 }

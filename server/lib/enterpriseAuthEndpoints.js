@@ -158,7 +158,8 @@ export function registerEnterpriseAuthEndpoints(app) {
       })
     } catch (err) {
       console.error('Lỗi handleDirectRegisterTestMode:', err)
-      return res.status(500).json({ success: false, error: err.message })
+      const isProd = process.env.NODE_ENV === 'production'
+      return res.status(500).json({ success: false, error: isProd ? 'Lỗi máy chủ khi đăng ký tài khoản.' : err.message })
     }
   }
 

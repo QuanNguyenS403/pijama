@@ -1,9 +1,12 @@
 import crypto from 'crypto'
 
-const isProd = process.env.NODE_ENV === 'production'
-const HMAC_SECRET = process.env.CUSTOMER_AUTH_SECRET || process.env.PAYMENT_WEBHOOK_SECRET || (isProd ? null : 'qns-customer-auth-internal-secret-salt-2026')
-if (!HMAC_SECRET && isProd) {
-  console.error('⛔ [CRITICAL SECURITY] CUSTOMER_AUTH_SECRET chưa được cấu hình trong môi trường production!')
+function getCustomerHmacSecret() {
+  const isProd = process.env.NODE_ENV === 'production'
+  const secret = process.env.CUSTOMER_AUTH_SECRET || (isProd ? null : (process.env.PAYMENT_WEBHOOK_SECRET || 'qns-customer-auth-internal-secret-salt-2026'))
+  if (!secret) {
+    throw new Error('⛔ [CRITICAL SECURITY] CUSTOMER_AUTH_SECRET chưa được cấu hình trong môi trường production!')
+  }
+  return secret
 }
 
 /**
@@ -71,7 +74,8 @@ export function generateUnsubscribeToken(email, accountId) {
   const cleanEmail = String(email || '').trim().toLowerCase()
   const payload = `${accountId || 'guest'}:${cleanEmail}:${Date.now()}`
   const encodedPayload = Buffer.from(payload, 'utf8').toString('base64url')
-  const signature = crypto.createHmac('sha256', HMAC_SECRET).update(encodedPayload).digest('base64url')
+  const secret = getCustomerHmacSecret()
+  const signature = crypto.createHmac('sha256', secret).update(encodedPayload).digest('base64url')
   return `${encodedPayload}.${signature}`
 }
 
@@ -88,7 +92,14 @@ export function verifyUnsubscribeToken(token) {
     return { isValid: false, error: 'Token hủy đăng ký không hợp lệ' }
   }
 
-  const expectedSignature = crypto.createHmac('sha256', HMAC_SECRET).update(encodedPayload).digest('base64url')
+  let secret = ''
+  try {
+    secret = getCustomerHmacSecret()
+  } catch (err) {
+    return { isValid: false, error: err.message }
+  }
+
+  const expectedSignature = crypto.createHmac('sha256', secret).update(encodedPayload).digest('base64url')
   const bufExpected = Buffer.from(expectedSignature, 'utf8')
   const bufActual = Buffer.from(signature, 'utf8')
 

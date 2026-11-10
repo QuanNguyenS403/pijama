@@ -52,8 +52,10 @@ test('ProviderManager: Tự động chuyển về Smart Local Advisor trả lờ
   // Tạm xóa key
   const prevGemini = process.env.GEMINI_API_KEY
   const prevGroq = process.env.GROQ_API_KEY
+  const prevOpenRouter = process.env.OPENROUTER_API_KEY
   process.env.GEMINI_API_KEY = ''
   process.env.GROQ_API_KEY = ''
+  process.env.OPENROUTER_API_KEY = ''
 
   try {
     const res = await generateChatResponse({
@@ -69,5 +71,6 @@ test('ProviderManager: Tự động chuyển về Smart Local Advisor trả lờ
   } finally {
     process.env.GEMINI_API_KEY = prevGemini
     process.env.GROQ_API_KEY = prevGroq
+    process.env.OPENROUTER_API_KEY = prevOpenRouter
   }
 })

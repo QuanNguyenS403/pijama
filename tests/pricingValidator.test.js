@@ -11,23 +11,23 @@ test('PricingValidator: Tính đúng giá đơn hàng COD dưới 500k (có phí
       {
         productId: 'the-classic-set',
         productName: 'THE DAYBREAK SET',
-        unitPrice: 390000,
+        unitPrice: 490000,
         quantity: 1,
-        totalPrice: 390000,
+        totalPrice: 490000,
       },
     ],
-    subtotal: 390000,
+    subtotal: 490000,
     shippingFee: 30000,
     discount: 0,
-    total: 420000,
+    total: 520000,
   }
 
   const result = validateOrderPricing(order)
   assert.equal(result.isValid, true)
-  assert.equal(result.summary.subtotal, 390000)
+  assert.equal(result.summary.subtotal, 490000)
   assert.equal(result.summary.shippingFee, 30000)
   assert.equal(result.summary.discount, 0)
-  assert.equal(result.summary.total, 420000)
+  assert.equal(result.summary.total, 520000)
 })
 
 test('PricingValidator: Tính đúng đơn hàng Bank Transfer trên 500k (Freeship + Giảm 10%)', () => {
@@ -92,15 +92,15 @@ test('PricingValidator: Từ chối đơn hàng khi client cố tình sửa tổ
       {
         productId: 'the-classic-set',
         productName: 'THE DAYBREAK SET',
-        unitPrice: 390000,
+        unitPrice: 490000,
         quantity: 1,
-        totalPrice: 390000,
+        totalPrice: 490000,
       },
     ],
-    subtotal: 390000,
+    subtotal: 490000,
     shippingFee: 30000,
     discount: 0,
-    total: 50000, // Giá đúng là 420.000đ nhưng client gửi 50.000đ
+    total: 50000, // Giá đúng là 520.000đ nhưng client gửi 50.000đ
   }
 
   const result = validateOrderPricing(tamperedOrder)

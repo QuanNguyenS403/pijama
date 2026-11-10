@@ -48,7 +48,9 @@ if (!fs.existsSync(dbPath)) {
 }
 
 const db = new Database(dbPath, { readonly: !isApply })
-db.pragma('journal_mode = WAL')
+if (isApply) {
+  db.pragma('journal_mode = WAL')
+}
 db.pragma('busy_timeout = 5000')
 
 console.log('='.repeat(70))
@@ -68,7 +70,8 @@ try {
 
   console.log(`\n📋 1. Tài khoản có trong 'users' nhưng thiếu trong 'accounts': ${missingInAccounts.length} tài khoản`)
   missingInAccounts.forEach((u, i) => {
-    console.log(`   ${i + 1}. ID: ${maskId(u.id)} | Email: ${maskEmail(u.email)} | Họ tên: ${u.full_name}`)
+    const maskedName = u.full_name ? `${String(u.full_name).trim().slice(0, 1)}***` : '[ẨN]'
+    console.log(`   ${i + 1}. ID: ${maskId(u.id)} | Email: ${maskEmail(u.email)} | Họ tên: ${maskedName}`)
   })
 
   // 2. Tìm các tài khoản có trong accounts nhưng chưa có trong users

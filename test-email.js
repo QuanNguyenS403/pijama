@@ -1,6 +1,18 @@
 import { loadEnvironment } from './server/lib/envCheck.js'
 loadEnvironment()
 
+if (process.env.NODE_ENV === 'production' && !process.argv.includes('--confirm=SEND_TEST_EMAIL')) {
+  console.error('⛔ [SAFETY GUARD] Đang ở môi trường PRODUCTION. Thêm cờ --confirm=SEND_TEST_EMAIL để xác nhận gửi email thử nghiệm.')
+  process.exit(1)
+}
+
+if (!process.argv.includes('--confirm=SEND_TEST_EMAIL')) {
+  console.log('ℹ️ [DRY-RUN / SAFETY GUARD] Script test-email.js sẽ gửi 1 email thật qua Gmail SMTP (Port 465/587).')
+  console.log('   Lưu ý: Hệ thống Production ưu tiên gửi qua HTTPS Gateway (GAS_EMAIL_WEBHOOK_URL / RESEND_API_KEY).')
+  console.log('👉 Để thực sự gửi email test, chạy: node test-email.js --confirm=SEND_TEST_EMAIL')
+  process.exit(0)
+}
+
 import { getTransporter } from './server/lib/emailConfig.js'
 
 async function runTestEmail() {

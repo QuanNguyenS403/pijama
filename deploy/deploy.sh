@@ -28,7 +28,7 @@ npm rebuild better-sqlite3
 
 # 4. Kiểm tra cấu hình môi trường fail-closed
 echo "--> [4/6] Kiểm tra biến môi trường production..."
-npm run check-env || true
+NODE_ENV=production npm run check-env
 
 # 5. Build mã nguồn Frontend
 echo "--> [5/6] Biên dịch gói tĩnh Frontend (Vite build)..."

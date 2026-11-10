@@ -6,6 +6,49 @@ import { seedInitialReviews } from './seedReviews.js'
  * Khởi tạo Schema bảng đánh giá sản phẩm (Idempotent)
  */
 export function initReviewSchema(database = getDb()) {
+  const fkWasOn = Boolean(database.pragma('foreign_keys', { simple: true }))
+  let fkDisabledForMigration = false
+  try {
+    const existing = database.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='product_reviews'").get()
+    if (existing && existing.sql && !existing.sql.includes("'sample'")) {
+      // Tắt foreign_keys NGOÀI transaction trước khi rebuild bảng để tránh ON DELETE CASCADE xóa sạch review_photos
+      if (fkWasOn) {
+        database.pragma('foreign_keys = OFF')
+        fkDisabledForMigration = true
+      }
+      database.transaction(() => {
+        database.exec(`
+          CREATE TABLE product_reviews_migration (
+            id TEXT PRIMARY KEY,
+            product_id TEXT NOT NULL,
+            order_id TEXT,
+            item_key TEXT,
+            rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+            body TEXT NOT NULL,
+            display_name TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'approved' CHECK(status IN ('pending', 'approved', 'rejected')),
+            reject_reason TEXT,
+            verified_purchase INTEGER NOT NULL DEFAULT 0,
+            source TEXT NOT NULL DEFAULT 'order' CHECK(source IN ('order', 'imported', 'sample')),
+            consent_evidence TEXT,
+            shop_reply TEXT,
+            shop_replied_at TEXT,
+            created_at TEXT NOT NULL,
+            moderated_at TEXT
+          );
+          INSERT INTO product_reviews_migration SELECT * FROM product_reviews;
+          DROP TABLE product_reviews;
+          ALTER TABLE product_reviews_migration RENAME TO product_reviews;
+        `)
+      })()
+    }
+  } catch (migErr) {
+    console.warn('⚠️ [REVIEW SCHEMA MIGRATION WARNING]:', migErr.message)
+  } finally {
+    if (fkDisabledForMigration) {
+      database.pragma('foreign_keys = ON')
+    }
+  }
   database.exec(`
     CREATE TABLE IF NOT EXISTS product_reviews (
       id TEXT PRIMARY KEY,
@@ -156,7 +199,8 @@ export function createReview({
     cleanBody,
     cleanDisplayName,
     status,
-    verifiedPurchase ? 1 : 0,
+    // R2: Không cho phép verifiedPurchase=1 nếu không có mã đơn hàng đối chiếu
+    (verifiedPurchase && orderId) ? 1 : 0,
     source,
     consentEvidence,
     now,

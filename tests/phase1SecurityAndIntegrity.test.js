@@ -121,16 +121,16 @@ test('P0 / G-09: PAY-001 Bank Transfer Initial Status is AWAITING_PAYMENT', asyn
     items: [
       {
         productId: 'the-classic-set',
-        color: { name: 'Pink Stripe' },
+        color: { name: 'Classic Red' },
         size: 'S',
         quantity: 1,
-        unitPrice: 390000,
+        unitPrice: 490000,
       },
     ],
-    subtotal: 390000,
+    subtotal: 490000,
     shippingFee: 30000,
-    discount: 39000,
-    total: 381000,
+    discount: 49000,
+    total: 471000,
     payment: {
       method: 'BANK_TRANSFER',
     },
@@ -285,7 +285,7 @@ test('P0 / G-16: INV-001 Stock Validation Anti-Bypass, Aggregation & Variant Che
     items: [
       {
         productId: 'the-classic-set',
-        color: { name: 'Pink Stripe' },
+        color: { name: 'Classic Red' },
         size: 'S', // stock is 10
         quantity: 999,
         isPreOrder: true,
@@ -302,13 +302,13 @@ test('P0 / G-16: INV-001 Stock Validation Anti-Bypass, Aggregation & Variant Che
     items: [
       {
         productId: 'the-classic-set',
-        color: { name: 'Pink Stripe' },
+        color: { name: 'Classic Red' },
         size: 'S',
         quantity: 6,
       },
       {
         productId: 'the-classic-set',
-        color: { name: 'Pink Stripe' },
+        color: { name: 'Classic Red' },
         size: 'S',
         quantity: 6,
       },
@@ -340,7 +340,7 @@ test('P0 / G-16: INV-001 Stock Validation Anti-Bypass, Aggregation & Variant Che
     items: [
       {
         productId: 'the-classic-set',
-        color: { name: 'Pink Stripe' },
+        color: { name: 'Classic Red' },
         size: 'XXL',
         quantity: 1,
       },

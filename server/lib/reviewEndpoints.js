@@ -30,13 +30,23 @@ if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true })
 }
 
-// Cấu hình Multer lưu ảnh an toàn
+const MIME_TO_EXT = {
+  'image/jpeg': '.jpg',
+  'image/jpg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+}
+
+const safeReviewError = (err, fallback) =>
+  process.env.NODE_ENV === 'production' ? fallback : (err?.message || fallback)
+
+// Cấu hình Multer lưu ảnh an toàn (cấp đuôi tệp theo MIME đã xác thực, không tin tên tệp client gửi)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, UPLOADS_DIR)
   },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase() || '.jpg'
+    const ext = MIME_TO_EXT[String(file.mimetype || '').toLowerCase()] || '.jpg'
     const safeName = `rev_${Date.now()}_${Math.random().toString(36).slice(2, 8)}${ext}`
     cb(null, safeName)
   },
@@ -346,7 +356,7 @@ export function registerReviewEndpoints(app) {
       })
     } catch (err) {
       console.error('Lỗi gửi đánh giá:', err)
-      return res.status(500).json({ success: false, error: err.message || 'Đã có lỗi xảy ra khi gửi đánh giá.' })
+      return res.status(500).json({ success: false, error: safeReviewError(err, 'Đã có lỗi xảy ra khi gửi đánh giá.') })
     }
   })
 
@@ -361,7 +371,7 @@ export function registerReviewEndpoints(app) {
       return res.json({ success: true, data: result })
     } catch (err) {
       console.error('Admin get reviews error:', err)
-      return res.status(500).json({ success: false, error: err.message })
+      return res.status(500).json({ success: false, error: safeReviewError(err, 'Không thể tải danh sách đánh giá.') })
     }
   })
 
@@ -390,7 +400,7 @@ export function registerReviewEndpoints(app) {
       return res.json({ success: true, message: `Đã cập nhật trạng thái đánh giá thành "${status}"` })
     } catch (err) {
       console.error('Admin moderate review error:', err)
-      return res.status(500).json({ success: false, error: err.message })
+      return res.status(500).json({ success: false, error: safeReviewError(err, 'Không thể cập nhật kiểm duyệt đánh giá.') })
     }
   })
 
@@ -415,7 +425,7 @@ export function registerReviewEndpoints(app) {
       return res.json({ success: true, message: 'Đã lưu phản hồi của QuanNguyenS thành công' })
     } catch (err) {
       console.error('Admin reply review error:', err)
-      return res.status(500).json({ success: false, error: err.message })
+      return res.status(500).json({ success: false, error: safeReviewError(err, 'Không thể lưu phản hồi đánh giá.') })
     }
   })
 
@@ -449,7 +459,7 @@ export function registerReviewEndpoints(app) {
       })
     } catch (err) {
       console.error('Admin trigger invites error:', err)
-      return res.status(500).json({ success: false, error: err.message })
+      return res.status(500).json({ success: false, error: safeReviewError(err, 'Không thể kích hoạt gửi thư mời đánh giá.') })
     }
   })
 }

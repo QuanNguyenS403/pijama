@@ -12,6 +12,18 @@ const rootDir = path.resolve(__dirname, '../..')
 dotenv.config({ path: path.join(rootDir, '.env.local') })
 dotenv.config({ path: path.join(rootDir, '.env') })
 
+if (process.env.NODE_ENV === 'production') {
+  console.error('⛔ [CRITICAL SECURITY] CẤM TUYỆT ĐỐI chạy script reset đơn hàng trong môi trường PRODUCTION!')
+  process.exit(1)
+}
+
+if (!process.argv.includes('--confirm=RESET_ALL_ORDERS') || process.env.CONFIRM_DESTRUCTIVE_RESET !== 'YES_RESET_DEV_DATA') {
+  console.error('⚠️ CẢNH BÁO BẢO VỆ DỮ LIỆU (C7): Script này sẽ XÓA TOÀN BỘ đơn hàng trên disk và Google Sheets.')
+  console.error('👉 Nếu bạn thực sự muốn chạy trong môi trường DEV/TEST, hãy truyền:')
+  console.error('   CONFIRM_DESTRUCTIVE_RESET=YES_RESET_DEV_DATA node scripts/dev-only/reset-orders.js --confirm=RESET_ALL_ORDERS')
+  process.exit(1)
+}
+
 async function resetAllOrders() {
   console.log('====================================================================')
   console.log('🔄 BẮT ĐẦU RESET TOÀN BỘ ĐƠN HÀNG VỀ 0 (QuanNguyenS)')

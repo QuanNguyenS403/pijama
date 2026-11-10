@@ -93,10 +93,21 @@ export function validateEnvironment(env = process.env) {
   const isTest = env.NODE_ENV === 'test'
   const shouldEnforceFatal = isProd && !isCI
 
+  // Tạo bản sao env an toàn để tự động suy diễn trên Render nếu cần (không làm bẩn process.env thật khi test)
+  const effectiveEnv = { ...env }
+  if (effectiveEnv.RENDER_EXTERNAL_URL) {
+    if (!effectiveEnv.APP_URL) {
+      effectiveEnv.APP_URL = effectiveEnv.RENDER_EXTERNAL_URL
+    }
+    if (!effectiveEnv.ALLOWED_ORIGINS) {
+      effectiveEnv.ALLOWED_ORIGINS = `${effectiveEnv.RENDER_EXTERNAL_URL},https://quannguyens.com,https://www.quannguyens.com`
+    }
+  }
+
   const results = {
     isValid: true,
     hasFatalErrors: false,
-    environment: isCI ? `${env.NODE_ENV || 'production'} (CI)` : (env.NODE_ENV || 'development'),
+    environment: isCI ? `${effectiveEnv.NODE_ENV || 'production'} (CI)` : (effectiveEnv.NODE_ENV || 'development'),
     isCI,
     required: [],
     featureGated: [],
@@ -108,7 +119,7 @@ export function validateEnvironment(env = process.env) {
 
   // Helper check
   const checkVar = (name, isSecret = false, validator = null) => {
-    const val = env[name]
+    const val = effectiveEnv[name]
     const exists = val !== undefined && val !== null && String(val).trim() !== ''
     const placeholder = exists && isPlaceholder(String(val))
 
@@ -152,19 +163,7 @@ export function validateEnvironment(env = process.env) {
     { name: 'ORDER_TOKEN_SECRET', isSecret: true, validator: (v) => v.length >= 32 || 'Secret token đơn quá ngắn (< 32 ký tự)' },
     { name: 'CUSTOMER_AUTH_SECRET', isSecret: true, validator: (v) => v.length >= 32 || 'Secret auth khách quá ngắn (< 32 ký tự)' },
     { name: 'JWT_SECRET', isSecret: true, validator: (v) => v.length >= 32 || 'JWT Secret quá ngắn (< 32 ký tự)' },
-    { name: 'GOOGLE_SHEET_ID', isSecret: false },
-    { name: 'GOOGLE_SERVICE_ACCOUNT_EMAIL', isSecret: false, validator: (v) => v.includes('@') || 'Email service account không hợp lệ' },
-    {
-      name: 'GOOGLE_PRIVATE_KEY',
-      isSecret: true,
-      validator: (v) => (v.includes('BEGIN') && v.includes('PRIVATE KEY')) || 'Thiếu phần định dạng BEGIN/END PRIVATE KEY',
-    },
     { name: 'GMAIL_USER', isSecret: false, validator: (v) => v.includes('@') || 'Gmail user không hợp lệ' },
-    {
-      name: 'GMAIL_APP_PASSWORD',
-      isSecret: true,
-      validator: (v) => (v.replace(/\s+/g, '').length === 16 ? true : 'Mật khẩu ứng dụng Gmail phải gồm đúng 16 ký tự'),
-    },
     { name: 'OWNER_EMAIL', isSecret: false },
     { name: 'BANK_CODE', isSecret: false },
     { name: 'BANK_ACCOUNT_NUMBER', isSecret: false },
@@ -183,6 +182,46 @@ export function validateEnvironment(env = process.env) {
       } else {
         results.warnings.push(`[THIẾU DEV] ${res.name}: ${res.status}${res.message ? ` (${res.message})` : ''}`)
       }
+    }
+  }
+
+  // Kiểm tra phương thức gửi email: Ưu tiên HTTPS Bridge (GAS / Resend), Fallback SMTP (GMAIL_APP_PASSWORD)
+  const gasUrl = effectiveEnv.GAS_EMAIL_WEBHOOK_URL || effectiveEnv.GMAIL_APP_SCRIPT_URL || effectiveEnv.GMAIL_BRIDGE_WEBHOOK_URL
+  const gasSecret = effectiveEnv.GAS_WEBHOOK_SECRET || effectiveEnv.GMAIL_BRIDGE_SECRET
+  const hasGasBridge = Boolean(gasUrl && String(gasUrl).trim() && !isPlaceholder(gasUrl) && gasSecret && String(gasSecret).trim() && !isPlaceholder(gasSecret))
+  const resendKeyCheck = checkVar('RESEND_API_KEY', true)
+  const hasResend = resendKeyCheck.status === 'OK'
+  const gmailPassCheck = checkVar('GMAIL_APP_PASSWORD', true, (v) => (v.replace(/\s+/g, '').length === 16 ? true : 'Mật khẩu ứng dụng Gmail phải gồm đúng 16 ký tự'))
+  const hasSmtp = gmailPassCheck.status === 'OK'
+
+  results.featureGated.push(checkVar('GAS_EMAIL_WEBHOOK_URL', false))
+  results.featureGated.push(checkVar('GAS_WEBHOOK_SECRET', true))
+  results.featureGated.push(resendKeyCheck)
+  results.featureGated.push(gmailPassCheck)
+
+  if (!hasGasBridge && !hasResend && !hasSmtp) {
+    const msg = 'Thiếu cấu hình gửi email: Cần ít nhất (GAS_EMAIL_WEBHOOK_URL + GAS_WEBHOOK_SECRET) hoặc RESEND_API_KEY hoặc GMAIL_APP_PASSWORD'
+    if (isProd) {
+      results.errors.push(`[BẮT BUỘC PROD] ${msg}`)
+    } else {
+      results.warnings.push(`[THIẾU DEV] ${msg}`)
+    }
+  } else if (!hasSmtp && (hasGasBridge || hasResend)) {
+    results.warnings.push('[TÙY CHỌN FALLBACK] GMAIL_APP_PASSWORD chưa cấu hình (hệ thống gửi email an toàn qua HTTPS Gateway)')
+  }
+
+  // Kiểm tra Google Sheets: Chế độ Degraded an toàn nếu không bắt buộc (REQUIRE_GOOGLE_SHEETS !== 'true')
+  const sheetIdCheck = checkVar('GOOGLE_SHEET_ID', false)
+  const sheetEmailCheck = checkVar('GOOGLE_SERVICE_ACCOUNT_EMAIL', false, (v) => v.includes('@') || 'Email service account không hợp lệ')
+  const sheetKeyCheck = checkVar('GOOGLE_PRIVATE_KEY', true, (v) => (v.includes('BEGIN') && v.includes('PRIVATE KEY')) || 'Thiếu phần định dạng BEGIN/END PRIVATE KEY')
+  results.featureGated.push(sheetIdCheck, sheetEmailCheck, sheetKeyCheck)
+
+  const sheetOk = sheetIdCheck.status === 'OK' && sheetEmailCheck.status === 'OK' && sheetKeyCheck.status === 'OK'
+  if (!sheetOk) {
+    if (effectiveEnv.REQUIRE_GOOGLE_SHEETS === 'true' && isProd) {
+      results.errors.push('[BẮT BUỘC PROD] Thiếu cấu hình Google Sheets (REQUIRE_GOOGLE_SHEETS=true)')
+    } else {
+      results.warnings.push('[CHẾ ĐỘ DEGRADED] Thiếu cấu hình Google Sheets: Đơn hàng lưu tại SQLite/JSON cục bộ, tạm tắt đồng bộ Google Sheets')
     }
   }
 
@@ -232,8 +271,8 @@ export function validateEnvironment(env = process.env) {
   }
 
   // Kiểm tra đồng bộ Google Client ID (Frontend & Backend phải khớp nhau)
-  const gClient = (env.GOOGLE_CLIENT_ID || '').trim()
-  const viteGClient = (env.VITE_GOOGLE_CLIENT_ID || '').trim()
+  const gClient = (effectiveEnv.GOOGLE_CLIENT_ID || '').trim()
+  const viteGClient = (effectiveEnv.VITE_GOOGLE_CLIENT_ID || '').trim()
   if (gClient && viteGClient && gClient !== viteGClient) {
     results.errors.push('[SAI ĐỒNG BỘ] GOOGLE_CLIENT_ID và VITE_GOOGLE_CLIENT_ID không trùng khớp!')
   }
@@ -243,7 +282,7 @@ export function validateEnvironment(env = process.env) {
   // ---------------------------------------------------------------------------
   const forbiddenVars = ['AUTH_TEST_MODE', 'ORDER_STORE_FILE', 'TX_STORE_FILE', 'ACCOUNT_DB_FILE']
   for (const name of forbiddenVars) {
-    const val = env[name]
+    const val = effectiveEnv[name]
     const exists = val !== undefined && val !== null && String(val).trim() !== ''
     if (exists) {
       const item = { name, status: isProd ? 'CẤM' : 'ĐANG BẬT', value: exists }
@@ -263,6 +302,21 @@ export function validateEnvironment(env = process.env) {
   for (const name of legacyVars) {
     const res = checkVar(name, false)
     results.legacy.push(res)
+  }
+
+  // Kiểm tra tách biệt khóa bí mật (tránh dùng chung JWT_SECRET với khóa phiên admin/đơn hàng)
+  const jwtSecretVal = String(effectiveEnv.JWT_SECRET || '').trim()
+  const secretPairs = [
+    ['ADMIN_SESSION_SECRET', effectiveEnv.ADMIN_SESSION_SECRET],
+    ['ORDER_TOKEN_SECRET', effectiveEnv.ORDER_TOKEN_SECRET],
+    ['CUSTOMER_AUTH_SECRET', effectiveEnv.CUSTOMER_AUTH_SECRET],
+  ]
+  if (jwtSecretVal) {
+    for (const [keyName, keyVal] of secretPairs) {
+      if (keyVal && String(keyVal).trim() === jwtSecretVal) {
+        results.warnings.push(`[TÁCH KHÓA] ${keyName} đang trùng giá trị với JWT_SECRET — nên sinh khóa riêng biệt cho từng mục đích.`)
+      }
+    }
   }
 
   if (results.errors.length > 0) {

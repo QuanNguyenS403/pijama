@@ -11,7 +11,8 @@ import { verifyTransporter } from './lib/emailConfig.js'
 import { handlePaymentWebhook, getOrderPaymentStatus } from './lib/paymentWebhook.js'
 import { createRateLimiter } from './lib/rateLimiter.js'
 import { addSseClient } from './lib/orderEvents.js'
-import { verifyAdminLogin, adminLoginLimiter, requireAdminAuth } from './lib/adminAuth.js'
+import { verifyAdminLogin, adminLoginLimiter, requireAdminAuth, revokeAdminToken } from './lib/adminAuth.js'
+import { logSecurityAudit } from './lib/auditLogger.js'
 import { registerAuthEndpoints } from './lib/authEndpoints.js'
 import { registerReviewEndpoints } from './lib/reviewEndpoints.js'
 import { registerLoyaltyEndpoints } from './lib/loyaltyEndpoints.js'
@@ -23,14 +24,28 @@ import { calculateShippingDistance } from './lib/distanceService.js'
 import { trackOrderUniversal, queryViettelPostTracking } from './lib/viettelPostService.js'
 import { validateEnvironment, printEnvReport, loadEnvironment } from './lib/envCheck.js'
 
-// Nạp toàn bộ biến môi trường từ .env / .env.development / .env.local
-loadEnvironment()
+// Nạp toàn bộ biến môi trường từ .env / .env.development / .env.local (trừ lúc chạy automated test để cô lập khỏi secrets thật)
+if (process.env.NODE_ENV !== 'test') {
+  loadEnvironment()
+}
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const app = express()
 const PORT = process.env.PORT || 3001
+
+export function safeErrorMessage(err, fallback = 'Đã có lỗi xảy ra trên máy chủ.') {
+  return process.env.NODE_ENV === 'production' ? fallback : (err?.message || fallback)
+}
+
+export function canonicalPhone(phone) {
+  let p = normalizeVietnamesePhone(phone)
+  if (p && p.length === 9 && !p.startsWith('0')) {
+    p = '0' + p
+  }
+  return p
+}
 
 // Hỗ trợ nhận diện đúng IP và giao thức HTTPS phía sau Nginx Reverse Proxy
 app.set('trust proxy', 1)
@@ -185,35 +200,30 @@ app.get('/api/health', (req, res) => {
   })
 })
 
-// ── 0. Chẩn đoán trạng thái kết nối Email HTTPS (Port 443) ─────────────
-app.get('/api/health/email', async (req, res) => {
+// ── 0. Chẩn đoán trạng thái kết nối Email HTTPS (Port 443) — Yêu cầu quyền Admin ─
+app.get('/api/health/email', requireAdminAuth, async (req, res) => {
   try {
     const result = await verifyTransporter()
     if (result && result.success) {
       return res.json({
         emailReady: true,
         transports: result.transports,
-        user: (process.env.GMAIL_USER || '').trim() || null,
-        ownerEmail: (process.env.OWNER_EMAIL || '').trim() || null,
+        user: maskEmail((process.env.GMAIL_USER || '').trim()) || null,
+        ownerEmail: maskEmail((process.env.OWNER_EMAIL || '').trim()) || null,
         message: 'Hệ thống Email HTTPS (Port 443) sẵn sàng hoạt động!',
       })
     } else {
       return res.status(500).json({
         emailReady: false,
         error: result?.error || 'Chưa cấu hình dịch vụ gửi email HTTPS',
-        user: (process.env.GMAIL_USER || '').trim() || null,
-        ownerEmail: (process.env.OWNER_EMAIL || '').trim() || null,
-        instructions: [
-          '1. Tạo Webhook Google Apps Script hoặc lấy Resend API Key',
-          '2. Điền biến môi trường GAS_EMAIL_WEBHOOK_URL và GAS_WEBHOOK_SECRET trên Render Dashboard',
-          '3. (Tùy chọn) Thêm RESEND_API_KEY để kích hoạt cơ chế Dual-Transport dự phòng',
-        ],
+        user: maskEmail((process.env.GMAIL_USER || '').trim()) || null,
+        ownerEmail: maskEmail((process.env.OWNER_EMAIL || '').trim()) || null,
       })
     }
   } catch (err) {
     return res.status(500).json({
       emailReady: false,
-      error: err.message,
+      error: safeErrorMessage(err, 'Lỗi kiểm tra dịch vụ email'),
     })
   }
 })
@@ -230,7 +240,7 @@ app.get('/api/payment/qr', async (req, res) => {
     return res.status(200).json(result.data)
   } catch (err) {
     console.error('Lỗi API /api/payment/qr:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Lỗi máy chủ khi tạo mã QR thanh toán') })
   }
 })
 
@@ -268,8 +278,20 @@ app.post('/api/payment/bank-email', async (req, res) => {
 
     const { runId = `run_${Date.now()}`, sentAt = new Date().toISOString(), emails = [] } = req.body || {}
 
+    if (!Array.isArray(emails)) {
+      return res.status(400).json({ success: false, error: 'Trường emails phải là một mảng hợp lệ.' })
+    }
+
+    // P2-API-6: Giới hạn batch tối đa 50 email mỗi lần gửi để chống quá tải
+    if (emails.length > 50) {
+      return res.status(400).json({
+        success: false,
+        error: 'Kích thước lô emails vượt quá giới hạn tối đa (tối đa 50 phần tử/lần).',
+      })
+    }
+
     // Heartbeat từ Apps Script (Lô rỗng)
-    if (!Array.isArray(emails) || emails.length === 0) {
+    if (emails.length === 0) {
       return res.status(200).json({
         success: true,
         message: 'Heartbeat received successfully',
@@ -302,7 +324,7 @@ app.post('/api/payment/bank-email', async (req, res) => {
         results.push({ messageId: emailItem.messageId, outcome: settleResult.outcome })
       } catch (itemErr) {
         console.error(`Lỗi xử lý email ${emailItem.messageId}:`, itemErr.message)
-        results.push({ messageId: emailItem.messageId, outcome: 'ERROR', error: itemErr.message })
+        results.push({ messageId: emailItem.messageId, outcome: 'ERROR', error: safeErrorMessage(itemErr, 'Lỗi phân tích email') })
       }
     }
 
@@ -315,7 +337,7 @@ app.post('/api/payment/bank-email', async (req, res) => {
     })
   } catch (err) {
     console.error('Lỗi tiếp nhận email biến động số dư:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Lỗi tiếp nhận giao dịch email') })
   }
 })
 
@@ -356,6 +378,15 @@ app.post('/api/payment/confirm', requireAdminAuth, submitOrderLimiter, async (re
     source: 'admin',
     actor: 'admin_api',
     note: adminNote,
+  })
+
+  logSecurityAudit({
+    userId: 'admin',
+    action: 'ADMIN_MANUAL_PAYMENT_CONFIRM',
+    status: 'SUCCESS',
+    ip: req.ip,
+    userAgent: req.headers['user-agent'],
+    details: { orderId, note: adminNote },
   })
 
   return res.status(200).json({
@@ -403,8 +434,8 @@ const orderSubmitHandler = async (req, res) => {
 app.post('/api/orders/submit', submitOrderLimiter, orderSubmitHandler)
 app.post('/api/orders', submitOrderLimiter, orderSubmitHandler)
 
-// ── 6. Tra Cứu Thông Tin Vận Đơn (Tracking API) — SEC-002 / G-04 ─────────────
-app.get('/api/orders/tracking', async (req, res) => {
+// ── 6. Tra Cứu Thông Tin Vận Đơn (Tracking API) — SEC-002 / G-04 / P1-API-3 ──
+app.get('/api/orders/tracking', lookupLimiter, async (req, res) => {
   try {
     const { orderId, token, phone } = req.query
     if (!orderId) {
@@ -413,7 +444,7 @@ app.get('/api/orders/tracking', async (req, res) => {
 
     const { orderPersistence } = await import('./lib/orderPersistence.js')
     const { searchOrdersFromSheet } = await import('./lib/googleSheets.js')
-    
+
     let order = orderPersistence.get(orderId)
 
     if (!order) {
@@ -421,27 +452,25 @@ app.get('/api/orders/tracking', async (req, res) => {
       order = sheetOrders.find((o) => o.orderId === orderId) || null
     }
 
-    if (!order) {
-      return res.status(404).json({ success: false, error: 'Không tìm thấy đơn hàng' })
-    }
-
-    // G-04: Xác thực quyền sở hữu (Proof of Ownership)
-    const customerPhone = order.customer?.phone || ''
-    const cleanCustomerPhone = normalizeVietnamesePhone(customerPhone)
-    const cleanInputPhone = normalizeVietnamesePhone(phone || '')
-
+    // G-04 & P1-API-3: Xác thực quyền sở hữu với phản hồi đồng nhất chống OrderId Enumeration
     let isAuthorized = false
-    if (token && verifyTrackingToken(orderId, customerPhone, String(token))) {
-      isAuthorized = true
-    } else if (cleanInputPhone && cleanCustomerPhone && cleanInputPhone.length >= 9 && (cleanInputPhone === cleanCustomerPhone || cleanCustomerPhone.endsWith(cleanInputPhone))) {
-      isAuthorized = true
+    if (order) {
+      const customerPhone = order.customer?.phone || ''
+      const cleanCustomerPhone = canonicalPhone(customerPhone)
+      const cleanInputPhone = canonicalPhone(phone || '')
+
+      if (token && verifyTrackingToken(orderId, customerPhone, String(token))) {
+        isAuthorized = true
+      } else if (cleanInputPhone && cleanCustomerPhone && cleanInputPhone.length >= 10 && cleanInputPhone === cleanCustomerPhone) {
+        isAuthorized = true
+      }
     }
 
-    if (!isAuthorized) {
-      return res.status(401).json({
+    if (!order || !isAuthorized) {
+      return res.status(404).json({
         success: false,
-        error: 'Unauthorized: Cần trackingToken hoặc số điện thoại người nhận để tra cứu thông tin đơn',
-        code: 'OWNERSHIP_PROOF_REQUIRED',
+        error: 'Không tìm thấy đơn hàng hoặc thông tin xác thực không khớp',
+        code: 'ORDER_NOT_FOUND',
       })
     }
 
@@ -478,7 +507,7 @@ app.get('/api/orders/tracking', async (req, res) => {
     })
   } catch (err) {
     console.error('Tracking API error:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Lỗi tra cứu vận đơn') })
   }
 })
 
@@ -635,8 +664,8 @@ app.get('/api/orders/lookup', lookupLimiter, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Không tìm thấy đơn hàng phù hợp' })
     }
 
-    const cleanCustomerPhone = normalizeVietnamesePhone(order.customer?.phone || '')
-    if (cleanCustomerPhone !== cleanInputPhone && !cleanCustomerPhone.endsWith(cleanInputPhone)) {
+    const cleanCustomerPhone = canonicalPhone(order.customer?.phone || '')
+    if (canonicalPhone(cleanInputPhone) !== cleanCustomerPhone) {
       return res.status(404).json({ success: false, error: 'Không tìm thấy đơn hàng phù hợp' })
     }
 
@@ -647,7 +676,7 @@ app.get('/api/orders/lookup', lookupLimiter, async (req, res) => {
     })
   } catch (err) {
     console.error('Order lookup error:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Lỗi tra cứu đơn hàng') })
   }
 })
 
@@ -665,7 +694,7 @@ const checkCodHandler = async (req, res) => {
     return res.json(responseData)
   } catch (err) {
     console.error('Check COD distance error:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Lỗi kiểm tra khoảng cách giao hàng') })
   }
 }
 app.get('/api/shipping/check-cod', checkCodHandler)
@@ -688,8 +717,7 @@ app.get('/api/shipping/viettelpost/track', lookupLimiter, async (req, res) => {
     return res.json(result)
   } catch (err) {
     console.error('Viettel Post track API error:', err)
-    const errorMsg = process.env.NODE_ENV === 'production' ? 'Đã có lỗi xảy ra khi tra cứu vận đơn.' : err.message
-    return res.status(500).json({ success: false, error: errorMsg })
+    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Đã có lỗi xảy ra khi tra cứu vận đơn.') })
   }
 })
 
@@ -706,13 +734,12 @@ app.post('/api/orders/sync-batch', lookupLimiter, async (req, res) => {
     return res.json(result)
   } catch (err) {
     console.error('Sync batch error:', err)
-    const errorMsg = process.env.NODE_ENV === 'production' ? 'Đã có lỗi xảy ra khi đồng bộ đơn hàng.' : err.message
-    return res.status(500).json({ success: false, error: errorMsg })
+    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Đã có lỗi xảy ra khi đồng bộ đơn hàng.') })
   }
 })
 
-// ── 8. Yêu Cầu Hủy Đơn Hàng — SEC-002 / G-06 ──────
-app.post('/api/orders/cancel-request', async (req, res) => {
+// ── 8. Yêu Cầu Hủy Đơn Hàng — SEC-002 / G-06 / P1-API-4 ──────
+app.post('/api/orders/cancel-request', lookupLimiter, async (req, res) => {
   try {
     const { orderId, token, phone, reason = 'Khách yêu cầu hủy đơn' } = req.body
     if (!orderId) {
@@ -723,13 +750,13 @@ app.post('/api/orders/cancel-request', async (req, res) => {
     const order = orderPersistence.get(orderId)
 
     if (!order) {
-      return res.status(404).json({ success: false, error: 'Không tìm thấy đơn hàng' })
+      return res.status(404).json({ success: false, error: 'Không tìm thấy đơn hàng hoặc thông tin xác thực không khớp' })
     }
 
     // G-06: Xác thực quyền hủy đơn
     const customerPhone = order.customer?.phone || ''
-    const cleanCustomerPhone = normalizeVietnamesePhone(customerPhone)
-    const cleanInputPhone = normalizeVietnamesePhone(phone || '')
+    const cleanCustomerPhone = canonicalPhone(customerPhone)
+    const cleanInputPhone = canonicalPhone(phone || '')
 
     let isAuthorized = false
     if (token && verifyTrackingToken(orderId, customerPhone, String(token))) {
@@ -739,9 +766,18 @@ app.post('/api/orders/cancel-request', async (req, res) => {
     }
 
     if (!isAuthorized) {
-      return res.status(401).json({
+      return res.status(404).json({
         success: false,
-        error: 'Unauthorized: Cần trackingToken hoặc số điện thoại đặt hàng để hủy đơn',
+        error: 'Không tìm thấy đơn hàng hoặc thông tin xác thực không khớp',
+      })
+    }
+
+    // P1-API-4: Cấm khách tự hủy đơn đã thanh toán (PAID)
+    const isPaid = String(order.paymentStatus || '').toUpperCase() === 'PAID' || String(order.payment?.status || '').toUpperCase() === 'PAID'
+    if (isPaid) {
+      return res.status(400).json({
+        success: false,
+        error: 'Đơn hàng đã thanh toán thành công, không thể tự hủy. Vui lòng liên hệ hotline 0973 486 218 để được hỗ trợ hoàn tiền.',
       })
     }
 
@@ -754,42 +790,76 @@ app.post('/api/orders/cancel-request', async (req, res) => {
     }
 
     order.status = 'CANCELLED'
-    order.cancelReason = reason
+    order.cancelReason = String(reason || 'Khách yêu cầu hủy đơn').slice(0, 300)
     order.cancelledAt = new Date().toISOString()
-    // Loại bỏ hoàn toàn đơn hàng khỏi hệ thống lưu trữ backend theo yêu cầu
-    orderPersistence.delete(orderId)
+    order.updatedAt = order.cancelledAt
+    // P1-API-4: Soft-delete để bảo toàn lịch sử đơn hàng & đối soát tài chính
+    orderPersistence.set(orderId, order)
 
     if (order.voucherCode) {
       releaseVoucher(order.voucherCode, orderId)
     }
 
-    const { sendCancelledEmail } = await import('./lib/emailStatusUpdates.js')
-    const { updateOrderStatusInSheet } = await import('./lib/googleSheets.js')
-
-    Promise.allSettled([
-      sendCancelledEmail(order, { reason }),
-      updateOrderStatusInSheet(orderId, 'CANCELLED', reason),
-    ]).then((results) => {
-      results.forEach((r, i) => {
-        if (r.status === 'rejected') console.warn(`Cancel-request notify ${i} lỗi:`, r.reason?.message)
-      })
+    logSecurityAudit({
+      action: 'CUSTOMER_ORDER_CANCEL',
+      status: 'SUCCESS',
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+      details: { orderId, reason: order.cancelReason },
     })
+
+    if (process.env.NODE_ENV !== 'test') {
+      const { sendCancelledEmail } = await import('./lib/emailStatusUpdates.js')
+      const { updateOrderStatusInSheet } = await import('./lib/googleSheets.js')
+
+      Promise.allSettled([
+        sendCancelledEmail(order, { reason: order.cancelReason }),
+        updateOrderStatusInSheet(orderId, 'CANCELLED', order.cancelReason),
+      ]).then((results) => {
+        results.forEach((r, i) => {
+          if (r.status === 'rejected') console.warn(`Cancel-request notify ${i} lỗi:`, r.reason?.message)
+        })
+      })
+    }
 
     return res.json({
       success: true,
       orderId,
+      status: 'CANCELLED',
       message: 'Yêu cầu hủy đơn đã được tiếp nhận thành công.',
     })
   } catch (err) {
     console.error('Cancel request error:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Lỗi xử lý yêu cầu hủy đơn') })
   }
 })
 
-// ── 9. Quản Lý Đơn Hàng Admin & Xác Thực — SEC-001 / G-01 / G-02 / G-03 ────────────────────────
+// ── 9. Quản Lý Đơn Hàng Admin & Xác Thực — SEC-001 / G-01 / G-02 / G-03 / AD1 / AD2 ──
 app.post('/api/admin/login', adminLoginLimiter, (req, res) => {
   const result = verifyAdminLogin(req.body?.password)
+  logSecurityAudit({
+    userId: 'admin',
+    action: result.status === 200 ? 'ADMIN_LOGIN_SUCCESS' : 'ADMIN_LOGIN_FAILURE',
+    status: result.status === 200 ? 'SUCCESS' : 'FAILURE',
+    ip: req.ip,
+    userAgent: req.headers['user-agent'],
+  })
   return res.status(result.status).json(result.data)
+})
+
+app.post('/api/admin/logout', requireAdminAuth, (req, res) => {
+  const token = req.adminSession?.token
+  if (token) {
+    revokeAdminToken(token)
+    logSecurityAudit({
+      userId: 'admin',
+      action: 'ADMIN_LOGOUT',
+      status: 'SUCCESS',
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+    })
+  }
+  return res.json({ success: true, message: 'Đăng xuất phiên quản trị thành công.' })
 })
 
 app.get('/api/admin/orders', requireAdminAuth, async (req, res) => {
@@ -799,7 +869,7 @@ app.get('/api/admin/orders', requireAdminAuth, async (req, res) => {
     return res.json(result)
   } catch (err) {
     console.error('Admin get orders error:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Lỗi tải danh sách đơn hàng') })
   }
 })
 
@@ -814,7 +884,7 @@ app.get('/api/admin/orders/:orderId', requireAdminAuth, async (req, res) => {
     return res.json(order)
   } catch (err) {
     console.error('Admin get order detail error:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Lỗi tải chi tiết đơn hàng') })
   }
 })
 
@@ -823,10 +893,18 @@ app.patch('/api/admin/orders/:orderId', requireAdminAuth, async (req, res) => {
     const { orderId } = req.params
     const { handleAdminOrderAction } = await import('./lib/adminOrdersHandler.js')
     const result = await handleAdminOrderAction(orderId, req.body)
+    logSecurityAudit({
+      userId: 'admin',
+      action: `ADMIN_ORDER_${String(req.body?.action || 'UPDATE').toUpperCase()}`,
+      status: result.status < 400 ? 'SUCCESS' : 'FAILURE',
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+      details: { orderId, action: req.body?.action, status: result.status },
+    })
     return res.status(result.status).json(result.data)
   } catch (err) {
     console.error('Admin order action error:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Lỗi cập nhật trạng thái đơn hàng') })
   }
 })
 
@@ -838,7 +916,7 @@ app.post('/api/admin/orders/sync-viettelpost', requireAdminAuth, async (req, res
     return res.json(result)
   } catch (err) {
     console.error('Admin sync Viettel Post error:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Lỗi đồng bộ Viettel Post') })
   }
 })
 
@@ -851,7 +929,7 @@ app.post('/api/admin/orders/:orderId/sync-viettelpost', requireAdminAuth, async 
     return res.json(result)
   } catch (err) {
     console.error('Admin single order sync Viettel Post error:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Lỗi đồng bộ đơn hàng Viettel Post') })
   }
 })
 
@@ -868,7 +946,7 @@ app.get('/api/admin/payment-transactions', requireAdminAuth, async (req, res) =>
     return res.json({ success: true, transactions })
   } catch (err) {
     console.error('Lỗi lấy giao dịch ngân hàng:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Lỗi tải giao dịch ngân hàng') })
   }
 })
 
@@ -885,6 +963,14 @@ app.post('/api/admin/payment-transactions/:txId/resolve', requireAdminAuth, asyn
       const { assignTransactionToOrder } = await import('./lib/paymentTransactions.js')
       const adminUser = req.adminUser?.username || 'admin'
       const result = await assignTransactionToOrder(txId, orderId, adminUser, note)
+      logSecurityAudit({
+        userId: 'admin',
+        action: 'ADMIN_RESOLVE_TX_ASSIGN_ORDER',
+        status: result.ok ? 'SUCCESS' : 'FAILURE',
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: { txId, orderId, note },
+      })
       return res.status(result.status).json({ success: result.ok, message: result.message || result.error })
     }
 
@@ -896,13 +982,21 @@ app.post('/api/admin/payment-transactions/:txId/resolve', requireAdminAuth, asyn
         resolutionNote,
         outcome: action === 'REFUND' ? 'REFUNDED' : 'IGNORED',
       })
+      logSecurityAudit({
+        userId: 'admin',
+        action: `ADMIN_RESOLVE_TX_${action}`,
+        status: 'SUCCESS',
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+        details: { txId, action, resolutionNote },
+      })
       return res.json({ success: true, message: `Đã cập nhật trạng thái giao dịch ${txId}` })
     }
 
     return res.status(400).json({ success: false, error: 'Hành động không hợp lệ' })
   } catch (err) {
     console.error('Lỗi xử lý giao dịch ngân hàng:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Lỗi xử lý giao dịch ngân hàng') })
   }
 })
 
@@ -911,10 +1005,17 @@ app.post('/api/admin/sync-sheets', requireAdminAuth, async (req, res) => {
   try {
     const { syncAllToGoogleSheets } = await import('./lib/googleSheets.js')
     const result = await syncAllToGoogleSheets()
+    logSecurityAudit({
+      userId: 'admin',
+      action: 'ADMIN_SYNC_SHEETS',
+      status: 'SUCCESS',
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+    })
     return res.json({ success: true, ...result })
   } catch (err) {
     console.error('Admin sync Google Sheets error:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Lỗi đồng bộ Google Sheets') })
   }
 })
 
@@ -932,10 +1033,12 @@ app.post('/api/shipping/viettelpost/webhook', async (req, res) => {
     } else {
       const authHeader = String(rawAuthHeader).replace(/^Bearer\s+/i, '').trim()
       const secretStr = String(expectedSecret).trim()
+      const bufHeader = Buffer.from(authHeader, 'utf8')
+      const bufExpected = Buffer.from(secretStr, 'utf8')
       let isSecretValid = false
-      if (authHeader.length === secretStr.length && secretStr.length > 0) {
+      if (bufHeader.length === bufExpected.length && bufExpected.length > 0) {
         const crypto = await import('crypto')
-        isSecretValid = crypto.default.timingSafeEqual(Buffer.from(authHeader), Buffer.from(secretStr))
+        isSecretValid = crypto.default.timingSafeEqual(bufHeader, bufExpected)
       }
       if (!isSecretValid) {
         console.warn('⛔ [VIETTEL POST WEBHOOK REJECTED] Sai Secret Token / Unauthorized request')
@@ -991,7 +1094,7 @@ app.post('/api/shipping/viettelpost/webhook', async (req, res) => {
     return res.json({ success: true, message: 'Viettel Post Webhook processed successfully' })
   } catch (err) {
     console.error('Viettel Post webhook error:', err)
-    return res.status(500).json({ success: false, error: err.message })
+    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Lỗi xử lý Viettel Post webhook') })
   }
 })
 
@@ -1068,125 +1171,154 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // Khởi chạy server
-const server = app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`\n======================================================`)
-  console.log(`🚀 QuanNguyenS Order Server đang chạy tại: http://localhost:${PORT}`)
-  console.log(`======================================================`)
+let server = null
 
-  // Kiểm tra Sheet (chế độ degraded an toàn nếu thiếu credentials)
-  try {
-    if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_SHEET_ID) {
-      await initializeSheet()
-      sheetStatus = { ready: true, error: null }
-      console.log('✅ Google Sheets kết nối thành công.')
-    } else {
-      sheetStatus = { ready: false, error: 'Chưa cấu hình Google Service Account trong .env (đơn hàng lưu tại local disk storage)' }
-      console.warn('⚠️ [DEGRADED MODE] Google Service Account chưa được cấu hình. Đơn hàng lưu tại local persistence storage.')
+if (process.env.NO_AUTO_LISTEN !== 'true') {
+  server = app.listen(PORT, '0.0.0.0', async () => {
+    console.log(`\n======================================================`)
+    console.log(`🚀 QuanNguyenS Order Server đang chạy tại: http://localhost:${PORT}`)
+    console.log(`======================================================`)
+
+    // Kiểm tra Sheet (chế độ degraded an toàn nếu thiếu credentials)
+    try {
+      if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_SHEET_ID) {
+        await initializeSheet()
+        sheetStatus = { ready: true, error: null }
+        console.log('✅ Google Sheets kết nối thành công.')
+      } else {
+        sheetStatus = { ready: false, error: 'Chưa cấu hình Google Service Account trong .env (đơn hàng lưu tại local disk storage)' }
+        console.warn('⚠️ [DEGRADED MODE] Google Service Account chưa được cấu hình. Đơn hàng lưu tại local persistence storage.')
+      }
+    } catch (sheetErr) {
+      sheetStatus = { ready: false, error: safeErrorMessage(sheetErr, 'Lỗi kết nối Google Sheets') }
+      console.warn('⚠️ [DEGRADED MODE] Google Sheets init warning:', sheetErr.message)
     }
-  } catch (sheetErr) {
-    sheetStatus = { ready: false, error: sheetErr.message }
-    console.warn('⚠️ [DEGRADED MODE] Google Sheets init warning:', sheetErr.message)
-  }
 
-  // Kiểm tra Email Transporter
-  try {
-    const emailRes = await verifyTransporter()
-    if (emailRes?.success) {
-      emailStatus = { ready: true, error: null }
-      console.log('✅ SMTP Email kết nối thành công.')
-    } else {
-      emailStatus = { ready: false, error: emailRes?.error || 'Chưa cấu hình App Password' }
-      console.warn('⚠️ SMTP Email chưa sẵn sàng:', emailRes?.error)
+    // Kiểm tra Email Transporter
+    try {
+      const emailRes = await verifyTransporter()
+      if (emailRes?.success) {
+        emailStatus = { ready: true, error: null }
+        console.log('✅ HTTPS/SMTP Email kết nối thành công.')
+      } else {
+        emailStatus = { ready: false, error: emailRes?.error || 'Chưa cấu hình dịch vụ gửi email' }
+        console.warn('⚠️ Email chưa sẵn sàng:', emailRes?.error)
+      }
+    } catch (emailErr) {
+      emailStatus = { ready: false, error: safeErrorMessage(emailErr, 'Lỗi kiểm tra dịch vụ email') }
+      console.warn('⚠️ Email warning:', emailErr.message)
     }
-  } catch (emailErr) {
-    emailStatus = { ready: false, error: emailErr.message }
-    console.warn('⚠️ SMTP Email warning:', emailErr.message)
-  }
 
-  // ── Đồng bộ người dùng từ Supabase Cloud vào SQLite khi khởi động (DATA-PERSISTENCE) ──
-  try {
-    const { isSupabaseConfigured } = await import('./lib/supabaseClient.js')
-    if (isSupabaseConfigured()) {
-      const { syncUsersFromSupabase } = await import('./lib/accountDb.js')
-      const syncedCount = await syncUsersFromSupabase()
-      if (syncedCount > 0) {
-        console.log(`👥 [SUPABASE SYNC] Đã tự động đồng bộ ${syncedCount} tài khoản người dùng từ Supabase Cloud vào SQLite.`)
+    // ── Đồng bộ người dùng từ Supabase Cloud vào SQLite khi khởi động (DATA-PERSISTENCE) ──
+    try {
+      const { isSupabaseConfigured } = await import('./lib/supabaseClient.js')
+      if (isSupabaseConfigured()) {
+        const { syncUsersFromSupabase } = await import('./lib/accountDb.js')
+        const syncedCount = await syncUsersFromSupabase()
+        if (syncedCount > 0) {
+          console.log(`👥 [SUPABASE SYNC] Đã tự động đồng bộ ${syncedCount} tài khoản người dùng từ Supabase Cloud vào SQLite.`)
+        }
+      }
+    } catch (syncErr) {
+      console.warn('⚠️ [SUPABASE SYNC] Không thể đồng bộ tài khoản người dùng từ Supabase:', syncErr.message)
+    }
+
+    isServerReady = true
+
+    // ── Khởi động Background Job quét đơn hàng quá hạn thanh toán VietQR (WP4) ──
+    if (process.env.NODE_ENV !== 'test') {
+      try {
+        const { sweepExpiredOrders } = await import('./lib/paymentState.js')
+        const { expiredCount } = sweepExpiredOrders()
+        if (expiredCount > 0) {
+          console.log(`🧹 [PAYMENT CLEANUP] Đã tự động dọn dẹp ${expiredCount} đơn hàng chuyển khoản quá hạn lúc khởi động.`)
+        }
+        const expiryInterval = setInterval(() => {
+          try { sweepExpiredOrders() } catch (err) { console.error('Lỗi quét đơn hết hạn:', err.message) }
+        }, 30000)
+        if (expiryInterval.unref) expiryInterval.unref()
+      } catch (jobErr) {
+        console.warn('Lỗi khởi động Payment Expiry Job:', jobErr.message)
       }
     }
-  } catch (syncErr) {
-    console.warn('⚠️ [SUPABASE SYNC] Không thể đồng bộ tài khoản người dùng từ Supabase:', syncErr.message)
-  }
 
-  isServerReady = true
-
-  // ── Khởi động Background Job quét đơn hàng quá hạn thanh toán VietQR (WP4) ──
-  if (process.env.NODE_ENV !== 'test') {
-    try {
-      const { sweepExpiredOrders } = await import('./lib/paymentState.js')
-      const { expiredCount } = sweepExpiredOrders()
-      if (expiredCount > 0) {
-        console.log(`🧹 [PAYMENT CLEANUP] Đã tự động dọn dẹp ${expiredCount} đơn hàng chuyển khoản quá hạn lúc khởi động.`)
+    // ── Khởi động tiến trình tự động đồng bộ hành trình Viettel Post định kỳ (mỗi 2 phút) ──
+    const VIETTEL_SYNC_INTERVAL_MS = 2 * 60 * 1000
+    const viettelSyncTimer = setInterval(async () => {
+      try {
+        const { syncAllShippedOrdersWithViettelPost } = await import('./lib/viettelPostService.js')
+        const syncRes = await syncAllShippedOrdersWithViettelPost()
+        if (syncRes.deliveredCount > 0) {
+          console.log(`🚚 [VIETTEL POST AUTO-SYNC] Đã tự động cập nhật ${syncRes.deliveredCount} đơn hàng sang "Đã giao" (DELIVERED).`)
+        }
+      } catch (err) {
+        console.warn('⚠️ Lỗi chu kỳ đồng bộ Viettel Post:', err.message)
       }
-      const expiryInterval = setInterval(() => {
-        try { sweepExpiredOrders() } catch (err) { console.error('Lỗi quét đơn hết hạn:', err.message) }
-      }, 30000)
-      if (expiryInterval.unref) expiryInterval.unref()
-    } catch (jobErr) {
-      console.warn('Lỗi khởi động Payment Expiry Job:', jobErr.message)
-    }
-  }
+    }, VIETTEL_SYNC_INTERVAL_MS)
+    if (viettelSyncTimer.unref) viettelSyncTimer.unref()
 
-  // ── Khởi động tiến trình tự động đồng bộ hành trình Viettel Post định kỳ (mỗi 2 phút) ──
-  const VIETTEL_SYNC_INTERVAL_MS = 2 * 60 * 1000
-  const viettelSyncTimer = setInterval(async () => {
-    try {
-      const { syncAllShippedOrdersWithViettelPost } = await import('./lib/viettelPostService.js')
-      const syncRes = await syncAllShippedOrdersWithViettelPost()
-      if (syncRes.deliveredCount > 0) {
-        console.log(`🚚 [VIETTEL POST AUTO-SYNC] Đã tự động cập nhật ${syncRes.deliveredCount} đơn hàng sang "Đã giao" (DELIVERED).`)
-      }
-    } catch (err) {
-      console.warn('⚠️ Lỗi chu kỳ đồng bộ Viettel Post:', err.message)
-    }
-  }, VIETTEL_SYNC_INTERVAL_MS)
+    // Chạy đồng bộ lần đầu tiên sau 5 giây khởi động server
+    const initVtTimer = setTimeout(async () => {
+      try {
+        const { syncAllShippedOrdersWithViettelPost } = await import('./lib/viettelPostService.js')
+        await syncAllShippedOrdersWithViettelPost()
+      } catch (e) {}
+    }, 5000)
+    if (initVtTimer.unref) initVtTimer.unref()
 
-  // Chạy đồng bộ lần đầu tiên sau 5 giây khởi động server
-  setTimeout(async () => {
-    try {
-      const { syncAllShippedOrdersWithViettelPost } = await import('./lib/viettelPostService.js')
-      await syncAllShippedOrdersWithViettelPost()
-    } catch (e) {}
-  }, 5000)
+    // Lưu reference để cleanup khi shutdown
+    server.viettelSyncTimer = viettelSyncTimer
 
-  // Lưu reference để cleanup khi shutdown
-  server.viettelSyncTimer = viettelSyncTimer
-  // Khởi động sao lưu dự phòng định kỳ (DATA-01)
-  import('./lib/backupService.js').then(({ performDatabaseBackup }) => {
-    performDatabaseBackup().catch((e) => console.warn('Backup error on start:', e.message))
-    const dailyBackupTimer = setInterval(() => {
-      performDatabaseBackup().catch((e) => console.warn('Daily backup error:', e.message))
-    }, 24 * 60 * 60 * 1000)
-    server.dailyBackupTimer = dailyBackupTimer
-  }).catch(() => {})
-})
+    // Khởi động sao lưu dự phòng định kỳ (DATA-01)
+    import('./lib/backupService.js').then(({ performDatabaseBackup }) => {
+      performDatabaseBackup().catch((e) => console.warn('Backup error on start:', e.message))
+      const dailyBackupTimer = setInterval(() => {
+        performDatabaseBackup().catch((e) => console.warn('Daily backup error:', e.message))
+      }, 24 * 60 * 60 * 1000)
+      if (dailyBackupTimer.unref) dailyBackupTimer.unref()
+      server.dailyBackupTimer = dailyBackupTimer
+    }).catch(() => {})
+
+    // Dọn dẹp định kỳ dữ liệu tạm/phiên hết hạn (D3) mỗi 6 giờ
+    import('./lib/cleanupService.js').then(({ cleanupExpiredData }) => {
+      try { cleanupExpiredData() } catch {}
+      const cleanupTimer = setInterval(() => {
+        try { cleanupExpiredData() } catch (e) { console.warn('Cleanup error:', e.message) }
+      }, 6 * 60 * 60 * 1000)
+      if (cleanupTimer.unref) cleanupTimer.unref()
+      server.cleanupTimer = cleanupTimer
+    }).catch(() => {})
+  })
+}
 
 // Graceful shutdown (OPS-002)
 const shutdown = (signal) => {
   console.log(`\n🛑 Nhận tín hiệu ${signal}. Đang đóng server an toàn...`)
   isServerReady = false
-  if (server.viettelSyncTimer) {
+  if (server?.viettelSyncTimer) {
     clearInterval(server.viettelSyncTimer)
   }
-  if (server.dailyBackupTimer) {
+  if (server?.dailyBackupTimer) {
     clearInterval(server.dailyBackupTimer)
   }
-  server.close(() => {
-    console.log('🔒 Server đã dừng nhận kết nối. Tiến trình kết thúc an toàn.')
+  if (server?.cleanupTimer) {
+    clearInterval(server.cleanupTimer)
+  }
+  if (server) {
+    server.close(() => {
+      console.log('🔒 Server đã dừng nhận kết nối. Tiến trình kết thúc an toàn.')
+      process.exit(0)
+    })
+  } else {
     process.exit(0)
-  })
+  }
 }
 
-process.on('SIGTERM', () => shutdown('SIGTERM'))
-process.on('SIGINT', () => shutdown('SIGINT'))
+if (process.env.NO_AUTO_LISTEN !== 'true') {
+  process.on('SIGTERM', () => shutdown('SIGTERM'))
+  process.on('SIGINT', () => shutdown('SIGINT'))
+}
+
+export { app }
 
 

@@ -10,13 +10,14 @@ const isProd = process.env.NODE_ENV === 'production'
  * Lấy khóa bí mật JWT an toàn theo cơ chế Fail-Closed ở Production
  */
 export function getJwtSecretKey() {
-  const secretStr = (process.env.JWT_SECRET || process.env.CUSTOMER_AUTH_SECRET || '').trim()
   const isProduction = process.env.NODE_ENV === 'production'
+  const rawJwt = (process.env.JWT_SECRET || '').trim()
+  const secretStr = rawJwt || (isProduction ? '' : (process.env.CUSTOMER_AUTH_SECRET || '').trim())
 
   if (isProduction) {
     if (!secretStr || secretStr.length < 32) {
       throw new Error(
-        '⛔ [CRITICAL SECURITY] JWT_SECRET hoặc CUSTOMER_AUTH_SECRET phải được cấu hình tối thiểu 32 ký tự ngẫu nhiên trong môi trường production!'
+        '⛔ [CRITICAL SECURITY] JWT_SECRET phải được cấu hình độc lập, tối thiểu 32 ký tự ngẫu nhiên trong môi trường production!'
       )
     }
     return new TextEncoder().encode(secretStr)

@@ -29,6 +29,7 @@ export function getDb() {
     db = new Database(dbPath)
     db.pragma('journal_mode = WAL')
     db.pragma('busy_timeout = 5000')
+    db.pragma('foreign_keys = ON')
     initSchema(db)
     migrateSchema(db)
     runEnterpriseMigrations(db)
@@ -259,6 +260,33 @@ function migrateSchema(database) {
     CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
     CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
   `)
+
+  // H. Bảng versioned schema migrations & admin revoked tokens (D2 & AD1)
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      version TEXT PRIMARY KEY,
+      applied_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS admin_revoked_tokens (
+      token TEXT PRIMARY KEY,
+      revoked_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_admin_revoked_exp ON admin_revoked_tokens(expires_at);
+  `)
+
+  const applyMigration = (version, fn) => {
+    const exists = database.prepare('SELECT 1 FROM schema_migrations WHERE version = ?').get(version)
+    if (!exists) {
+      fn()
+      database.prepare('INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)').run(version, new Date().toISOString())
+    }
+  }
+
+  applyMigration('2026_11_backend_hardening_v1', () => {
+    // Baseline idempotent migration tracking for foreign keys & admin revocations
+  })
 
   // G. Backfill existing account identities if not already mapped
   const unmappedAccounts = database.prepare(`
@@ -1066,13 +1094,41 @@ export function upsertOrderToDb(order, database = getDb()) {
 export function deleteOrderFromDb(orderId, database = getDb()) {
   if (!orderId) return false
   try {
-    database.prepare('DELETE FROM payment_transactions WHERE order_id = ?').run(orderId)
+    // KHÔNG xóa payment_transactions để bảo toàn dữ liệu đối soát kế toán & tài chính
     const stmt = database.prepare('DELETE FROM orders WHERE order_id = ?')
     const result = stmt.run(orderId)
     return result.changes > 0
   } catch (err) {
     console.warn(`⚠️ [DB ORDER DELETE ERROR] Không thể xóa đơn ${orderId} khỏi DB:`, err.message)
     return false
+  }
+}
+
+export function revokeAdminTokenDb(token, expiresAt = Date.now() + 8 * 3600 * 1000, database = getDb()) {
+  if (!token) return
+  try {
+    const tokenHash = hashSessionToken(token)
+    database.prepare(`
+      INSERT INTO admin_revoked_tokens (token, revoked_at, expires_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(token) DO UPDATE SET
+        revoked_at = excluded.revoked_at,
+        expires_at = excluded.expires_at
+    `).run(tokenHash, Date.now(), expiresAt)
+  } catch (err) {
+    console.warn('⚠️ Lỗi ghi admin_revoked_tokens:', err.message)
+  }
+}
+
+export function isTokenRevokedDb(token, database = getDb()) {
+  if (!token) return false
+  try {
+    const tokenHash = hashSessionToken(token)
+    const row = database.prepare('SELECT 1 FROM admin_revoked_tokens WHERE token = ? AND expires_at > ?').get(tokenHash, Date.now())
+    return Boolean(row)
+  } catch (err) {
+    console.error('⚠️ Lỗi đọc admin_revoked_tokens (fail-closed):', err.message)
+    return true
   }
 }
 

@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS public.vouchers (
 CREATE INDEX IF NOT EXISTS idx_vouchers_account ON public.vouchers(account_id);
 CREATE INDEX IF NOT EXISTS idx_vouchers_used ON public.vouchers(used);
 
--- 7. BẬT ROW LEVEL SECURITY (RLS) ĐẢM BẢO AN TOÀN
+-- 7. BẬT ROW LEVEL SECURITY (RLS) ĐẢM BẢO AN TOÀN FAIL-CLOSED
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.enterprise_accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.enterprise_sessions ENABLE ROW LEVEL SECURITY;
@@ -129,20 +129,37 @@ ALTER TABLE public.security_audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.vouchers ENABLE ROW LEVEL SECURITY;
 
--- Cho phép Backend (Service Role Key) toàn quyền truy xuất bảng
-CREATE POLICY "Service Role Full Access Users" ON public.users FOR ALL USING (true);
-CREATE POLICY "Service Role Full Access Accounts" ON public.enterprise_accounts FOR ALL USING (true);
-CREATE POLICY "Service Role Full Access Sessions" ON public.enterprise_sessions FOR ALL USING (true);
-CREATE POLICY "Service Role Full Access Logs" ON public.security_audit_logs FOR ALL USING (true);
-CREATE POLICY "Service Role Full Access Orders" ON public.orders FOR ALL USING (true);
-CREATE POLICY "Service Role Full Access Vouchers" ON public.vouchers FOR ALL USING (true);
+-- Gỡ bỏ mọi policy mở PUBLIC/anon cũ nếu từng được chạy trước đây
+DROP POLICY IF EXISTS "Service Role Full Access Users" ON public.users;
+DROP POLICY IF EXISTS "Service Role Full Access Accounts" ON public.enterprise_accounts;
+DROP POLICY IF EXISTS "Service Role Full Access Sessions" ON public.enterprise_sessions;
+DROP POLICY IF EXISTS "Service Role Full Access Logs" ON public.security_audit_logs;
+DROP POLICY IF EXISTS "Service Role Full Access Orders" ON public.orders;
+DROP POLICY IF EXISTS "Service Role Full Access Vouchers" ON public.vouchers;
 
--- 8. CẤP QUYỀN TRUY XUẤT CHO SERVICE ROLE & API POSTGREST
-GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
-GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, anon, authenticated, service_role;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, anon, authenticated, service_role;
-GRANT ALL ON ALL ROUTINES IN SCHEMA public TO postgres, anon, authenticated, service_role;
+-- Chỉ cấp quyền policy riêng cho service_role (lưu ý service_role vốn đã có BYPASSRLS trên Supabase;
+-- việc ghi rõ TO service_role ngăn chặn triệt để role anon/authenticated đọc ghi qua PostgREST)
+CREATE POLICY "Service Role Only Users" ON public.users FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service Role Only Accounts" ON public.enterprise_accounts FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service Role Only Sessions" ON public.enterprise_sessions FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service Role Only Logs" ON public.security_audit_logs FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service Role Only Orders" ON public.orders FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service Role Only Vouchers" ON public.vouchers FOR ALL TO service_role USING (true) WITH CHECK (true);
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO postgres, anon, authenticated, service_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO postgres, anon, authenticated, service_role;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO postgres, anon, authenticated, service_role;
+-- 8. THU HỒI QUYỀN PUBLIC/ANON/AUTHENTICATED & CHỈ CẤP CHO BACKEND SERVICE_ROLE
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON ALL ROUTINES IN SCHEMA public FROM PUBLIC, anon, authenticated;
+
+GRANT USAGE ON SCHEMA public TO postgres, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO postgres, service_role;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON ROUTINES FROM anon, authenticated;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO postgres, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO postgres, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO postgres, service_role;

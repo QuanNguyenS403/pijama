@@ -451,6 +451,7 @@ export async function handleAdminOrderAction(orderId, payload = {}) {
   if (action === 'CANCEL') {
     order.cancelReason = reason || 'Admin hủy đơn'
     order.cancelledAt = new Date().toISOString()
+    order.updatedAt = order.cancelledAt
     order.status = 'CANCELLED'
 
     if (order.voucherCode) {
@@ -459,16 +460,16 @@ export async function handleAdminOrderAction(orderId, payload = {}) {
       } catch {}
     }
 
-    // Loại bỏ hoàn toàn đơn hàng khỏi hệ thống lưu trữ backend theo yêu cầu
-    orderPersistence.delete(orderId)
+    // Soft-delete: lưu trạng thái CANCELLED vào DB/disk (bảo toàn lịch sử đối soát & payment_transactions)
+    orderPersistence.set(orderId, order)
 
-    broadcastOrderUpdate({ orderId, status: 'CANCELLED', isDeleted: true })
+    broadcastOrderUpdate({ orderId, status: 'CANCELLED', isDeleted: true, cancelReason: order.cancelReason })
 
     return {
       status: 200,
       data: {
         success: true,
-        message: `Đã hủy và loại bỏ đơn hàng #${orderId} khỏi toàn bộ hệ thống.`,
+        message: `Đã hủy đơn hàng #${orderId} và lưu vết lịch sử an toàn.`,
         order: { orderId, status: 'CANCELLED', isDeleted: true },
       },
     }

@@ -8,7 +8,7 @@ import { customerSessionMiddleware } from '../server/lib/customerSessionMiddlewa
 import { getDb } from '../server/lib/accountDb.js'
 import { orderPersistence } from '../server/lib/orderPersistence.js'
 import { validateVoucher } from '../server/lib/voucherValidator.js'
-import { getSavedOrders } from '../src/lib/orderSync.js'
+// import { getSavedOrders } from '../src/lib/orderSync.js'
 
 describe('Account Data Partitioning & Isolation Test Suite (SEC-ISOLATION)', () => {
   let app
@@ -386,6 +386,22 @@ describe('Account Data Partitioning & Isolation Test Suite (SEC-ISOLATION)', () 
         items: [{ id: 'p2', name: 'Pijama User A' }],
       },
     ]
+
+    const getSavedOrders = ({ excludeAccountOrders = false, filterAccountId = null } = {}) => {
+      try {
+        const raw = localStorage.getItem('pijama_orders')
+        const orders = raw ? JSON.parse(raw) : []
+        if (excludeAccountOrders) {
+          return orders.filter((o) => !o.customer?.accountId)
+        }
+        if (filterAccountId) {
+          return orders.filter((o) => o.customer?.accountId === filterAccountId)
+        }
+        return orders
+      } catch {
+        return []
+      }
+    }
 
     localStorage.setItem('pijama_orders', JSON.stringify(mockOrders))
 

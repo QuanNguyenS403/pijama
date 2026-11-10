@@ -11,8 +11,11 @@ export async function verifyTurnstileToken(token, clientIp = '') {
     return { success: true, mocked: true }
   }
 
-  // Bỏ qua kiểm tra nếu chưa cấu hình secret
+  // Bỏ qua kiểm tra nếu chưa cấu hình secret (nhưng fail-closed nếu TURNSTILE_ENFORCE=true)
   if (!secretKey) {
+    if (isEnforced) {
+      return { success: false, error: 'Hệ thống bảo mật Captcha chưa được cấu hình hoàn chỉnh.' }
+    }
     if (isProd) {
       console.warn('⚠️ [SECURITY] TURNSTILE_SECRET_KEY chưa được cấu hình trong production. Tạm thời bỏ qua.')
     }
