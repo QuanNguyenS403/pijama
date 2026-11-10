@@ -179,9 +179,11 @@ export default function ProductDetailPage() {
       <CraftsmanshipStrip />
 
 
-      {/* Related products (Có thể bạn thích) */}
+      {/* Related products (Có thể bạn thích) — Ẩn riêng trên điện thoại theo yêu cầu */}
       {related.length > 0 && (
-        <RelatedProducts products={related} onAddToCart={handleAddToCart} />
+        <div className="hidden md:block">
+          <RelatedProducts products={related} onAddToCart={handleAddToCart} />
+        </div>
       )}
 
       {/* Reviews */}

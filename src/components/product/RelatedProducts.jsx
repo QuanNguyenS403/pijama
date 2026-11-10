@@ -16,7 +16,7 @@ export default function RelatedProducts({ products = [], onAddToCart }) {
 
   return (
     <>
-      <section className="py-14 sm:py-16 md:py-20 bg-[#F5F0EB] border-t border-[#E8DFD5]" aria-label="Sản phẩm liên quan">
+      <section className="hidden md:block py-14 sm:py-16 md:py-20 bg-[#F5F0EB] border-t border-[#E8DFD5]" aria-label="Sản phẩm liên quan">
         <div className="w-full max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-10">
           {/* Header */}
           <div className="flex items-end justify-between mb-8">
