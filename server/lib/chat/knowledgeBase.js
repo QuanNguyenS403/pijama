@@ -35,6 +35,28 @@ const SYNONYMS = {
 }
 
 /**
+ * Định dạng thông số size chuẩn theo từng sản phẩm từ products.js
+ */
+export function formatProductSizeDetails(product) {
+  const sizeKeys = product?.sizes || []
+  return sizeKeys.map((s) => {
+    const guide = product.sizeGuide?.[s]
+    if (!guide) return `Size ${s}`
+    const parts = []
+    if (guide.weight) parts.push(`cân nặng ${guide.weight}`)
+    if (guide.height) parts.push(`chiều cao ${guide.height}`)
+    if (guide.shirtLength) parts.push(`dài áo ${guide.shirtLength}`)
+    if (guide.chest) parts.push(`ngực ${guide.chest}`)
+    if (guide.sleeveLength) parts.push(`dài tay ${guide.sleeveLength}`)
+    if (guide.maxWaist) parts.push(`max eo ${guide.maxWaist}`)
+    else if (guide.waist) parts.push(`eo ${guide.waist}`)
+    if (guide.thigh) parts.push(`đùi ${guide.thigh}`)
+    if (guide.trouserLength) parts.push(`dài quần ${guide.trouserLength}`)
+    return `Size ${s}: ${parts.join(' · ')}`
+  })
+}
+
+/**
  * Xây dựng danh sách các mẩu kiến thức (chunks) tự động từ dữ liệu chuẩn
  */
 function buildKnowledgeChunks() {
@@ -43,23 +65,7 @@ function buildKnowledgeChunks() {
   // 1. Chunks Sản phẩm
   for (const p of products) {
     const sizeKeys = p.sizes || []
-    const sizeDetails = sizeKeys
-      .map((s) => {
-        const guide = p.sizeGuide?.[s]
-        if (!guide) return `Size ${s}`
-        const parts = []
-        if (guide.shirtLength) parts.push(`dài áo ${guide.shirtLength}`)
-        if (guide.chest) parts.push(`vòng ngực ${guide.chest}`)
-        if (guide.sleeveLength) parts.push(`dài tay ${guide.sleeveLength}`)
-        if (guide.maxWaist) parts.push(`max eo ${guide.maxWaist}`)
-        else if (guide.waist) parts.push(`vòng eo ${guide.waist}`)
-        if (guide.thigh) parts.push(`đùi ${guide.thigh}`)
-        if (guide.trouserLength) parts.push(`dài quần ${guide.trouserLength}`)
-        if (guide.weight) parts.push(`cân nặng ${guide.weight}`)
-        if (guide.height) parts.push(`chiều cao ${guide.height}`)
-        return `Size ${s}: ${parts.join(', ')}`
-      })
-      .join('; ')
+    const sizeDetails = formatProductSizeDetails(p).join('; ')
 
     const colors = (p.colors || []).map((c) => c.label || c.name).join(', ')
     const preOrderNote = p.preOrder?.enabled
@@ -278,6 +284,23 @@ export function getAllProductsSummary() {
     preOrder: !!p.preOrder?.enabled,
     fengShui: p.fengShui ? `${p.fengShui.element} (${p.fengShui.goodFor?.join(', ')})` : null,
   }))
+}
+
+/**
+ * Tạo phản hồi bảng size đồng bộ 100% với thông số hiện có trên website (src/data/products.js)
+ */
+export function buildWebsiteSizeGuideReply() {
+  const productBlocks = products.map((p) => {
+    const sizesLabel = (p.sizes || []).join(', ')
+    const lines = formatProductSizeDetails(p).map((line) => `  - ${line}`).join('\n')
+    return `• **${p.name}** (Size ${sizesLabel}):\n${lines}`
+  })
+
+  return (
+    'Dạ QuanNguyenS gửi anh/chị bảng size chuẩn theo đúng thông số từng mẫu đang hiển thị trên website ạ:\n\n' +
+    productBlocks.join('\n\n') +
+    '\n\nAnh/chị cho em xin mẫu đang quan tâm cùng chiều cao, cân nặng hoặc số đo ngực/eo để em chọn size vừa vặn nhất cho mình nhé!'
+  )
 }
 
 export { KNOWLEDGE_CHUNKS }

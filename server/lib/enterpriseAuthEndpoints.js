@@ -37,6 +37,41 @@ import {
   deleteActiveResetTokenDb,
   isEmailBounceSuppressed,
 } from './accountDb.js'
+import { getMemberByPhone, linkMemberAccount } from './loyalty/loyaltyDb.js'
+
+function resolveBirthFields({ birthDate, birthDay, birthMonth, birthYear } = {}) {
+  let day = birthDay ? Number(birthDay) : null
+  let month = birthMonth ? Number(birthMonth) : null
+  let year = birthYear ? Number(birthYear) : null
+
+  if ((!day || !month) && typeof birthDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(birthDate.trim())) {
+    const [yStr, mStr, dStr] = birthDate.trim().split('-')
+    year = year || parseInt(yStr, 10)
+    month = month || parseInt(mStr, 10)
+    day = day || parseInt(dStr, 10)
+  }
+
+  return {
+    birthDay: Number.isInteger(day) && day >= 1 && day <= 31 ? day : null,
+    birthMonth: Number.isInteger(month) && month >= 1 && month <= 12 ? month : null,
+    birthYear: Number.isInteger(year) && year >= 1920 && year <= new Date().getFullYear() ? year : null,
+  }
+}
+
+function formatBirthDateStr(day, month, year) {
+  if (!year || !month || !day) return ''
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+function tryLinkLoyaltyMemberByPhone(phone, accountId) {
+  if (!phone || !accountId) return
+  try {
+    const member = getMemberByPhone(phone)
+    if (member && member.id && (!member.account_id || member.account_id !== accountId)) {
+      linkMemberAccount(member.id, accountId)
+    }
+  } catch (_) {}
+}
 
 /**
  * Đăng ký bộ API Xác thực Chuẩn Doanh nghiệp (Enterprise Auth Endpoints)
@@ -90,7 +125,8 @@ export function registerEnterpriseAuthEndpoints(app) {
     try {
       const ip = getClientIp(req)
       const userAgent = getUserAgent(req)
-      const { email, password, fullName, phone, marketingOptIn } = req.validatedBody
+      const { email, password, fullName, phone, birthDate, birthDay: rawDay, birthMonth: rawMonth, birthYear: rawYear, marketingOptIn } = req.validatedBody
+      const { birthDay, birthMonth, birthYear } = resolveBirthFields({ birthDate, birthDay: rawDay, birthMonth: rawMonth, birthYear: rawYear })
       const cleanEmail = (email || '').trim().toLowerCase()
       const db = getDb()
 
@@ -105,24 +141,29 @@ export function registerEnterpriseAuthEndpoints(app) {
 
       db.prepare(`
         INSERT INTO users (
-          id, email, password_hash, full_name, phone, role, status, verified, marketing_email_opt_in, marketing_opt_in_at, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, 'customer', 'active', 1, ?, ?, ?, ?)
-      `).run(userId, cleanEmail, passwordHash, fullName, phone || null, marketingOptIn ? 1 : 0, marketingOptIn ? now : null, now, now)
+          id, email, password_hash, full_name, phone, birth_day, birth_month, birth_year, role, status, verified, marketing_email_opt_in, marketing_opt_in_at, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'customer', 'active', 1, ?, ?, ?, ?)
+      `).run(userId, cleanEmail, passwordHash, fullName, phone || null, birthDay, birthMonth, birthYear, marketingOptIn ? 1 : 0, marketingOptIn ? now : null, now, now)
 
       // Đồng bộ sang bảng accounts để thỏa mãn khóa ngoại vouchers(account_id) -> accounts(id)
       db.prepare(`
         INSERT INTO accounts (
-          id, method, email, phone, full_name, verified, marketing_email_opt_in, marketing_opt_in_at, status, created_at, updated_at
-        ) VALUES (?, 'local', ?, ?, ?, 1, ?, ?, 'active', ?, ?)
+          id, method, email, phone, birth_day, birth_month, birth_year, full_name, verified, marketing_email_opt_in, marketing_opt_in_at, status, created_at, updated_at
+        ) VALUES (?, 'local', ?, ?, ?, ?, ?, ?, 1, ?, ?, 'active', ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           email = excluded.email,
           full_name = excluded.full_name,
           phone = excluded.phone,
+          birth_day = COALESCE(excluded.birth_day, birth_day),
+          birth_month = COALESCE(excluded.birth_month, birth_month),
+          birth_year = COALESCE(excluded.birth_year, birth_year),
           marketing_email_opt_in = excluded.marketing_email_opt_in,
           verified = 1,
           status = 'active',
           updated_at = excluded.updated_at
-      `).run(userId, cleanEmail, phone || null, fullName, marketingOptIn ? 1 : 0, marketingOptIn ? now : null, now, now)
+      `).run(userId, cleanEmail, phone || null, birthDay, birthMonth, birthYear, fullName, marketingOptIn ? 1 : 0, marketingOptIn ? now : null, now, now)
+
+      tryLinkLoyaltyMemberByPhone(phone, userId)
 
       const voucher = createWelcomeVoucher(userId)
       const tokens = await createSessionAndTokens(
@@ -144,6 +185,10 @@ export function registerEnterpriseAuthEndpoints(app) {
         email: cleanEmail,
         fullName,
         phone: phone || null,
+        birthDay,
+        birthMonth,
+        birthYear,
+        birthDate: formatBirthDateStr(birthDay, birthMonth, birthYear),
         avatarUrl: null,
         role: 'customer',
         verified: true,
@@ -167,7 +212,8 @@ export function registerEnterpriseAuthEndpoints(app) {
   const handleRegisterRequestOtp = async (req, res) => {
     const ip = getClientIp(req)
     const userAgent = getUserAgent(req)
-    const { email, password, fullName, phone, marketingOptIn, turnstileToken } = req.validatedBody
+    const { email, password, fullName, phone, birthDate, birthDay: rawDay, birthMonth: rawMonth, birthYear: rawYear, marketingOptIn, turnstileToken } = req.validatedBody
+    const { birthDay, birthMonth, birthYear } = resolveBirthFields({ birthDate, birthDay: rawDay, birthMonth: rawMonth, birthYear: rawYear })
     const cleanEmail = String(email || '').trim().toLowerCase().normalize('NFC')
 
     try {
@@ -283,6 +329,9 @@ export function registerEnterpriseAuthEndpoints(app) {
           email: cleanEmail,
           passwordHash,
           phone: phone || null,
+          birthDay,
+          birthMonth,
+          birthYear,
           marketingOptIn: Boolean(marketingOptIn),
           codeHash,
           salt,
@@ -298,6 +347,9 @@ export function registerEnterpriseAuthEndpoints(app) {
         fullName,
         passwordHash,
         phone: phone || null,
+        birthDay,
+        birthMonth,
+        birthYear,
         marketingOptIn: Boolean(marketingOptIn),
         codeHash,
         salt,
@@ -468,14 +520,17 @@ export function registerEnterpriseAuthEndpoints(app) {
       // 1. Lưu vào bảng users (đã xác thực email -> verified = 1)
       db.prepare(`
         INSERT INTO users (
-          id, email, password_hash, full_name, phone, role, status, verified, marketing_email_opt_in, marketing_opt_in_at, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, 'customer', 'active', 1, ?, ?, ?, ?)
+          id, email, password_hash, full_name, phone, birth_day, birth_month, birth_year, role, status, verified, marketing_email_opt_in, marketing_opt_in_at, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'customer', 'active', 1, ?, ?, ?, ?)
       `).run(
         userId,
         cleanEmail,
         data.passwordHash,
         data.fullName,
         data.phone || null,
+        data.birthDay || null,
+        data.birthMonth || null,
+        data.birthYear || null,
         data.marketingOptIn ? 1 : 0,
         data.marketingOptIn ? now : null,
         now,
@@ -511,12 +566,15 @@ export function registerEnterpriseAuthEndpoints(app) {
       // 3. Đồng bộ sang bảng accounts (verified = 1)
       db.prepare(`
         INSERT INTO accounts (
-          id, method, email, phone, full_name, verified, marketing_email_opt_in, marketing_opt_in_at, status, created_at, updated_at
-        ) VALUES (?, 'local', ?, ?, ?, 1, ?, ?, 'active', ?, ?)
+          id, method, email, phone, birth_day, birth_month, birth_year, full_name, verified, marketing_email_opt_in, marketing_opt_in_at, status, created_at, updated_at
+        ) VALUES (?, 'local', ?, ?, ?, ?, ?, ?, 1, ?, ?, 'active', ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           email = excluded.email,
           full_name = excluded.full_name,
           phone = excluded.phone,
+          birth_day = COALESCE(excluded.birth_day, birth_day),
+          birth_month = COALESCE(excluded.birth_month, birth_month),
+          birth_year = COALESCE(excluded.birth_year, birth_year),
           marketing_email_opt_in = excluded.marketing_email_opt_in,
           verified = 1,
           updated_at = excluded.updated_at
@@ -524,12 +582,17 @@ export function registerEnterpriseAuthEndpoints(app) {
         userId,
         email.toLowerCase(),
         data.phone || null,
+        data.birthDay || null,
+        data.birthMonth || null,
+        data.birthYear || null,
         data.fullName,
         data.marketingOptIn ? 1 : 0,
         data.marketingOptIn ? now : null,
         now,
         now
       )
+
+      tryLinkLoyaltyMemberByPhone(data.phone, userId)
 
       // 4. Đồng bộ account_identities
       try {
@@ -574,6 +637,11 @@ export function registerEnterpriseAuthEndpoints(app) {
         email: email.toLowerCase(),
         fullName: data.fullName,
         full_name: data.fullName,
+        phone: data.phone || '',
+        birthDay: data.birthDay || null,
+        birthMonth: data.birthMonth || null,
+        birthYear: data.birthYear || null,
+        birthDate: formatBirthDateStr(data.birthDay, data.birthMonth, data.birthYear),
         role: 'customer',
         voucherCode,
         verified: true,
@@ -628,7 +696,7 @@ export function registerEnterpriseAuthEndpoints(app) {
 
       const db = getDb()
       let user = db.prepare(`
-        SELECT id, email, password_hash, full_name, role, status, avatar_url, verified
+        SELECT id, email, password_hash, full_name, role, status, avatar_url, verified, phone, birth_day, birth_month, birth_year
         FROM users
         WHERE LOWER(email) = ?
       `).get(email)
@@ -637,7 +705,7 @@ export function registerEnterpriseAuthEndpoints(app) {
         const syncedUser = await findUserForPasswordReset(email, db)
         if (syncedUser) {
           user = db.prepare(`
-            SELECT id, email, password_hash, full_name, role, status, avatar_url, verified
+            SELECT id, email, password_hash, full_name, role, status, avatar_url, verified, phone, birth_day, birth_month, birth_year
             FROM users
             WHERE LOWER(email) = ?
           `).get(email) || syncedUser
@@ -694,22 +762,30 @@ export function registerEnterpriseAuthEndpoints(app) {
       // Đồng bộ sang accounts và customer_sessions
       db.prepare(`
         INSERT INTO accounts (
-          id, method, email, phone, full_name, verified, marketing_email_opt_in, status, created_at, updated_at
-        ) VALUES (?, 'local', ?, ?, ?, ?, 0, 'active', ?, ?)
+          id, method, email, phone, birth_day, birth_month, birth_year, full_name, verified, marketing_email_opt_in, status, created_at, updated_at
+        ) VALUES (?, 'local', ?, ?, ?, ?, ?, ?, ?, 0, 'active', ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           email = excluded.email,
           full_name = excluded.full_name,
           phone = coalesce(excluded.phone, phone),
+          birth_day = coalesce(excluded.birth_day, birth_day),
+          birth_month = coalesce(excluded.birth_month, birth_month),
+          birth_year = coalesce(excluded.birth_year, birth_year),
           updated_at = excluded.updated_at
       `).run(
         user.id,
         user.email,
         user.phone || null,
+        user.birth_day || null,
+        user.birth_month || null,
+        user.birth_year || null,
         user.full_name,
         user.verified || 0,
         new Date().toISOString(),
         new Date().toISOString()
       )
+
+      tryLinkLoyaltyMemberByPhone(user.phone, user.id)
 
       try {
         db.prepare(`
@@ -734,6 +810,14 @@ export function registerEnterpriseAuthEndpoints(app) {
         email: user.email,
         fullName: user.full_name,
         full_name: user.full_name,
+        phone: user.phone || '',
+        birthDay: user.birth_day || null,
+        birthMonth: user.birth_month || null,
+        birthYear: user.birth_year || null,
+        birthDate:
+          user.birth_year && user.birth_month && user.birth_day
+            ? `${user.birth_year}-${String(user.birth_month).padStart(2, '0')}-${String(user.birth_day).padStart(2, '0')}`
+            : '',
         role: user.role,
         avatarUrl: user.avatar_url || '',
         avatar_url: user.avatar_url || '',

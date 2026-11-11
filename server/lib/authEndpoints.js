@@ -61,7 +61,8 @@ import {
 } from './tokenService.js'
 import { registerEnterpriseAuthEndpoints } from './enterpriseAuthEndpoints.js'
 import { logSecurityAudit } from './auditLogger.js'
-import { getDb } from './accountDb.js'
+import { getDb, getCustomerCart, saveCustomerCart, clearCustomerCart } from './accountDb.js'
+import { getMemberByAccountId, getMemberByPhone } from './loyalty/loyaltyDb.js'
 
 // Rate limiter cho gửi OTP xác minh (chống spam SMS/Email)
 const otpRateLimiter = createRateLimiter({
@@ -714,6 +715,9 @@ export function registerAuthEndpoints(app) {
               avatar_url: user.avatar_url,
               email: user.email,
               phone: user.phone,
+              birth_day: user.birth_day || null,
+              birth_month: user.birth_month || null,
+              birth_year: user.birth_year || null,
               verified: user.verified,
               marketing_email_opt_in: user.marketing_email_opt_in,
               created_at: user.created_at,
@@ -733,6 +737,25 @@ export function registerAuthEndpoints(app) {
       })
     }
 
+    // Bảo đảm luôn đọc đầy đủ ngày sinh từ users/accounts nếu session rút gọn
+    let birthDay = account.birth_day ?? account.birthDay ?? null
+    let birthMonth = account.birth_month ?? account.birthMonth ?? null
+    let birthYear = account.birth_year ?? account.birthYear ?? null
+    if (birthDay == null && birthMonth == null) {
+      try {
+        const uRow = getDb().prepare('SELECT birth_day, birth_month, birth_year FROM users WHERE id = ?').get(account.id)
+        if (uRow) {
+          birthDay = uRow.birth_day ?? null
+          birthMonth = uRow.birth_month ?? null
+          birthYear = uRow.birth_year ?? null
+        }
+      } catch (_) {}
+    }
+    const birthDateStr =
+      birthYear && birthMonth && birthDay
+        ? `${birthYear}-${String(birthMonth).padStart(2, '0')}-${String(birthDay).padStart(2, '0')}`
+        : ''
+
     const voucher = getVoucherByAccountId(account.id)
 
     return res.json({
@@ -745,6 +768,10 @@ export function registerAuthEndpoints(app) {
         avatar_url: account.avatar_url || account.avatarUrl || '',
         email: account.email,
         phone: account.phone,
+        birthDay,
+        birthMonth,
+        birthYear,
+        birthDate: birthDateStr,
         verified: Boolean(account.verified),
         marketingEmailOptIn: Boolean(account.marketing_email_opt_in),
         createdAt: account.created_at || account.createdAt,
@@ -756,6 +783,10 @@ export function registerAuthEndpoints(app) {
         avatar_url: account.avatar_url || account.avatarUrl || '',
         email: account.email,
         phone: account.phone,
+        birthDay,
+        birthMonth,
+        birthYear,
+        birthDate: birthDateStr,
         role: account.role || 'customer',
         verified: Boolean(account.verified),
       },
@@ -785,11 +816,29 @@ export function registerAuthEndpoints(app) {
   app.get('/api/vouchers/validate', (req, res) => {
     try {
       const { code, subtotal } = req.query
-      // Lấy accountId từ session server, không dùng accountId client gửi để chống spoofing
-      const serverAccountId = req.customerAccount ? req.customerAccount.id : null
+      const trimmedCode = String(code || '').trim()
+      if (!trimmedCode || trimmedCode.includes(',') || trimmedCode.includes(';')) {
+        return res.status(400).json({
+          isValid: false,
+          error: trimmedCode
+            ? 'Mỗi đơn hàng chỉ được áp dụng tối đa 01 mã giảm giá (Voucher).'
+            : 'Vui lòng nhập mã giảm giá',
+        })
+      }
 
-      const result = validateVoucher(code, {
+      // Lấy accountId & memberId từ session server, không dùng thông tin client gửi để chống spoofing
+      const serverAccountId = req.customerAccount ? req.customerAccount.id : null
+      let serverMemberId = null
+      if (req.customerAccount) {
+        const m =
+          (req.customerAccount.id ? getMemberByAccountId(req.customerAccount.id) : null) ||
+          (req.customerAccount.phone ? getMemberByPhone(req.customerAccount.phone) : null)
+        if (m) serverMemberId = m.id
+      }
+
+      const result = validateVoucher(trimmedCode, {
         accountId: serverAccountId,
+        memberId: serverMemberId,
         subtotal: Number(subtotal) || 0,
       })
       return res.json(result)
@@ -1112,6 +1161,38 @@ export function registerAuthEndpoints(app) {
     } catch (err) {
       console.error('Admin broadcast error:', err)
       return res.status(500).json({ success: false, error: 'Lỗi gửi broadcast' })
+    }
+  })
+
+  // ── 16. Đồng bộ Giỏ Hàng & Voucher/Vận chuyển theo Tài Khoản ───
+  app.get('/api/cart', requireCustomerAuth, (req, res) => {
+    try {
+      const cart = getCustomerCart(req.customerAccount.id)
+      return res.json({ success: true, ...cart })
+    } catch (err) {
+      console.error('GET /api/cart error:', err)
+      return res.status(500).json({ success: false, error: 'Không thể tải giỏ hàng đồng bộ' })
+    }
+  })
+
+  app.put('/api/cart', requireCustomerAuth, verifyCsrfOrigin, (req, res) => {
+    try {
+      const { items = [], appliedVoucher = null, deliveryOption = 'COMBINED' } = req.body || {}
+      const saved = saveCustomerCart(req.customerAccount.id, { items, appliedVoucher, deliveryOption })
+      return res.json({ success: true, ...saved })
+    } catch (err) {
+      console.error('PUT /api/cart error:', err)
+      return res.status(500).json({ success: false, error: 'Không thể lưu giỏ hàng đồng bộ' })
+    }
+  })
+
+  app.delete('/api/cart', requireCustomerAuth, verifyCsrfOrigin, (req, res) => {
+    try {
+      clearCustomerCart(req.customerAccount.id)
+      return res.json({ success: true, items: [], appliedVoucher: null, deliveryOption: 'COMBINED' })
+    } catch (err) {
+      console.error('DELETE /api/cart error:', err)
+      return res.status(500).json({ success: false, error: 'Không thể xóa giỏ hàng đồng bộ' })
     }
   })
 }

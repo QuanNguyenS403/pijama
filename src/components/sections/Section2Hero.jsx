@@ -15,7 +15,7 @@ const slides = [
     headline: 'Ấm Áp Như\nBuổi Sáng Đầu Tiên',
     sub: 'Chất liệu sọc nâu, phom dáng suông phóng khoáng — từ giường ngủ đến hiên nhà.',
     align: 'left',
-    link: '/san-pham/the-evening-edit',
+    link: '/san-pham/the-hearth-set',
   },
   {
     id: 2,
@@ -25,7 +25,7 @@ const slides = [
     headline: 'Tĩnh Lặng,\nSâu Lắng',
     sub: 'Caro navy tinh tế với viền trắng tương phản — vẻ đẹp điềm tĩnh mà không kém phần tinh tế.',
     align: 'right',
-    link: '/san-pham/the-cafe-look',
+    link: '/san-pham/the-stillwater-set',
   },
   {
     id: 3,
@@ -35,7 +35,7 @@ const slides = [
     headline: 'Rực Rỡ &\nQuyến Rũ',
     sub: 'Sắc đỏ nồng nàn, dáng rộng thoải mái — phong cách sống bạn luôn mong chờ.',
     align: 'left',
-    link: '/san-pham/the-classic-set',
+    link: '/san-pham/the-daybreak-set',
   },
   {
     id: 4,

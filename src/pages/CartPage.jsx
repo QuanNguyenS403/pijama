@@ -8,6 +8,7 @@ import { Toast } from '../components/ui/Toast'
 import Section12Footer from '../components/sections/Section12Footer'
 import { useCart } from '../hooks/useCart'
 import { motion } from 'framer-motion'
+import { getDisplayColorName, isPreOrderItem, resolveCanonicalProductSlug } from '../lib/productUtils'
 
 function formatPrice(n) {
   return new Intl.NumberFormat('vi-VN').format(n) + 'đ'
@@ -92,19 +93,23 @@ export default function CartPage() {
 
               {/* Item list */}
               <div className="divide-y divide-[#E8DFD5]">
-                {items.map((item) => (
+                {items.map((item) => {
+                  const canonicalSlug = resolveCanonicalProductSlug(item.slug || item.productId)
+                  const displayColor = getDisplayColorName(item.color)
+                  const itemPreOrder = isPreOrderItem(item)
+                  return (
                   <div key={item.id} className="py-5">
                     {/* Mobile layout */}
                     <div className="flex md:hidden gap-3.5">
-                      <Link to={`/san-pham/${item.slug}`}>
+                      <Link to={`/san-pham/${canonicalSlug}`}>
                         <img src={item.image} alt={item.name} className="w-22 h-26 object-cover rounded-[2px] border border-[#E8DFD5] shrink-0 bg-white shadow-xs" />
                       </Link>
                       <div className="flex-1 min-w-0">
-                        <Link to={`/san-pham/${item.slug}`}>
+                        <Link to={`/san-pham/${canonicalSlug}`}>
                           <p className="font-serif font-bold text-base text-[#1A1614] leading-snug">{item.name}</p>
                         </Link>
-                        <p className="font-sans text-xs text-[#8C7E74] mt-0.5">{item.color?.name || (typeof item.color === 'string' ? item.color : '')} | Size <span className="font-bold text-[#1A1614]">{item.size}</span></p>
-                        {(item.preOrder?.enabled || item.isPreOrder || item.slug === 'the-evening-edit' || item.productId === 'the-evening-edit') && (
+                        <p className="font-sans text-xs text-[#8C7E74] mt-0.5">{displayColor} | Size <span className="font-bold text-[#1A1614]">{item.size}</span></p>
+                        {itemPreOrder && (
                           <p className="font-sans text-[0.7rem] font-bold text-[#631521] bg-[#FAF5F0] border border-[#D4AF37]/60 px-1.5 py-0.5 rounded-[2px] w-fit mt-1 flex items-center gap-1">
                             <span>⏱</span> Đặt trước — giao trong 7-10 ngày
                           </p>
@@ -126,15 +131,15 @@ export default function CartPage() {
                     {/* Desktop layout */}
                     <div className="hidden md:grid grid-cols-[3fr_1.2fr_1fr_auto] gap-4 items-center">
                       <div className="flex items-center gap-4">
-                        <Link to={`/san-pham/${item.slug}`} className="shrink-0">
+                        <Link to={`/san-pham/${canonicalSlug}`} className="shrink-0">
                           <img src={item.image} alt={item.name} className="w-24 h-28 object-cover rounded-[2px] border border-[#E8DFD5] bg-white shadow-xs" />
                         </Link>
                         <div>
-                          <Link to={`/san-pham/${item.slug}`}>
+                          <Link to={`/san-pham/${canonicalSlug}`}>
                             <p className="font-serif font-bold text-base text-[#1A1614] hover:text-[#631521] transition-colors leading-snug">{item.name}</p>
                           </Link>
                           <p className="font-sans text-xs font-normal text-[#8C7E74] mt-0.5">{item.subtitle}</p>
-                          {(item.preOrder?.enabled || item.isPreOrder || item.slug === 'the-evening-edit' || item.productId === 'the-evening-edit') && (
+                          {itemPreOrder && (
                             <span className="inline-flex items-center gap-1 font-sans text-[0.7rem] font-bold text-[#631521] bg-[#FAF5F0] border border-[#D4AF37]/60 px-1.5 py-0.5 rounded-[2px] mt-1.5">
                               ⏱ Đặt trước — giao trong 7-10 ngày
                             </span>
@@ -143,7 +148,7 @@ export default function CartPage() {
                       </div>
 
                       <div>
-                        <p className="font-sans text-sm text-[#1A1614] font-medium">{item.color?.name || (typeof item.color === 'string' ? item.color : '')}</p>
+                        <p className="font-sans text-sm text-[#1A1614] font-medium">{displayColor}</p>
                         <p className="font-sans text-xs text-[#8C7E74] mt-0.5">Size <span className="font-bold text-[#1A1614]">{item.size}</span></p>
                       </div>
 
@@ -161,7 +166,8 @@ export default function CartPage() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
 
               {/* Table footer */}

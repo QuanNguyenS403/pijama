@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import Header from '../components/layout/Header'
 import Section2Hero from '../components/sections/Section2Hero'
 import CraftsmanshipStrip from '../components/sections/CraftsmanshipStrip'
@@ -13,7 +14,19 @@ import CartDrawer from '../components/cart/CartDrawer'
 import { Toast } from '../components/ui/Toast'
 
 export default function LandingPage() {
-  const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
+  const location = useLocation()
+  const [cartDrawerOpen, setCartDrawerOpen] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return new URLSearchParams(window.location.search).get('openCart') === 'true'
+  })
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get('openCart') === 'true') {
+      setCartDrawerOpen(true)
+    }
+  }, [location.search])
+
   const [toast, setToast] = useState(null)
 
   const handleAddToCart = (info) => {

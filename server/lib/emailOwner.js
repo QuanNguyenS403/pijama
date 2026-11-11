@@ -64,6 +64,7 @@ export const sendOwnerEmail = async (order) => {
         <span class="kv-label">Điện thoại</span> <span class="kv-value"><a href="tel:${escapeHtml(order.customer?.phone)}" style="color:#631521;text-decoration:none">${escapeHtml(order.customer?.phone)}</a></span>
         <span class="kv-label">Email</span>       <span class="kv-value">${escapeHtml(order.customer?.email)}</span>
         <span class="kv-label">Địa chỉ</span>    <span class="kv-value">${escapeHtml(order.shipping?.fullAddress)}</span>
+        ${order.deliveryOption === 'SPLIT_SHIPPING' ? `<span class="kv-label">Tùy chọn giao</span><span class="kv-value" style="color:#631521">Tách 2 đợt (Giao hàng có sẵn trước, Pre-order sau 7–10 ngày)</span>` : ''}
         ${order.note ? `<span class="kv-label">Ghi chú</span><span class="kv-value" style="color:#631521">${escapeHtml(order.note)}</span>` : ''}
       </div>
 

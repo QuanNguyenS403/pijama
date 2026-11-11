@@ -9,6 +9,7 @@ import { isLoyaltyEnabled, LOYALTY_RULES, LOYALTY_TIERS } from './loyalty/loyalt
 import {
   getMemberById,
   getMemberByPhone,
+  getMemberByAccountId,
   updateMember,
   anonymizeAndCloseMember,
   listMembers,
@@ -39,7 +40,7 @@ import { normalizeVietnamesePhone, isValidVietnamesePhone } from './smsService.j
 /**
  * Middleware phân giải phiên Hội viên từ Cookie hoặc Bearer Token
  */
-function resolveLoyaltyMember(req, res, next) {
+export function resolveLoyaltyMember(req, res, next) {
   let token = null
 
   const authHeader = req.headers.authorization
@@ -52,8 +53,15 @@ function resolveLoyaltyMember(req, res, next) {
 
   if (token) {
     const session = findLoyaltySessionByToken(token)
-    if (session) {
-      req.loyaltyMember = session
+    if (session && (session.member_status ?? session.status) === 'active') {
+      const resolvedMemberId = session.member_id || session.id
+      req.loyaltyMember = {
+        ...session,
+        session_id: session.id,
+        id: resolvedMemberId,
+        member_id: resolvedMemberId,
+        status: session.member_status || session.status || 'active',
+      }
       return next()
     }
   }
@@ -405,16 +413,18 @@ export function registerLoyaltyEndpoints(app) {
   // ── 7. XEM TRƯỚC ƯU ĐÃI KHI THANH TOÁN (CHECKOUT PREVIEW) ───
   app.post('/api/loyalty/checkout-preview', resolveLoyaltyMember, (req, res) => {
     try {
-      const { subtotal, paymentMethod, voucherCode, phone } = req.body || {}
-      const memberId = req.loyaltyMember ? (req.loyaltyMember.id || req.loyaltyMember.member_id) : null
+      const { subtotal, paymentMethod, voucherCode, isMixedPreOrder = false, deliveryOption = 'COMBINED' } = req.body || {}
+      const memberId = req.loyaltyMember ? (req.loyaltyMember.member_id || req.loyaltyMember.id) : null
 
       const preview = previewCheckoutBenefits({
         memberId,
-        phone,
+        phone: null, // Chỉ áp dụng quyền lợi theo phiên hội viên đã xác thực, tránh dò SĐT hoặc lệch giá checkout
         subtotal: Number(subtotal) || 0,
         paymentMethod: paymentMethod || 'COD',
         voucherCode: voucherCode ? String(voucherCode).trim() : null,
         originalShippingFee: 30000,
+        isMixedPreOrder: Boolean(isMixedPreOrder),
+        deliveryOption: deliveryOption === 'SPLIT_SHIPPING' ? 'SPLIT_SHIPPING' : 'COMBINED',
       })
 
       return res.status(200).json({ success: true, ...preview })

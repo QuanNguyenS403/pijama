@@ -60,7 +60,10 @@ export async function handleOrderSubmit(order, context = {}) {
   }
 
   // 2. Kiểm tra tính toàn vẹn giá (P0-1)
-  const pricingCheck = validateOrderPricing(order)
+  const pricingCheck = validateOrderPricing(order, {
+    loyaltyMember: context.loyaltyMember || null,
+    accountId: context.accountId || order.accountId || null,
+  })
   if (!pricingCheck.isValid) {
     console.warn(`⛔ [PRICING REJECTED] Đơn hàng ${order.orderId} bị từ chối: ${pricingCheck.error}`)
     return {

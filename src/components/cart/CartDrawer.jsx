@@ -7,7 +7,13 @@ import CartItemRow from './CartItemRow'
 import CartSummary from './CartSummary'
 
 export default function CartDrawer({ isOpen, onClose }) {
-  const { items, totalItems, subtotal, freeShippingProgress, remainingForFreeShipping, shippingFee, removeItem, updateQuantity } = useCart()
+  const { items, totalItems, subtotal, freeShippingProgress, remainingForFreeShipping, shippingFee, removeItem, updateQuantity, syncFromServerCart } = useCart()
+
+  useEffect(() => {
+    if (isOpen) {
+      syncFromServerCart?.()
+    }
+  }, [isOpen])
   const navigate = useNavigate()
 
   // Lock scroll when open

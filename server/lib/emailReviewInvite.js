@@ -3,6 +3,7 @@ import { getTransporter } from './emailConfig.js'
 import { generateUnsubscribeToken } from './authCrypto.js'
 import { getDb } from './accountDb.js'
 import { recordReviewInvite } from './reviewDb.js'
+import { resolveCanonicalProductSlug } from '../../src/lib/productUtils.js'
 
 const SHOP_NAME = process.env.SHOP_NAME || 'QuanNguyenS'
 const SHOP_PHONE = process.env.SHOP_PHONE || '0973 486 218'
@@ -67,7 +68,7 @@ export async function sendReviewInviteEmail(order, options = {}) {
 
   // 5. Xác định sản phẩm đầu tiên trong đơn để tạo đường dẫn review
   const firstItem = Array.isArray(order.items) && order.items.length > 0 ? order.items[0] : null
-  const productSlug = firstItem?.slug || firstItem?.productId || 'the-classic-set'
+  const productSlug = resolveCanonicalProductSlug(firstItem?.slug || firstItem?.productId || 'the-daybreak-set')
   const productName = firstItem?.name || firstItem?.productName || 'Trang phục sleepwear QuanNguyenS'
 
   const reviewUrl = `${APP_URL}/san-pham/${productSlug}?review_token=${token}&order_id=${encodeURIComponent(orderId)}#reviews`

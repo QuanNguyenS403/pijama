@@ -13,7 +13,7 @@ const tiers = [
     desc: 'Sắc Đỏ nồng nàn — năng lượng Hỏa bừng tỉnh cùng mỗi bình minh. Phom suông châu Âu kinh điển, viền tương phản sắc nét.',
     pattern: 'Sắc Đỏ',
     accentColor: '#D4AF37',
-    slug: 'the-classic-set',
+    slug: 'the-daybreak-set',
     swatchBg: 'linear-gradient(135deg, #9E2A36 0%, #80262F 50%, #5E171E 100%)',
   },
   {
@@ -26,7 +26,7 @@ const tiers = [
     desc: 'Caro Navy sâu thẳm — chiều sâu của Thủy, tĩnh như mặt hồ lúc sớm mai. Cổ V thanh lịch, chất modal mềm mướt tựa nước.',
     pattern: 'Caro Navy',
     accentColor: '#D4AF37',
-    slug: 'the-cafe-look',
+    slug: 'the-stillwater-set',
     swatchBg: 'repeating-linear-gradient(0deg, rgba(245, 225, 164, 0.6) 0px, rgba(245, 225, 164, 0.6) 1px, #222636 1px, #222636 4px), repeating-linear-gradient(90deg, rgba(245, 225, 164, 0.6) 0px, rgba(245, 225, 164, 0.6) 1px, transparent 1px, transparent 4px)',
   },
   {
@@ -39,7 +39,7 @@ const tiers = [
     desc: 'Sọc Nâu mocha ấm — hành Thổ che chở như vòng tay đất mẹ. Wide-leg buông rủ thượng hạng, sang trọng tự nhiên.',
     pattern: 'Sọc Nâu',
     accentColor: '#D4AF37',
-    slug: 'the-evening-edit',
+    slug: 'the-hearth-set',
     swatchBg: 'repeating-linear-gradient(90deg, #5C3A21 0px, #5C3A21 2px, #FFFFFF 2px, #FFFFFF 3px, #5C3A21 3px, #5C3A21 5px)',
   },
 ]

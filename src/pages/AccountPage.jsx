@@ -33,6 +33,7 @@ import { apiPost, setAccessToken, clearAccessToken } from '../lib/apiClient'
 import { clearLocalOrders } from '../lib/orderSync'
 import { loginWithGoogle, setupGoogleSignInButton, decodeGoogleJwt } from '../lib/googleAuth'
 import LoyaltyMemberCard from '../components/loyalty/LoyaltyMemberCard'
+import useCartStore from '../store/cartStore'
 import { TurnstileWidget } from '../components/auth/TurnstileWidget'
 
 const formatVND = (amount) => Number(amount || 0).toLocaleString('vi-VN') + 'đ'
@@ -64,6 +65,8 @@ export default function AccountPage() {
   const [authEmail, setAuthEmail] = useState('')
   const [authPassword, setAuthPassword] = useState('')
   const [authFullName, setAuthFullName] = useState('')
+  const [authPhone, setAuthPhone] = useState('')
+  const [authBirthDate, setAuthBirthDate] = useState('')
   const [otpCode, setOtpCode] = useState('')
   const [resetToken, setResetToken] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -223,10 +226,14 @@ export default function AccountPage() {
     setAuthSubmitting(true)
     try {
       if (authMode === 'verify_register_otp') {
+        const cleanPhone = authPhone.replace(/[\s.-]/g, '').replace(/^\+?84/, '0').trim()
         const res = await apiPost('/api/auth/register/request-otp', {
           email: authEmail.trim(),
           password: authPassword,
+          confirmPassword,
           fullName: authFullName.trim(),
+          phone: cleanPhone || undefined,
+          birthDate: authBirthDate || undefined,
           marketingOptIn: true,
           turnstileToken: turnstileToken || undefined,
         })
@@ -291,13 +298,28 @@ export default function AccountPage() {
           localStorage.setItem('qns_customer_account', JSON.stringify(loggedUser))
         } catch (_) {}
         window.dispatchEvent(new CustomEvent('customer_auth_changed', { detail: { user: loggedUser } }))
+        useCartStore.getState().syncFromServerCart()
         fetchUserOrders()
         setToast({ productName: `Chào mừng ${loggedUser?.fullName || 'bạn'} trở lại!`, id: Date.now() })
       } else if (authMode === 'register') {
+        const cleanPhone = authPhone.replace(/[\s.-]/g, '').replace(/^\+?84/, '0').trim()
+        if (!/^0[35789]\d{8}$/.test(cleanPhone)) {
+          throw new Error('Vui lòng nhập số điện thoại Việt Nam hợp lệ (10 chữ số, VD: 0912345678)')
+        }
+        if (!authBirthDate) {
+          throw new Error('Vui lòng chọn ngày sinh của bạn')
+        }
+        if (authPassword !== confirmPassword) {
+          throw new Error('Mật khẩu nhập lại không khớp với mật khẩu đã nhập')
+        }
+
         const res = await apiPost('/api/auth/register/request-otp', {
           email: authEmail.trim(),
           password: authPassword,
+          confirmPassword,
           fullName: authFullName.trim(),
+          phone: cleanPhone,
+          birthDate: authBirthDate,
           marketingOptIn: true,
         })
         const data = await res.json()
@@ -341,6 +363,7 @@ export default function AccountPage() {
           localStorage.setItem('qns_customer_account', JSON.stringify(loggedUser))
         } catch (_) {}
         window.dispatchEvent(new CustomEvent('customer_auth_changed', { detail: { user: loggedUser } }))
+        useCartStore.getState().syncFromServerCart()
         setAuthPassword('')
         setOtpCode('')
         fetchUserOrders()
@@ -432,6 +455,7 @@ export default function AccountPage() {
           localStorage.setItem('qns_customer_account', JSON.stringify(acc))
         } catch (_) {}
         window.dispatchEvent(new CustomEvent('customer_auth_changed', { detail: { user: acc } }))
+        useCartStore.getState().syncFromServerCart()
         fetchUserOrders()
       } else {
         // Thử khôi phục session qua token rotation / refresh cookie nếu có
@@ -461,6 +485,7 @@ export default function AccountPage() {
                   localStorage.setItem('qns_customer_account', JSON.stringify(reAcc))
                 } catch (_) {}
                 window.dispatchEvent(new CustomEvent('customer_auth_changed', { detail: { user: reAcc } }))
+                useCartStore.getState().syncFromServerCart()
                 fetchUserOrders()
                 restored = true
               }
@@ -804,7 +829,37 @@ export default function AccountPage() {
                     />
                   </div>
 
-                  <div className="mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-4">
+                    <div>
+                      <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
+                        Số điện thoại <span className="text-[#e53935]">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        inputMode="tel"
+                        value={authPhone}
+                        onChange={(e) => setAuthPhone(e.target.value)}
+                        placeholder="09xxxxxxxx"
+                        required
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
+                        Ngày sinh <span className="text-[#e53935]">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={authBirthDate}
+                        max={new Date().toISOString().split('T')[0]}
+                        onChange={(e) => setAuthBirthDate(e.target.value)}
+                        required
+                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
                     <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
                       Mật khẩu <span className="text-[#e53935]">*</span>
                     </label>
@@ -813,7 +868,7 @@ export default function AccountPage() {
                         type={showPassword ? 'text' : 'password'}
                         value={authPassword}
                         onChange={(e) => setAuthPassword(e.target.value)}
-                        placeholder="Mật khẩu"
+                        placeholder="Mật khẩu (tối thiểu 8 ký tự, chữ & số)"
                         required
                         className="w-full px-3.5 pr-10 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
                       />
@@ -827,6 +882,34 @@ export default function AccountPage() {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
+                      Nhập lại mật khẩu <span className="text-[#e53935]">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Nhập lại mật khẩu"
+                        required
+                        className="w-full px-3.5 pr-10 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
+                      />
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        onClick={() => setShowConfirmPassword((prev) => !prev)}
+                        aria-label={showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8C7E74] hover:text-[#1A1614] transition-colors cursor-pointer p-0.5"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {confirmPassword && confirmPassword !== authPassword && (
+                      <p className="text-[11px] text-[#e53935] mt-1">Mật khẩu xác nhận chưa trùng khớp</p>
+                    )}
                   </div>
 
                   <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken('')} />
@@ -945,7 +1028,7 @@ export default function AccountPage() {
                       className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
                     />
                     <p className="text-[11px] text-[#8C7E74] mt-1.5">
-                      Hệ thống sẽ gửi mã xác nhận 6 chữ số tới Gmail này để quý khách xác minh.
+                      Hệ thống sẽ gửi mã xác nhận 6 chữ số tới địa chỉ Email này để quý khách xác minh.
                     </p>
                   </div>
 
@@ -954,7 +1037,7 @@ export default function AccountPage() {
                     disabled={authSubmitting || !authEmail.trim()}
                     className="w-full py-3 bg-[#000000] hover:bg-neutral-800 text-white font-medium text-xs sm:text-sm rounded-[2px] transition-colors cursor-pointer disabled:opacity-60 flex items-center justify-center"
                   >
-                    {authSubmitting ? 'Đang gửi mã tới Gmail...' : 'Lấy lại mật khẩu'}
+                    {authSubmitting ? 'Đang gửi mã tới địa chỉ Email...' : 'Lấy lại mật khẩu'}
                   </button>
                 </form>
               )}
@@ -962,7 +1045,7 @@ export default function AccountPage() {
               {authMode === 'verify_otp' && (
                 <form onSubmit={handleDirectAuth}>
                   <h1 className="text-xl sm:text-2xl font-bold text-[#1A1614] text-center tracking-normal uppercase mb-2">
-                    XÁC NHẬN MÃ TỪ GMAIL
+                    XÁC NHẬN MÃ TỪ EMAIL
                   </h1>
                   <p className="text-xs sm:text-sm text-[#4A3F38] text-center mb-6 leading-relaxed">
                     Mã xác nhận gồm 6 chữ số đã được gửi đến:<br />
@@ -1281,6 +1364,8 @@ export default function AccountPage() {
                 <div className="space-y-6">
                   <LoyaltyMemberCard
                     customerPhone={user?.phone || ''}
+                    customerName={user?.fullName || user?.full_name || ''}
+                    customerEmail={user?.email || ''}
                     onRefresh={fetchUserOrders}
                   />
                 </div>

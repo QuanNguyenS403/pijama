@@ -38,9 +38,40 @@ export const RegisterDtoSchema = z.object({
     .trim()
     .min(2, 'Họ và tên phải có tối thiểu 2 ký tự')
     .max(100, 'Họ và tên không vượt quá 100 ký tự'),
-  phone: z.string().trim().optional().nullable(),
+  phone: z.preprocess(
+    (val) => {
+      if (val === null || val === undefined) return undefined
+      const cleaned = String(val).replace(/[\s.-]/g, '').replace(/^\+?84/, '0').trim()
+      return cleaned === '' ? undefined : cleaned
+    },
+    z.string().regex(/^0[35789]\d{8}$/, 'Số điện thoại Việt Nam phải gồm 10 chữ số hợp lệ (bắt đầu 03, 05, 07, 08, 09)').optional()
+  ),
+  confirmPassword: z.string().optional().nullable(),
+  birthDate: z.preprocess(
+    (val) => {
+      if (val === null || val === undefined) return undefined
+      const s = String(val).trim()
+      return s === '' ? undefined : s
+    },
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày sinh phải theo định dạng YYYY-MM-DD').optional()
+  ),
+  birthDay: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
+    z.number().int().min(1).max(31).optional()
+  ),
+  birthMonth: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
+    z.number().int().min(1).max(12).optional()
+  ),
+  birthYear: z.preprocess(
+    (val) => (val === '' || val === null || val === undefined ? undefined : Number(val)),
+    z.number().int().min(1920).max(new Date().getFullYear()).optional()
+  ),
   marketingOptIn: z.boolean().optional().default(false),
   turnstileToken: z.string().optional().nullable(),
+}).refine((data) => data.confirmPassword === undefined || data.confirmPassword === null || data.confirmPassword === data.password, {
+  message: 'Mật khẩu xác nhận không khớp',
+  path: ['confirmPassword'],
 })
 
 export const LoginDtoSchema = z.object({

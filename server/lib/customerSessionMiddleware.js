@@ -110,7 +110,7 @@ export async function customerSessionMiddleware(req, res, next) {
       const db = getDb()
       const tokenHash = hashRefreshToken(candidateRefreshToken)
       const entSession = db.prepare(`
-        SELECT s.*, u.id as u_id, u.email as u_email, u.full_name, u.role, u.avatar_url, u.status as u_status, u.verified, u.marketing_email_opt_in, u.phone as u_phone
+        SELECT s.*, u.id as u_id, u.email as u_email, u.full_name, u.role, u.avatar_url, u.status as u_status, u.verified, u.marketing_email_opt_in, u.phone as u_phone, u.birth_day as u_birth_day, u.birth_month as u_birth_month, u.birth_year as u_birth_year
         FROM enterprise_sessions s
         JOIN users u ON s.user_id = u.id
         WHERE s.refresh_token_hash = ? AND s.is_revoked = 0 AND s.expires_at > ?
@@ -126,6 +126,9 @@ export async function customerSessionMiddleware(req, res, next) {
           avatarUrl: entSession.avatar_url,
           avatar_url: entSession.avatar_url,
           phone: entSession.u_phone || '',
+          birth_day: entSession.u_birth_day || null,
+          birth_month: entSession.u_birth_month || null,
+          birth_year: entSession.u_birth_year || null,
           status: entSession.u_status,
           verified: Boolean(entSession.verified),
           marketing_email_opt_in: Boolean(entSession.marketing_email_opt_in),

@@ -12,7 +12,10 @@ export default function LoyaltyCheckoutPerks({
   paymentMethod = 'COD',
   customerPhone = '',
   appliedVoucher = null,
+  isMixedPreOrder = false,
+  deliveryOption = 'COMBINED',
   onApplyVoucher,
+  onTierStatusChange,
 }) {
   const [member, setMember] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -29,7 +32,10 @@ export default function LoyaltyCheckoutPerks({
       })
       const data = await res.json()
       if (res.ok && data.success && data.member) {
-        setMember(data.member)
+        setMember({
+          ...data.member,
+          rewardPoints: data.points?.balance ?? data.member.rewardPoints ?? 0,
+        })
       } else {
         setMember(null)
       }
@@ -40,6 +46,9 @@ export default function LoyaltyCheckoutPerks({
 
   useEffect(() => {
     fetchMember()
+    const handleAuthChange = () => fetchMember()
+    window.addEventListener('customer_auth_changed', handleAuthChange)
+    return () => window.removeEventListener('customer_auth_changed', handleAuthChange)
   }, [])
 
   // Call checkout preview
@@ -54,12 +63,15 @@ export default function LoyaltyCheckoutPerks({
           body: JSON.stringify({
             subtotal,
             paymentMethod,
-            customerPhone,
+            voucherCode: appliedVoucher?.code || null,
+            isMixedPreOrder,
+            deliveryOption,
           }),
         })
         const data = await res.json()
         if (res.ok && data.success) {
           setPreview(data)
+          onTierStatusChange?.(data.isMember ? data : { tierDiscountPercent: 0, isMember: false })
         }
       } catch (err) {
         console.warn('Checkout preview error:', err)
@@ -69,10 +81,10 @@ export default function LoyaltyCheckoutPerks({
     }
 
     fetchPreview()
-  }, [subtotal, paymentMethod, customerPhone])
+  }, [subtotal, paymentMethod, member?.id, appliedVoucher?.code, isMixedPreOrder, deliveryOption])
 
-  const perks = preview?.perks || []
-  const rewardPoints = member?.rewardPoints || preview?.member?.rewardPoints || 0
+  const perks = preview?.benefitsList || preview?.perks || []
+  const rewardPoints = member?.rewardPoints ?? preview?.rewardPoints ?? preview?.pricingPreview?.pointsBalance ?? 0
   const isPointVoucherApplied = appliedVoucher?.source === 'points' || appliedVoucher?.discountAmount === 50000
 
   return (
@@ -126,9 +138,9 @@ export default function LoyaltyCheckoutPerks({
               </div>
             </div>
 
-            {p.applicable && p.discountAmount > 0 && (
+            {p.applicable && (p.amount ?? p.discountAmount ?? 0) > 0 && (
               <span className="font-serif font-bold text-[#2E7D32] shrink-0">
-                -{formatVND(p.discountAmount)}
+                -{formatVND(p.amount ?? p.discountAmount)}
               </span>
             )}
           </div>

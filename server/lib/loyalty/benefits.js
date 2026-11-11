@@ -1,9 +1,10 @@
 // server/lib/loyalty/benefits.js
 import { LOYALTY_TIERS, LOYALTY_RULES, TIER_ORDER } from './loyaltyConfig.js'
 import { getMemberById, getMemberByPhone, getLoyaltyDb } from './loyaltyDb.js'
-import { getMemberPointsBalance, getMemberRollingSpend } from './ledger.js'
+import { getMemberPointsBalance, getMemberRollingSpend, getMemberLedgerHistory } from './ledger.js'
 import { getNextTierInfo, evaluateMemberTierState } from './tierEngine.js'
-import { validateVoucher, calculateVoucherBenefits } from '../voucherValidator.js'
+import { validateVoucher } from '../voucherValidator.js'
+import { calculateOrderTotals } from '../../../src/lib/pricingCalculator.js'
 
 /**
  * Lấy hồ sơ ưu đãi tổng quan của hội viên (/api/loyalty/me)
@@ -63,6 +64,7 @@ export function getMemberBenefitsOverview(memberId, now = new Date()) {
     tierProgress: nextTierInfo,
     perks: tierConfig.perks,
     tierDiscountPercent: tierConfig.discountPercent,
+    recentLedger: getMemberLedgerHistory(memberId, { limit: 20 }),
     vouchers: vouchers.map((v) => ({
       code: v.code,
       kind: v.kind || 'percent',
@@ -88,6 +90,8 @@ export function previewCheckoutBenefits({
   paymentMethod = 'COD',
   voucherCode = null,
   originalShippingFee = 30000,
+  isMixedPreOrder = false,
+  deliveryOption = 'COMBINED',
 }) {
   let member = null
   if (memberId) {
@@ -100,23 +104,51 @@ export function previewCheckoutBenefits({
   const isMember = Boolean(member && member.status === 'active')
   const currentTier = isMember ? member.tier : 'MEMBER'
   const tierConfig = LOYALTY_TIERS[currentTier] || LOYALTY_TIERS.MEMBER
+  const tierDiscountPercent = isMember ? (tierConfig.discountPercent || 0) : 0
+
+  // Validate voucher (tối đa 01 mã)
+  let validatedVoucherObj = null
+  let voucherErrorMsg = null
+  if (voucherCode) {
+    const trimmedCode = String(voucherCode).trim()
+    if (trimmedCode.includes(',') || trimmedCode.includes(';')) {
+      voucherErrorMsg = 'Mỗi đơn hàng chỉ được áp dụng tối đa 01 mã giảm giá (Voucher).'
+    } else {
+      const voucherRes = validateVoucher(trimmedCode, {
+        memberId: member ? member.id : null,
+        subtotal: validSubtotal,
+      })
+      if (voucherRes.isValid && voucherRes.voucher) {
+        validatedVoucherObj = voucherRes.voucher
+      } else {
+        voucherErrorMsg = voucherRes.error || 'Mã ưu đãi không hợp lệ'
+      }
+    }
+  }
+
+  // Tính toán chiết khấu lũy tiến tuần tự bằng nguồn chuẩn chung
+  const totals = calculateOrderTotals({
+    subtotal: validSubtotal,
+    tierDiscountPercent,
+    voucher: validatedVoucherObj,
+    paymentMethod,
+    isMixedPreOrder: Boolean(isMixedPreOrder),
+    deliveryOption,
+  })
 
   const benefitsList = []
 
-  // 1. Ưu đãi chiết khấu theo Hạng Hội Viên (A9)
-  const tierDiscountPercent = tierConfig.discountPercent || 0
-  let tierDiscountAmount = 0
-
+  // 1. Ưu đãi chiết khấu theo Hạng Hội Viên
   if (isMember && tierDiscountPercent > 0) {
-    tierDiscountAmount = Math.round(validSubtotal * (tierDiscountPercent / 100))
     benefitsList.push({
       id: 'tier_discount',
       title: `Ưu đãi hạng ${tierConfig.name} (−${tierDiscountPercent}%)`,
       type: 'TIER_DISCOUNT',
       applicable: true,
-      amount: tierDiscountAmount,
+      amount: totals.tierDiscountAmount,
+      discountAmount: totals.tierDiscountAmount,
       percent: tierDiscountPercent,
-      message: `Tự động giảm ${tierDiscountPercent}% (${tierDiscountAmount.toLocaleString('vi-VN')}đ) cho hội viên ${tierConfig.name}`,
+      message: `Tự động giảm ${tierDiscountPercent}% (${totals.tierDiscountAmount.toLocaleString('vi-VN')}đ) cho hội viên ${tierConfig.name}`,
     })
   } else if (isMember) {
     benefitsList.push({
@@ -125,6 +157,7 @@ export function previewCheckoutBenefits({
       type: 'TIER_DISCOUNT',
       applicable: false,
       amount: 0,
+      discountAmount: 0,
       reasonCode: 'TIER_NO_DISCOUNT',
       message: 'Hạng Thân Thiết tích điểm 100k = 1 điểm. Mua thêm để thăng hạng Bạc giảm 5% mọi đơn hàng.',
     })
@@ -141,6 +174,7 @@ export function previewCheckoutBenefits({
         applicable: true,
         pointsRequired: 10,
         currentPoints: pointsBalance,
+        amount: LOYALTY_RULES.VOUCHER_AMOUNT_PER_REDEEM,
         discountAmount: LOYALTY_RULES.VOUCHER_AMOUNT_PER_REDEEM,
         message: `Bạn đang có ${pointsBalance} điểm khả dụng. Có thể đổi 10 điểm để giảm 50.000đ cho đơn này.`,
       })
@@ -153,51 +187,41 @@ export function previewCheckoutBenefits({
         applicable: false,
         pointsRequired: 10,
         currentPoints: pointsBalance,
+        amount: 0,
+        discountAmount: 0,
         reasonCode: 'INSUFFICIENT_POINTS',
         message: `Bạn đang có ${pointsBalance} điểm (còn thiếu ${needed} điểm để đổi voucher 50.000đ).`,
       })
     }
   }
 
-  // 3. Ưu đãi VietQR / Chuyển khoản ngân hàng (-10%)
+  // 3. Ưu đãi VietQR / Chuyển khoản ngân hàng (-10% trên giá còn lại)
   const isBankTransfer = paymentMethod === 'BANK_TRANSFER' || paymentMethod === 'VIETQR'
-  let vietQrDiscountAmount = 0
   if (isBankTransfer) {
-    vietQrDiscountAmount = Math.round(validSubtotal * 0.1)
     benefitsList.push({
       id: 'vietqr_discount',
-      title: 'Chiết khấu VietQR / Chuyển khoản (−10%)',
+      title: 'Chiết khấu VietQR / Chuyển khoản (−10% phần còn lại)',
       type: 'PAYMENT_DISCOUNT',
       applicable: true,
-      amount: vietQrDiscountAmount,
+      amount: totals.bankTransferDiscount,
+      discountAmount: totals.bankTransferDiscount,
       percent: 10,
-      message: `Giảm trực tiếp 10% (${vietQrDiscountAmount.toLocaleString('vi-VN')}đ) khi thanh toán chuyển khoản`,
+      message: `Giảm 10% phần giá trị còn lại (${totals.bankTransferDiscount.toLocaleString('vi-VN')}đ) khi thanh toán chuyển khoản`,
     })
   }
 
   // 4. Ưu đãi Voucher áp dụng
-  let voucherDiscountAmount = 0
-  let isFreeShipping = validSubtotal >= 500000 // Freeship từ 500k mặc định
-
   if (voucherCode) {
-    const voucherRes = validateVoucher(voucherCode, {
-      memberId: member ? member.id : null,
-      subtotal: validSubtotal,
-    })
-
-    if (voucherRes.isValid) {
-      const vBenefits = calculateVoucherBenefits(voucherRes.voucher, validSubtotal, originalShippingFee)
-      voucherDiscountAmount = vBenefits.discountAmount
-      if (vBenefits.freeShipping) isFreeShipping = true
-
+    if (validatedVoucherObj) {
       benefitsList.push({
         id: 'voucher_applied',
-        title: `Mã ưu đãi: ${voucherRes.voucher.code}`,
+        title: `Mã ưu đãi: ${validatedVoucherObj.code}`,
         type: 'VOUCHER',
         applicable: true,
-        code: voucherRes.voucher.code,
-        amount: voucherDiscountAmount,
-        message: `Áp dụng thành công mã ${voucherRes.voucher.code}: Giảm ${voucherDiscountAmount.toLocaleString('vi-VN')}đ`,
+        code: validatedVoucherObj.code,
+        amount: totals.voucherDiscount,
+        discountAmount: totals.voucherDiscount,
+        message: `Áp dụng thành công mã ${validatedVoucherObj.code}: Giảm ${totals.voucherDiscount.toLocaleString('vi-VN')}đ`,
       })
     } else {
       benefitsList.push({
@@ -207,45 +231,48 @@ export function previewCheckoutBenefits({
         applicable: false,
         code: voucherCode,
         amount: 0,
+        discountAmount: 0,
         reasonCode: 'VOUCHER_INVALID',
-        message: voucherRes.error || 'Mã ưu đãi không hợp lệ',
+        message: voucherErrorMsg || 'Mã ưu đãi không hợp lệ',
       })
     }
   }
 
-  // 5. Miễn phí vận chuyển
-  const shippingFee = isFreeShipping ? 0 : originalShippingFee
-  if (isFreeShipping) {
+  // 5. Miễn phí vận chuyển cơ bản
+  if (totals.baseShippingFee === 0) {
     benefitsList.push({
       id: 'shipping_perk',
-      title: 'Miễn phí vận chuyển toàn quốc',
+      title: 'Miễn phí vận chuyển tiêu chuẩn toàn quốc',
       type: 'SHIPPING',
       applicable: true,
       amount: originalShippingFee,
-      message: validSubtotal >= 500000 ? 'Đơn hàng từ 500.000đ được Freeship tự động' : 'Được miễn phí vận chuyển theo mã ưu đãi',
+      discountAmount: originalShippingFee,
+      message: validSubtotal >= 500000
+        ? 'Đơn hàng từ 500.000đ tạm tính được Freeship tự động'
+        : 'Được miễn phí vận chuyển theo mã ưu đãi',
     })
   }
 
-  // Tổng hợp số tiền tính theo server
-  const totalDiscount = tierDiscountAmount + vietQrDiscountAmount + voucherDiscountAmount
-  const expectedTotal = Math.max(0, validSubtotal - totalDiscount) + shippingFee
-
   // Dự tính điểm sẽ nhận được khi đơn giao thành công (A1, A2)
-  const qualifyingSpend = Math.max(0, validSubtotal - totalDiscount)
+  const qualifyingSpend = totals.afterBankTransfer
   const estimatedPointsToEarn = isMember ? Math.floor(qualifyingSpend / LOYALTY_RULES.SPEND_PER_POINT) : 0
 
   return {
     isMember,
     currentTier,
+    tierDiscountPercent: totals.tierDiscountPercent,
     benefitsList,
     pricingPreview: {
-      subtotal: validSubtotal,
-      tierDiscountAmount,
-      vietQrDiscountAmount,
-      voucherDiscountAmount,
-      totalDiscount,
-      shippingFee,
-      expectedTotal,
+      subtotal: totals.subtotal,
+      tierDiscountPercent: totals.tierDiscountPercent,
+      tierDiscountAmount: totals.tierDiscountAmount,
+      vietQrDiscountAmount: totals.bankTransferDiscount,
+      voucherDiscountAmount: totals.voucherDiscount,
+      totalDiscount: totals.totalDiscount,
+      baseShippingFee: totals.baseShippingFee,
+      splitShippingFee: totals.splitShippingFee,
+      shippingFee: totals.shippingFee,
+      expectedTotal: totals.total,
       estimatedPointsToEarn,
     },
   }

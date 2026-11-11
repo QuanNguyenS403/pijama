@@ -1,6 +1,20 @@
 // 🔒 DỮ LIỆU ĐÃ KHOÁ — xem PROTECTED-DATA.md trước khi sửa file này.
 // Chỉ chỉnh sửa khi có yêu cầu rõ ràng, cụ thể nhắm đúng vào nội dung file này.
 import { getTransporter } from './emailConfig.js'
+import { isPreOrderItem } from '../../src/lib/productUtils.js'
+
+function getPreOrderEmailInfo(order) {
+  const preOrderItems = (order?.items || []).filter(
+    (i) => isPreOrderItem(i) || Boolean(i.productName?.includes('HEARTH'))
+  )
+  const hasPreOrder = !!(order?.hasPreOrder || preOrderItems.length > 0)
+  const preOrderNames = preOrderItems
+    .map((i) => i.productName || i.name)
+    .filter((v, idx, arr) => v && arr.indexOf(v) === idx)
+  const preOrderDisplay = preOrderNames.length > 0 ? preOrderNames.join(' & ') : 'THE HEARTH SET'
+  const isSplitShipping = order?.deliveryOption === 'SPLIT_SHIPPING'
+  return { hasPreOrder, preOrderDisplay, isSplitShipping }
+}
 
 // Helper format VND
 const formatVND = (amount) => Number(amount || 0).toLocaleString('vi-VN') + 'đ'
@@ -46,16 +60,7 @@ export const buildBankTransferEmailHTML = (order) => {
   const bankName = process.env.BANK_ACCOUNT_NAME || 'NGUYEN DUC QUAN'
   const bankCode = process.env.BANK_CODE || 'VCB'
   const qrUrl = `https://img.vietqr.io/image/${bankCode}-${bankAcc}-compact2.png?amount=${order.total}&addInfo=${encodeURIComponent('QNS ' + order.orderId)}&accountName=${encodeURIComponent(bankName)}`
-  const hasPreOrder = !!(
-    order.hasPreOrder ||
-    order.items?.some(
-      (i) =>
-        i.isPreOrder ||
-        i.slug === 'the-evening-edit' ||
-        i.productId === 'the-evening-edit' ||
-        i.productName?.includes('HEARTH')
-    )
-  )
+  const { hasPreOrder, preOrderDisplay, isSplitShipping } = getPreOrderEmailInfo(order)
 
   return `
 <!DOCTYPE html>
@@ -132,7 +137,9 @@ export const buildBankTransferEmailHTML = (order) => {
     <div style="background:#FAF5F0;border:1px solid #D4AF37;border-left:4px solid #D4AF37;padding:14px 18px;margin-bottom:20px;border-radius:2px;">
       <strong style="color:#631521;font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;">⏱ Lưu ý đơn hàng Đặt Trước (Pre-Order)</strong>
       <p style="font-family:Arial,sans-serif;font-size:13px;color:#4A3F38;margin-top:4px;line-height:1.5;">
-        Đơn hàng có chứa sản phẩm <strong>THE DAYBREAK SET</strong> (may đo theo yêu cầu). Thời gian sản xuất và giao hàng dự kiến là <strong>7–10 ngày làm việc</strong>.
+        ${isSplitShipping
+          ? `Bạn đã chọn <strong>Tách đơn giao trước</strong>: Các sản phẩm có sẵn sẽ được giao trong <strong>2–4 ngày làm việc</strong>; sản phẩm Đặt Trước <strong>${escapeHtml(preOrderDisplay)}</strong> sẽ được may đo và giao trong <strong>7–10 ngày làm việc</strong>.`
+          : `Đơn hàng có chứa sản phẩm <strong>${escapeHtml(preOrderDisplay)}</strong> (đặt may theo yêu cầu). Thời gian sản xuất và giao hàng dự kiến là <strong>7–10 ngày làm việc</strong>.`}
       </p>
     </div>` : ''}
 
@@ -179,7 +186,7 @@ export const buildBankTransferEmailHTML = (order) => {
     <div class="total-section">
       <div class="total-row"><span>Tạm tính</span><span>${formatVND(order.subtotal)}</span></div>
       <div class="total-row"><span>Phí ship</span><span>${order.shippingFee === 0 ? 'Miễn phí' : formatVND(order.shippingFee)}</span></div>
-      ${order.discount > 0 ? `<div class="total-row"><span>Giảm giá VietQR (10%)</span><span>- ${formatVND(order.discount)}</span></div>` : ''}
+      ${order.discount > 0 ? `<div class="total-row"><span>${order.voucherDiscount > 0 || order.tierDiscountAmount > 0 ? 'Tổng giảm giá ưu đãi' : 'Giảm giá VietQR (10%)'}</span><span>- ${formatVND(order.discount)}</span></div>` : ''}
       <div class="total-final">
         <span class="label">Tổng thanh toán</span>
         <span class="amount">${formatVND(order.total)}</span>
@@ -225,16 +232,7 @@ export const buildBankTransferEmailHTML = (order) => {
 // Template 1: COD — chưa thanh toán
 // ──────────────────────────────────────────────────────────
 export const buildCODEmailHTML = (order) => {
-  const hasPreOrder = !!(
-    order.hasPreOrder ||
-    order.items?.some(
-      (i) =>
-        i.isPreOrder ||
-        i.slug === 'the-evening-edit' ||
-        i.productId === 'the-evening-edit' ||
-        i.productName?.includes('HEARTH')
-    )
-  )
+  const { hasPreOrder, preOrderDisplay, isSplitShipping } = getPreOrderEmailInfo(order)
   return `
 <!DOCTYPE html>
 <html lang="vi">
@@ -592,7 +590,9 @@ export const buildCODEmailHTML = (order) => {
     <div style="background:#FAF5F0;border:1px solid #D4AF37;border-left:4px solid #D4AF37;padding:14px 18px;margin-bottom:20px;border-radius:2px;">
       <strong style="color:#631521;font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;">⏱ Lưu ý sản phẩm Đặt Trước</strong>
       <p style="font-family:Arial,sans-serif;font-size:13px;color:#4A3F38;margin-top:4px;line-height:1.5;">
-        Sản phẩm <strong>THE DAYBREAK SET</strong> đang được may đo kỹ lưỡng theo đơn của bạn. Toàn bộ kiện hàng sẽ được vận chuyển đồng bộ ngay khi hoàn tất.
+        ${isSplitShipping
+          ? `Bạn đã chọn <strong>Tách đơn giao trước</strong>: Các sản phẩm có sẵn sẽ được giao trong <strong>2–4 ngày làm việc</strong>; sản phẩm Đặt Trước <strong>${escapeHtml(preOrderDisplay)}</strong> đang được may đo và giao sau <strong>7–10 ngày làm việc</strong>.`
+          : `Sản phẩm <strong>${escapeHtml(preOrderDisplay)}</strong> đang được may đo kỹ lưỡng theo đơn của bạn. Toàn bộ kiện hàng sẽ được vận chuyển đồng bộ ngay khi hoàn tất (dự kiến <strong>7–10 ngày làm việc</strong>).`}
       </p>
     </div>` : ''}
 
@@ -635,16 +635,7 @@ export const buildCODEmailHTML = (order) => {
 // Template 2: ĐÃ THANH TOÁN (VietQR / Chuyển khoản xác nhận)
 // ──────────────────────────────────────────────────────────
 export const buildPaidEmailHTML = (order) => {
-  const hasPreOrder = !!(
-    order.hasPreOrder ||
-    order.items?.some(
-      (i) =>
-        i.isPreOrder ||
-        i.slug === 'the-evening-edit' ||
-        i.productId === 'the-evening-edit' ||
-        i.productName?.includes('HEARTH')
-    )
-  )
+  const { hasPreOrder, preOrderDisplay, isSplitShipping } = getPreOrderEmailInfo(order)
   return `
 <!DOCTYPE html>
 <html lang="vi">
@@ -734,7 +725,9 @@ export const buildPaidEmailHTML = (order) => {
     <div style="background:#FAF5F0;border:1px solid #D4AF37;border-left:4px solid #D4AF37;padding:14px 18px;margin-bottom:20px;border-radius:2px;">
       <strong style="color:#631521;font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;">⏱ Lưu ý sản phẩm Đặt Trước</strong>
       <p style="font-family:Arial,sans-serif;font-size:13px;color:#4A3F38;margin-top:4px;line-height:1.5;">
-        Sản phẩm <strong>THE DAYBREAK SET</strong> đang được may đo theo đơn đặt của bạn. Chúng tôi sẽ thông báo ngay khi kiện hàng bắt đầu được chuyển phát.
+        ${isSplitShipping
+          ? `Bạn đã chọn <strong>Tách đơn giao trước</strong>: Các sản phẩm có sẵn được giao trong <strong>2–4 ngày làm việc</strong>; sản phẩm Đặt Trước <strong>${escapeHtml(preOrderDisplay)}</strong> được may đo và giao sau <strong>7–10 ngày làm việc</strong>.`
+          : `Sản phẩm <strong>${escapeHtml(preOrderDisplay)}</strong> đang được may đo theo đơn đặt của bạn. Chúng tôi sẽ thông báo ngay khi kiện hàng bắt đầu được chuyển phát (dự kiến <strong>7–10 ngày làm việc</strong>).`}
       </p>
     </div>` : ''}
 

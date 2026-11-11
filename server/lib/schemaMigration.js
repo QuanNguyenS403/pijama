@@ -155,6 +155,9 @@ export function runEnterpriseMigrations(database) {
         full_name TEXT NOT NULL,
         password_hash TEXT NOT NULL,
         phone TEXT,
+        birth_day INTEGER,
+        birth_month INTEGER,
+        birth_year INTEGER,
         marketing_opt_in INTEGER NOT NULL DEFAULT 1,
         code_hash TEXT NOT NULL,
         salt TEXT NOT NULL,
@@ -163,7 +166,18 @@ export function runEnterpriseMigrations(database) {
         created_at INTEGER NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_pending_reg_expires ON pending_registrations(expires_at);
-
+    `)
+    const pendCols = database.prepare('PRAGMA table_info(pending_registrations)').all().map((c) => c.name)
+    if (pendCols.length > 0 && !pendCols.includes('birth_day')) {
+      database.exec('ALTER TABLE pending_registrations ADD COLUMN birth_day INTEGER')
+    }
+    if (pendCols.length > 0 && !pendCols.includes('birth_month')) {
+      database.exec('ALTER TABLE pending_registrations ADD COLUMN birth_month INTEGER')
+    }
+    if (pendCols.length > 0 && !pendCols.includes('birth_year')) {
+      database.exec('ALTER TABLE pending_registrations ADD COLUMN birth_year INTEGER')
+    }
+    database.exec(`
       CREATE TABLE IF NOT EXISTS pending_password_resets (
         email TEXT PRIMARY KEY,
         code_hash TEXT NOT NULL,
@@ -236,6 +250,15 @@ export function runEnterpriseMigrations(database) {
     if (userCols.length > 0 && !userCols.includes('synthetic_reason')) {
       database.exec('ALTER TABLE users ADD COLUMN synthetic_reason TEXT')
     }
+    if (userCols.length > 0 && !userCols.includes('birth_day')) {
+      database.exec('ALTER TABLE users ADD COLUMN birth_day INTEGER')
+    }
+    if (userCols.length > 0 && !userCols.includes('birth_month')) {
+      database.exec('ALTER TABLE users ADD COLUMN birth_month INTEGER')
+    }
+    if (userCols.length > 0 && !userCols.includes('birth_year')) {
+      database.exec('ALTER TABLE users ADD COLUMN birth_year INTEGER')
+    }
 
     const accountCols = database.prepare('PRAGMA table_info(accounts)').all().map((c) => c.name)
     if (accountCols.length > 0 && !accountCols.includes('synthetic_flag')) {
@@ -244,8 +267,17 @@ export function runEnterpriseMigrations(database) {
     if (accountCols.length > 0 && !accountCols.includes('synthetic_reason')) {
       database.exec('ALTER TABLE accounts ADD COLUMN synthetic_reason TEXT')
     }
+    if (accountCols.length > 0 && !accountCols.includes('birth_day')) {
+      database.exec('ALTER TABLE accounts ADD COLUMN birth_day INTEGER')
+    }
+    if (accountCols.length > 0 && !accountCols.includes('birth_month')) {
+      database.exec('ALTER TABLE accounts ADD COLUMN birth_month INTEGER')
+    }
+    if (accountCols.length > 0 && !accountCols.includes('birth_year')) {
+      database.exec('ALTER TABLE accounts ADD COLUMN birth_year INTEGER')
+    }
   } catch (synErr) {
-    console.warn('⚠️ [MIGRATION WARNING] Synthetic flag column migration:', synErr.message)
+    console.warn('⚠️ [MIGRATION WARNING] Synthetic flag / birth column migration:', synErr.message)
   }
 
   // 5. ĐỒNG BỘ TƯƠNG THÍCH NGƯỢC (Backfill từ bảng accounts cũ sang users nếu có)

@@ -3,7 +3,7 @@
 export const products = [
   {
     id: "the-classic-set",
-    slug: "the-classic-set",
+    slug: "the-daybreak-set",
     name: "THE DAYBREAK SET",
     subtitle: "Pijama Phong Cách Châu Âu · Sắc Đỏ Quyến Rũ",
     collection: "Thu Đông 2026",
@@ -12,7 +12,7 @@ export const products = [
 
     description: `Bộ pijama lấy cảm hứng từ phong cách ngủ cổ điển châu Âu với gam màu Đỏ quý phái, quyến rũ — đường viền tương phản tinh tế, cổ áo notch thanh lịch, và phom dáng suông tự do cho cảm giác thoải mái trọn ngày. Mang năng lượng Hỏa ấm áp và rạng rỡ, khơi dậy nguồn sinh khí tươi mới cho không gian nghỉ ngơi của bạn.`,
 
-    longDescription: `THE DAYBREAK SET được thiết kế để mang lại cảm giác như đang thức giấc tại một khách sạn boutique 5 sao giữa lòng châu Âu. Gam màu Đỏ (Classic Red) mang sắc thái ấm áp, nồng nàn của hành Hỏa — như những tia nắng ấm tiếp thêm sinh khí và năng lượng tích cực cho tinh thần. Thiết kế suông nhẹ, viền tương phản sắc nét giúp bạn luôn thanh lịch, tự tin diện từ phòng ngủ ra phố hay tiếp khách tại nhà mà không cần đắn đo. Tương sinh và hòa hợp lý tưởng cho người mệnh Hỏa và Thổ.`,
+    longDescription: `THE DAYBREAK SET được thiết kế để mang lại cảm giác như đang thức giấc tại một khách sạn boutique 5 sao giữa lòng châu Âu. Gam màu Đỏ mang sắc thái ấm áp, nồng nàn của hành Hỏa — như những tia nắng ấm tiếp thêm sinh khí và năng lượng tích cực cho tinh thần. Thiết kế suông nhẹ, viền tương phản sắc nét giúp bạn luôn thanh lịch, tự tin diện từ phòng ngủ ra phố hay tiếp khách tại nhà mà không cần đắn đo. Tương sinh và hòa hợp lý tưởng cho người mệnh Hỏa và Thổ.`,
 
     detailedDescription: `THE DAYBREAK SET lấy cảm hứng từ đồ ngủ của các khách sạn boutique châu Âu — nơi pijama không chỉ là trang phục nghỉ ngơi mà là một tuyên ngôn phong cách sống tinh tế.
 
@@ -20,7 +20,7 @@ Thiết kế notch collar (cổ bẻ cổ điển) với viền tương phản �
 
 Quần dáng suông thẳng (straight-leg) với độ rủ tự nhiên từ sợi dệt cao cấp — thoải mái tối đa khi nằm nghỉ, chỉn chu tuyệt đối khi bước ra ngoài.
 
-Gam màu Đỏ (Classic Red) biểu trưng cho năng lượng Hỏa — biểu tượng của sự ấm áp, yêu đời, may mắn và nhiệt huyết tràn đầy. Rất hòa hợp và tương sinh cho những ai tìm kiếm sự cân bằng, đặc biệt là người mang mệnh Hỏa và Thổ.`,
+Gam màu Đỏ biểu trưng cho năng lượng Hỏa — biểu tượng của sự ấm áp, yêu đời, may mắn và nhiệt huyết tràn đầy. Rất hòa hợp và tương sinh cho những ai tìm kiếm sự cân bằng, đặc biệt là người mang mệnh Hỏa và Thổ.`,
 
     tagline: `Khởi đầu ngày mới tràn đầy sinh khí với sắc đỏ ấm áp và phom dáng châu Âu kinh điển.`,
     sectionLabel: "BST THU ĐÔNG 2026 · HỎA SẮC RỰC RỠ",
@@ -43,8 +43,9 @@ Gam màu Đỏ (Classic Red) biểu trưng cho năng lượng Hỏa — biểu t
     // ─── STYLE VARIANTS (treated as "colors" in the UI selector) ─────────────
     colors: [
       {
-        name: "Classic Red",
+        name: "Đỏ",
         label: "Đỏ",
+        aliases: ["Classic Red"],
         hex: "#80262F",          // representative swatch color (Đỏ Ruby / Đỏ Rượu)
         patternPreview: true,    // swatch preview
         patternType: "red",
@@ -116,7 +117,7 @@ Gam màu Đỏ (Classic Red) biểu trưng cho năng lượng Hỏa — biểu t
   },
   {
     id: 'the-cafe-look',
-    slug: 'the-cafe-look',
+    slug: 'the-stillwater-set',
     name: 'THE STILLWATER SET',
     subtitle: 'Pijama Thiết Kế Cổ V · Caro Navy Tĩnh Tại',
     collection: 'Thu Đông 2026',
@@ -218,7 +219,7 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
   },
   {
     id: 'the-evening-edit',
-    slug: 'the-evening-edit',
+    slug: 'the-hearth-set',
     name: 'THE HEARTH SET',
     subtitle: 'Pijama Wide-Leg Cao Cấp · Sọc Nâu Vững Chãi',
     collection: 'Thu Đông 2026',

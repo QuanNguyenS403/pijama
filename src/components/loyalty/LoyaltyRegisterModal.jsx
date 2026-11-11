@@ -3,11 +3,36 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Phone, User, AlertCircle, Loader2, ShieldCheck, ArrowLeft } from 'lucide-react'
 import { TierBadge } from './LoyaltyBadges'
 
-export default function LoyaltyRegisterModal({ isOpen, onClose, onSuccess, initialPhone = '' }) {
+export default function LoyaltyRegisterModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  initialPhone = '',
+  initialName = '',
+  initialEmail = '',
+}) {
   const [mode, setMode] = useState('enroll') // 'enroll' | 'login'
   const [step, setStep] = useState(1) // 1: Thông tin & SĐT, 2: Nhập OTP
-  const [fullName, setFullName] = useState('')
+  const [fullName, setFullName] = useState(initialName)
   const [phone, setPhone] = useState(initialPhone)
+
+  useEffect(() => {
+    if (!isOpen) return
+    if (initialName && !fullName) setFullName(initialName)
+    if (initialPhone && !phone) setPhone(initialPhone)
+    if ((!initialName || !initialPhone) && typeof fetch === 'function') {
+      fetch('/api/auth/me', { credentials: 'include' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          const u = d?.user || d?.account
+          if (u) {
+            if (u.fullName && !fullName) setFullName(u.fullName)
+            if (u.phone && !phone) setPhone(u.phone)
+          }
+        })
+        .catch(() => {})
+    }
+  }, [isOpen, initialName, initialPhone])
   const [combinedConsent, setCombinedConsent] = useState(false)
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)

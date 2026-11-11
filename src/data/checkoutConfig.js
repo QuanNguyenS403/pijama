@@ -1,5 +1,7 @@
 import { VIETNAM_PROVINCES } from './provinces'
 
+import { isPreOrderItem, analyzeCartFulfillment, getDisplayColorName } from '../lib/productUtils'
+
 export const PAYMENT_METHODS = [
   {
     value: "COD",
@@ -119,9 +121,12 @@ export const formatVND = (amount) =>
 export const createOrderPayload = (formData, cartItems, cartSummary) => {
   const orderId = generateOrderId()
   const now = new Date()
-  const hasPreOrder = cartItems.some(
-    (item) => item.preOrder?.enabled || item.isPreOrder || item.slug === 'the-evening-edit' || item.productId === 'the-evening-edit'
-  )
+  const fulfillment = analyzeCartFulfillment(cartItems)
+  const hasPreOrder = fulfillment.hasPreOrder
+  const deliveryOption =
+    fulfillment.isMixed && cartSummary.deliveryOption === 'SPLIT_SHIPPING'
+      ? 'SPLIT_SHIPPING'
+      : 'COMBINED'
 
   return {
     // ── ĐỊNH DANH ──────────────────────────────────────────
@@ -130,6 +135,13 @@ export const createOrderPayload = (formData, cartItems, cartSummary) => {
     orderDateVN: formatVNDate(now),
     status: formData.paymentMethod === "COD" ? "PENDING" : "AWAITING_PAYMENT",
     hasPreOrder,
+    isMixedPreOrder: fulfillment.isMixed,
+    deliveryOption,
+    preOrderEstimate: hasPreOrder
+      ? deliveryOption === 'SPLIT_SHIPPING'
+        ? 'Giao hàng có sẵn trong 2–4 ngày làm việc; hàng Đặt Trước sau 7–10 ngày làm việc'
+        : 'Dự kiến giao trong 7–10 ngày làm việc'
+      : 'Giao tiêu chuẩn 2–4 ngày làm việc',
 
     // ── THÔNG TIN KHÁCH HÀNG ──────────────────────────────
     customer: {
@@ -149,20 +161,14 @@ export const createOrderPayload = (formData, cartItems, cartSummary) => {
 
     // ── SẢN PHẨM ──────────────────────────────────────────
     items: cartItems.map((item) => {
-      const isItemPreOrder = !!(
-        item.preOrder?.enabled ||
-        item.isPreOrder ||
-
-
-        item.slug === 'the-evening-edit' ||
-        item.productId === 'the-evening-edit'
-      )
+      const isItemPreOrder = isPreOrderItem(item)
+      const displayColor = getDisplayColorName(item.color) || ''
       return {
         productId: item.productId || item.slug,
         slug: item.slug,
         productName: item.name,
-        variant: `${item.color?.name || item.color || ''} | Size ${item.size}`,
-        color: item.color?.name || item.color || '',
+        variant: `${displayColor} | Size ${item.size}`,
+        color: displayColor,
         size: item.size,
         quantity: item.quantity,
         unitPrice: item.price,
@@ -176,6 +182,12 @@ export const createOrderPayload = (formData, cartItems, cartSummary) => {
     // ── GIÁ TRỊ ───────────────────────────────────────────
     subtotal: cartSummary.subtotal,
     shippingFee: cartSummary.shippingFee || 0,
+    baseShippingFee: cartSummary.baseShippingFee || 0,
+    splitShippingFee: cartSummary.splitShippingFee || 0,
+    tierDiscountPercent: cartSummary.tierDiscountPercent || 0,
+    tierDiscountAmount: cartSummary.tierDiscountAmount || 0,
+    voucherDiscount: cartSummary.voucherDiscount || 0,
+    bankTransferDiscount: cartSummary.bankTransferDiscount || 0,
     discount: cartSummary.discount || 0,
     voucherCode: cartSummary.voucherCode || "",
     total: cartSummary.total,

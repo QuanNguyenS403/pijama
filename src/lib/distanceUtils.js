@@ -36,8 +36,8 @@ export const HANOI_DISTRICTS_DISTANCE = {
   'thanh oai':     { dist: 23.0, lat: 20.8845, lng: 105.7765 },
 
   // ── Huyện ranh giới 28km - 33km (Cần kiểm tra kỹ theo xã) ──
-  'quốc oai':      { dist: 29.5, lat: 20.9854, lng: 105.6321 },
-  'chương mỹ':     { dist: 29.0, lat: 20.8845, lng: 105.6985 },
+  'quốc oai':      { dist: 31.5, lat: 20.9854, lng: 105.6321 },
+  'chương mỹ':     { dist: 31.0, lat: 20.8845, lng: 105.6985 },
   'mê linh':       { dist: 32.5, lat: 21.1765, lng: 105.7185 },
   'sóc sơn':       { dist: 36.5, lat: 21.2645, lng: 105.8465 },
   'thạch thất':    { dist: 35.0, lat: 21.0125, lng: 105.5465 },
@@ -57,11 +57,14 @@ export const NEARBY_PROVINCES_SUBDISTRICTS = {
   // Hưng Yên
   'văn giang':  { dist: 13.5, lat: 20.9325, lng: 105.9525, allowed: true }, // Ecopark, Phụng Công...
   'văn lâm':    { dist: 19.5, lat: 20.9765, lng: 106.0125, allowed: true },
+  'như quỳnh':  { dist: 16.5, lat: 20.9850, lng: 105.9850, allowed: true },
   'yên mỹ':     { dist: 28.5, lat: 20.8925, lng: 106.0125, allowed: true },
   'khoái châu': { dist: 33.0, lat: 20.8225, lng: 105.9825, allowed: false },
   // Bắc Ninh
   'từ sơn':     { dist: 21.5, lat: 21.1165, lng: 105.9625, allowed: true },
   'tiên du':    { dist: 29.0, lat: 21.1325, lng: 106.0325, allowed: true },
+  'yên phong':  { dist: 32.0, lat: 21.2025, lng: 105.9825, allowed: false },
+  'thuận thành': { dist: 28.5, lat: 21.0425, lng: 106.0825, allowed: true },
   'tp bắc ninh':{ dist: 35.0, lat: 21.1825, lng: 106.0725, allowed: false },
 }
 
@@ -138,16 +141,19 @@ export function evaluateCodEligibility({ address = '', ward = '', district = '',
   }
 
   // 1. Nhận diện các địa danh xa > 30km kể cả khi chưa chọn dropdown city
+  const isCityExplicitHanoi = normCity.includes('hà nội') || normCity.includes('ha noi')
   const isFarProvince =
     fullText.includes('hồ chí minh') || fullText.includes('sài gòn') || fullText.includes('tphcm') || fullText.includes('tp.hcm') ||
     fullText.includes('quận 1') || fullText.includes('bến nghé') || fullText.includes('quận 2') || fullText.includes('quận 3') ||
     fullText.includes('quận 7') || fullText.includes('bình thạnh') || fullText.includes('thủ đức') ||
     fullText.includes('đà nẵng') || fullText.includes('da nang') || fullText.includes('cần thơ') ||
-    fullText.includes('bình dương') || fullText.includes('đồng nai') || fullText.includes('huế') ||
-    fullText.includes('nha trang') || fullText.includes('vũng tàu') || fullText.includes('hải phòng') ||
-    fullText.includes('quảng ninh') || fullText.includes('thanh hóa') || fullText.includes('nghệ an') ||
-    fullText.includes('nam định') || fullText.includes('thái bình') || fullText.includes('lâm đồng') ||
-    fullText.includes('đà lạt')
+    fullText.includes('bình dương') || fullText.includes('đồng nai') || (fullText.includes('huế') && !fullText.includes('phố huế') && !isCityExplicitHanoi && !fullText.includes('hà nội')) ||
+    fullText.includes('nha trang') || fullText.includes('vũng tàu') ||
+    (!isCityExplicitHanoi && (
+      fullText.includes('hải phòng') || fullText.includes('quảng ninh') || fullText.includes('thanh hóa') ||
+      fullText.includes('nghệ an') || fullText.includes('nam định') || fullText.includes('thái bình') ||
+      fullText.includes('lâm đồng') || fullText.includes('đà lạt')
+    ))
 
   const isHanoi = !isFarProvince && (normCity.includes('hà nội') || normCity.includes('ha noi') || fullText.includes('hà nội') || fullText.includes('ha noi'))
   const isHungYen = !isFarProvince && (normCity.includes('hưng yên') || normCity.includes('hung yen') || fullText.includes('hưng yên'))
@@ -250,14 +256,14 @@ export function evaluateCodEligibility({ address = '', ward = '', district = '',
     }
   }
 
-  // Mặc định nội thành Hà Nội nếu quận không khớp
+  // Mặc định bán kính 30km Hà Nội nếu quận chưa khớp
   return {
     distanceKm: 8.5,
     isCodAllowed: true,
     maxCodRadiusKm: SHOP_ORIGIN.maxCodRadiusKm,
     origin: SHOP_ORIGIN.address,
     destination: `${district}, ${city}`,
-    message: 'Địa chỉ trong phạm vi nội thành Hà Nội (Hỗ trợ Ship COD).',
+    message: 'Địa chỉ nằm trong bán kính 30km từ kho 622 Minh Khai, Hà Nội (Hỗ trợ Ship COD).',
     method: 'hanoi_fallback',
   }
 }

@@ -4,7 +4,7 @@
  * hoàn toàn bằng quy tắc logic cục bộ: CHI PHÍ = 0đ, phản hồi tức thì, không phụ thuộc LLM.
  */
 
-import { removeVietnameseTones } from './knowledgeBase.js'
+import { removeVietnameseTones, buildWebsiteSizeGuideReply } from './knowledgeBase.js'
 import { buildLiveFacts, LIVE_CONSTANTS } from './liveFacts.js'
 
 /**
@@ -275,8 +275,7 @@ export function processTier0Intent(message, context = {}) {
     return {
       handled: true,
       intentName: 'SIZE_GUIDE',
-      reply:
-        'Dạ QuanNguyenS có bảng size chuẩn thiết kế theo vóc dáng người Việt:\n\n• Size S: Cân nặng 40–50 kg · Chiều cao 150–162 cm\n• Size M: Cân nặng 50–58 kg · Chiều cao 158–168 cm\n• Size L: Cân nặng 58–66 kg · Chiều cao 162–172 cm (dành cho mẫu THE STILLWATER SET)\n\nAnh/chị cho em xin chiều cao và cân nặng để em chọn size vừa vặn và thoải mái nhất cho mình nhé!',
+      reply: buildWebsiteSizeGuideReply(),
       quickReplies: ['Mẫu The Daybreak (Đỏ)', 'Mẫu The Stillwater (Navy)', 'Mẫu The Hearth (Nâu)'],
       usedTier: 'tier-0',
     }

@@ -6,8 +6,18 @@
  */
 
 import { products } from '../../../src/data/products.js'
-import { removeVietnameseTones, retrieveKnowledge } from './knowledgeBase.js'
+import { removeVietnameseTones, retrieveKnowledge, formatProductSizeDetails } from './knowledgeBase.js'
 import { buildLiveFacts, LIVE_CONSTANTS } from './liveFacts.js'
+
+function getProductBySlugOrId(slug) {
+  return products.find((p) => p.slug === slug || p.id === slug) || null
+}
+
+function formatInlineSizes(slug) {
+  const product = getProductBySlugOrId(slug)
+  if (!product) return ''
+  return formatProductSizeDetails(product).map((line) => `  - ${line}`).join('\n')
+}
 
 /**
  * Trích xuất cân nặng và chiều cao từ tin nhắn khách
@@ -47,45 +57,62 @@ function extractBodyMeasurements(text) {
 }
 
 /**
- * Tư vấn size dựa trên số đo thực tế
+ * Tư vấn size dựa trên đúng thông số hiện có trên website (src/data/products.js)
  */
 function adviseSize(weight, height) {
   if (!weight && !height) return null
 
-  // Trường hợp dưới 50kg (40-49kg)
-  if (weight && weight < 50) {
+  const daybreakSizes = getProductBySlugOrId('the-daybreak-set')?.sizes?.join(', ') || 'S, L'
+  const stillwaterSizes = getProductBySlugOrId('the-stillwater-set')?.sizes?.join(', ') || 'S, L'
+  const hearthSizes = getProductBySlugOrId('the-hearth-set')?.sizes?.join(', ') || 'S, M'
+
+  if (weight && weight <= 50) {
     return {
       recommendedSize: 'Size S',
-      reason: `với cân nặng ${weight}kg${height ? ` và chiều cao ${height}cm` : ''}, anh/chị mặc chuẩn nhất là **Size S** ạ (thiết kế chuẩn cho người từ 40–49kg). Phom dáng suông rộng rãi thoải mái theo phong cách châu Âu, mặc ngủ hay làm việc tại nhà đều rất vừa vặn.`,
-      models: 'Mẫu **THE DAYBREAK SET** (Đỏ, 490k) hoặc **THE HEARTH SET** (Sọc Nâu Tencel, 750k) đều có Size S rất đẹp ạ.',
+      reason: `với cân nặng ${weight}kg${height ? ` và chiều cao ${height}cm` : ''}, anh/chị phù hợp với **Size S** ạ:\n` +
+        `• **THE HEARTH SET**: Size S chuẩn 42–50 kg · 152–162 cm (Ngực 82–86 cm · Eo 64–70 cm).\n` +
+        `• **THE DAYBREAK SET**: Size S dài áo 62,0 cm · ngực 110,0 cm · max eo 103,7 cm · dài quần 90,8 cm.\n` +
+        `• **THE STILLWATER SET**: Size S dài áo 66,5 cm · ngực 127,0 cm · max eo ≈108,0 cm · dài quần 96,3 cm.`,
+      models: 'Cả 3 mẫu hiện đều có **Size S** ạ.',
     }
   }
 
-  // Trường hợp từ 50kg đến 58kg
-  if (weight && weight >= 50 && weight <= 58) {
+  if (weight && weight >= 51 && weight <= 58) {
     return {
-      recommendedSize: 'Size M',
-      reason: `với cân nặng ${weight}kg${height ? ` và chiều cao ${height}cm` : ''}, anh/chị mặc đẹp và thoải mái nhất là **Size M** ạ (chuẩn cho người từ 50–58kg). Phom áo suông thẳng và đai quần co giãn êm ái giúp cử động hoàn toàn thư giãn.`,
-      models: 'Cả 3 mẫu của QuanNguyenS (**The Daybreak Set**, **The Stillwater Set**, **The Hearth Set**) đều có Size M chuẩn chỉnh ạ.',
+      recommendedSize: 'Size M (The Hearth) / Size S hoặc L (Daybreak, Stillwater)',
+      reason: `với cân nặng ${weight}kg${height ? ` và chiều cao ${height}cm` : ''}, từng mẫu trên website có size tương ứng như sau ạ:\n` +
+        `• **THE HEARTH SET** (chỉ có Size ${hearthSizes}): chuẩn nhất là **Size M** (51–58 kg · 160–167 cm · Ngực 87–93 cm · Eo 71–77 cm).\n` +
+        `• **THE DAYBREAK SET** (chỉ có Size ${daybreakSizes}, không có Size M): **Size S** (ngực áo 110,0 cm · max eo 103,7 cm) hoặc **Size L** (ngực áo 118,0 cm · max eo 103,7 cm) tùy anh/chị thích vừa gọn hay rộng rãi.\n` +
+        `• **THE STILLWATER SET** (chỉ có Size ${stillwaterSizes}, không có Size M): **Size S** (ngực áo 127,0 cm · max eo ≈108,0 cm) hoặc **Size L** (ngực áo 135,0 cm · max eo ≈116,0 cm).`,
+      models: '**THE HEARTH SET** có sẵn **Size M** chuẩn khung 51–58 kg; còn **Daybreak** và **Stillwater** phom rộng châu Âu nên anh/chị chọn giữa **Size S** hoặc **Size L** theo số đo chi tiết ạ.',
     }
   }
 
-  // Trường hợp từ 59kg đến 66kg
   if (weight && weight >= 59 && weight <= 66) {
     return {
       recommendedSize: 'Size L',
-      reason: `với cân nặng ${weight}kg${height ? ` và chiều cao ${height}cm` : ''}, anh/chị mặc chuẩn nhất là **Size L** của mẫu **THE STILLWATER SET** (Caro Navy) ạ (chuẩn cho người từ 58–66kg, chiều cao 162–172cm). Chất vải Modal kết hợp Spandex mướt mát, co giãn nhẹ và chống nhăn tự nhiên.`,
-      models: 'Mẫu **THE STILLWATER SET (Caro Navy - 550.000đ)** cổ V thanh lịch có sẵn Size L giao ngay ạ.',
+      reason: `với cân nặng ${weight}kg${height ? ` và chiều cao ${height}cm` : ''}, anh/chị tham khảo **Size L** trên các mẫu sau ạ:\n` +
+        `• **THE STILLWATER SET** (Caro Navy): Size L dài áo 70,5 cm · ngực 135,0 cm · max eo ≈116,0 cm · đùi 72,8 cm · dài quần 100,3 cm.\n` +
+        `• **THE DAYBREAK SET** (Đỏ): Size L dài áo 66,0 cm · ngực 118,0 cm · max eo 103,7 cm · đùi 73,0 cm · dài quần 94,8 cm.\n` +
+        `(Lưu ý: Mẫu **THE HEARTH SET** hiện chỉ có tới Size M đến 58 kg).`,
+      models: 'Cả **THE STILLWATER SET (Caro Navy - 550.000đ)** và **THE DAYBREAK SET (Đỏ - 490.000đ)** đều có **Size L** ạ.',
     }
   }
 
-  // Trường hợp trên 66kg
   if (weight && weight > 66) {
     return {
-      recommendedSize: 'Tư vấn may đo riêng',
-      reason: `dạ hiện các mẫu may sẵn của QuanNguyenS có kích cỡ tối đa là Size L (dành cho người dưới 66kg). Với cân nặng ${weight}kg, để mặc thoải mái và chuẩn form nhất, em có thể hỗ trợ anh/chị kết nối với chủ shop để được tư vấn kích thước hoặc may đo theo yêu cầu nhé ạ!`,
+      recommendedSize: 'Tư vấn theo số đo chi tiết / may đo riêng',
+      reason: `dạ hiện trên website các mẫu may sẵn có bảng size tối đa như sau ạ: **THE STILLWATER SET** Size L (ngực áo 135,0 cm · max eo ≈116,0 cm · đùi 72,8 cm), **THE DAYBREAK SET** Size L (ngực áo 118,0 cm · max eo 103,7 cm · đùi 73,0 cm), và **THE HEARTH SET** Size M (51–58 kg). Với cân nặng ${weight}kg, nếu vòng ngực/vòng eo thực tế vẫn nằm trong khoảng max eo trên thì Size L mặc vẫn vừa, hoặc em có thể kết nối chủ shop để tư vấn kích thước/may đo phù hợp nhất cho mình nhé ạ!`,
       models: null,
       needsHandoff: true,
+    }
+  }
+
+  if (!weight && height) {
+    return {
+      recommendedSize: 'Cần thêm cân nặng / số đo ngực-eo',
+      reason: `với chiều cao ${height}cm, trên website hiện có chiều cao tham chiếu cho **THE HEARTH SET** (Size S: 152–162 cm, Size M: 160–167 cm) và thông số dài áo/quần chi tiết cho **THE DAYBREAK SET** (Size S, L) và **THE STILLWATER SET** (Size S, L).`,
+      models: 'Anh/chị cho em xin thêm cân nặng hoặc vòng ngực/vòng eo để em đối chiếu chuẩn size nhất trên bảng thông số website ạ.',
     }
   }
 
@@ -119,7 +146,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     return {
       reply:
         'Dạ QuanNguyenS hiện có 3 bộ sleepwear thiết kế cao cấp trong Bộ Sưu Tập Thu Đông 2026 chuẩn phong cách Style To Be Lived In ạ:\n\n' +
-        '1. 🌸 **THE DAYBREAK SET (490.000đ)**: Sắc Đỏ ấm áp và quyến rũ (Hành Hỏa), viền tương phản sắc nét, cổ notch cổ điển, 100% sợi tự nhiên Cotton-Modal thoáng khí 4 mùa (Size S, M).\n\n' +
+        '1. 🌸 **THE DAYBREAK SET (490.000đ)**: Màu Đỏ ấm áp và quyến rũ (Hành Hỏa), viền tương phản sắc nét, cổ notch cổ điển, 100% sợi tự nhiên Cotton-Modal thoáng khí 4 mùa (Size S, L).\n\n' +
         '2. 🌊 **THE STILLWATER SET (550.000đ)**: Họa tiết Caro Navy lịch lãm (Hành Thủy), thiết kế cổ V thanh thoát tôn dáng, chất liệu 95% Modal & 5% Spandex mướt mát chống nhăn tự nhiên (Size S, L).\n\n' +
         '3. 🍂 **THE HEARTH SET (750.000đ)**: Họa tiết sọc nâu mocha quý phái (Hành Thổ), quần dáng wide-leg ống rộng buông rủ kiêu sa, chế tác từ 100% Tencel Lyocell thượng hạng (Size S, M).\n\n' +
         'Anh/chị đang tìm đồ mặc nhà thoáng mát hay đang muốn chọn một món quà tinh tế cho người thân ạ?',
@@ -166,17 +193,17 @@ export function generateLocalAdvisorResponse(message, context = {}) {
       reply:
         'Dạ bộ **THE DAYBREAK SET** là mẫu sleepwear cổ bẻ kinh điển phong cách châu Âu bán rất chạy tại QuanNguyenS ạ:\n\n' +
         '• **Giá bán**: 490.000đ.\n' +
-        '• **Màu sắc**: Sắc Đỏ (Classic Red) mang năng lượng Hỏa ấm áp, quyến rũ và may mắn.\n' +
+        '• **Màu sắc**: Màu Đỏ mang năng lượng Hỏa ấm áp, quyến rũ và may mắn.\n' +
         '• **Chất liệu**: 100% sợi tự nhiên Cotton-Modal dệt thoi thoáng khí 4 mùa, an toàn cho da nhạy cảm theo tiêu chuẩn OEKO-TEX 100.\n' +
-        '• **Kích cỡ**: Size S (40–49kg) và Size M (50–58kg).\n' +
+        `• **Kích cỡ trên website (chỉ có Size S và Size L, không có Size M)**:\n${formatInlineSizes('the-daybreak-set')}\n` +
         '• **Tình trạng**: Có sẵn hàng giao ngay (giao toàn quốc 2–4 ngày làm việc).\n\n' +
-        'Anh/chị cho em xin chiều cao và cân nặng để em chọn size vừa vặn nhất cho mình nhé!',
+        'Anh/chị đang muốn chọn Size S hay Size L ạ?',
       quickReplies: ['Chọn size cho bộ này', 'Chính sách freeship', 'Xem mẫu Caro Navy'],
       product: {
         name: 'THE DAYBREAK SET',
         subtitle: 'Sleepwear Phong Cách Châu Âu · Sắc Đỏ',
         price: 490000,
-        slug: 'the-classic-set',
+        slug: 'the-daybreak-set',
         preOrder: false,
         image: '/images/classic-set-red-main.jpg',
       },
@@ -198,7 +225,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
         '• **Giá bán**: 550.000đ.\n' +
         '• **Màu sắc**: Họa tiết Caro Navy lịch lãm, chiều sâu tĩnh tại của hành Thủy mang lại cảm giác an yên, thư thái.\n' +
         '• **Chất liệu**: 95% sợi gỗ tự nhiên Modal & 5% Spandex cao cấp định lượng 180 GSM, sờ vào mềm mướt mát lạnh và chống nhăn tự nhiên.\n' +
-        '• **Kích cỡ**: Size S (Dài áo 66cm, Ngực 124cm - Dài quần 98cm, Max eo 80cm) và Size L (Dài áo 68cm, Ngực 132cm - Dài quần 102cm, Max eo 88cm).\n' +
+        `• **Kích cỡ trên website (Size S, L)**:\n${formatInlineSizes('the-stillwater-set')}\n` +
         '• **Tình trạng**: Hàng có sẵn trong kho, đóng gói hộp quà và bàn giao vận chuyển trong 24h.\n\n' +
         'Anh/chị đang muốn chọn Size S hay Size L ạ?',
       quickReplies: ['Tư vấn size S', 'Tư vấn size L', 'Ưu đãi chuyển khoản VietQR'],
@@ -229,7 +256,8 @@ export function generateLocalAdvisorResponse(message, context = {}) {
         '• **Thiết kế**: Quần dáng wide-leg (ống rộng) thượng lưu buông rủ thướt tha, phối áo phom thoải mái chuẩn châu Âu.\n' +
         '• **Chất liệu**: 100% Tencel Lyocell thượng hạng định lượng 190 GSM, dệt bóng mờ sang trọng, thấm hút gấp 1.5 lần cotton và rủ mềm tự nhiên.\n' +
         '• **Màu sắc**: Sọc Nâu mocha ấm áp thuộc hành Thổ, mang lại cảm giác bình yên như trở về tổ ấm.\n' +
-        '• **Kích cỡ**: Size S (42–50kg) và Size M (51–58kg). Hàng đặt may thủ công giao trong 7–10 ngày làm việc.\n\n' +
+        `• **Kích cỡ trên website (Size S, M)**:\n${formatInlineSizes('the-hearth-set')}\n` +
+        '• **Tình trạng**: Hàng đặt may thủ công giao trong 7–10 ngày làm việc.\n\n' +
         'Bộ này diện tiếp khách tại nhà hay làm quà tặng sinh nhật thì cực kỳ đẳng cấp ạ!',
       quickReplies: ['Tư vấn chọn size', 'Chính sách đổi trả', 'Gặp chủ shop'],
       product: {
@@ -346,7 +374,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     return {
       reply:
         'Dạ toàn bộ thiết kế của QuanNguyenS mang phom dáng suông phóng khoáng (straight-leg & relaxed fit) theo chuẩn phong cách châu Âu, nên cả nam và nữ đều mặc rất sang và thoải mái ạ!\n\n' +
-        '• Đặc biệt mẫu **THE STILLWATER SET (Caro Navy)** có Size L (dành cho người 58–66kg, chiều cao đến 1m72) với họa tiết caro cổ V lịch lãm được rất nhiều khách hàng nam yêu thích.\n' +
+        '• Đặc biệt mẫu **THE STILLWATER SET (Caro Navy)** có Size S và Size L (ngực áo 127,0–135,0 cm · max eo ≈108,0–116,0 cm) và **THE DAYBREAK SET (Đỏ)** cũng có Size S và Size L (ngực áo 110,0–118,0 cm · max eo 103,7 cm) được nhiều khách hàng nam ưa chuộng.\n' +
         '• Rất nhiều khách hàng cũng chọn làm set sleepwear đôi (couple) cho cả hai vợ chồng/bạn gái bạn trai.\n\n' +
         'Anh/chị cho em xin chiều cao và cân nặng để em tư vấn size chuẩn nhất nhé!',
       quickReplies: ['Mẫu The Stillwater (Navy)', 'Tư vấn chọn size', 'Ưu đãi & Freeship'],

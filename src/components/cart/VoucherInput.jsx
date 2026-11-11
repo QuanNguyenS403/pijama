@@ -1,12 +1,35 @@
 import { useState, useEffect } from 'react'
 import { Check, Loader2, Sparkles } from 'lucide-react'
 
-export default function VoucherInput({ onApply, currentSubtotal = 0, accountId = null }) {
-  const [code, setCode] = useState('')
-  const [status, setStatus] = useState(null) // 'success' | 'error' | null
-  const [message, setMessage] = useState('')
+export default function VoucherInput({ onApply, currentSubtotal = 0, accountId = null, initialVoucher = null }) {
+  const [code, setCode] = useState(initialVoucher?.code || '')
+  const [status, setStatus] = useState(initialVoucher ? 'success' : null) // 'success' | 'error' | null
+  const [message, setMessage] = useState(() => {
+    if (!initialVoucher?.code) return ''
+    const pctText = initialVoucher.kind === 'amount' && initialVoucher.discountAmount
+      ? `giảm ${Number(initialVoucher.discountAmount).toLocaleString('vi-VN')}đ`
+      : `giảm ${initialVoucher.discountPercent || 10}%`
+    const shipText = initialVoucher.freeShipping ? ' + Miễn phí vận chuyển' : ''
+    return `Đang áp dụng mã ${initialVoucher.code} (${pctText}${shipText})`
+  })
   const [loading, setLoading] = useState(false)
   const [suggestedVoucher, setSuggestedVoucher] = useState(null)
+
+  useEffect(() => {
+    if (initialVoucher && initialVoucher.code) {
+      setCode(initialVoucher.code)
+      setStatus('success')
+      const pctText = initialVoucher.kind === 'amount' && initialVoucher.discountAmount
+        ? `giảm ${Number(initialVoucher.discountAmount).toLocaleString('vi-VN')}đ`
+        : `giảm ${initialVoucher.discountPercent || 10}%`
+      const shipText = initialVoucher.freeShipping ? ' + Miễn phí vận chuyển' : ''
+      setMessage(`Đang áp dụng mã ${initialVoucher.code} (${pctText}${shipText})`)
+    } else if (!initialVoucher && status === 'success') {
+      setCode('')
+      setStatus(null)
+      setMessage('')
+    }
+  }, [initialVoucher?.code])
 
   // Kiểm tra voucher chào mừng đã lưu trong máy của khách
   useEffect(() => {
@@ -56,9 +79,12 @@ export default function VoucherInput({ onApply, currentSubtotal = 0, accountId =
 
       if (data.isValid && data.voucher) {
         setStatus('success')
+        const discountDesc = data.voucher.kind === 'amount' && data.voucher.discountAmount
+          ? `giảm ${Number(data.voucher.discountAmount).toLocaleString('vi-VN')}đ`
+          : `giảm ${data.voucher.discountPercent || 10}%`
         const benefitsText = data.voucher.freeShipping
-          ? `giảm ${data.voucher.discountPercent}% + Miễn phí vận chuyển`
-          : `giảm ${data.voucher.discountPercent}%`
+          ? `${discountDesc} + Miễn phí vận chuyển`
+          : discountDesc
         setMessage(`Mã ${data.voucher.code} (${benefitsText}) đã được áp dụng thành công!`)
         onApply?.(data.voucher)
       } else {
@@ -82,7 +108,13 @@ export default function VoucherInput({ onApply, currentSubtotal = 0, accountId =
         <div className="mb-2.5 p-2.5 bg-[#FAF5F0] border border-[#D4AF37]/60 rounded-[3px] flex items-center justify-between flex-wrap gap-2 text-xs text-[#631521]">
           <div className="flex items-center gap-1.5 font-medium">
             <Sparkles className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
-            <span>Mã chào mừng của bạn: <strong className="font-mono">{suggestedVoucher.code}</strong> (-10% + Freeship)</span>
+            <span>
+              Mã ưu đãi của bạn: <strong className="font-mono">{suggestedVoucher.code}</strong>{' '}
+              ({suggestedVoucher.kind === 'amount' && suggestedVoucher.discountAmount
+                ? `-${Number(suggestedVoucher.discountAmount).toLocaleString('vi-VN')}đ`
+                : `-${suggestedVoucher.discountPercent || 10}%`}
+              {suggestedVoucher.freeShipping ? ' + Freeship' : ' · Freeship đơn từ 500k'})
+            </span>
           </div>
           <button
             type="button"

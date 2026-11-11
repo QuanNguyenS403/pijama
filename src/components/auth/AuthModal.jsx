@@ -3,12 +3,16 @@ import { X, Lock, Mail, User, Eye, EyeOff, Sparkles, CheckCircle2, AlertCircle }
 import { apiPost, setAccessToken } from '../../lib/apiClient'
 import { loginWithGoogle, decodeGoogleJwt } from '../../lib/googleAuth'
 import { TurnstileWidget } from './TurnstileWidget'
+import useCartStore from '../../store/cartStore'
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [activeTab, setActiveTab] = useState('login') // 'login' | 'register' | 'verify_otp'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [fullName, setFullName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [birthDate, setBirthDate] = useState('')
   const [marketingOptIn, setMarketingOptIn] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -24,6 +28,9 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       setErrorMsg('')
       setSuccessMsg('')
       setPassword('')
+      setConfirmPassword('')
+      setPhone('')
+      setBirthDate('')
       setOtpCode('')
       setActiveTab('login')
     }
@@ -74,6 +81,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         localStorage.setItem('qns_customer_account', JSON.stringify(loggedUser))
       } catch (_) {}
       window.dispatchEvent(new CustomEvent('customer_auth_changed', { detail: { user: loggedUser } }))
+      useCartStore.getState().syncFromServerCart()
       setSuccessMsg('Đăng nhập Google thành công! Đang chuyển hướng...')
       setTimeout(() => {
         if (onAuthSuccess) onAuthSuccess(loggedUser)
@@ -126,10 +134,14 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     setErrorMsg('')
     setIsLoading(true)
     try {
+      const cleanPhone = phone.replace(/[\s.-]/g, '').replace(/^\+?84/, '0').trim()
       const res = await apiPost('/api/auth/register/request-otp', {
         email: email.trim(),
         password,
+        confirmPassword,
         fullName: fullName.trim(),
+        phone: cleanPhone,
+        birthDate,
         marketingOptIn,
         turnstileToken: turnstileToken || undefined,
       })
@@ -174,6 +186,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           localStorage.setItem('qns_customer_account', JSON.stringify(loggedUser))
         } catch (_) {}
         window.dispatchEvent(new CustomEvent('customer_auth_changed', { detail: { user: loggedUser } }))
+        useCartStore.getState().syncFromServerCart()
 
         setSuccessMsg('Đăng nhập thành công! Đang chuyển hướng...')
         setTimeout(() => {
@@ -203,6 +216,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           localStorage.setItem('qns_customer_account', JSON.stringify(loggedUser))
         } catch (_) {}
         window.dispatchEvent(new CustomEvent('customer_auth_changed', { detail: { user: loggedUser } }))
+        useCartStore.getState().syncFromServerCart()
 
         setSuccessMsg('Đăng ký & xác thực thành công! Đã kích hoạt Voucher WELCOME10 giảm 10% & Freeship.')
         setTimeout(() => {
@@ -211,10 +225,24 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         }, 800)
       } else {
         // Đăng ký
+        const cleanPhone = phone.replace(/[\s.-]/g, '').replace(/^\+?84/, '0').trim()
+        if (!/^0[35789]\d{8}$/.test(cleanPhone)) {
+          throw new Error('Vui lòng nhập số điện thoại Việt Nam hợp lệ (10 chữ số, VD: 0912345678)')
+        }
+        if (!birthDate) {
+          throw new Error('Vui lòng chọn ngày sinh của bạn')
+        }
+        if (password !== confirmPassword) {
+          throw new Error('Mật khẩu nhập lại không khớp với mật khẩu đã nhập')
+        }
+
         const res = await apiPost('/api/auth/register', {
           email: email.trim(),
           password,
+          confirmPassword,
           fullName: fullName.trim(),
+          phone: cleanPhone,
+          birthDate,
           marketingOptIn,
           turnstileToken: turnstileToken || undefined,
         })
@@ -241,6 +269,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           localStorage.setItem('qns_customer_account', JSON.stringify(loggedUser))
         } catch (_) {}
         window.dispatchEvent(new CustomEvent('customer_auth_changed', { detail: { user: loggedUser } }))
+        useCartStore.getState().syncFromServerCart()
 
         setSuccessMsg('Đăng ký thành công! Đã kích hoạt Voucher WELCOME10 giảm 10% & Freeship.')
         setTimeout(() => {
@@ -283,7 +312,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           </h3>
           <p className="text-[11px] text-white/75 mt-0.5 font-light">
             {activeTab === 'verify_otp'
-              ? 'Nhập mã 6 chữ số gửi từ Gmail'
+              ? 'Nhập mã 6 chữ số đã gửi về địa chỉ Email'
               : activeTab === 'login'
               ? 'Truy cập tài khoản & ưu đãi riêng biệt'
               : 'Nhận ngay Voucher WELCOME10 giảm 10% + Freeship'}
@@ -417,22 +446,54 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             ) : (
               <>
                 {activeTab === 'register' && (
-                  <div>
-                    <label className="block text-[10.5px] font-semibold text-neutral-600 uppercase tracking-wider mb-1">
-                      Họ và tên
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-2.5 w-4 h-4 text-neutral-400" />
-                      <input
-                        type="text"
-                        required
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        placeholder="Nguyễn Văn A"
-                        className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:border-[#631521] focus:ring-1 focus:ring-[#631521]"
-                      />
+                  <>
+                    <div>
+                      <label className="block text-[10.5px] font-semibold text-neutral-600 uppercase tracking-wider mb-1">
+                        Họ và tên <span className="text-[#631521]">*</span>
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-2.5 w-4 h-4 text-neutral-400" />
+                        <input
+                          type="text"
+                          required
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          placeholder="Nguyễn Văn A"
+                          className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:border-[#631521] focus:ring-1 focus:ring-[#631521]"
+                        />
+                      </div>
                     </div>
-                  </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-[10.5px] font-semibold text-neutral-600 uppercase tracking-wider mb-1">
+                          Số điện thoại <span className="text-[#631521]">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          inputMode="tel"
+                          required
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="09xxxxxxxx"
+                          className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:border-[#631521] focus:ring-1 focus:ring-[#631521]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10.5px] font-semibold text-neutral-600 uppercase tracking-wider mb-1">
+                          Ngày sinh <span className="text-[#631521]">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={birthDate}
+                          max={new Date().toISOString().split('T')[0]}
+                          onChange={(e) => setBirthDate(e.target.value)}
+                          className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:border-[#631521] focus:ring-1 focus:ring-[#631521]"
+                        />
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 <div>
@@ -503,6 +564,28 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                     </div>
                   )}
                 </div>
+
+                {activeTab === 'register' && (
+                  <div>
+                    <label className="block text-[10.5px] font-semibold text-neutral-600 uppercase tracking-wider mb-1">
+                      Nhập lại mật khẩu <span className="text-[#631521]">*</span>
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-2.5 w-4 h-4 text-neutral-400" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Nhập lại mật khẩu phía trên"
+                        className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:border-[#631521] focus:ring-1 focus:ring-[#631521]"
+                      />
+                    </div>
+                    {confirmPassword && confirmPassword !== password && (
+                      <p className="text-[10.5px] text-rose-600 mt-1">Mật khẩu xác nhận chưa trùng khớp</p>
+                    )}
+                  </div>
+                )}
 
                 {activeTab === 'register' && (
                   <label className="flex items-start gap-2 pt-0.5 cursor-pointer select-none">

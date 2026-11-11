@@ -1561,7 +1561,10 @@ export async function syncUserToSupabase(user) {
       updated_at: user.updated_at || now,
     }
 
-    await client.from('users').upsert(payload, { onConflict: 'id' })
+    const { error: upsertErr } = await client.from('users').upsert(payload, { onConflict: 'id' })
+    if (upsertErr) {
+      console.warn('⚠️ [SUPABASE SYNC] Lỗi upsert user lên Supabase:', upsertErr.message)
+    }
   } catch (err) {
     console.warn('⚠️ [SUPABASE SYNC] Lỗi khi lưu user lên Supabase:', err.message)
   }
@@ -1582,6 +1585,9 @@ export function ensurePendingTables(database = getDb()) {
         full_name TEXT NOT NULL,
         password_hash TEXT NOT NULL,
         phone TEXT,
+        birth_day INTEGER,
+        birth_month INTEGER,
+        birth_year INTEGER,
         marketing_opt_in INTEGER NOT NULL DEFAULT 1,
         code_hash TEXT NOT NULL,
         salt TEXT NOT NULL,
@@ -1609,6 +1615,14 @@ export function ensurePendingTables(database = getDb()) {
       );
       CREATE INDEX IF NOT EXISTS idx_active_reset_tokens_exp ON active_reset_tokens(expires_at);
     `)
+    for (const tbl of ['pending_registrations', 'users', 'accounts']) {
+      try {
+        const cols = database.prepare(`PRAGMA table_info(${tbl})`).all().map((c) => c.name)
+        if (cols.length > 0 && !cols.includes('birth_day')) database.exec(`ALTER TABLE ${tbl} ADD COLUMN birth_day INTEGER`)
+        if (cols.length > 0 && !cols.includes('birth_month')) database.exec(`ALTER TABLE ${tbl} ADD COLUMN birth_month INTEGER`)
+        if (cols.length > 0 && !cols.includes('birth_year')) database.exec(`ALTER TABLE ${tbl} ADD COLUMN birth_year INTEGER`)
+      } catch (_) {}
+    }
     pendingTablesEnsured = true
   } catch (err) {
     console.error('ensurePendingTables error:', err.message)
@@ -1620,6 +1634,9 @@ export function savePendingRegistrationDb({
   fullName,
   passwordHash,
   phone = null,
+  birthDay = null,
+  birthMonth = null,
+  birthYear = null,
   marketingOptIn = 1,
   codeHash,
   salt,
@@ -1639,12 +1656,15 @@ export function savePendingRegistrationDb({
   try {
     database.prepare(`
       INSERT INTO pending_registrations (
-        email, full_name, password_hash, phone, marketing_opt_in, code_hash, salt, attempts, expires_at, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+        email, full_name, password_hash, phone, birth_day, birth_month, birth_year, marketing_opt_in, code_hash, salt, attempts, expires_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
       ON CONFLICT(email) DO UPDATE SET
         full_name = excluded.full_name,
         password_hash = excluded.password_hash,
         phone = excluded.phone,
+        birth_day = excluded.birth_day,
+        birth_month = excluded.birth_month,
+        birth_year = excluded.birth_year,
         marketing_opt_in = excluded.marketing_opt_in,
         code_hash = excluded.code_hash,
         salt = excluded.salt,
@@ -1656,6 +1676,9 @@ export function savePendingRegistrationDb({
       fullName,
       passwordHash,
       phone,
+      birthDay,
+      birthMonth,
+      birthYear,
       marketingOptIn ? 1 : 0,
       codeHash,
       salt,
@@ -1688,6 +1711,9 @@ export function getPendingRegistrationDb(email, database = getDb()) {
       email: record.email,
       passwordHash: record.password_hash,
       phone: record.phone,
+      birthDay: record.birth_day || null,
+      birthMonth: record.birth_month || null,
+      birthYear: record.birth_year || null,
       marketingOptIn: Boolean(record.marketing_opt_in),
       codeHash: record.code_hash,
       salt: record.salt,
@@ -2057,4 +2083,107 @@ export function isSyntheticAccountEmail(email, database = getDb()) {
   } catch (_) {
     return false
   }
+}
+
+// ── J. Đồng bộ Giỏ hàng & Tùy chọn thanh toán/giao hàng theo Tài khoản ──
+export function ensureCustomerCartTable(database = getDb()) {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS customer_carts (
+      account_id TEXT PRIMARY KEY,
+      items_json TEXT NOT NULL DEFAULT '[]',
+      applied_voucher_json TEXT,
+      delivery_option TEXT NOT NULL DEFAULT 'COMBINED',
+      updated_at TEXT NOT NULL
+    );
+  `)
+}
+
+export function getCustomerCart(accountId, database = getDb()) {
+  if (!accountId) {
+    return { items: [], appliedVoucher: null, deliveryOption: 'COMBINED', updatedAt: null }
+  }
+  ensureCustomerCartTable(database)
+  try {
+    const row = database.prepare(`
+      SELECT items_json, applied_voucher_json, delivery_option, updated_at
+      FROM customer_carts
+      WHERE account_id = ?
+    `).get(accountId)
+
+    if (!row) {
+      return { items: [], appliedVoucher: null, deliveryOption: 'COMBINED', updatedAt: null }
+    }
+
+    let items = []
+    let appliedVoucher = null
+    try {
+      const parsedItems = JSON.parse(row.items_json || '[]')
+      items = Array.isArray(parsedItems) ? parsedItems : []
+    } catch (_) {
+      items = []
+    }
+    try {
+      appliedVoucher = row.applied_voucher_json ? JSON.parse(row.applied_voucher_json) : null
+    } catch (_) {
+      appliedVoucher = null
+    }
+
+    return {
+      items,
+      appliedVoucher,
+      deliveryOption: row.delivery_option === 'SPLIT_SHIPPING' ? 'SPLIT_SHIPPING' : 'COMBINED',
+      updatedAt: row.updated_at || null,
+    }
+  } catch (err) {
+    console.warn('⚠️ [CART DB READ WARN]', err.message)
+    return { items: [], appliedVoucher: null, deliveryOption: 'COMBINED', updatedAt: null }
+  }
+}
+
+export function saveCustomerCart(
+  accountId,
+  { items = [], appliedVoucher = null, deliveryOption = 'COMBINED' } = {},
+  database = getDb()
+) {
+  if (!accountId) return null
+  ensureCustomerCartTable(database)
+  const safeItems = Array.isArray(items) ? items.slice(0, 50) : []
+  const safeVoucher = appliedVoucher && typeof appliedVoucher === 'object' ? appliedVoucher : null
+  const safeDelivery = deliveryOption === 'SPLIT_SHIPPING' ? 'SPLIT_SHIPPING' : 'COMBINED'
+  const now = new Date().toISOString()
+
+  database.prepare(`
+    INSERT INTO customer_carts (account_id, items_json, applied_voucher_json, delivery_option, updated_at)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(account_id) DO UPDATE SET
+      items_json = excluded.items_json,
+      applied_voucher_json = excluded.applied_voucher_json,
+      delivery_option = excluded.delivery_option,
+      updated_at = excluded.updated_at
+  `).run(
+    accountId,
+    JSON.stringify(safeItems),
+    safeVoucher ? JSON.stringify(safeVoucher) : null,
+    safeDelivery,
+    now
+  )
+
+  return {
+    items: safeItems,
+    appliedVoucher: safeVoucher,
+    deliveryOption: safeDelivery,
+    updatedAt: now,
+  }
+}
+
+export function clearCustomerCart(accountId, database = getDb()) {
+  if (!accountId) return false
+  ensureCustomerCartTable(database)
+  const now = new Date().toISOString()
+  database.prepare(`
+    UPDATE customer_carts
+    SET items_json = '[]', applied_voucher_json = NULL, delivery_option = 'COMBINED', updated_at = ?
+    WHERE account_id = ?
+  `).run(now, accountId)
+  return true
 }

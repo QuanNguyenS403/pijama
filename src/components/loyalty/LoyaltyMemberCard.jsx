@@ -17,8 +17,9 @@ import LoyaltyRedeemModal from './LoyaltyRedeemModal'
 
 const formatVND = (amount) => Number(amount || 0).toLocaleString('vi-VN') + 'đ'
 
-export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
+export default function LoyaltyMemberCard({ onRefresh, customerPhone = '', customerName = '', customerEmail = '' }) {
   const [member, setMember] = useState(null)
+  const [loyaltyOverview, setLoyaltyOverview] = useState(null)
   const [loading, setLoading] = useState(true)
   const [isRegisterOpen, setIsRegisterOpen] = useState(false)
   const [isRedeemOpen, setIsRedeemOpen] = useState(false)
@@ -49,12 +50,15 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
       const data = await res.json()
       if (res.ok && data.success && data.member) {
         setMember(data.member)
+        setLoyaltyOverview(data)
       } else {
         setMember(null)
+        setLoyaltyOverview(null)
       }
     } catch (e) {
       console.warn('Could not fetch loyalty data:', e)
       setMember(null)
+      setLoyaltyOverview(null)
     } finally {
       setLoading(false)
     }
@@ -180,6 +184,8 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
           isOpen={isRegisterOpen}
           onClose={() => setIsRegisterOpen(false)}
           initialPhone={customerPhone}
+          initialName={customerName}
+          initialEmail={customerEmail}
           onSuccess={() => {
             fetchLoyaltyData()
             if (onRefresh) onRefresh()
@@ -193,13 +199,31 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
   /* CASE 2: ĐÃ LÀ HỘI VIÊN — BẢNG ĐIỀU KHIỂN ĐẶC QUYỀN VÀ SỔ CÁI  */
   /* ───────────────────────────────────────────────────────────── */
   const currentTier = member.tier || 'MEMBER'
-  const rollingSpend = member.rollingSpend365 || 0
-  const rewardPoints = member.rewardPoints || 0
-  const pendingPoints = member.pendingPoints || 0
-  const nextTier = member.nextTier
-  const vouchers = member.vouchers || []
-  const recentLedger = member.recentLedger || []
-  const hasBirthday = Boolean(member.birthDay && member.birthMonth)
+  const pointsObj = loyaltyOverview?.points || {}
+  const tierProg = loyaltyOverview?.tierProgress
+  const rollingSpend = pointsObj.rollingSpend365d ?? member.rollingSpend365 ?? member.rolling_spend_365d ?? 0
+  const rewardPoints = pointsObj.balance ?? member.rewardPoints ?? member.points_balance ?? 0
+  const pendingPoints = pointsObj.pending ?? member.pendingPoints ?? 0
+  const nextTier =
+    tierProg && tierProg.hasNextTier
+      ? {
+          name: tierProg.nextTierName || tierProg.nextTier,
+          neededSpend: tierProg.spendNeeded ?? 0,
+          progressPercent: tierProg.progressPercent ?? 0,
+        }
+      : member.nextTier || null
+  const vouchers = (loyaltyOverview?.vouchers || member.vouchers || []).map((v) => ({
+    ...v,
+    discount_amount: v.discount_amount ?? v.discountAmount ?? 0,
+    discount_percent: v.discount_percent ?? v.discountPercent ?? 0,
+    free_shipping: v.free_shipping ?? (v.freeShipping ? 1 : 0),
+    expires_at: v.expires_at ?? v.expiresAt ?? null,
+    used: v.used !== undefined ? Boolean(v.used) : (v.status ? v.status !== 'active' : false),
+  }))
+  const recentLedger = loyaltyOverview?.recentLedger || member.recentLedger || []
+  const displayBirthDay = member.birthDay ?? member.birth_day
+  const displayBirthMonth = member.birthMonth ?? member.birth_month
+  const hasBirthday = Boolean(displayBirthDay && displayBirthMonth)
 
   return (
     <>
@@ -221,7 +245,7 @@ export default function LoyaltyMemberCard({ onRefresh, customerPhone = '' }) {
                 </p>
                 {hasBirthday && (
                   <p className="text-[11px] text-[#D4AF37] mt-0.5">
-                    🎂 Sinh nhật: Ngày {member.birthDay} tháng {member.birthMonth} (Đã khóa)
+                    🎂 Sinh nhật: Ngày {displayBirthDay} tháng {displayBirthMonth} (Đã khóa)
                   </p>
                 )}
               </div>

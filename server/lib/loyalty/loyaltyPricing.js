@@ -1,7 +1,8 @@
 // server/lib/loyalty/loyaltyPricing.js
 import { LOYALTY_TIERS } from './loyaltyConfig.js'
 import { getMemberById, getMemberByPhone } from './loyaltyDb.js'
-import { validateVoucher, calculateVoucherBenefits } from '../voucherValidator.js'
+import { validateVoucher } from '../voucherValidator.js'
+import { calculateOrderTotals } from '../../../src/lib/pricingCalculator.js'
 
 /**
  * Tính toán các khoản điều chỉnh giá trị đơn hàng cho Hội viên (Loyalty Adjustments).
@@ -23,53 +24,49 @@ export function calculateLoyaltyAdjustments({
 
   const validSubtotal = Math.max(0, Math.floor(Number(subtotal) || 0))
   let tierDiscountPercent = 0
-  let tierDiscountAmount = 0
   let memberTier = 'MEMBER'
 
   if (member && member.status === 'active') {
     memberTier = member.tier || 'MEMBER'
     const tierConfig = LOYALTY_TIERS[memberTier] || LOYALTY_TIERS.MEMBER
     tierDiscountPercent = tierConfig.discountPercent || 0
-    tierDiscountAmount = Math.round(validSubtotal * (tierDiscountPercent / 100))
   }
 
-  // Voucher tính toán
-  let voucherAmount = 0
-  let voucherFreeShipping = false
+  // Voucher tính toán (tối đa 01 mã)
   let validatedVoucher = null
-
   if (voucherCode) {
-    const vRes = validateVoucher(voucherCode, {
-      memberId: member ? member.id : null,
-      subtotal: validSubtotal,
-    })
-
-    if (vRes.isValid) {
-      validatedVoucher = vRes.voucher
-      const vBenefits = calculateVoucherBenefits(validatedVoucher, validSubtotal, 30000)
-      voucherAmount = vBenefits.discountAmount
-      voucherFreeShipping = vBenefits.freeShipping
+    const trimmed = String(voucherCode).trim()
+    if (!trimmed.includes(',') && !trimmed.includes(';')) {
+      const vRes = validateVoucher(trimmed, {
+        memberId: member ? member.id : null,
+        subtotal: validSubtotal,
+      })
+      if (vRes.isValid) {
+        validatedVoucher = vRes.voucher
+      }
     }
   }
 
-  // Chiết khấu thanh toán VietQR (-10%)
-  const isBankTransfer = paymentMethod === 'BANK_TRANSFER' || paymentMethod === 'VIETQR'
-  const bankDiscountAmount = isBankTransfer ? Math.round(validSubtotal * 0.1) : 0
-
-  const totalDiscount = tierDiscountAmount + voucherAmount + bankDiscountAmount
+  // Chiết khấu lũy tiến tuần tự: Hạng -> Voucher -> VietQR 10%
+  const totals = calculateOrderTotals({
+    subtotal: validSubtotal,
+    tierDiscountPercent,
+    voucher: validatedVoucher,
+    paymentMethod,
+  })
 
   return {
     isMember: Boolean(member),
     memberId: member ? member.id : null,
     memberTier,
-    tierDiscountPercent,
-    tierDiscountAmount,
+    tierDiscountPercent: totals.tierDiscountPercent,
+    tierDiscountAmount: totals.tierDiscountAmount,
     voucherCode: validatedVoucher ? validatedVoucher.code : null,
     voucherKind: validatedVoucher ? validatedVoucher.kind : null,
-    voucherAmount,
-    voucherFreeShipping,
-    bankDiscountAmount,
-    totalDiscount,
-    merchandiseTotalAfterDiscounts: Math.max(0, validSubtotal - totalDiscount),
+    voucherAmount: totals.voucherDiscount,
+    voucherFreeShipping: totals.isFreeShippingFromVoucher,
+    bankDiscountAmount: totals.bankTransferDiscount,
+    totalDiscount: totals.totalDiscount,
+    merchandiseTotalAfterDiscounts: totals.afterBankTransfer,
   }
 }

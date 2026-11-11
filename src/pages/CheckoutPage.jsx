@@ -13,6 +13,8 @@ import Header from '../components/layout/Header'
 import CartDrawer from '../components/cart/CartDrawer'
 import VoucherInput from '../components/cart/VoucherInput'
 import LoyaltyCheckoutPerks from '../components/loyalty/LoyaltyCheckoutPerks'
+import { calculateOrderTotals } from '../lib/pricingCalculator'
+import { isPreOrderItem, getDisplayColorName } from '../lib/productUtils'
 import Section12Footer from '../components/sections/Section12Footer'
 import { useCart } from '../hooks/useCart'
 import { VIETNAM_PROVINCES } from '../data/provinces'
@@ -27,7 +29,22 @@ import { evaluateCodEligibility } from '../lib/distanceUtils'
 
 export default function CheckoutPage() {
   const navigate = useNavigate()
-  const { items, subtotal, shippingFee, clearCart } = useCart()
+  const {
+    items,
+    subtotal,
+    shippingFee,
+    clearCart,
+    appliedVoucher,
+    setAppliedVoucher,
+    deliveryOption,
+    setDeliveryOption,
+    fulfillment,
+    syncFromServerCart,
+  } = useCart()
+
+  useEffect(() => {
+    syncFromServerCart?.()
+  }, [])
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
 
   // Khôi phục thông tin khách hàng từ lần trước để tránh phải điền lại từ đầu
@@ -89,7 +106,7 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
-  const [appliedVoucher, setAppliedVoucher] = useState(null)
+  const [tierDiscountPercent, setTierDiscountPercent] = useState(0)
 
   // ── KIỂM TRA BÁN KÍNH 30KM ĐỐI VỚI SHIP COD (AMBER RIVERSIDE, 622 MINH KHAI) ──
   const [codStatus, setCodStatus] = useState(() =>
@@ -143,32 +160,27 @@ export default function CheckoutPage() {
     return () => clearTimeout(timer)
   }, [formData.city, formData.district, formData.ward, formData.address])
 
-  // Calculate 10% discount for bank transfer (VietQR)
+  // Tính toán lũy tiến Hạng Hội Viên -> Voucher -> VietQR 10% dùng chung với Backend
   const isBankTransfer = formData.paymentMethod === 'BANK_TRANSFER'
-  const bankTransferDiscount = useMemo(() => {
-    return isBankTransfer ? Math.round(subtotal * 0.10) : 0
-  }, [isBankTransfer, subtotal])
+  const pricingTotals = useMemo(
+    () =>
+      calculateOrderTotals({
+        subtotal,
+        tierDiscountPercent,
+        voucher: appliedVoucher,
+        paymentMethod: formData.paymentMethod,
+        isMixedPreOrder: fulfillment.isMixed,
+        deliveryOption,
+      }),
+    [subtotal, tierDiscountPercent, appliedVoucher, formData.paymentMethod, fulfillment.isMixed, deliveryOption]
+  )
 
-  // Calculate voucher benefits (10% + Freeship or fixed amount)
-  const voucherDiscount = useMemo(() => {
-    if (!appliedVoucher) return 0
-    if (appliedVoucher.kind === 'amount' || appliedVoucher.discountAmount) {
-      return Math.min(subtotal, Number(appliedVoucher.discountAmount || appliedVoucher.discount_amount || 0))
-    }
-    return Math.round(subtotal * (Number(appliedVoucher.discountPercent || 10) / 100))
-  }, [appliedVoucher, subtotal])
-
-  const effectiveShippingFee = useMemo(() => {
-    if (appliedVoucher?.freeShipping) return 0
-    return shippingFee
-  }, [appliedVoucher, shippingFee])
-
-  const totalDiscount = bankTransferDiscount + voucherDiscount
-
-  // Calculated totals
-  const total = useMemo(() => {
-    return Math.max(0, subtotal + effectiveShippingFee - totalDiscount)
-  }, [subtotal, effectiveShippingFee, totalDiscount])
+  const tierDiscountAmount = pricingTotals.tierDiscountAmount
+  const voucherDiscount = pricingTotals.voucherDiscount
+  const bankTransferDiscount = pricingTotals.bankTransferDiscount
+  const effectiveShippingFee = pricingTotals.shippingFee
+  const totalDiscount = pricingTotals.totalDiscount
+  const total = pricingTotals.total
 
   // Handle Input Changes
   const handleInputChange = (field, value) => {
@@ -268,8 +280,14 @@ export default function CheckoutPage() {
         {
           subtotal,
           shippingFee: effectiveShippingFee,
+          baseShippingFee: pricingTotals.baseShippingFee,
+          splitShippingFee: pricingTotals.splitShippingFee,
+          deliveryOption: pricingTotals.deliveryOption,
+          tierDiscountPercent: pricingTotals.tierDiscountPercent,
+          tierDiscountAmount,
+          voucherDiscount,
+          bankTransferDiscount,
           discount: totalDiscount,
-          discountPercent: (isBankTransfer ? 10 : 0) + (appliedVoucher ? appliedVoucher.discountPercent : 0),
           voucherCode: appliedVoucher ? appliedVoucher.code : '',
           total,
         }
@@ -698,7 +716,7 @@ export default function CheckoutPage() {
                                   )}
                                   {isCod && !isCodDisabled && (
                                     <span className="inline-flex items-center gap-1 bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] text-[10px] font-bold px-2 py-0.5 rounded-[2px]">
-                                      chỉ áp dụng khu vực nội thành Hà Nội
+                                      Áp dụng trong bán kính 30km từ kho 622 Minh Khai, Hà Nội
                                     </span>
                                   )}
                                   {hasDiscount && (
@@ -736,39 +754,73 @@ export default function CheckoutPage() {
                     </span>
                   </div>
 
-                  {/* Pre-Order Notice Banner */}
-                  {items.some((i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-evening-edit' || i.productId === 'the-evening-edit') && (
-                    <div className="mb-5 p-3.5 bg-[#FAF5F0] border-2 border-[#D4AF37] rounded-[3px] flex items-start gap-2.5 text-xs text-[#631521] font-sans">
-                      <span className="text-base shrink-0">⏱</span>
-                      <div>
-                        <p className="font-bold uppercase tracking-wider text-[11px] mb-0.5">
-                          Lưu ý đơn hàng Đặt Trước (Pre-Order)
-                        </p>
-                        {(() => {
-                          const preOrderNames = items
-                            .filter((i) => i.preOrder?.enabled || i.isPreOrder || i.slug === 'the-evening-edit' || i.productId === 'the-evening-edit')
-                            .map((i) => i.name || i.productName)
-                            .filter((val, idx, self) => self.indexOf(val) === idx)
-                          const displayNames = preOrderNames.length > 0 ? preOrderNames.join(' & ') : 'sản phẩm Đặt Trước'
-                          return (
-                            <p className="text-[#4A3F38] leading-relaxed">
-                              &nbsp;Toàn bộ sản phẩm PRE-ORDER sẽ được chuẩn bị và giao trong 7–10 ngày làm việc.
-                            </p>
-                          )
-                        })()}
+                  {/* Pre-Order Notice & Mixed Cart Split Delivery Selector */}
+                  {fulfillment.hasPreOrder && (
+                    <div className="mb-5 p-3.5 bg-[#FAF5F0] border-2 border-[#D4AF37] rounded-[3px] text-xs text-[#631521] font-sans space-y-3">
+                      <div className="flex items-start gap-2.5">
+                        <span className="text-base shrink-0">⏱</span>
+                        <div>
+                          <p className="font-bold uppercase tracking-wider text-[11px] mb-0.5">
+                            Lưu ý đơn hàng Đặt Trước (Pre-Order)
+                          </p>
+                          <p className="text-[#4A3F38] leading-relaxed">
+                            Sản phẩm Đặt Trước ({fulfillment.preOrderItems.map((i) => i.name || i.productName).filter((v, idx, self) => self.indexOf(v) === idx).join(' & ') || 'Pre-Order'}) được hoàn thiện thủ công và giao trong 7–10 ngày làm việc.
+                          </p>
+                        </div>
                       </div>
+
+                      {fulfillment.isMixed && (
+                        <div className="pt-2.5 border-t border-[#D4AF37]/40 space-y-2">
+                          <p className="font-bold text-[11px] uppercase tracking-wider text-[#631521]">
+                            Tùy chọn giao đơn gồm hàng có sẵn & Đặt Trước:
+                          </p>
+                          <label className={`flex items-start gap-2.5 p-2.5 rounded-[2px] border cursor-pointer transition-colors ${deliveryOption !== 'SPLIT_SHIPPING' ? 'bg-white border-[#631521]' : 'bg-white/60 border-[#E8DFD5]'}`}>
+                            <input
+                              type="radio"
+                              name="deliveryOption"
+                              value="COMBINED"
+                              checked={deliveryOption !== 'SPLIT_SHIPPING'}
+                              onChange={() => setDeliveryOption('COMBINED')}
+                              className="mt-0.5 accent-[#631521]"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-bold text-[#1A1614]">Giao gộp chung 1 lần (Khuyên dùng)</span>
+                                <span className="font-bold text-[#2E7D32]">Miễn phụ phí</span>
+                              </div>
+                              <p className="text-[11px] text-[#4A3F38] mt-0.5">
+                                Toàn bộ đơn hàng được đóng gói hộp quà và giao cùng lúc sau 7–10 ngày làm việc.
+                              </p>
+                            </div>
+                          </label>
+                          <label className={`flex items-start gap-2.5 p-2.5 rounded-[2px] border cursor-pointer transition-colors ${deliveryOption === 'SPLIT_SHIPPING' ? 'bg-white border-[#631521]' : 'bg-white/60 border-[#E8DFD5]'}`}>
+                            <input
+                              type="radio"
+                              name="deliveryOption"
+                              value="SPLIT_SHIPPING"
+                              checked={deliveryOption === 'SPLIT_SHIPPING'}
+                              onChange={() => setDeliveryOption('SPLIT_SHIPPING')}
+                              className="mt-0.5 accent-[#631521]"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-bold text-[#1A1614]">Tách giao 2 đợt (Nhận hàng có sẵn trước)</span>
+                                <span className="font-bold text-[#631521]">+30.000đ</span>
+                              </div>
+                              <p className="text-[11px] text-[#4A3F38] mt-0.5">
+                                Gửi ngay sản phẩm có sẵn (2–4 ngày làm việc); gửi tiếp sản phẩm Pre-order sau 7–10 ngày làm việc.
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {/* Items List */}
                   <div className="space-y-4 max-h-[340px] overflow-y-auto pr-1 pdp-scrollbar mb-6">
                     {items.map((item, idx) => {
-                      const isItemPreOrder = !!(
-                        item.preOrder?.enabled ||
-                        item.isPreOrder ||
-                        item.slug === 'the-evening-edit' ||
-                        item.productId === 'the-evening-edit'
-                      )
+                      const isItemPreOrder = isPreOrderItem(item)
                       return (
                         <div key={`${item.id}-${item.color?.name || item.color}-${item.size}-${idx}`} className="flex gap-3.5 pb-4 border-b border-[#F0EAE1] last:border-b-0 last:pb-0">
                           <div className="w-16 h-20 bg-[#FAF8F5] border border-[#E8DFD5] rounded-[2px] overflow-hidden shrink-0">
@@ -791,7 +843,7 @@ export default function CheckoutPage() {
                                 {item.name}
                               </h3>
                               <p className="font-sans text-xs text-[#8C7E74] mt-0.5">
-                                {item.color?.name || item.color || ''} · Size {item.size}
+                                {getDisplayColorName(item.color)} · Size {item.size}
                               </p>
                               {isItemPreOrder && (
                                 <span className="inline-block font-sans text-[10px] font-bold text-[#631521] bg-[#FAF5F0] border border-[#D4AF37]/60 px-1.5 py-0.5 rounded-[2px] mt-1">
@@ -821,18 +873,22 @@ export default function CheckoutPage() {
                       paymentMethod={formData.paymentMethod}
                       customerPhone={formData.phone}
                       appliedVoucher={appliedVoucher}
+                      isMixedPreOrder={fulfillment.isMixed}
+                      deliveryOption={deliveryOption}
                       onApplyVoucher={(v) => setAppliedVoucher(v)}
+                      onTierStatusChange={(info) => setTierDiscountPercent(Number(info?.tierDiscountPercent) || 0)}
                     />
                   </div>
 
                   {/* Voucher Input */}
                   <div className="pt-2 pb-2 border-t border-[#E8DFD5]">
                     <span className="font-serif text-xs font-bold text-[#631521] uppercase tracking-wider block mb-1">
-                      Mã Ưu Đãi / Voucher
+                      Mã Ưu Đãi / Voucher (Tối đa 01 mã/đơn)
                     </span>
                     <VoucherInput
                       onApply={(v) => setAppliedVoucher(v)}
                       currentSubtotal={subtotal}
+                      initialVoucher={appliedVoucher}
                     />
                   </div>
 
@@ -844,24 +900,56 @@ export default function CheckoutPage() {
                     </div>
 
                     <div className="flex justify-between text-[#4A3F38]">
-                      <span>Phí vận chuyển</span>
+                      <span>Phí vận chuyển tiêu chuẩn</span>
                       <span>
-                        {effectiveShippingFee === 0 ? (
+                        {pricingTotals.baseShippingFee === 0 ? (
                           <span className="text-[#2E7D32] font-semibold">
-                            Miễn phí {appliedVoucher?.freeShipping ? '(Voucher)' : ''}
+                            Miễn phí {appliedVoucher?.freeShipping && subtotal < 500000 ? '(Voucher)' : '(Đơn từ 500k)'}
                           </span>
                         ) : (
-                          formatVND(effectiveShippingFee)
+                          formatVND(pricingTotals.baseShippingFee)
                         )}
                       </span>
                     </div>
+                    <p className="text-[11px] text-[#6B5D54] -mt-1.5">
+                      Freeship áp dụng cho đơn từ 500.000đ (tính theo tạm tính trước giảm giá)
+                    </p>
+
+                    {pricingTotals.splitShippingFee > 0 && (
+                      <div className="flex justify-between text-[#4A3F38]">
+                        <span>Phụ phí tách giao đợt 2 (Pre-order)</span>
+                        <span className="font-medium text-[#631521]">+{formatVND(pricingTotals.splitShippingFee)}</span>
+                      </div>
+                    )}
+
+                    {/* Loyalty Tier Discount Breakdown */}
+                    {tierDiscountAmount > 0 && (
+                      <div className="flex justify-between items-center bg-[#FAF5F0] px-2.5 py-1.5 rounded-[2px] border border-[#D4AF37]/50 text-[#631521]">
+                        <span className="font-medium flex items-center gap-1">
+                          <Gift className="w-3.5 h-3.5" />
+                          Ưu đãi Hạng Hội Viên (-{pricingTotals.tierDiscountPercent}%)
+                        </span>
+                        <span className="font-serif font-bold text-sm">
+                          -{formatVND(tierDiscountAmount)}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Voucher Discount Breakdown */}
                     {voucherDiscount > 0 && (
                       <div className="flex justify-between items-center bg-[#FAF5F0] px-2.5 py-1.5 rounded-[2px] border border-[#D4AF37]/50 text-[#631521]">
-                        <span className="font-medium flex items-center gap-1">
+                        <span className="font-medium flex items-center gap-1.5">
                           <Gift className="w-3.5 h-3.5" />
-                          Ưu đãi Voucher ({appliedVoucher?.code || 'WELCOME'})
+                          <span>Ưu đãi Voucher ({appliedVoucher?.code || 'VOUCHER'})</span>
+                          {appliedVoucher && (
+                            <button
+                              type="button"
+                              onClick={() => setAppliedVoucher(null)}
+                              className="text-[11px] text-[#8C7E74] underline hover:text-[#631521] cursor-pointer"
+                            >
+                              Hủy mã
+                            </button>
+                          )}
                         </span>
                         <span className="font-serif font-bold text-sm">
                           -{formatVND(voucherDiscount)}
@@ -874,7 +962,7 @@ export default function CheckoutPage() {
                       <div className="flex justify-between items-center bg-[#E8F5E9] px-2.5 py-1.5 rounded-[2px] border border-[#C8E6C9] text-[#2E7D32]">
                         <span className="font-medium flex items-center gap-1">
                           <Gift className="w-3.5 h-3.5" />
-                          Ưu đãi Chuyển khoản VietQR (10%)
+                          Ưu đãi Chuyển khoản VietQR (-10% phần còn lại)
                         </span>
                         <span className="font-serif font-bold text-sm">
                           -{formatVND(bankTransferDiscount)}
@@ -892,7 +980,7 @@ export default function CheckoutPage() {
                         </span>
                         {bankTransferDiscount > 0 && (
                           <span className="text-[0.65rem] text-[#2E7D32] font-semibold mt-0.5 block">
-                            (Đã áp dụng giảm 10% VietQR)
+                            (Đã áp dụng giảm 10% VietQR theo chiết khấu lũy tiến)
                           </span>
                         )}
                         <span className="text-[0.65rem] text-[#8C7E74] mt-1 block">

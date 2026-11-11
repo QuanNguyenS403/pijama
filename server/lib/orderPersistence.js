@@ -26,36 +26,66 @@ function resolveTestSafeFilePath(envVarValue, defaultProdName, defaultTestName) 
   return raw ? path.resolve(raw) : path.join(DATA_DIR, defaultProdName)
 }
 
-function syncOrderToSupabase(order) {
-  if (isNodeTestRunner() || isAutomatedTestEnvironment() || !order) return
+export async function syncOrderToSupabase(order, options = {}) {
+  const { clientOverride = null } = options
+  if (!order) return false
+  if (!clientOverride && (isNodeTestRunner() || isAutomatedTestEnvironment())) return false
   try {
-    const client = getSupabase()
-    if (!client) return
-    const id = order.orderId || order.id
-    if (!id) return
-    client.from('orders').upsert({
+    const client = clientOverride || getSupabase()
+    if (!client) return false
+    const id = String(order.orderId || order.id || '').trim()
+    if (!id) return false
+
+    const shippingAddressStr =
+      typeof order.shippingAddress === 'string' && order.shippingAddress.trim()
+        ? order.shippingAddress.trim()
+        : order.shipping?.fullAddress
+          ? String(order.shipping.fullAddress).trim()
+          : JSON.stringify(order.shipping || order.shippingAddress || {})
+
+    const payload = {
       id,
       order_id: id,
-      customer_name: order.customer?.fullName || order.customerName || 'Khách hàng',
-      customer_phone: order.customer?.phone || order.customerPhone || '',
+      customer_name: String(order.customer?.fullName || order.customerName || 'Khách hàng'),
+      customer_phone: String(order.customer?.phone || order.customerPhone || ''),
       customer_email: order.customer?.email || order.customerEmail || null,
-      shipping_address: typeof order.shippingAddress === 'string' ? order.shippingAddress : JSON.stringify(order.shippingAddress || {}),
-      items: order.items || [],
-      subtotal: order.subtotal || order.total || 0,
-      discount_amount: order.discountAmount || 0,
-      shipping_fee: order.shippingFee || 0,
-      total: order.total || 0,
-      payment_method: order.paymentMethod || 'COD',
-      payment_status: order.paymentStatus || 'PENDING',
+      shipping_address: shippingAddressStr,
+      items: Array.isArray(order.items) ? order.items : [],
+      subtotal: Number(order.subtotal ?? order.total ?? 0),
+      discount_amount: Number(order.discount ?? order.discountAmount ?? 0),
+      shipping_fee: Number(order.shippingFee ?? 0),
+      total: Number(order.total ?? 0),
+      payment_method: order.payment?.method || order.paymentMethod || 'COD',
+      payment_status: order.payment?.status || order.paymentStatus || 'PENDING',
       order_status: order.status || 'PENDING',
       tracking_code: order.trackingCode || null,
-      notes: order.notes || '',
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'id' }).catch((err) => {
-      console.warn(`⚠️ [SUPABASE SYNC] Lỗi đồng bộ đơn ${id}:`, err?.message || err)
-    })
+      notes: order.note ?? order.notes ?? '',
+      metadata: {
+        voucherCode: order.voucherCode || null,
+        deliveryOption: order.deliveryOption || 'COMBINED',
+        isMixedPreOrder: Boolean(order.isMixedPreOrder),
+        baseShippingFee: Number(order.baseShippingFee ?? 0),
+        splitShippingFee: Number(order.splitShippingFee ?? 0),
+        tierDiscountPercent: Number(order.tierDiscountPercent ?? 0),
+        tierDiscountAmount: Number(order.tierDiscountAmount ?? 0),
+        voucherDiscount: Number(order.voucherDiscount ?? 0),
+        bankTransferDiscount: Number(order.bankTransferDiscount ?? 0),
+        hasPreOrder: Boolean(order.hasPreOrder),
+      },
+      updated_at: new Date().toISOString(),
+    }
+
+    // Lưu ý: @supabase/supabase-js trả về PostgrestFilterBuilder (thenable, KHÔNG có .catch()),
+    // nên bắt buộc dùng await bên trong try/catch thay vì chuỗi .upsert(...).catch(...)
+    const result = await client.from('orders').upsert(payload, { onConflict: 'id' })
+    if (result?.error) {
+      console.warn(`⚠️ [SUPABASE SYNC] Lỗi đồng bộ đơn ${id}:`, result.error.message || result.error)
+      return false
+    }
+    return true
   } catch (err) {
     console.warn('⚠️ [SUPABASE SYNC] Ngoại lệ khi chuẩn bị đồng bộ đơn:', err?.message || err)
+    return false
   }
 }
 

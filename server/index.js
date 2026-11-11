@@ -16,7 +16,7 @@ import { verifyAdminLogin, adminLoginLimiter, requireAdminAuth, revokeAdminToken
 import { logSecurityAudit } from './lib/auditLogger.js'
 import { registerAuthEndpoints } from './lib/authEndpoints.js'
 import { registerReviewEndpoints } from './lib/reviewEndpoints.js'
-import { registerLoyaltyEndpoints } from './lib/loyaltyEndpoints.js'
+import { registerLoyaltyEndpoints, resolveLoyaltyMember } from './lib/loyaltyEndpoints.js'
 import { verifyTrackingToken } from './lib/orderTokenService.js'
 import { normalizeVietnamesePhone } from './lib/smsService.js'
 import { customerSessionMiddleware } from './lib/customerSessionMiddleware.js'
@@ -24,6 +24,7 @@ import { releaseVoucher } from './lib/voucherValidator.js'
 import { calculateShippingDistance } from './lib/distanceService.js'
 import { trackOrderUniversal, queryViettelPostTracking } from './lib/viettelPostService.js'
 import { validateEnvironment, printEnvReport, loadEnvironment } from './lib/envCheck.js'
+import { LEGACY_PRODUCT_SLUG_REDIRECTS } from '../src/lib/productUtils.js'
 
 // Đảm bảo nạp môi trường nếu module được import trong ngữ cảnh đặc biệt
 const isNodeTestRunner =
@@ -578,6 +579,8 @@ const orderSubmitHandler = async (req, res) => {
   try {
     const result = await handleOrderSubmit(req.body, {
       customerAccount: req.customerAccount,
+      loyaltyMember: req.loyaltyMember || null,
+      accountId: req.customerAccount?.id || null,
       fromHttpRequest: true,
     })
     return res.status(result.status).json(result.data)
@@ -589,8 +592,8 @@ const orderSubmitHandler = async (req, res) => {
     })
   }
 }
-app.post('/api/orders/submit', submitOrderLimiter, orderSubmitHandler)
-app.post('/api/orders', submitOrderLimiter, orderSubmitHandler)
+app.post('/api/orders/submit', submitOrderLimiter, resolveLoyaltyMember, orderSubmitHandler)
+app.post('/api/orders', submitOrderLimiter, resolveLoyaltyMember, orderSubmitHandler)
 
 // ── 6. Tra Cứu Thông Tin Vận Đơn (Tracking API) — SEC-002 / G-04 / P1-API-3 ──
 app.get('/api/orders/tracking', lookupLimiter, async (req, res) => {
@@ -1280,6 +1283,18 @@ try {
 } catch (chatInitErr) {
   console.warn('⚠️ [CHATBOT WARNING] Không thể nạp chatRouter:', chatInitErr.message)
 }
+
+// ── P1-2: Chuyển hướng 301 vĩnh viễn cho URL Slug sản phẩm cũ -> mới ─────
+app.get('/san-pham/:productSlug', (req, res, next) => {
+  const rawSlug = String(req.params.productSlug || '').trim().toLowerCase()
+  const canonicalSlug = LEGACY_PRODUCT_SLUG_REDIRECTS[rawSlug]
+  if (canonicalSlug) {
+    const qsIndex = req.originalUrl.indexOf('?')
+    const querySuffix = qsIndex !== -1 ? req.originalUrl.slice(qsIndex) : ''
+    return res.redirect(301, `/san-pham/${canonicalSlug}${querySuffix}`)
+  }
+  next()
+})
 
 // ── P1-2: Phục vụ Frontend SPA trong môi trường Production ─────
 const distPath = path.resolve(__dirname, '../dist')

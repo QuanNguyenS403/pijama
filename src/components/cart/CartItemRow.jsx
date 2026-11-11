@@ -1,15 +1,19 @@
 import { Minus, Plus, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { getDisplayColorName, isPreOrderItem, resolveCanonicalProductSlug } from '../../lib/productUtils'
 
 function formatPrice(n) {
   return new Intl.NumberFormat('vi-VN').format(n) + 'đ'
 }
 
 export default function CartItemRow({ item, onUpdateQuantity, onRemove, compact = false }) {
+  const canonicalSlug = resolveCanonicalProductSlug(item.slug || item.productId)
+  const displayColor = getDisplayColorName(item.color)
+
   return (
     <div className={`flex gap-3.5 ${compact ? 'py-3.5' : 'py-4'} border-b border-[#E8DFD5] last:border-0`}>
       {/* Image */}
-      <Link to={`/san-pham/${item.slug}`} className="shrink-0">
+      <Link to={`/san-pham/${canonicalSlug}`} className="shrink-0">
         <img
           src={item.image}
           alt={item.name}
@@ -20,15 +24,15 @@ export default function CartItemRow({ item, onUpdateQuantity, onRemove, compact 
       {/* Info */}
       <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
         <div>
-          <Link to={`/san-pham/${item.slug}`}>
+          <Link to={`/san-pham/${canonicalSlug}`}>
             <p className="font-sans font-bold text-sm sm:text-base text-[#1A1614] leading-tight hover:text-[#631521] transition-colors">
               {item.name}
             </p>
           </Link>
           <p className="font-sans text-[0.8rem] sm:text-[0.85rem] font-normal text-[#8C7E74] mt-0.5">
-            {item.color?.name || (typeof item.color === 'string' ? item.color : '')} | Size <span className="font-semibold text-[#1A1614]">{item.size}</span>
+            {displayColor} | Size <span className="font-semibold text-[#1A1614]">{item.size}</span>
           </p>
-          {(item.preOrder?.enabled || item.isPreOrder || item.slug === 'the-evening-edit' || item.productId === 'the-evening-edit') && (
+          {isPreOrderItem(item) && (
             <p className="font-sans text-[0.7rem] font-bold text-[#631521] bg-[#FAF5F0] border border-[#D4AF37]/60 px-1.5 py-0.5 rounded-[2px] w-fit mt-1 flex items-center gap-1">
               <span>⏱</span> Đặt trước — giao trong 7-10 ngày
             </p>

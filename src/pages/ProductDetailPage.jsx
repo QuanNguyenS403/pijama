@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link, Navigate } from 'react-router-dom'
+import { useParams, Link, Navigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Home, ChevronRight } from 'lucide-react'
 import Header from '../components/layout/Header'
@@ -19,7 +19,8 @@ import { useCart } from '../hooks/useCart'
 
 export default function ProductDetailPage() {
   const { productSlug } = useParams()
-  const { product, related } = useProduct(productSlug)
+  const location = useLocation()
+  const { product, related, isLegacySlug } = useProduct(productSlug)
   const [selectedColor, setSelectedColor] = useState(null)
   const [selectedSize, setSelectedSize] = useState(null)
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
@@ -36,6 +37,10 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return <Navigate to="/" replace />
+  }
+
+  if (isLegacySlug && product.slug && product.slug !== productSlug) {
+    return <Navigate to={`/san-pham/${product.slug}${location.search || ''}${location.hash || ''}`} replace />
   }
 
   const handleAddToCart = (info) => {

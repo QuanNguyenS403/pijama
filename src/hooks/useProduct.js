@@ -1,17 +1,14 @@
 import { products } from '../data/products'
-
-// Mapping slug thân thiện mới -> id / slug hệ thống
-const SLUG_ALIASES = {
-  'the-daybreak-set': 'the-classic-set',
-  'the-stillwater-set': 'the-cafe-look',
-  'the-hearth-set': 'the-evening-edit',
-}
+import { LEGACY_PRODUCT_SLUG_REDIRECTS, resolveCanonicalProductSlug } from '../lib/productUtils'
 
 export function useProduct(slug) {
-  const targetSlug = SLUG_ALIASES[slug] || slug
-  const product = products.find((p) => p.slug === targetSlug || p.id === targetSlug || p.slug === slug || p.id === slug)
+  const canonicalSlug = resolveCanonicalProductSlug(slug)
+  const isLegacySlug = Boolean(slug && LEGACY_PRODUCT_SLUG_REDIRECTS[String(slug).toLowerCase()])
+  const product = products.find(
+    (p) => p.slug === canonicalSlug || p.id === canonicalSlug || p.slug === slug || p.id === slug
+  )
   const related = product
     ? products.filter((p) => product.relatedProducts?.includes(p.slug) || product.relatedProducts?.includes(p.id))
     : []
-  return { product: product || null, related }
+  return { product: product || null, related, isLegacySlug }
 }

@@ -11,7 +11,7 @@ export default function Section3FeaturedProducts() {
   const products = [
     {
       id: 'classic-set',
-      slug: 'the-classic-set',
+      slug: 'the-daybreak-set',
       name: 'THE DAYBREAK SET',
       image: '/images/classic-set-red-main.jpg',
       price: 490000,
@@ -19,7 +19,7 @@ export default function Section3FeaturedProducts() {
     },
     {
       id: 'cafe-look',
-      slug: 'the-cafe-look',
+      slug: 'the-stillwater-set',
       name: 'THE STILLWATER SET',
       image: '/images/classic-set-navy-lookbook-main.jpg',
       price: 550000,
@@ -27,7 +27,7 @@ export default function Section3FeaturedProducts() {
     },
     {
       id: 'evening-edit',
-      slug: 'the-evening-edit',
+      slug: 'the-hearth-set',
       name: 'THE HEARTH SET',
       image: '/images/classic-set-brown-main.jpg',
       price: 750000,

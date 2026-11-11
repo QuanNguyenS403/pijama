@@ -50,8 +50,8 @@ export const HANOI_DISTRICTS_MAP = {
   'thanh oai':     { dist: 23.0, lat: 20.8845, lng: 105.7765, factor: 1.30 },
 
   // Huyện giáp ranh 28km - 33km (Cần AI soi xét theo xã)
-  'quốc oai':      { dist: 29.5, lat: 20.9854, lng: 105.6321, factor: 1.30 },
-  'chương mỹ':     { dist: 29.0, lat: 20.8845, lng: 105.6985, factor: 1.30 },
+  'quốc oai':      { dist: 31.5, lat: 20.9854, lng: 105.6321, factor: 1.30 },
+  'chương mỹ':     { dist: 31.0, lat: 20.8845, lng: 105.6985, factor: 1.30 },
   'mê linh':       { dist: 32.5, lat: 21.1765, lng: 105.7185, factor: 1.32 },
   'sóc sơn':       { dist: 36.5, lat: 21.2645, lng: 105.8465, factor: 1.32 },
   'thạch thất':    { dist: 35.0, lat: 21.0125, lng: 105.5465, factor: 1.32 },
@@ -238,9 +238,31 @@ class AddressIntelligenceAgent {
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. AGENT: SpatialGeocodingAgent
 // ─────────────────────────────────────────────────────────────────────────────
+function hasTermBoundary(text, term) {
+  if (!text || !term) return false
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const re = new RegExp(`(?:^|[\\s,.;:/\\-()])${escaped}(?=$|[\\s,.;:/\\-()])`, 'i')
+  return re.test(text)
+}
+
+function isExplicitFarProvinceCity(rawCity) {
+  if (!rawCity) return false
+  return Object.keys(PROVINCES_LONG_DISTANCE_MAP).some((provinceName) => {
+    if (provinceName === 'hưng yên' || provinceName === 'bắc ninh') return false
+    if (provinceName === 'huế') return hasTermBoundary(rawCity, 'huế') || rawCity.includes('thừa thiên huế')
+    return hasTermBoundary(rawCity, provinceName) || rawCity.includes(provinceName)
+  })
+}
+
 class SpatialGeocodingAgent {
   resolveCoordinates(parsedAddress) {
     const { combined, cleanCombined, landmark, raw } = parsedAddress
+    const isExplicitHanoi =
+      raw.city.includes('hà nội') ||
+      raw.city.includes('ha noi') ||
+      combined.includes('hà nội') ||
+      combined.includes('ha noi')
+    const farCityDeclared = isExplicitFarProvinceCity(raw.city)
 
     // 1. Nếu nhận diện được Landmark nổi tiếng -> Độ chính xác cao nhất (Micro-Level)
     if (landmark) {
@@ -254,9 +276,81 @@ class SpatialGeocodingAgent {
       }
     }
 
-    // 2. Kiểm tra các tỉnh thành xa (> 30km chắc chắn)
+    // 2. Ưu tiên kiểm tra các huyện giáp ranh Hưng Yên & Bắc Ninh TRƯỚC tỉnh xa
+    // (để "Văn Giang, Hưng Yên" không bị nuốt thành "Hưng Yên ~55km")
+    if (!farCityDeclared) {
+      for (const [communeName, data] of Object.entries(NEARBY_PROVINCES_MAP)) {
+        if (
+          hasTermBoundary(raw.district, communeName) ||
+          hasTermBoundary(combined, communeName) ||
+          hasTermBoundary(cleanCombined, communeName) ||
+          combined.includes(communeName) ||
+          cleanCombined.includes(communeName)
+        ) {
+          return {
+            precision: 'COMMUNE_BORDER_LEVEL',
+            lat: data.lat,
+            lng: data.lng,
+            directDistanceKm: data.dist,
+            confidence: 0.93,
+            matchedName: communeName,
+          }
+        }
+      }
+    }
+
+    // 3. Kiểm tra 30 quận/huyện Hà Nội trước để tên đường tại HN (VD: Phố Huế, Hòa Bình...) không khớp nhầm tỉnh xa
+    if (isExplicitHanoi || !farCityDeclared) {
+      for (const [districtName, data] of Object.entries(HANOI_DISTRICTS_MAP)) {
+        if (
+          raw.district.includes(districtName) ||
+          hasTermBoundary(combined, districtName) ||
+          hasTermBoundary(cleanCombined, districtName)
+        ) {
+          let finalDist = data.dist
+          // Tinh chỉnh với các xã vùng sâu của Quốc Oai / Chương Mỹ
+          if ((districtName === 'quốc oai' || districtName === 'chương mỹ') &&
+              (raw.ward.includes('xuân mai') || combined.includes('xuân mai') || combined.includes('miếu môn'))) {
+            finalDist = 34.0
+          }
+
+          return {
+            precision: 'DISTRICT_LEVEL',
+            lat: data.lat,
+            lng: data.lng,
+            directDistanceKm: finalDist,
+            confidence: 0.92,
+            matchedName: districtName,
+            factor: data.factor || 1.25,
+          }
+        }
+      }
+    }
+
+    // 4. Kiểm tra các tỉnh thành xa (> 30km chắc chắn), tránh khớp nhầm "Phố Huế" tại Hà Nội
     for (const [provinceName, approxDist] of Object.entries(PROVINCES_LONG_DISTANCE_MAP)) {
-      if (combined.includes(provinceName) || raw.city.includes(provinceName)) {
+      if (provinceName === 'huế') {
+        const isTrueHue =
+          hasTermBoundary(raw.city, 'huế') ||
+          raw.city.includes('thừa thiên huế') ||
+          (!isExplicitHanoi && !combined.includes('phố huế') && !cleanCombined.includes('pho hue') && hasTermBoundary(combined, 'huế'))
+        if (isTrueHue) {
+          return {
+            precision: 'PROVINCE_LEVEL_FAR',
+            lat: null,
+            lng: null,
+            directDistanceKm: approxDist,
+            confidence: 0.95,
+            matchedName: provinceName,
+            isFarProvince: true,
+          }
+        }
+        continue
+      }
+
+      const cityMatched = hasTermBoundary(raw.city, provinceName) || raw.city.includes(provinceName)
+      const combinedMatched = !isExplicitHanoi && hasTermBoundary(combined, provinceName)
+      if (cityMatched || combinedMatched) {
         return {
           precision: 'PROVINCE_LEVEL_FAR',
           lat: null,
@@ -269,49 +363,8 @@ class SpatialGeocodingAgent {
       }
     }
 
-    // 3. Kiểm tra các huyện giáp ranh Hưng Yên & Bắc Ninh
-    for (const [communeName, data] of Object.entries(NEARBY_PROVINCES_MAP)) {
-      if (combined.includes(communeName) || cleanCombined.includes(communeName)) {
-        return {
-          precision: 'COMMUNE_BORDER_LEVEL',
-          lat: data.lat,
-          lng: data.lng,
-          directDistanceKm: data.dist,
-          confidence: 0.93,
-          matchedName: communeName,
-        }
-      }
-    }
-
-    // 4. Kiểm tra 30 quận/huyện Hà Nội
-    for (const [districtName, data] of Object.entries(HANOI_DISTRICTS_MAP)) {
-      if (
-        raw.district.includes(districtName) ||
-        combined.includes(districtName) ||
-        cleanCombined.includes(districtName)
-      ) {
-        let finalDist = data.dist
-        // Tinh chỉnh với các xã vùng sâu của Quốc Oai / Chương Mỹ
-        if ((districtName === 'quốc oai' || districtName === 'chương mỹ') &&
-            (raw.ward.includes('xuân mai') || combined.includes('xuân mai') || combined.includes('miếu môn'))) {
-          finalDist = 34.0
-        }
-
-        return {
-          precision: 'DISTRICT_LEVEL',
-          lat: data.lat,
-          lng: data.lng,
-          directDistanceKm: finalDist,
-          confidence: 0.92,
-          matchedName: districtName,
-          factor: data.factor || 1.25,
-        }
-      }
-    }
-
     // 5. Fallback nếu chỉ có chữ "Hà Nội" mà không rõ quận
-    const isHanoi = combined.includes('hà nội') || combined.includes('ha noi')
-    if (isHanoi) {
+    if (isExplicitHanoi) {
       return {
         precision: 'CITY_CENTER_FALLBACK',
         lat: 21.0285,

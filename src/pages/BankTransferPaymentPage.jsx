@@ -581,12 +581,21 @@ export default function BankTransferPaymentPage() {
                     </div>
                   )}
 
-                  {/* Discount Row */}
+                  {/* Shipping & Discount Rows */}
+                  {Number(order?.shippingFee || 0) > 0 && (
+                    <div className="border-t border-[#E8DFD5] pt-2 flex justify-between items-center text-xs text-[#4A3F38]">
+                      <span>Phí vận chuyển{order?.deliveryOption === 'SPLIT_SHIPPING' ? ' (gồm phụ phí tách giao)' : ''}</span>
+                      <span className="font-medium">{formatVND(order.shippingFee)}</span>
+                    </div>
+                  )}
+
                   {discount > 0 && (
                     <div className="border-t border-[#E8DFD5] pt-2 flex justify-between items-center text-xs text-[#2E7D32]">
                       <span className="font-medium flex items-center gap-1">
                         <Gift className="w-3.5 h-3.5" />
-                        Ưu đãi Chuyển khoản VietQR (10%)
+                        {order?.voucherDiscount > 0 || order?.tierDiscountAmount > 0
+                          ? `Tổng giảm giá ưu đãi${order?.voucherCode ? ` (${order.voucherCode})` : ''}`
+                          : 'Ưu đãi Chuyển khoản VietQR (10%)'}
                       </span>
                       <span className="font-serif font-bold">
                         -{formatVND(discount)}

@@ -1,6 +1,7 @@
 // 🔒 DỮ LIỆU ĐÃ KHOÁ — xem PROTECTED-DATA.md trước khi sửa file này.
 // Đã được xác nhận bởi Quan: Khắc phục lỗi P0 INV-001 và Gate G-16.
 import { products } from '../../src/data/products.js'
+import { resolveCanonicalProductSlug } from '../../src/lib/productUtils.js'
 import { orderPersistence } from './orderPersistence.js'
 
 /**
@@ -25,9 +26,26 @@ export function validateOrderStock(order) {
     if (Array.isArray(actOrder.items)) {
       for (const it of actOrder.items) {
         const pId = it.productId || it.slug || ''
-        const color = String(it.color?.name || it.color || '').trim()
+        const rawColor = String(it.color?.name || it.color?.label || it.color || '').trim()
+        const canonicalPId = resolveCanonicalProductSlug(pId)
+        const catalogProduct = products.find(
+          (p) =>
+            p.id === pId ||
+            p.slug === pId ||
+            p.slug === it.slug ||
+            p.slug === canonicalPId ||
+            p.name?.toLowerCase() === it.productName?.toLowerCase()
+        )
+        const matchedColor = catalogProduct?.colors?.find(
+          (c) =>
+            c.name?.toLowerCase() === rawColor.toLowerCase() ||
+            c.label?.toLowerCase() === rawColor.toLowerCase() ||
+            (Array.isArray(c.aliases) && c.aliases.some((a) => a.toLowerCase() === rawColor.toLowerCase()))
+        )
+        const canonicalColor = matchedColor ? matchedColor.name : rawColor
+        const canonicalId = catalogProduct ? catalogProduct.id : pId
         const size = String(it.size || '').trim()
-        const key = `${pId}_${color}_${size}`.toLowerCase()
+        const key = `${canonicalId}_${canonicalColor}_${size}`.toLowerCase()
         const currentQty = reservedStockMap.get(key) || 0
         reservedStockMap.set(key, currentQty + (parseInt(it.quantity, 10) || 1))
       }
@@ -38,10 +56,14 @@ export function validateOrderStock(order) {
   const aggregatedOrderMap = new Map()
 
   for (const item of order.items) {
+    const rawIdOrSlug = item.productId || item.slug || ''
+    const canonicalSlug = resolveCanonicalProductSlug(rawIdOrSlug)
     const catalogProduct = products.find(
       (p) =>
-        p.id === item.productId ||
+        p.id === rawIdOrSlug ||
+        p.slug === rawIdOrSlug ||
         p.slug === item.slug ||
+        p.slug === canonicalSlug ||
         p.name?.toLowerCase() === item.productName?.toLowerCase()
     )
 
@@ -65,7 +87,10 @@ export function validateOrderStock(order) {
 
     // Xác thực biến thể màu và kích cỡ hợp lệ từ catalog gốc (INV-001)
     const colorObj = catalogProduct.colors?.find(
-      (c) => c.name?.toLowerCase() === colorName.toLowerCase() || c.label?.toLowerCase() === colorName.toLowerCase()
+      (c) =>
+        c.name?.toLowerCase() === colorName.toLowerCase() ||
+        c.label?.toLowerCase() === colorName.toLowerCase() ||
+        (Array.isArray(c.aliases) && c.aliases.some((a) => a.toLowerCase() === colorName.toLowerCase()))
     )
 
     if (!colorObj) {
@@ -82,7 +107,8 @@ export function validateOrderStock(order) {
       }
     }
 
-    const key = `${catalogProduct.id}_${colorName}_${size}`.toLowerCase()
+    const canonicalColorName = colorObj.name
+    const key = `${catalogProduct.id}_${canonicalColorName}_${size}`.toLowerCase()
     const existing = aggregatedOrderMap.get(key) || {
       product: catalogProduct,
       colorObj,

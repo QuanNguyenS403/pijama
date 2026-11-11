@@ -16,6 +16,7 @@ import Header from '../components/layout/Header'
 import Section12Footer from '../components/sections/Section12Footer'
 import { formatVND } from '../data/checkoutConfig'
 import { getSavedOrders, restoreOrderItemsToCart, purgeCancelledOrderLocally } from '../lib/orderSync'
+import { isPreOrderItem } from '../lib/productUtils'
 import ViettelPostTracker from '../components/shipping/ViettelPostTracker'
 
 export default function OrderSuccessPage() {
@@ -415,13 +416,7 @@ export default function OrderSuccessPage() {
                   {order.items && order.items.length > 0 && (
                     <div className="space-y-3">
                       {order.items.map((item, idx) => {
-                        const isItemPreOrder = !!(
-                          item.preOrder?.enabled ||
-                          item.isPreOrder ||
-                          item.slug === 'the-evening-edit' ||
-                          item.productId === 'the-evening-edit' ||
-                          item.productName?.includes('HEARTH')
-                        )
+                        const isItemPreOrder = isPreOrderItem(item) || Boolean(item.productName?.includes('HEARTH'))
                         return (
                           <div key={idx} className="flex justify-between items-start text-xs sm:text-sm">
                             <div className="pr-4">
@@ -444,12 +439,21 @@ export default function OrderSuccessPage() {
                     </div>
                   )}
 
-                  {/* Discount Row (If Any) */}
+                  {/* Shipping Fee & Discount Rows */}
+                  {Number(order.shippingFee || 0) > 0 && (
+                    <div className="border-t border-[#E8DFD5] pt-2 flex justify-between items-center text-xs text-[#4A3F38]">
+                      <span>Phí vận chuyển{order.deliveryOption === 'SPLIT_SHIPPING' ? ' (gồm phụ phí tách giao)' : ''}</span>
+                      <span className="font-medium">{formatVND(order.shippingFee)}</span>
+                    </div>
+                  )}
+
                   {order.discount > 0 && (
                     <div className="border-t border-[#E8DFD5] pt-2 flex justify-between items-center text-xs text-[#2E7D32]">
                       <span className="font-medium flex items-center gap-1">
                         <Gift className="w-3.5 h-3.5" />
-                        Ưu đãi Thanh toán VietQR 10%
+                        {order.voucherDiscount > 0 || order.tierDiscountAmount > 0 || !isBankTransfer
+                          ? `Tổng giảm giá ưu đãi${order.voucherCode ? ` (${order.voucherCode})` : ''}`
+                          : 'Ưu đãi Thanh toán VietQR 10%'}
                       </span>
                       <span className="font-serif font-bold">
                         -{formatVND(order.discount)}
@@ -480,7 +484,7 @@ export default function OrderSuccessPage() {
                   {(() => {
                     // WP8: ẩn khung "Tích lũy điểm hội viên" cho đến khi PAID hoặc COD
                     if (isBankTransfer && effectivePhase !== 'PAID') return null
-                    const estimatedSpend = Math.max(0, (order.subtotal || total - (order.shippingFee || 0)))
+                    const estimatedSpend = Math.max(0, (order.subtotal || (total - (order.shippingFee || 0))) - (order.discount || 0))
                     const estimatedPoints = Math.floor(estimatedSpend / 100000)
                     if (estimatedPoints <= 0) return null
                     return (
@@ -514,14 +518,15 @@ export default function OrderSuccessPage() {
                   const hasPreOrder = !!(
                     order.hasPreOrder ||
                     order.items?.some(
-                      (i) =>
-                        i.preOrder?.enabled ||
-                        i.isPreOrder ||
-                        i.slug === 'the-evening-edit' ||
-                        i.productId === 'the-evening-edit' ||
-                        i.productName?.includes('HEARTH')
+                      (i) => isPreOrderItem(i) || Boolean(i.productName?.includes('HEARTH'))
                     )
                   )
+                  const preOrderNames = (order.items || [])
+                    .filter((i) => isPreOrderItem(i) || Boolean(i.productName?.includes('HEARTH')))
+                    .map((i) => i.productName || i.name)
+                    .filter((v, idx, arr) => v && arr.indexOf(v) === idx)
+                  const preOrderDisplay = preOrderNames.length > 0 ? preOrderNames.join(' & ') : 'THE HEARTH SET'
+                  const isSplitShipping = order.deliveryOption === 'SPLIT_SHIPPING'
                   return (
                     <div
                       className={`flex items-start gap-3.5 p-4 rounded-[3px] border text-xs font-sans ${
@@ -534,9 +539,15 @@ export default function OrderSuccessPage() {
                       <div>
                         <p className="font-bold text-[#1A1614] mb-0.5">Thời gian giao hàng dự kiến:</p>
                         {hasPreOrder ? (
-                          <p className="leading-relaxed text-[#4A3F38]">
-                            Đơn hàng có chứa sản phẩm <strong>Đặt Trước (THE DAYBREAK SET)</strong> — Thời gian may & giao hàng dự kiến trong <strong>7–10 ngày làm việc</strong>. Bộ phận vận hành sẽ liên hệ thông báo cụ thể trước khi giao hàng.
-                          </p>
+                          isSplitShipping ? (
+                            <p className="leading-relaxed text-[#4A3F38]">
+                              Quý khách đã chọn <strong>Tách đơn giao trước</strong>: Các sản phẩm có sẵn sẽ được giao trong <strong>2–4 ngày làm việc</strong>; sản phẩm Đặt Trước (<strong>{preOrderDisplay}</strong>) sẽ được giao sau <strong>7–10 ngày làm việc</strong>.
+                            </p>
+                          ) : (
+                            <p className="leading-relaxed text-[#4A3F38]">
+                              Đơn hàng có chứa sản phẩm <strong>Đặt Trước ({preOrderDisplay})</strong> — Thời gian may & giao hàng dự kiến trong <strong>7–10 ngày làm việc</strong>. Bộ phận vận hành sẽ liên hệ thông báo cụ thể trước khi giao hàng.
+                            </p>
+                          )
                         ) : (
                           <p className="font-normal leading-relaxed text-[#4A3F38]">
                             Từ <strong>2–4 ngày làm việc</strong>. Bộ phận vận hành sẽ liên hệ qua điện thoại trước khi giao hàng.
