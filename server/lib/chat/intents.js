@@ -276,7 +276,7 @@ export function processTier0Intent(message, context = {}) {
       handled: true,
       intentName: 'SIZE_GUIDE',
       reply: buildWebsiteSizeGuideReply(),
-      quickReplies: ['Mẫu The Daybreak (Đỏ)', 'Mẫu The Stillwater (Navy)', 'Mẫu The Hearth (Nâu)'],
+      quickReplies: ['Mẫu FELIZ SET (Đỏ)', 'Mẫu GALAXIA SET (Navy)', 'Mẫu The Hearth (Nâu)'],
       usedTier: 'tier-0',
     }
   }

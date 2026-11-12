@@ -13,7 +13,7 @@ import { LIVE_CONSTANTS } from './liveFacts.js'
 const ALLOWED_UPPERCASE_TOKENS = new Set([
   'VIETQR', 'COD', 'VCB', 'ZALO', 'QNS', 'SIZE', 'HOTLINE', 'PREORDER',
   'OEKO', 'TEX', 'GSM', 'VNĐ', 'VND', 'SPX', 'GHTK', 'GHN', 'HTTP', 'HTTPS',
-  'THE', 'DAYBREAK', 'STILLWATER', 'HEARTH', 'SET', 'S', 'M', 'L', 'XL'
+  'THE', 'FELIZ', 'GALAXIA', 'DAYBREAK', 'STILLWATER', 'HEARTH', 'SET', 'S', 'M', 'L', 'XL'
 ])
 
 // Danh sách các cụm từ cấm tuyệt đối
@@ -33,7 +33,7 @@ const FORBIDDEN_PHRASES = [
 
 // Tập hợp các mức giá hợp lệ trong hệ thống
 const VALID_PRICES = new Set([
-  390000, 490000, 550000, 750000, 500000, 30000, 351000, 495000, 675000
+  390000, 490000, 550000, 598000, 658000, 698000, 750000, 500000, 30000, 351000, 495000, 538200, 592200, 628200, 675000
 ])
 
 /**

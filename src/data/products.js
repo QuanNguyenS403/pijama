@@ -3,8 +3,8 @@
 export const products = [
   {
     id: "the-classic-set",
-    slug: "the-daybreak-set",
-    name: "THE DAYBREAK SET",
+    slug: "feliz-set",
+    name: "FELIZ SET",
     subtitle: "Pijama Phong Cách Châu Âu · Sắc Đỏ Quyến Rũ",
     collection: "Thu Đông 2026",
     badge: "MỚI RA MẮT",
@@ -12,9 +12,9 @@ export const products = [
 
     description: `Bộ pijama lấy cảm hứng từ phong cách ngủ cổ điển châu Âu với gam màu Đỏ quý phái, quyến rũ — đường viền tương phản tinh tế, cổ áo notch thanh lịch, và phom dáng suông tự do cho cảm giác thoải mái trọn ngày. Mang năng lượng Hỏa ấm áp và rạng rỡ, khơi dậy nguồn sinh khí tươi mới cho không gian nghỉ ngơi của bạn.`,
 
-    longDescription: `THE DAYBREAK SET được thiết kế để mang lại cảm giác như đang thức giấc tại một khách sạn boutique 5 sao giữa lòng châu Âu. Gam màu Đỏ mang sắc thái ấm áp, nồng nàn của hành Hỏa — như những tia nắng ấm tiếp thêm sinh khí và năng lượng tích cực cho tinh thần. Thiết kế suông nhẹ, viền tương phản sắc nét giúp bạn luôn thanh lịch, tự tin diện từ phòng ngủ ra phố hay tiếp khách tại nhà mà không cần đắn đo. Tương sinh và hòa hợp lý tưởng cho người mệnh Hỏa và Thổ.`,
+    longDescription: `FELIZ SET được thiết kế để mang lại cảm giác như đang thức giấc tại một khách sạn boutique 5 sao giữa lòng châu Âu. Gam màu Đỏ mang sắc thái ấm áp, nồng nàn của hành Hỏa — như những tia nắng ấm tiếp thêm sinh khí và năng lượng tích cực cho tinh thần. Thiết kế suông nhẹ, viền tương phản sắc nét giúp bạn luôn thanh lịch, tự tin diện từ phòng ngủ ra phố hay tiếp khách tại nhà mà không cần đắn đo. Tương sinh và hòa hợp lý tưởng cho người mệnh Hỏa và Thổ.`,
 
-    detailedDescription: `THE DAYBREAK SET lấy cảm hứng từ đồ ngủ của các khách sạn boutique châu Âu — nơi pijama không chỉ là trang phục nghỉ ngơi mà là một tuyên ngôn phong cách sống tinh tế.
+    detailedDescription: `FELIZ SET lấy cảm hứng từ đồ ngủ của các khách sạn boutique châu Âu — nơi pijama không chỉ là trang phục nghỉ ngơi mà là một tuyên ngôn phong cách sống tinh tế.
 
 Thiết kế notch collar (cổ bẻ cổ điển) với viền tương phản đỏ sắc nét chạy dọc ve áo, cổ tay và miệng túi — tạo nên dấu ấn thanh lịch đặc trưng. Hàng cúc trước tiệp màu cùng hai túi patch rộng rãi và một túi ngực nhỏ hoàn thiện phom dáng chuẩn mực.
 
@@ -23,9 +23,9 @@ Quần dáng suông thẳng (straight-leg) với độ rủ tự nhiên từ s�
 Gam màu Đỏ biểu trưng cho năng lượng Hỏa — biểu tượng của sự ấm áp, yêu đời, may mắn và nhiệt huyết tràn đầy. Rất hòa hợp và tương sinh cho những ai tìm kiếm sự cân bằng, đặc biệt là người mang mệnh Hỏa và Thổ.`,
 
     tagline: `Khởi đầu ngày mới tràn đầy sinh khí với sắc đỏ ấm áp và phom dáng châu Âu kinh điển.`,
-    sectionLabel: "BST THU ĐÔNG 2026 · HỎA SẮC RỰC RỠ",
+    sectionLabel: "BST Giáng Sinh - Christmas Collection",
 
-    price: 490000,
+    price: 698000,
     originalPrice: null,
     discount: 0,
     rating: 4.8,
@@ -53,10 +53,10 @@ Gam màu Đỏ biểu trưng cho năng lượng Hỏa — biểu tượng của 
       },
     ],
 
-    // ─── SIZES — only S and L ────────────────────────────────────────────────
-    sizes: ["S", "L"],
+    // ─── SIZES — only S and M ────────────────────────────────────────────────
+    sizes: ["S", "M"],
 
-    // ─── SIZE GUIDE — Bảng Size chuẩn hóa cho THE DAYBREAK SET ─────────────
+    // ─── SIZE GUIDE — Bảng Size chuẩn hóa cho Feliz ─────────────
     sizeGuide: {
       S: {
         shirtLength: "62,0 cm",
@@ -66,7 +66,7 @@ Gam màu Đỏ biểu trưng cho năng lượng Hỏa — biểu tượng của 
         thigh: "69,1 cm",
         trouserLength: "90,8 cm",
       },
-      L: {
+      M: {
         shirtLength: "66,0 cm",
         chest: "118,0 cm",
         sleeveLength: "56,0 cm",
@@ -91,9 +91,8 @@ Gam màu Đỏ biểu trưng cho năng lượng Hỏa — biểu tượng của 
     returnPolicy: "Hỗ trợ đổi trả trong 30 ngày — Áp dụng theo chính sách đổi trả & cam kết chất lượng QuanNguyenS — Liên hệ hotline 0973 486 218",
 
     highlights: [
-      "Sắc Đỏ nồng nàn năng lượng Hỏa — ấm áp, quyến rũ, tràn đầy sinh khí",
-      "Viền tương phản sắc nét — dấu ấn tay nghề may chuẩn phong cách châu Âu",
-      "Phom dáng suông tự do — ôm đẹp mọi vóc dáng, thoải mái từ nhà ra phố",
+      "Feliz Top gây ấn tượng với kiểu dáng suông rộng thoải mái, phần cổ bẻ cổ điển cùng những đường viền chỉ nổi chạy dọc tà và cổ tay áo đầy tinh tế. Điểm đắt giá nhất nằm ở bề mặt chất liệu mềm rủ với những mảng họa tiết ẩn chìm, tạo hiệu ứng thị giác loang nhẹ đầy chiều sâu khi bắt sáng.",
+      "Kết hợp cùng quần ống suông đồng bộ, FELIZ SET tạo nên sự cân bằng giữa nét phóng khoáng hiện đại và vẻ mềm mại tự nhiên. Sự kết hợp giữa sắc đỏ trầm ấm và các chi tiết ẩn hiện khéo léo giữ trọn nét thanh lịch, sang trọng mà không cần phô trương.",
     ],
 
     tags: ["Mới Ra Mắt", "Classic", "Màu Đỏ", "European Style", "Hành Hỏa"],
@@ -117,17 +116,17 @@ Gam màu Đỏ biểu trưng cho năng lượng Hỏa — biểu tượng của 
   },
   {
     id: 'the-cafe-look',
-    slug: 'the-stillwater-set',
-    name: 'THE STILLWATER SET',
+    slug: 'galaxia-set',
+    name: 'GALAXIA SET',
     subtitle: 'Pijama Thiết Kế Cổ V · Caro Navy Tĩnh Tại',
     collection: 'Thu Đông 2026',
     badge: 'BÁN CHẠY NHẤT',
 
     description: 'Thiết kế cổ V thanh lịch với đường viền tương phản nổi bật kết hợp họa tiết Caro Navy lịch lãm. Mang chiều sâu tĩnh tại của hành Thủy — tựa mặt nước hồ phẳng lặng, mang đến cảm giác an yên tuyệt đối cho những buổi sáng thưởng cà phê hay góc làm việc tại nhà.',
 
-    longDescription: 'THE STILLWATER SET là sự giao thoa hoàn hảo giữa nét phóng khoáng hiện đại và sự tĩnh tại sâu lắng. Mang gam màu Caro Navy biểu trưng cho hành Thủy — năng lượng của sự thông thái, điềm tĩnh và an nhiên. Thiết kế cổ V thanh thoát cùng viền tương phản tạo điểm nhấn tinh giản mà sắc sảo. Được dệt từ chất liệu tự nhiên mềm mại, đây là bộ trang phục lý tưởng để bạn bắt đầu ngày mới với một tách cappuccino hoặc đắm mình trong trang sách yêu thích. Tương hợp và nuôi dưỡng tuyệt vời cho người mệnh Thủy và Mộc.',
+    longDescription: 'GALAXIA SET là sự giao thoa hoàn hảo giữa nét phóng khoáng hiện đại và sự tĩnh tại sâu lắng. Mang gam màu Caro Navy biểu trưng cho hành Thủy — năng lượng của sự thông thái, điềm tĩnh và an nhiên. Thiết kế cổ V thanh thoát cùng viền tương phản tạo điểm nhấn tinh giản mà sắc sảo. Được dệt từ chất liệu tự nhiên mềm mại, đây là bộ trang phục lý tưởng để bạn bắt đầu ngày mới với một tách cappuccino hoặc đắm mình trong trang sách yêu thích. Tương hợp và nuôi dưỡng tuyệt vời cho người mệnh Thủy và Mộc.',
 
-    detailedDescription: `THE STILLWATER SET được may đo theo chuẩn phong cách homewear hiện đại của các thủ phủ thời trang Bắc Âu.
+    detailedDescription: `GALAXIA SET được may đo theo chuẩn phong cách homewear hiện đại của các thủ phủ thời trang Bắc Âu.
 
 Phom áo cổ V xẻ vừa phải tôn lên nét thanh mảnh của phần cổ và xương quai xanh, viền phối tương phản sắc sảo dọc cổ và lai áo.
 
@@ -136,9 +135,9 @@ Quần ống suông thoải mái với đai chun co giãn êm ái, thích hợp 
 Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng cho sự tĩnh lặng, sâu sắc và trí tuệ. Rất phù hợp để xoa dịu tâm trí sau những giờ làm việc căng thẳng, tương hợp và nuôi dưỡng tuyệt vời cho người mệnh Thủy và Mộc.`,
 
     tagline: `Tĩnh tại và an yên — phong cách cổ V thanh lịch cùng sắc xanh Navy trầm lắng.`,
-    sectionLabel: "BST THU ĐÔNG 2026 · THỦY SẮC TĨNH TẠI",
+    sectionLabel: "BST Giáng Sinh - Christmas Collection",
 
-    price: 550000,
+    price: 598000,
     originalPrice: null,
     discount: 0,
     rating: 4.7,
@@ -179,7 +178,7 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
       },
     ],
 
-    sizes: ['S', 'L'],
+    sizes: ['S', 'M'],
     sizeGuide: {
       S: {
         shirtLength: '66,5 cm',
@@ -189,7 +188,7 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
         thigh: '68,9 cm',
         trouserLength: '96,3 cm',
       },
-      L: {
+      M: {
         shirtLength: '70,5 cm',
         chest: '135,0 cm',
         sleeveLength: '54,2 cm',
@@ -210,9 +209,8 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
     ],
     returnPolicy: 'Hỗ trợ đổi trả trong 30 ngày — Áp dụng theo chính sách đổi trả & cam kết chất lượng QuanNguyenS — Liên hệ hotline 0973 486 218',
     highlights: [
-      'Họa tiết Caro Navy năng lượng Thủy — tĩnh tại, sâu lắng, mang lại cảm giác an yên như mặt nước lặng',
-      'Cổ V thanh lịch, viền tương phản nổi bật tôn dáng cổ và xương quai xanh',
-      'Dáng relaxed fit thoải mái — dễ dàng chuyển đổi từ phòng ngủ sang góc café sáng',
+      'Galaxia set nổi bật với kiểu dáng oversize phóng khoáng, mang đậm hơi thở "phương Tây" đầy tự do và hiện đại. Điểm nhấn đầu tiên nằm ở Galaxia Top rộng kết hợp cùng phần cổ Pyjama cổ điển, được viền trắng tinh tế chạy dọc nếp áo và túi ngực, tạo nên sự cân bằng hoàn hảo giữa nét truyền thống và hiện đại .',
+      'Kết hợp cùng là Galaxia Pants ống suông rộng , giúp kéo dài đôi chân và hoàn thiện một tổng thể phóng khoáng, thời thượng. Điểm đắt giá của GALAXIA SET còn nằm ở hoạ tiết caro mờ ảo trên nền vải xanh thẫm - một sự biến tấu vừa cổ điển vừa hiện đại, không quá nổi bật nhưng lại vô cùng hút mắt bởi hiệu ứng thị giác mờ nhẹ, mang lại cảm giác dễ chịu và tạo chiều sâu cho trang phục. Một thiết kế tối giản, đậm chất "chic" và không lỗi mốt, hứa hẹn sẽ là sự lựa chọn hoàn hảo cho những ai yêu thích phong cách tối giản mà vẫn " chất " của QuanNguyenS.',
     ],
     tags: ['Bán Chạy', 'Caro Navy', 'Cổ V', 'Chất Liệu Cao Cấp', 'Hành Thủy'],
     relatedProducts: ['the-classic-set', 'the-evening-edit'],
@@ -241,7 +239,7 @@ Thiết kế quần dáng wide-leg (ống rộng) buông rủ hoàn hảo kết 
 Họa tiết Sọc Nâu mocha (Brown Stripe) đại diện cho năng lượng hành Thổ — như đất mẹ hiền hòa, bao dung và vững chãi. Là lựa chọn tuyệt vời để tái tạo năng lượng sau một ngày bận rộn, mang lại sự che chở và gắn kết, đặc biệt tương sinh hòa hợp cho người mệnh Thổ và Kim.`,
 
     tagline: `Vững chãi và ấm áp — cảm giác trở về nhà trong phom dáng wide-leg thượng lưu và sắc nâu an lành.`,
-    sectionLabel: "BST THU ĐÔNG 2026 · THỔ SẮC AN NHIÊN",
+    sectionLabel: "BST Giáng Sinh - Christmas Collection",
 
     price: 750000,
     originalPrice: null,
@@ -311,7 +309,7 @@ Họa tiết Sọc Nâu mocha (Brown Stripe) đại diện cho năng lượng h�
 ]
 
 export const sampleReviews = [
-  // ── THE CLASSIC SET (THE DAYBREAK SET - Đỏ) ──
+  // ── THE CLASSIC SET (FELIZ SET - Đỏ) ──
   {
     id: 'rv-1',
     productId: 'the-classic-set',
@@ -409,7 +407,7 @@ export const sampleReviews = [
     text: 'Chất vải siêu êm mềm và đường may rất đẹp không có gì để chê. Mình 47kg cao 1m52 mặc size S quần hơi dài hơn gót một xíu xiu nên phải đi dép đế 2-3cm hoặc kéo cạp lên tí là vừa đẹp. Shop tư vấn size rất có tâm và gửi hàng nhanh.',
   },
 
-  // ── THE STILLWATER SET (Caro Navy) ──
+  // ── GALAXIA SET (Caro Navy) ──
   {
     id: 'rv-9',
     productId: 'the-cafe-look',

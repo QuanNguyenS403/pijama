@@ -37,8 +37,8 @@ export default function AdminBroadcastPage() {
 `Kính gửi Quý khách hàng thân mến của QuanNguyenS,
 
 Chúng tôi rất hân hạnh được giới thiệu đến bạn Bộ sưu tập Lụa Sleepwear Thu Đông 2026 với 3 thiết kế chủ đạo:
-1. THE DAYBREAK SET — Sắc Đỏ thanh lịch, quyến rũ
-2. THE STILLWATER SET — Caro Navy trầm tĩnh, quý phái
+1. FELIZ SET — Sắc Đỏ thanh lịch, quyến rũ
+2. GALAXIA SET — Caro Navy trầm tĩnh, quý phái
 3. THE HEARTH SET — Sọc Nâu ấm áp, sang trọng
 
 Tất cả sản phẩm đều được dệt may từ chất liệu lụa satin tự nhiên cao cấp, mang lại cảm giác mềm mại, thoáng mát tuyệt đối trên làn da.

@@ -47,7 +47,7 @@ export function scrubPII(text) {
   scrubbed = scrubbed.replace(BANK_ACCOUNT_OR_ID_REGEX, (match) => {
     const digitsOnly = match.replace(/[\s.-]/g, '')
     // Bỏ qua nếu có vẻ là giá tiền thông thường (390000, 500000, 750000)
-    if (['390000', '490000', '500000', '550000', '750000', '30000', '100000'].includes(digitsOnly)) {
+    if (['390000', '490000', '500000', '550000', '598000', '658000', '698000', '750000', '30000', '100000'].includes(digitsOnly)) {
       return match
     }
     // Nếu là 9-16 chữ số (STK/CCCD/SĐT còn sót), ẩn đi

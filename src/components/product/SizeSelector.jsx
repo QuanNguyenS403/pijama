@@ -19,12 +19,7 @@ export default function SizeSelector({ sizes = [], selectedColor, selected, onCh
           SIZE 
           <span className="text-[#1A1614] font-bold font-sans tracking-normal">{selected || ''}</span>
         </p>
-        <button
-          onClick={onSizeGuide}
-          className="font-sans text-[0.8rem] font-medium underline text-[#8C7E74] hover:text-[#631521] transition-colors"
-        >
-          Hướng dẫn chọn size →
-        </button>
+
       </div>
 
       <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Chọn size">

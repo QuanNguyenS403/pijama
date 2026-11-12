@@ -1,7 +1,19 @@
+import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import storyBrownCraftsmanshipImg from '../../assets/images/story-brown-craftsmanship.jpg'
+
+const GALAXIA_THUMBNAILS = [
+  '/images/classic-set-navy-thumb-1.jpg',
+  '/images/classic-set-navy-thumb-2.jpg',
+  '/images/classic-set-navy-thumb-3.jpg',
+  '/images/classic-set-navy-lookbook-main.jpg',
+]
 
 export default function Section5DarkContrast() {
+  // Lấy ngẫu nhiên 1 ảnh thumbnail từ set Galaxia
+  const selectedImage = useMemo(() => {
+    const randomIndex = Math.floor(Math.random() * GALAXIA_THUMBNAILS.length)
+    return GALAXIA_THUMBNAILS[randomIndex]
+  }, [])
   return (
     <section
       id="section-dark-contrast"
@@ -57,8 +69,8 @@ export default function Section5DarkContrast() {
           >
             <div className="relative rounded-[4px] overflow-hidden shadow-2xl border-2 border-[#D4AF37]/40 bg-[#1E1510] aspect-[4/3] w-full group">
               <img
-                src={storyBrownCraftsmanshipImg}
-                alt="The Hearth Set sọc nâu QuanNguyenS — Style To Be Lived In tay nghề may đo tinh xảo"
+                src={selectedImage}
+                alt="GALAXIA SET caro navy QuanNguyenS — Style To Be Lived In câu chuyện thương hiệu thời trang mà vẫn là chính mình"
                 loading="lazy"
                 decoding="async"
                 className="w-full h-full object-cover object-center group-hover:scale-103 transition-transform duration-700"

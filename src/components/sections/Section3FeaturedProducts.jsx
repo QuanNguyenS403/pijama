@@ -11,18 +11,18 @@ export default function Section3FeaturedProducts() {
   const products = [
     {
       id: 'classic-set',
-      slug: 'the-daybreak-set',
-      name: 'THE DAYBREAK SET',
+      slug: 'feliz-set',
+      name: 'FELIZ SET',
       image: '/images/classic-set-red-main.jpg',
-      price: 490000,
+      price: 698000,
       originalPrice: null,
     },
     {
       id: 'cafe-look',
-      slug: 'the-stillwater-set',
-      name: 'THE STILLWATER SET',
+      slug: 'galaxia-set',
+      name: 'GALAXIA SET',
       image: '/images/classic-set-navy-lookbook-main.jpg',
-      price: 550000,
+      price: 598000,
       originalPrice: null,
     },
     {
@@ -82,11 +82,11 @@ export default function Section3FeaturedProducts() {
 
                 <div className="mt-2 flex items-baseline gap-2">
                   <span className="font-serif text-lg sm:text-xl font-bold text-[#631521]">
-                    {product.price ? product.price.toLocaleString('vi-VN') + 'đ' : ''}
+                    {product.price ? product.price.toLocaleString('vi-VN') : ''}
                   </span>
                   {product.originalPrice && (
                     <span className="font-sans text-xs text-[#8C7E74] line-through">
-                      {product.originalPrice.toLocaleString('vi-VN')}đ
+                      {product.originalPrice.toLocaleString('vi-VN')}
                     </span>
                   )}
                 </div>

@@ -25,7 +25,7 @@ export default function Accordion({ items, allowMultiple = true, defaultOpen = [
       {items.map((item, i) => {
         const isOpen = openIndices.has(i)
         return (
-          <div key={i}>
+          <div key={i} id={item.id}>
             <button
               onClick={() => toggleIndex(i)}
               aria-expanded={isOpen}

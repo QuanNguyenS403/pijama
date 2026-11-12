@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ShoppingBag } from 'lucide-react'
 
 function formatPrice(n) {
-  return new Intl.NumberFormat('vi-VN').format(n) + 'đ'
+  return new Intl.NumberFormat('vi-VN').format(n)
 }
 
 export default function StickyMobileAtc({

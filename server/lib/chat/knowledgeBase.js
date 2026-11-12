@@ -247,9 +247,9 @@ export function retrieveKnowledge(query, topK = 3) {
     // Ưu tiên sản phẩm đích danh nếu query nhắc đúng tên hoặc màu sắc đặc trưng
     if (chunk.topic === 'product') {
       const titleLower = chunk.title.toLowerCase()
-      if (titleLower.includes('daybreak') && (cleanQuery.includes('daybreak') || cleanQuery.includes('do') || cleanQuery.includes('red') || cleanQuery.includes('hong') || cleanQuery.includes('pink'))) {
+      if ((titleLower.includes('daybreak') || titleLower.includes('feliz') || ((chunk.slug === 'feliz-set' || chunk.slug === 'the-feliz-set') || chunk.slug === 'the-daybreak-set')) && (cleanQuery.includes('daybreak') || cleanQuery.includes('feliz') || cleanQuery.includes('do') || cleanQuery.includes('red') || cleanQuery.includes('hong') || cleanQuery.includes('pink') || cleanQuery.includes('nang som'))) {
         score += 35
-      } else if (titleLower.includes('stillwater') && (cleanQuery.includes('stillwater') || cleanQuery.includes('navy') || cleanQuery.includes('caro') || cleanQuery.includes('size l') || cleanQuery.includes('65kg') || cleanQuery.includes('1m72') || cleanQuery.includes('nam'))) {
+      } else if ((titleLower.includes('stillwater') || titleLower.includes('galaxia') || ((chunk.slug === 'galaxia-set' || chunk.slug === 'the-galaxia-set') || chunk.slug === 'the-stillwater-set')) && (cleanQuery.includes('stillwater') || cleanQuery.includes('galaxia') || cleanQuery.includes('navy') || cleanQuery.includes('caro') || cleanQuery.includes('size l') || cleanQuery.includes('65kg') || cleanQuery.includes('1m72') || cleanQuery.includes('nam'))) {
         score += 35
       } else if (titleLower.includes('hearth') && (cleanQuery.includes('hearth') || cleanQuery.includes('nau') || cleanQuery.includes('brown'))) {
         score += 35

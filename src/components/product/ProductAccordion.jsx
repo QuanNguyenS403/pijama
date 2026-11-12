@@ -13,19 +13,8 @@ import {
 
 export default function ProductAccordion({ product }) {
   const detailedText = product.detailedDescription || product.longDescription || product.description
-  // ─── B2: Bảng Size Helper ────────────────────────────────────────────────
-  const sizeEntries = product.sizeGuide ? Object.entries(product.sizeGuide) : []
-  const hasWeight = sizeEntries.some(([, g]) => g.weight)
-  const hasHeight = sizeEntries.some(([, g]) => g.height)
-  const hasShirtLength = sizeEntries.some(([, g]) => g.shirtLength)
-  const hasChest = sizeEntries.some(([, g]) => g.chest)
-  const hasSleeve = sizeEntries.some(([, g]) => g.sleeveLength)
-  const hasMaxWaist = sizeEntries.some(([, g]) => g.maxWaist)
-  const hasThigh = sizeEntries.some(([, g]) => g.thigh)
-  const hasWaist = sizeEntries.some(([, g]) => g.waist && !g.maxWaist)
-  const hasTrouser = sizeEntries.some(([, g]) => g.trouserLength)
 
-  // ─── B3: Icon cho ký hiệu giặt ủi quốc tế ────────────────────────────────
+  // ─── Ký hiệu giặt ủi quốc tế ──────────────────────────────────────────────
   const getCareIcon = (text) => {
     const lower = text.toLowerCase()
     if (lower.includes('khô') || lower.includes('bảo quản')) return Sun
@@ -62,55 +51,19 @@ export default function ProductAccordion({ product }) {
 
     // ─── MỤC 2: HƯỚNG DẪN CHỌN SIZE ──────────────────────────────────────
     {
+      id: 'size-guide-accordion',
       label: 'Hướng Dẫn Chọn Size',
       content: (
         <div className="space-y-4 text-sm text-[#4A3F38]">
           <p className="font-normal text-xs sm:text-sm leading-relaxed">
-            Đối với phom dáng pijama suông cổ điển châu Âu của QuanNguyenS, bạn có thể dễ dàng đối chiếu số đo cơ thể theo bảng quy chuẩn bên dưới. Nếu nằm giữa 2 size, chúng tôi khuyên bạn nên chọn <strong>size lớn hơn</strong> để có trải nghiệm mặc thư thái nhất.
+            Đối với phom dáng pijama suông cổ điển châu Âu của QuanNguyenS, bạn có thể dễ dàng đối chiếu số đo cơ thể để lựa chọn kích cỡ phù hợp nhất. Nếu nằm giữa 2 size, chúng tôi khuyên bạn nên chọn <strong>size lớn hơn</strong> để có trải nghiệm mặc thư thái nhất.
           </p>
 
-          {sizeEntries.length > 0 ? (
-            <div className="overflow-x-auto border border-[#E8DFD5] rounded-[3px] shadow-xs">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-[#FAF5F0] border-b border-[#E8DFD5] text-[#631521] font-sans font-bold uppercase tracking-wider">
-                    <th className="py-2.5 px-3">Size</th>
-                    {hasWeight && <th className="py-2.5 px-3">Cân Nặng</th>}
-                    {hasHeight && <th className="py-2.5 px-3">Chiều Cao</th>}
-                    {hasShirtLength && <th className="py-2.5 px-3">Dài Áo</th>}
-                    {hasChest && <th className="py-2.5 px-3">Vòng Ngực</th>}
-                    {hasSleeve && <th className="py-2.5 px-3">Dài Tay</th>}
-                    {hasMaxWaist && <th className="py-2.5 px-3">Max Eo</th>}
-                    {hasThigh && <th className="py-2.5 px-3">Đùi</th>}
-                    {hasWaist && <th className="py-2.5 px-3">Vòng Eo</th>}
-                    {hasTrouser && <th className="py-2.5 px-3">Dài Quần</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E8DFD5] font-sans">
-                  {sizeEntries.map(([sz, guide]) => (
-                    <tr key={sz} className="hover:bg-[#FAF8F5] transition-colors odd:bg-white even:bg-[#FAF8F5]/60">
-                      <td className="py-2.5 px-3 font-serif font-bold text-sm text-[#631521]">{sz}</td>
-                      {hasWeight && <td className="py-2.5 px-3 font-medium text-[#1A1614]">{guide.weight || '—'}</td>}
-                      {hasHeight && <td className="py-2.5 px-3 text-[#4A3F38]">{guide.height || '—'}</td>}
-                      {hasShirtLength && <td className="py-2.5 px-3 text-[#4A3F38]">{guide.shirtLength || '—'}</td>}
-                      {hasChest && <td className="py-2.5 px-3 text-[#4A3F38]">{guide.chest || '—'}</td>}
-                      {hasSleeve && <td className="py-2.5 px-3 text-[#4A3F38]">{guide.sleeveLength || '—'}</td>}
-                      {hasMaxWaist && <td className="py-2.5 px-3 text-[#4A3F38]">{guide.maxWaist || '—'}</td>}
-                      {hasThigh && <td className="py-2.5 px-3 text-[#4A3F38]">{guide.thigh || '—'}</td>}
-                      {hasWaist && <td className="py-2.5 px-3 text-[#4A3F38]">{guide.waist || '—'}</td>}
-                      {hasTrouser && <td className="py-2.5 px-3 text-[#4A3F38]">{guide.trouserLength || '—'}</td>}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>Vòng ngực: đo ở điểm rộng nhất của ngực</li>
-              <li>Vòng eo: đo ở điểm nhỏ nhất của eo</li>
-              <li>Vòng hông: đo ở điểm rộng nhất của hông</li>
-            </ul>
-          )}
+          <ul className="list-disc list-inside space-y-1.5 text-xs sm:text-sm text-[#4A3F38]">
+            <li>Vòng ngực: đo ở điểm rộng nhất của ngực</li>
+            <li>Vòng eo: đo ở điểm nhỏ nhất của eo</li>
+            <li>Vòng hông: đo ở điểm rộng nhất của hông</li>
+          </ul>
         </div>
       ),
     },
@@ -122,10 +75,6 @@ export default function ProductAccordion({ product }) {
         <div className="space-y-4 text-sm text-[#4A3F38]">
           {/* Care Instructions - Laundry Care Symbol Grid */}
           <div>
-            <p className="font-serif font-bold text-[#631521] uppercase text-xs tracking-wider mb-3">
-              HƯỚNG DẪN BẢO QUẢN
-            </p>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
               {(product.careInstructions || [
                 'Bảo quản nơi khô ráo',

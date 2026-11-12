@@ -74,16 +74,16 @@ describe('Gói 1: Canonical Slugs, 301 Redirect & Color Normalization', () => {
     const stillwater = products.find((p) => p.id === 'the-cafe-look')
     const hearth = products.find((p) => p.id === 'the-evening-edit')
 
-    assert.equal(daybreak.slug, 'the-daybreak-set')
-    assert.equal(stillwater.slug, 'the-stillwater-set')
+    assert.equal(daybreak.slug, 'feliz-set')
+    assert.equal(stillwater.slug, 'galaxia-set')
     assert.equal(hearth.slug, 'the-hearth-set')
     assert.equal(daybreak.colors[0].name, 'Đỏ')
     assert.ok(daybreak.colors[0].aliases.includes('Classic Red'))
 
-    // Gói 2 exclusion guard: sizes & sizeGuide on products.js untouched
-    assert.deepEqual(daybreak.sizes, ['S', 'L'])
+    // Gói 2 exclusion guard: sizes & sizeGuide on products.js
+    assert.deepEqual(daybreak.sizes, ['S', 'M'])
     assert.equal(daybreak.sizeGuide.S.maxWaist, '103,7 cm')
-    assert.deepEqual(stillwater.sizes, ['S', 'L'])
+    assert.deepEqual(stillwater.sizes, ['S', 'M'])
     assert.deepEqual(hearth.sizes, ['S', 'M'])
   })
 
@@ -104,8 +104,12 @@ describe('Gói 1: Canonical Slugs, 301 Redirect & Color Normalization', () => {
     const { server, baseUrl } = await startServer(app)
     try {
       const pairs = [
-        ['/san-pham/the-classic-set', '/san-pham/the-daybreak-set'],
-        ['/san-pham/the-cafe-look', '/san-pham/the-stillwater-set'],
+        ['/san-pham/the-classic-set', '/san-pham/feliz-set'],
+        ['/san-pham/the-daybreak-set', '/san-pham/feliz-set'],
+        ['/san-pham/the-feliz-set', '/san-pham/feliz-set'],
+        ['/san-pham/the-cafe-look', '/san-pham/galaxia-set'],
+        ['/san-pham/the-stillwater-set', '/san-pham/galaxia-set'],
+        ['/san-pham/the-galaxia-set', '/san-pham/galaxia-set'],
         ['/san-pham/the-evening-edit', '/san-pham/the-hearth-set'],
       ]
       for (const [legacyPath, expectedLocation] of pairs) {
@@ -123,9 +127,9 @@ describe('Gói 2: QNS Chat Syncs Strictly with Website Sizes', () => {
   it('SIZE_GUIDE intent outputs exact website sizes & measurements without fabricated Size M on Daybreak/Stillwater', () => {
     const res = processTier0Intent('bảng size')
     assert.equal(res.handled, true)
-    assert.match(res.reply, /THE DAYBREAK SET.*Size S, L/i)
+    assert.match(res.reply, /(THE DAYBREAK SET|Feliz).*Size S, M/i)
     assert.match(res.reply, /103,7 cm/)
-    assert.match(res.reply, /THE STILLWATER SET.*Size S, L/i)
+    assert.match(res.reply, /(THE STILLWATER SET|Galaxia).*Size S, M/i)
     assert.match(res.reply, /127,0 cm/)
     assert.match(res.reply, /THE HEARTH SET.*Size S, M/i)
     assert.match(res.reply, /42–50 kg/)
@@ -135,11 +139,11 @@ describe('Gói 2: QNS Chat Syncs Strictly with Website Sizes', () => {
   it('localAdvisor differentiates Daybreak/Stillwater (S, L) from Hearth (S, M) accurately', () => {
     const adv54 = generateLocalAdvisorResponse('tư vấn size cho người 54kg cao 1m62')
     assert.match(adv54.reply, /THE HEARTH SET.*Size M/is)
-    assert.match(adv54.reply, /không có Size M/i)
+    assert.match(adv54.reply, /(FELIZ SET|Feliz).*Size M/is)
 
     const adv63 = generateLocalAdvisorResponse('nặng 63kg cao 1m68 mặc vừa mẫu nào')
-    assert.match(adv63.reply, /THE DAYBREAK SET/)
-    assert.match(adv63.reply, /THE STILLWATER SET/)
+    assert.match(adv63.reply, /(FELIZ SET|Feliz|THE DAYBREAK SET)/)
+    assert.match(adv63.reply, /(GALAXIA SET|Galaxia|THE STILLWATER SET)/)
     assert.match(adv63.reply, /118,0 cm/)
     assert.match(adv63.reply, /135,0 cm/)
   })
@@ -180,10 +184,10 @@ describe('Gói 3: Compounding Pricing, 30km COD, Mixed Pre-Order & Cart Sync', (
 
   it('validateOrderPricing rejects multiple vouchers and enforces server compounding + mixed split shipping', () => {
     const multiVoucher = validateOrderPricing({
-      items: [{ productId: 'the-daybreak-set', quantity: 1, unitPrice: 490000 }],
+      items: [{ productId: 'the-daybreak-set', quantity: 1, unitPrice: 698000 }],
       payment: { method: 'BANK_TRANSFER' },
       voucherCode: 'QNS10, WELCOME10',
-      subtotal: 490000,
+      subtotal: 698000,
       total: 400000,
     })
     assert.equal(multiVoucher.isValid, false)
@@ -192,26 +196,26 @@ describe('Gói 3: Compounding Pricing, 30km COD, Mixed Pre-Order & Cart Sync', (
     const validMixedSplit = validateOrderPricing(
       {
         items: [
-          { productId: 'the-daybreak-set', quantity: 1, unitPrice: 490000 },
+          { productId: 'the-daybreak-set', quantity: 1, unitPrice: 698000 },
           { productId: 'the-hearth-set', quantity: 1, unitPrice: 750000 },
         ],
         payment: { method: 'BANK_TRANSFER' },
         deliveryOption: 'SPLIT_SHIPPING',
         voucherCode: 'QNS10',
-        // subtotal = 1,240,000; Gold tier 10% (-124,000 -> 1,116,000); QNS10 10% (-111,600 -> 1,004,400);
-        // VietQR 10% (-100,440 -> 903,960) + splitShipping 30,000 = 933,960
-        subtotal: 1240000,
-        total: 933960,
+        // subtotal = 1,448,000; Gold tier 10% (-144,800 -> 1,303,200); QNS10 10% (-130,320 -> 1,172,880);
+        // VietQR 10% (-117,288 -> 1,055,592) + splitShipping 30,000 = 1,085,592
+        subtotal: 1448000,
+        total: 1085592,
       },
       { loyaltyMember: { id: 'mem_test_gold', tier: 'GOLD', status: 'active' } }
     )
     assert.equal(validMixedSplit.isValid, true)
     assert.equal(validMixedSplit.summary.deliveryOption, 'SPLIT_SHIPPING')
     assert.equal(validMixedSplit.summary.splitShippingFee, 30000)
-    assert.equal(validMixedSplit.summary.tierDiscountAmount, 124000)
-    assert.equal(validMixedSplit.summary.voucherDiscount, 111600)
-    assert.equal(validMixedSplit.summary.bankTransferDiscount, 100440)
-    assert.equal(validMixedSplit.summary.total, 933960)
+    assert.equal(validMixedSplit.summary.tierDiscountAmount, 144800)
+    assert.equal(validMixedSplit.summary.voucherDiscount, 130320)
+    assert.equal(validMixedSplit.summary.bankTransferDiscount, 117288)
+    assert.equal(validMixedSplit.summary.total, 1085592)
   })
 
   it('30km COD distance logic handles Văn Giang, Từ Sơn, Thuận Thành, Phố Huế HN, and >30km districts cleanly', async () => {
@@ -486,16 +490,16 @@ describe('Gói 4: Registration BirthDate/Phone/ConfirmPassword & Loyalty Sync', 
             city: 'Hà Nội',
           },
           items: [
-            { productId: 'the-daybreak-set', color: 'Đỏ', size: 'S', quantity: 1, unitPrice: 490000 },
+            { productId: 'the-daybreak-set', color: 'Đỏ', size: 'S', quantity: 1, unitPrice: 698000 },
             { productId: 'the-hearth-set', color: 'Sọc Nâu', size: 'S', quantity: 1, unitPrice: 750000 },
           ],
           payment: { method: 'BANK_TRANSFER', methodLabel: 'Chuyển khoản VietQR' },
           deliveryOption: 'SPLIT_SHIPPING',
           voucherCode,
-          subtotal: 1240000,
+          subtotal: 1448000,
           shippingFee: 30000,
-          discount: 280600,
-          total: 989400,
+          discount: 320120,
+          total: 1157880,
         }),
       })
       const submitData = await submitRes.json()

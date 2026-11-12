@@ -10,32 +10,32 @@ const slides = [
   {
     id: 1,
     src: heroSlide01,
-    alt: 'The Hearth Set — Set sleepwear sọc nâu ấm áp phong cách Style To Be Lived In',
-    eyebrow: 'THE HEARTH SET — PRE-ORDER',
-    headline: 'Ấm Áp Như\nBuổi Sáng Đầu Tiên',
-    sub: 'Chất liệu sọc nâu, phom dáng suông phóng khoáng — từ giường ngủ đến hiên nhà.',
+    alt: 'THE HEARTH SET — Set sleepwear sọc nâu ấm áp phong cách Style To Be Lived In',
+    eyebrow: '',
+    headline: 'THE HEARTH SET',
+    sub: '',
     align: 'left',
     link: '/san-pham/the-hearth-set',
   },
   {
     id: 2,
     src: heroSlide02,
-    alt: 'The Stillwater Set — Set sleepwear caro navy thanh lịch phong cách Style To Be Lived In',
-    eyebrow: 'THE STILLWATER SET',
-    headline: 'Tĩnh Lặng,\nSâu Lắng',
-    sub: 'Caro navy tinh tế với viền trắng tương phản — vẻ đẹp điềm tĩnh mà không kém phần tinh tế.',
+    alt: 'GALAXIA SET — Set sleepwear caro navy thanh lịch phong cách Style To Be Lived In',
+    eyebrow: '',
+    headline: 'GALAXIA SET',
+    sub: '',
     align: 'right',
-    link: '/san-pham/the-stillwater-set',
+    link: '/san-pham/galaxia-set',
   },
   {
     id: 3,
     src: heroSlide03,
-    alt: 'The Daybreak Set — Set sleepwear sắc đỏ quyến rũ phong cách Style To Be Lived In',
-    eyebrow: 'THE DAYBREAK SET',
-    headline: 'Rực Rỡ &\nQuyến Rũ',
-    sub: 'Sắc đỏ nồng nàn, dáng rộng thoải mái — phong cách sống bạn luôn mong chờ.',
+    alt: 'FELIZ SET — Set sleepwear sắc đỏ quyến rũ phong cách Style To Be Lived In',
+    eyebrow: '',
+    headline: 'FELIZ SET',
+    sub: '',
     align: 'left',
-    link: '/san-pham/the-daybreak-set',
+    link: '/san-pham/feliz-set',
   },
   {
     id: 4,
@@ -43,7 +43,7 @@ const slides = [
     alt: "Bộ sưu tập sleepwear QuanNguyenS — Every girl deserves QuanNguyenS Sleepwear",
     eyebrow: 'BỘ SƯU TẬP 2026',
     headline: "Every girl deserves\nQuanNguyenS Sleepwear",
-    sub: 'Ba thiết kế. Một phong cách. Chất liệu tự nhiên chuẩn xuất khẩu châu Âu.',
+    sub: '',
     align: 'left',
     link: '#section-products',
   },
@@ -132,19 +132,23 @@ export default function Section2Hero() {
                 }`}
               >
                 {/* Eyebrow badge */}
-                <span className="inline-block font-sans text-[10px] sm:text-xs font-bold tracking-[0.25em] text-[#D4AF37] uppercase mb-2.5 sm:mb-4 drop-shadow-sm">
-                  {currentSlide.eyebrow}
-                </span>
+                {currentSlide.eyebrow ? (
+                  <span className="inline-block font-sans text-[10px] sm:text-xs font-bold tracking-[0.25em] text-[#D4AF37] uppercase mb-2.5 sm:mb-4 drop-shadow-sm">
+                    {currentSlide.eyebrow}
+                  </span>
+                ) : null}
 
                 {/* Main Headline */}
-                <h1 className="font-serif text-2xl sm:text-4xl lg:text-[46px] xl:text-5xl font-bold text-white leading-[1.12] mb-3 sm:mb-4 tracking-tight whitespace-pre-line drop-shadow-md">
+                <h1 className={`font-serif text-2xl sm:text-4xl lg:text-[46px] xl:text-5xl font-bold text-white leading-[1.12] ${currentSlide.sub ? 'mb-3 sm:mb-4' : 'mb-6 sm:mb-8'} tracking-tight whitespace-pre-line drop-shadow-md`}>
                   {currentSlide.headline}
                 </h1>
 
                 {/* Sub-headline */}
-                <p className="font-sans text-xs sm:text-sm lg:text-base text-white/80 font-normal leading-relaxed mb-5 sm:mb-7 max-w-sm sm:max-w-md drop-shadow-sm">
-                  {currentSlide.sub}
-                </p>
+                {currentSlide.sub ? (
+                  <p className="font-sans text-xs sm:text-sm lg:text-base text-white/80 font-normal leading-relaxed mb-5 sm:mb-7 max-w-sm sm:max-w-md drop-shadow-sm">
+                    {currentSlide.sub}
+                  </p>
+                ) : null}
 
                 {/* CTAs */}
                 <div className="flex flex-wrap items-center gap-3">

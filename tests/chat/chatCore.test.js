@@ -31,7 +31,7 @@ test('knowledgeBase: Chuẩn hóa tiếng Việt và truy xuất chính xác the
   const chunksProduct = retrieveKnowledge('bộ pijama sọc hồng nắng sớm giá bao nhiêu', 2)
   assert.ok(chunksProduct.length > 0)
   assert.equal(chunksProduct[0].topic, 'product')
-  assert.match(chunksProduct[0].title, /DAYBREAK/i)
+  assert.match(chunksProduct[0].title, /(DAYBREAK|Feliz)/i)
 })
 
 test('liveFacts: Cung cấp đúng thông tin voucher và ngưỡng freeship từ hệ thống', () => {

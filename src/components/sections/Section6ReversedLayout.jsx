@@ -37,7 +37,7 @@ export default function Section6ReversedLayout() {
             <div className="relative rounded-[4px] overflow-hidden shadow-2xl border border-[#D4AF37]/30 bg-[#1E1510] aspect-[4/3] w-full group">
               <img
                 src={lifestyleNavyFlatlayImg}
-                alt="The Stillwater Set caro navy QuanNguyenS — phong cách sống từ ban công buổi sáng đến quán cà phê"
+                alt="GALAXIA SET caro navy QuanNguyenS — phong cách sống từ ban công buổi sáng đến quán cà phê"
                 loading="lazy"
                 decoding="async"
                 className="w-full h-full object-cover object-center group-hover:scale-103 transition-transform duration-700"

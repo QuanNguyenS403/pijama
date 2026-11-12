@@ -112,7 +112,7 @@ export function buildLiveFacts(context = {}) {
     shopAddress: LIVE_CONSTANTS.SHOP_ADDRESS,
     // Danh sách các mức giá sản phẩm hợp lệ trong hệ thống
     validPriceNumbers: [
-      390000, 490000, 550000, 750000, 500000, 30000, 10000, 20, 10
+      390000, 490000, 550000, 598000, 658000, 698000, 750000, 500000, 30000, 10000, 20, 10
     ],
   }
 }

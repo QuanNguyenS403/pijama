@@ -6,11 +6,13 @@
  */
 
 import { products } from '../../../src/data/products.js'
+import { resolveCanonicalProductSlug } from '../../../src/lib/productUtils.js'
 import { removeVietnameseTones, retrieveKnowledge, formatProductSizeDetails } from './knowledgeBase.js'
 import { buildLiveFacts, LIVE_CONSTANTS } from './liveFacts.js'
 
 function getProductBySlugOrId(slug) {
-  return products.find((p) => p.slug === slug || p.id === slug) || null
+  const canonical = resolveCanonicalProductSlug(slug)
+  return products.find((p) => p.slug === canonical || p.id === canonical || p.slug === slug || p.id === slug) || null
 }
 
 function formatInlineSizes(slug) {
@@ -62,8 +64,8 @@ function extractBodyMeasurements(text) {
 function adviseSize(weight, height) {
   if (!weight && !height) return null
 
-  const daybreakSizes = getProductBySlugOrId('the-daybreak-set')?.sizes?.join(', ') || 'S, L'
-  const stillwaterSizes = getProductBySlugOrId('the-stillwater-set')?.sizes?.join(', ') || 'S, L'
+  const daybreakSizes = getProductBySlugOrId('feliz-set')?.sizes?.join(', ') || 'S, M'
+  const stillwaterSizes = getProductBySlugOrId('galaxia-set')?.sizes?.join(', ') || 'S, M'
   const hearthSizes = getProductBySlugOrId('the-hearth-set')?.sizes?.join(', ') || 'S, M'
 
   if (weight && weight <= 50) {
@@ -71,26 +73,26 @@ function adviseSize(weight, height) {
       recommendedSize: 'Size S',
       reason: `với cân nặng ${weight}kg${height ? ` và chiều cao ${height}cm` : ''}, anh/chị phù hợp với **Size S** ạ:\n` +
         `• **THE HEARTH SET**: Size S chuẩn 42–50 kg · 152–162 cm (Ngực 82–86 cm · Eo 64–70 cm).\n` +
-        `• **THE DAYBREAK SET**: Size S dài áo 62,0 cm · ngực 110,0 cm · max eo 103,7 cm · dài quần 90,8 cm.\n` +
-        `• **THE STILLWATER SET**: Size S dài áo 66,5 cm · ngực 127,0 cm · max eo ≈108,0 cm · dài quần 96,3 cm.`,
+        `• **FELIZ SET**: Size S dài áo 62,0 cm · ngực 110,0 cm · max eo 103,7 cm · dài quần 90,8 cm.\n` +
+        `• **GALAXIA SET**: Size S dài áo 66,5 cm · ngực 127,0 cm · max eo ≈108,0 cm · dài quần 96,3 cm.`,
       models: 'Cả 3 mẫu hiện đều có **Size S** ạ.',
     }
   }
 
   if (weight && weight >= 51 && weight <= 58) {
     return {
-      recommendedSize: 'Size M (The Hearth) / Size S hoặc L (Daybreak, Stillwater)',
+      recommendedSize: 'Size M',
       reason: `với cân nặng ${weight}kg${height ? ` và chiều cao ${height}cm` : ''}, từng mẫu trên website có size tương ứng như sau ạ:\n` +
         `• **THE HEARTH SET** (chỉ có Size ${hearthSizes}): chuẩn nhất là **Size M** (51–58 kg · 160–167 cm · Ngực 87–93 cm · Eo 71–77 cm).\n` +
-        `• **THE DAYBREAK SET** (chỉ có Size ${daybreakSizes}, không có Size M): **Size S** (ngực áo 110,0 cm · max eo 103,7 cm) hoặc **Size L** (ngực áo 118,0 cm · max eo 103,7 cm) tùy anh/chị thích vừa gọn hay rộng rãi.\n` +
-        `• **THE STILLWATER SET** (chỉ có Size ${stillwaterSizes}, không có Size M): **Size S** (ngực áo 127,0 cm · max eo ≈108,0 cm) hoặc **Size L** (ngực áo 135,0 cm · max eo ≈116,0 cm).`,
-      models: '**THE HEARTH SET** có sẵn **Size M** chuẩn khung 51–58 kg; còn **Daybreak** và **Stillwater** phom rộng châu Âu nên anh/chị chọn giữa **Size S** hoặc **Size L** theo số đo chi tiết ạ.',
+        `• **FELIZ SET**: **Size M** (ngực áo 118,0 cm · max eo 103,7 cm · dài áo 66,0 cm · dài quần 94,8 cm).
+        • **GALAXIA SET**: **Size M** (ngực áo 135,0 cm · max eo ≈116,0 cm · dài áo 70,5 cm · dài quần 100,3 cm).`,
+      models: 'Cả 3 mẫu **FELIZ SET**, **GALAXIA SET** và **THE HEARTH SET** đều có sẵn **Size M** chuẩn đẹp ạ.',
     }
   }
 
   if (weight && weight >= 59 && weight <= 66) {
     return {
-      recommendedSize: 'Size L',
+      recommendedSize: 'Size M',
       reason: `với cân nặng ${weight}kg${height ? ` và chiều cao ${height}cm` : ''}, anh/chị tham khảo **Size L** trên các mẫu sau ạ:\n` +
         `• **THE STILLWATER SET** (Caro Navy): Size L dài áo 70,5 cm · ngực 135,0 cm · max eo ≈116,0 cm · đùi 72,8 cm · dài quần 100,3 cm.\n` +
         `• **THE DAYBREAK SET** (Đỏ): Size L dài áo 66,0 cm · ngực 118,0 cm · max eo 103,7 cm · đùi 73,0 cm · dài quần 94,8 cm.\n` +
@@ -102,7 +104,7 @@ function adviseSize(weight, height) {
   if (weight && weight > 66) {
     return {
       recommendedSize: 'Tư vấn theo số đo chi tiết / may đo riêng',
-      reason: `dạ hiện trên website các mẫu may sẵn có bảng size tối đa như sau ạ: **THE STILLWATER SET** Size L (ngực áo 135,0 cm · max eo ≈116,0 cm · đùi 72,8 cm), **THE DAYBREAK SET** Size L (ngực áo 118,0 cm · max eo 103,7 cm · đùi 73,0 cm), và **THE HEARTH SET** Size M (51–58 kg). Với cân nặng ${weight}kg, nếu vòng ngực/vòng eo thực tế vẫn nằm trong khoảng max eo trên thì Size L mặc vẫn vừa, hoặc em có thể kết nối chủ shop để tư vấn kích thước/may đo phù hợp nhất cho mình nhé ạ!`,
+      reason: `dạ hiện trên website các mẫu may sẵn có bảng size tối đa như sau ạ: **GALAXIA SET** Size M (ngực áo 135,0 cm · max eo ≈116,0 cm · đùi 72,8 cm), **FELIZ SET** Size M (ngực áo 118,0 cm · max eo 103,7 cm · đùi 73,0 cm), và **THE HEARTH SET** Size M (51–58 kg). Với cân nặng ${weight}kg, nếu vòng ngực/vòng eo thực tế vẫn nằm trong khoảng max eo trên thì Size L mặc vẫn vừa, hoặc em có thể kết nối chủ shop để tư vấn kích thước/may đo phù hợp nhất cho mình nhé ạ!`,
       models: null,
       needsHandoff: true,
     }
@@ -111,7 +113,7 @@ function adviseSize(weight, height) {
   if (!weight && height) {
     return {
       recommendedSize: 'Cần thêm cân nặng / số đo ngực-eo',
-      reason: `với chiều cao ${height}cm, trên website hiện có chiều cao tham chiếu cho **THE HEARTH SET** (Size S: 152–162 cm, Size M: 160–167 cm) và thông số dài áo/quần chi tiết cho **THE DAYBREAK SET** (Size S, L) và **THE STILLWATER SET** (Size S, L).`,
+      reason: `với chiều cao ${height}cm, trên website hiện có chiều cao tham chiếu cho **THE HEARTH SET** (Size S: 152–162 cm, Size M: 160–167 cm) và thông số dài áo/quần chi tiết cho **FELIZ SET** (Size S, M) và **GALAXIA SET** (Size S, M).`,
       models: 'Anh/chị cho em xin thêm cân nặng hoặc vòng ngực/vòng eo để em đối chiếu chuẩn size nhất trên bảng thông số website ạ.',
     }
   }
@@ -146,11 +148,11 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     return {
       reply:
         'Dạ QuanNguyenS hiện có 3 bộ sleepwear thiết kế cao cấp trong Bộ Sưu Tập Thu Đông 2026 chuẩn phong cách Style To Be Lived In ạ:\n\n' +
-        '1. 🌸 **THE DAYBREAK SET (490.000đ)**: Màu Đỏ ấm áp và quyến rũ (Hành Hỏa), viền tương phản sắc nét, cổ notch cổ điển, 100% sợi tự nhiên Cotton-Modal thoáng khí 4 mùa (Size S, L).\n\n' +
-        '2. 🌊 **THE STILLWATER SET (550.000đ)**: Họa tiết Caro Navy lịch lãm (Hành Thủy), thiết kế cổ V thanh thoát tôn dáng, chất liệu 95% Modal & 5% Spandex mướt mát chống nhăn tự nhiên (Size S, L).\n\n' +
+        '1. 🌸 **FELIZ SET (698.000đ)**: Màu Đỏ ấm áp và quyến rũ (Hành Hỏa), viền tương phản sắc nét, cổ notch cổ điển, 100% sợi tự nhiên Cotton-Modal thoáng khí 4 mùa (Size S, M).\n\n' +
+        '2. 🌊 **GALAXIA SET (598.000đ)**: Họa tiết Caro Navy lịch lãm (Hành Thủy), thiết kế cổ V thanh thoát tôn dáng, chất liệu 95% Modal & 5% Spandex mướt mát chống nhăn tự nhiên (Size S, M).\n\n' +
         '3. 🍂 **THE HEARTH SET (750.000đ)**: Họa tiết sọc nâu mocha quý phái (Hành Thổ), quần dáng wide-leg ống rộng buông rủ kiêu sa, chế tác từ 100% Tencel Lyocell thượng hạng (Size S, M).\n\n' +
         'Anh/chị đang tìm đồ mặc nhà thoáng mát hay đang muốn chọn một món quà tinh tế cho người thân ạ?',
-      quickReplies: ['Mẫu Daybreak (Đỏ)', 'Mẫu Stillwater (Navy)', 'Mẫu Hearth (Nâu)', 'Tư vấn chọn size'],
+      quickReplies: ['Mẫu FELIZ SET (Đỏ)', 'Mẫu GALAXIA SET (Navy)', 'Mẫu Hearth (Nâu)', 'Tư vấn chọn size'],
     }
   }
 
@@ -174,66 +176,69 @@ export function generateLocalAdvisorResponse(message, context = {}) {
 
       return {
         reply: `Dạ ${sizeAdvice.reason}\n\n${sizeAdvice.models}\n\nAnh/chị thích mẫu sleepwear tone màu nào nhất để em gửi chi tiết ạ?`,
-        quickReplies: ['Xem Daybreak (Đỏ)', 'Xem Stillwater (Navy)', 'Xem Hearth (Nâu)', 'Phí ship & Ưu đãi'],
+        quickReplies: ['Xem FELIZ SET (Đỏ)', 'Xem GALAXIA SET (Navy)', 'Xem Hearth (Nâu)', 'Phí ship & Ưu đãi'],
       }
     }
   }
 
-  // 3. Hỏi chi tiết mẫu The Daybreak Set (Màu Đỏ)
+  // 3. Hỏi chi tiết mẫu FELIZ SET (Màu Đỏ)
   if (
     norm.includes('daybreak') ||
+    norm.includes('feliz') ||
     norm.includes('mau do') ||
     norm.includes('set do') ||
     norm.includes('bo do') ||
     norm.includes('soc hong') ||
     norm.includes('mau hong') ||
-    (norm.includes('490') && !norm.includes('hearth') && !norm.includes('stillwater'))
+    ((norm.includes('490') || norm.includes('698')) && !norm.includes('hearth') && !norm.includes('stillwater'))
   ) {
     return {
       reply:
-        'Dạ bộ **THE DAYBREAK SET** là mẫu sleepwear cổ bẻ kinh điển phong cách châu Âu bán rất chạy tại QuanNguyenS ạ:\n\n' +
-        '• **Giá bán**: 490.000đ.\n' +
+        'Dạ bộ **FELIZ SET** là mẫu sleepwear cổ bẻ kinh điển phong cách châu Âu bán rất chạy tại QuanNguyenS ạ:\n\n' +
+        '• **Giá bán**: 698.000đ.\n' +
         '• **Màu sắc**: Màu Đỏ mang năng lượng Hỏa ấm áp, quyến rũ và may mắn.\n' +
         '• **Chất liệu**: 100% sợi tự nhiên Cotton-Modal dệt thoi thoáng khí 4 mùa, an toàn cho da nhạy cảm theo tiêu chuẩn OEKO-TEX 100.\n' +
-        `• **Kích cỡ trên website (chỉ có Size S và Size L, không có Size M)**:\n${formatInlineSizes('the-daybreak-set')}\n` +
+        `• **Kích cỡ trên website (Size S, M)**:\n${formatInlineSizes('feliz-set')}\n` +
         '• **Tình trạng**: Có sẵn hàng giao ngay (giao toàn quốc 2–4 ngày làm việc).\n\n' +
-        'Anh/chị đang muốn chọn Size S hay Size L ạ?',
+        'Anh/chị đang muốn chọn Size S hay Size M ạ?',
       quickReplies: ['Chọn size cho bộ này', 'Chính sách freeship', 'Xem mẫu Caro Navy'],
       product: {
-        name: 'THE DAYBREAK SET',
+        name: 'FELIZ SET',
         subtitle: 'Sleepwear Phong Cách Châu Âu · Sắc Đỏ',
-        price: 490000,
-        slug: 'the-daybreak-set',
+        price: 698000,
+        slug: 'feliz-set',
         preOrder: false,
         image: '/images/classic-set-red-main.jpg',
       },
     }
   }
 
-  // 4. Hỏi chi tiết mẫu The Stillwater Set (Caro Navy)
+  // 4. Hỏi chi tiết mẫu GALAXIA SET (Caro Navy)
   if (
     norm.includes('stillwater') ||
+    norm.includes('galaxia') ||
     norm.includes('caro navy') ||
     norm.includes('caro') ||
     norm.includes('navy') ||
     norm.includes('co v') ||
-    norm.includes('550')
+    norm.includes('550') ||
+    norm.includes('598') || norm.includes('658')
   ) {
     return {
       reply:
-        'Dạ bộ **THE STILLWATER SET** là thiết kế sleepwear cổ V hiện đại được rất nhiều khách hàng yêu thích:\n\n' +
-        '• **Giá bán**: 550.000đ.\n' +
+        'Dạ bộ **GALAXIA SET** là thiết kế sleepwear cổ V hiện đại được rất nhiều khách hàng yêu thích:\n\n' +
+        '• **Giá bán**: 658.000đ.\n' +
         '• **Màu sắc**: Họa tiết Caro Navy lịch lãm, chiều sâu tĩnh tại của hành Thủy mang lại cảm giác an yên, thư thái.\n' +
         '• **Chất liệu**: 95% sợi gỗ tự nhiên Modal & 5% Spandex cao cấp định lượng 180 GSM, sờ vào mềm mướt mát lạnh và chống nhăn tự nhiên.\n' +
-        `• **Kích cỡ trên website (Size S, L)**:\n${formatInlineSizes('the-stillwater-set')}\n` +
+        `• **Kích cỡ trên website (Size S, M)**:\n${formatInlineSizes('galaxia-set')}\n` +
         '• **Tình trạng**: Hàng có sẵn trong kho, đóng gói hộp quà và bàn giao vận chuyển trong 24h.\n\n' +
-        'Anh/chị đang muốn chọn Size S hay Size L ạ?',
-      quickReplies: ['Tư vấn size S', 'Tư vấn size L', 'Ưu đãi chuyển khoản VietQR'],
+        'Anh/chị đang muốn chọn Size S hay Size M ạ?',
+      quickReplies: ['Tư vấn size S', 'Tư vấn size M', 'Ưu đãi chuyển khoản VietQR'],
       product: {
-        name: 'THE STILLWATER SET',
+        name: 'GALAXIA SET',
         subtitle: 'Sleepwear Cổ V Lịch Lãm · Caro Navy',
-        price: 550000,
-        slug: 'the-stillwater-set',
+        price: 598000,
+        slug: 'galaxia-set',
         preOrder: false,
         image: '/images/hero-slide-02.jpg',
       },
@@ -288,11 +293,11 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     return {
       reply:
         'Dạ toàn bộ sản phẩm của QuanNguyenS đều sử dụng chất liệu sợi dệt tự nhiên thượng hạng thân thiện với làn da:\n\n' +
-        '• **Cotton-Modal (The Daybreak Set)**: Dệt thoi vân chéo thoáng khí 4 mùa, đạt chuẩn an toàn OEKO-TEX 100 không gây kích ứng da.\n' +
-        '• **Modal & Spandex (The Stillwater Set)**: Chiết xuất từ sợi gỗ sồi tự nhiên, sờ vào mướt mát, có độ đàn hồi nhẹ và chống nhăn tự nhiên.\n' +
+        '• **Cotton-Modal (FELIZ SET)**: Dệt thoi vân chéo thoáng khí 4 mùa, đạt chuẩn an toàn OEKO-TEX 100 không gây kích ứng da.\n' +
+        '• **Modal & Spandex (GALAXIA SET)**: Chiết xuất từ sợi gỗ sồi tự nhiên, sờ vào mướt mát, có độ đàn hồi nhẹ và chống nhăn tự nhiên.\n' +
         '• **100% Tencel Lyocell (The Hearth Set)**: Vải sinh học cao cấp có độ bóng mờ sang trọng, mềm rủ quý phái và thấm hút vượt trội.\n\n' +
         '💡 **Hướng dẫn giặt**: Anh/chị nên giặt tay hoặc giặt máy chế độ nhẹ (delicate) dưới 30°C, phơi trong bóng mát và không sấy máy để trang phục giữ form bền đẹp nhiều năm nhé ạ!',
-      quickReplies: ['Xem mẫu The Daybreak', 'Xem mẫu The Stillwater', 'Xem mẫu The Hearth'],
+      quickReplies: ['Xem mẫu FELIZ SET', 'Xem mẫu GALAXIA SET', 'Xem mẫu The Hearth'],
     }
   }
 
@@ -307,8 +312,8 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     return {
       reply:
         'Dạ QuanNguyenS niêm yết mức giá minh bạch cho 3 bộ sleepwear thiết kế như sau ạ:\n\n' +
-        '• **THE DAYBREAK SET**: 490.000đ · Sắc Đỏ Cotton-Modal.\n' +
-        '• **THE STILLWATER SET**: 550.000đ · Caro Navy Modal cao cấp.\n' +
+        '• **Feliz (Sắc Đỏ)**: 698.000đ · Cotton-Modal cao cấp.\n' +
+        '• **Galaxia (Caro Navy)**: 598.000đ · Modal cao cấp.\n' +
         '• **THE HEARTH SET**: 750.000đ · Sọc Nâu Wide-Leg Tencel thượng hạng.\n\n' +
         '🎁 **Ưu đãi áp dụng**:\n' +
         '• Giảm ngay **10% TRỰC TIẾP** trên tổng đơn khi thanh toán Chuyển khoản VietQR (Napas 24/7).\n' +
@@ -331,8 +336,8 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     return {
       reply:
         'Dạ anh/chị chọn sleepwear cao cấp làm quà tặng là một lựa chọn cực kỳ chu đáo và tinh tế!\n\n' +
-        '• Nếu người nhận thích phong cách ngọt ngào, quyến rũ: mẫu **THE DAYBREAK SET** (Màu Đỏ, 490k) mang năng lượng ấm áp, rạng rỡ và may mắn.\n' +
-        '• Nếu người nhận thích phong cách thanh lịch, trầm tĩnh: mẫu **THE STILLWATER SET** (Caro Navy, 550k) cổ V rất tôn dáng và hiện đại.\n' +
+        '• Nếu người nhận thích phong cách ngọt ngào, quyến rũ: mẫu **FELIZ SET** (Màu Đỏ, 698.000đ) mang năng lượng ấm áp, rạng rỡ và may mắn.\n' +
+        '• Nếu người nhận thích phong cách thanh lịch, trầm tĩnh: mẫu **GALAXIA SET** (Caro Navy, 598.000đ) cổ V rất tôn dáng và hiện đại.\n' +
         '• Nếu muốn món quà đẳng cấp nhất dành tặng người đặc biệt: mẫu **THE HEARTH SET** (Sọc Nâu Tencel, 750k) phom wide-leg quý phái là lựa chọn hoàn hảo nhất.\n\n' +
         'Mỗi đơn hàng QuanNguyenS đều được đóng gói hộp quà trang nhã và hỗ trợ đồng kiểm khi nhận hàng ạ. Anh/chị cho em xin số đo hoặc chiều cao/cân nặng của người nhận để em gợi ý size chuẩn nhé!',
       quickReplies: ['Tư vấn size quà tặng', 'Chính sách đổi trả', 'Gặp chủ shop'],
@@ -353,8 +358,8 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     return {
       reply:
         'Dạ các thiết kế của QuanNguyenS lấy cảm hứng thẩm mỹ màu sắc từ Ngũ Hành tự nhiên để mang lại cảm xúc an yên trọn vẹn:\n\n' +
-        '• **Hỏa Sắc (The Daybreak Set - Đỏ)**: Ấm áp, yêu đời, tiếp thêm sinh khí tích cực — rất tương sinh hòa hợp cho người mệnh Hỏa và Thổ.\n' +
-        '• **Thủy Sắc (The Stillwater Set - Caro Navy)**: Tĩnh tại, sâu lắng, mang lại sự thư thái như mặt hồ phẳng lặng — tương hợp nuôi dưỡng cho người mệnh Thủy và Mộc.\n' +
+        '• **Hỏa Sắc (FELIZ SET - Đỏ)**: Ấm áp, yêu đời, tiếp thêm sinh khí tích cực — rất tương sinh hòa hợp cho người mệnh Hỏa và Thổ.\n' +
+        '• **Thủy Sắc (GALAXIA SET - Caro Navy)**: Tĩnh tại, sâu lắng, mang lại sự thư thái như mặt hồ phẳng lặng — tương hợp nuôi dưỡng cho người mệnh Thủy và Mộc.\n' +
         '• **Thổ Sắc (The Hearth Set - Sọc Nâu)**: Vững chãi, an lành, mang cảm giác bình yên của tổ ấm — hòa hợp cho người mệnh Thổ và Kim.\n\n' +
         'Lưu ý là Ngũ Hành ở đây là gợi cảm hứng thẩm mỹ tinh tế cho không gian nghỉ ngơi của anh/chị ạ! Anh/chị đang có cảm tình với tone màu nào nhất ạ?',
       quickReplies: ['Tone Đỏ (Hỏa)', 'Tone Navy (Thủy)', 'Tone Nâu (Thổ)', 'Tư vấn size'],
@@ -374,15 +379,15 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     return {
       reply:
         'Dạ toàn bộ thiết kế của QuanNguyenS mang phom dáng suông phóng khoáng (straight-leg & relaxed fit) theo chuẩn phong cách châu Âu, nên cả nam và nữ đều mặc rất sang và thoải mái ạ!\n\n' +
-        '• Đặc biệt mẫu **THE STILLWATER SET (Caro Navy)** có Size S và Size L (ngực áo 127,0–135,0 cm · max eo ≈108,0–116,0 cm) và **THE DAYBREAK SET (Đỏ)** cũng có Size S và Size L (ngực áo 110,0–118,0 cm · max eo 103,7 cm) được nhiều khách hàng nam ưa chuộng.\n' +
+        '• Đặc biệt mẫu **GALAXIA SET (Caro Navy)** có Size S và Size M (ngực áo 127,0–135,0 cm · max eo ≈108,0–116,0 cm) và **FELIZ SET (Đỏ)** cũng có Size S và Size M (ngực áo 110,0–118,0 cm · max eo 103,7 cm) được nhiều khách hàng nam ưa chuộng.\n' +
         '• Rất nhiều khách hàng cũng chọn làm set sleepwear đôi (couple) cho cả hai vợ chồng/bạn gái bạn trai.\n\n' +
         'Anh/chị cho em xin chiều cao và cân nặng để em tư vấn size chuẩn nhất nhé!',
-      quickReplies: ['Mẫu The Stillwater (Navy)', 'Tư vấn chọn size', 'Ưu đãi & Freeship'],
+      quickReplies: ['Mẫu GALAXIA SET (Navy)', 'Tư vấn chọn size', 'Ưu đãi & Freeship'],
       product: {
-        name: 'THE STILLWATER SET',
+        name: 'GALAXIA SET',
         subtitle: 'Sleepwear Cổ V Lịch Lãm · Caro Navy',
-        price: 550000,
-        slug: 'the-stillwater-set',
+        price: 598000,
+        slug: 'galaxia-set',
         preOrder: false,
         image: '/images/hero-slide-02.jpg',
       },
@@ -402,7 +407,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
   // Fallback thân thiện, luôn hỗ trợ khách nhiệt tình
   return {
     reply:
-      'Dạ em là Trợ lý tư vấn của QuanNguyenS. Em rất vui được hỗ trợ anh/chị chọn size vừa vặn theo chiều cao/cân nặng, tư vấn chất liệu 3 bộ sleepwear (Daybreak Sắc Đỏ, Stillwater Caro Navy, Hearth Sọc Nâu) hoặc các ưu đãi tốt nhất hôm nay ạ.\n\nAnh/chị đang quan tâm đến bộ sleepwear cho dịp nào để em tư vấn nhé ạ?',
+      'Dạ em là Trợ lý tư vấn của QuanNguyenS. Em rất vui được hỗ trợ anh/chị chọn size vừa vặn theo chiều cao/cân nặng, tư vấn chất liệu 3 bộ sleepwear (FELIZ SET Sắc Đỏ, GALAXIA SET Caro Navy, The Hearth Set Sọc Nâu) hoặc các ưu đãi tốt nhất hôm nay ạ.\n\nAnh/chị đang quan tâm đến bộ sleepwear cho dịp nào để em tư vấn nhé ạ?',
     quickReplies: ['Xem 3 mẫu Sleepwear', 'Tư vấn chọn size', 'Ưu đãi & Freeship', 'Gặp chủ shop'],
   }
 }

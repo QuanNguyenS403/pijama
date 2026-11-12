@@ -68,7 +68,7 @@ export async function sendReviewInviteEmail(order, options = {}) {
 
   // 5. Xác định sản phẩm đầu tiên trong đơn để tạo đường dẫn review
   const firstItem = Array.isArray(order.items) && order.items.length > 0 ? order.items[0] : null
-  const productSlug = resolveCanonicalProductSlug(firstItem?.slug || firstItem?.productId || 'the-daybreak-set')
+  const productSlug = resolveCanonicalProductSlug(firstItem?.slug || firstItem?.productId || 'feliz-set')
   const productName = firstItem?.name || firstItem?.productName || 'Trang phục sleepwear QuanNguyenS'
 
   const reviewUrl = `${APP_URL}/san-pham/${productSlug}?review_token=${token}&order_id=${encodeURIComponent(orderId)}#reviews`

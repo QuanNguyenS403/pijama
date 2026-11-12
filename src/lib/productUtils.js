@@ -2,8 +2,12 @@
 // Nguồn chuẩn chung cho slug chuẩn, chuyển hướng URL cũ -> mới, màu sắc và nhận diện Pre-order
 
 export const LEGACY_PRODUCT_SLUG_REDIRECTS = {
-  'the-classic-set': 'the-daybreak-set',
-  'the-cafe-look': 'the-stillwater-set',
+  'the-classic-set': 'feliz-set',
+  'the-daybreak-set': 'feliz-set',
+  'the-feliz-set': 'feliz-set',
+  'the-cafe-look': 'galaxia-set',
+  'the-stillwater-set': 'galaxia-set',
+  'the-galaxia-set': 'galaxia-set',
   'the-evening-edit': 'the-hearth-set',
 }
 

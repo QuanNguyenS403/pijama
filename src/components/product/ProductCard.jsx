@@ -5,7 +5,7 @@ import { ShoppingBag } from 'lucide-react'
 import WishlistButton from '../ui/WishlistButton'
 
 function formatPrice(n) {
-  return new Intl.NumberFormat('vi-VN').format(n) + 'đ'
+  return new Intl.NumberFormat('vi-VN').format(n)
 }
 
 export default function ProductCard({ product, onQuickView, onAddToCart, className = '' }) {

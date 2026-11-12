@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ShoppingBag, CreditCard, Share2, Ruler, Truck, RotateCcw, CheckCircle, Lock, CalendarClock } from 'lucide-react'
+import { ShoppingBag, CreditCard, Share2, Truck, RotateCcw, CheckCircle, Lock, CalendarClock } from 'lucide-react'
 import ColorSelector from './ColorSelector'
 import SizeSelector from './SizeSelector'
 import QuantitySelector from './QuantitySelector'
 import ProductAccordion from './ProductAccordion'
-import SizeGuideModal from './SizeGuideModal'
 import WishlistButton from '../ui/WishlistButton'
 import Button from '../ui/Button'
 import { useCart } from '../../hooks/useCart'
@@ -31,7 +30,7 @@ function StarRow({ rating, size = 'sm' }) {
 }
 
 function formatPrice(n) {
-  return new Intl.NumberFormat('vi-VN').format(n) + 'đ'
+  return new Intl.NumberFormat('vi-VN').format(n)
 }
 
 const trustItems = [
@@ -62,7 +61,6 @@ export default function ProductInfo({
     setInternalSize(sz)
   }
   const [quantity, setQuantity] = useState(1)
-  const [sizeGuideOpen, setSizeGuideOpen] = useState(false)
   const [addedState, setAddedState] = useState(false)
   const [sharedToast, setSharedToast] = useState(false)
 
@@ -224,7 +222,16 @@ export default function ProductInfo({
             selectedColor={selectedColor}
             selected={selectedSize}
             onChange={setSelectedSize}
-            onSizeGuide={() => setSizeGuideOpen(true)}
+            onSizeGuide={() => {
+              const el = document.getElementById('size-guide-accordion')
+              if (el) {
+                const btn = el.querySelector('button')
+                if (btn && btn.getAttribute('aria-expanded') === 'false') {
+                  btn.click()
+                }
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              }
+            }}
           />
         )}
 
@@ -240,14 +247,24 @@ export default function ProductInfo({
 
         {/* Highlights */}
         {product.highlights && (
-          <ul className="space-y-2.5">
-            {product.highlights.map((h, i) => (
-              <li key={i} className="flex items-start gap-2.5 font-sans text-sm text-[#4A3F38]">
-                <span className="text-[#D4AF37] font-bold shrink-0 mt-0.5">•</span>
-                <span>{h}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="space-y-3">
+            {Array.isArray(product.highlights) ? (
+              product.highlights.map((h, i) =>
+                h.length > 120 ? (
+                  <p key={i} className="font-sans text-sm text-[#4A3F38] leading-relaxed">
+                    {h}
+                  </p>
+                ) : (
+                  <div key={i} className="flex items-start gap-2.5 font-sans text-sm text-[#4A3F38]">
+                    <span className="text-[#D4AF37] font-bold shrink-0 mt-0.5">•</span>
+                    <span>{h}</span>
+                  </div>
+                )
+              )
+            ) : (
+              <p className="font-sans text-sm text-[#4A3F38] leading-relaxed">{product.highlights}</p>
+            )}
+          </div>
         )}
 
 
@@ -289,7 +306,7 @@ export default function ProductInfo({
             </button>
           </motion.div>
 
-          {/* Action Row 3: Wishlist | Share | Size Guide */}
+          {/* Action Row 3: Wishlist | Share */}
           <div className="flex items-center justify-center gap-8 pt-2">
             <WishlistButton
               productId={product.id}
@@ -306,18 +323,6 @@ export default function ProductInfo({
             >
               <Share2 className="w-4 h-4" />
               <span>{sharedToast ? 'Đã sao chép link!' : 'Chia sẻ'}</span>
-            </button>
-
-            <div className="w-[1px] h-4 bg-[#E8DFD5]" />
-
-            <button
-              type="button"
-              onClick={() => setSizeGuideOpen(true)}
-              className="flex items-center gap-1.5 text-[#8C7E74] hover:text-[#631521] transition-colors text-xs font-sans font-medium cursor-pointer"
-              aria-label="Bảng size"
-            >
-              <Ruler className="w-4 h-4" />
-              <span>Bảng size</span>
             </button>
           </div>
         </div>
@@ -348,13 +353,6 @@ export default function ProductInfo({
         {/* Accordion */}
         <ProductAccordion product={product} />
       </div>
-
-      {/* Size Guide Modal */}
-      <SizeGuideModal
-        isOpen={sizeGuideOpen}
-        onClose={() => setSizeGuideOpen(false)}
-        sizeGuide={product.sizeGuide || {}}
-      />
     </>
   )
 }

@@ -10,7 +10,7 @@ import Button from '../ui/Button'
 import { useCart } from '../../hooks/useCart'
 
 function formatPrice(n) {
-  return new Intl.NumberFormat('vi-VN').format(n) + 'đ'
+  return new Intl.NumberFormat('vi-VN').format(n)
 }
 
 export default function QuickViewModal({ product, onClose, onAddToCart }) {
@@ -152,7 +152,6 @@ export default function QuickViewModal({ product, onClose, onAddToCart }) {
                     selectedColor={selectedColor}
                     selected={selectedSize}
                     onChange={setSelectedSize}
-                    onSizeGuide={() => {}}
                   />
                 )}
                 {/* Pre-Order Notice */}
