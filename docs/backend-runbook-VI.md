@@ -33,19 +33,13 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 - `ORDER_TOKEN_SECRET`: ký `trackingToken` theo dõi đơn hàng của khách.
 - `CUSTOMER_AUTH_SECRET`: ký token hủy đăng ký email marketing / auth khách hàng.
 - `JWT_SECRET`: ký JWT access token.
-- `GMAIL_BRIDGE_SECRET` / `GAS_WEBHOOK_SECRET`: xác thực cầu nối Gmail Apps Script.
 - `SEPAY_WEBHOOK_API_KEY` / `PAYMENT_WEBHOOK_SECRET`: xác thực webhook biến động số dư.
 
 ### Chính sách Fail-Closed ở Production (`NODE_ENV=production`)
 - Khi thiếu bất kỳ khóa nào ở trên, module tương ứng và `server/index.js` sẽ **từ chối khởi động hoặc từ chối xác thực**, không dùng chuỗi mặc định hardcoded.
-- Về gửi email: `envCheck.js` chấp nhận qua HTTPS (`GAS_EMAIL_WEBHOOK_URL` + `GAS_WEBHOOK_SECRET`, hoặc `RESEND_API_KEY`) mà không bắt buộc phải có `GMAIL_APP_PASSWORD` (SMTP).
+- Về gửi email: `envCheck.js` chấp nhận qua `RESEND_API_KEY` (hoặc `GMAIL_APP_PASSWORD` qua SMTP).
 
 ### Quy trình xoay vòng khóa (Secret Rotation) không gián đoạn
-- **Đối với `GMAIL_BRIDGE_SECRET`:**
-  1. Giữ khóa hiện tại trong `GMAIL_BRIDGE_SECRET_PREV`.
-  2. Đặt khóa mới vào `GMAIL_BRIDGE_SECRET` trên server + deploy/restart.
-  3. Cập nhật `QNS_SECRET` mới trong Google Apps Script `Script Properties`.
-  4. Sau 24 giờ kiểm tra ổn định, xóa `GMAIL_BRIDGE_SECRET_PREV`.
 - **Đối với `ADMIN_SESSION_SECRET` / `ADMIN_PASSWORD`:**
   - Khi cần thu hồi phiên admin ngay lập tức mà chưa đổi khóa: gọi `POST /api/admin/logout` (token bị ghi vĩnh viễn tới khi hết hạn vào bảng `admin_revoked_tokens` trong SQLite).
   - Khi đổi `ADMIN_SESSION_SECRET`, mọi phiên admin cũ tự động hết hiệu lực và yêu cầu đăng nhập lại.

@@ -409,24 +409,10 @@ export async function sendEmailViaHttps(options) {
   // ─────────────────────────────────────────────────────────────
   // CHỐT AN TOÀN 1: Kiểm tra cấu hình môi trường (Fail-Closed ở Production trước khi xét test lock)
   // ─────────────────────────────────────────────────────────────
-  const gasUrl = (
-    process.env.GAS_EMAIL_WEBHOOK_URL ||
-    process.env.GMAIL_APP_SCRIPT_URL ||
-    process.env.GMAIL_BRIDGE_WEBHOOK_URL ||
-    ''
-  ).trim()
-
-  const gasSecret = (
-    process.env.GAS_WEBHOOK_SECRET ||
-    process.env.GMAIL_BRIDGE_SECRET ||
-    ''
-  ).trim()
-
   const resendApiKey = (process.env.RESEND_API_KEY || '').trim()
   const rawResendFrom = (process.env.RESEND_FROM_EMAIL || '').trim()
   const isRender = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL || process.env.RENDER_SERVICE_ID)
 
-  const hasValidGas = Boolean(gasUrl && gasUrl.startsWith('https://') && gasSecret)
   const hasValidResendConfig = Boolean(
     resendApiKey &&
     rawResendFrom &&
@@ -434,13 +420,12 @@ export async function sendEmailViaHttps(options) {
   )
   const hasLocalSmtp = Boolean(
     !isRender &&
-    !isProduction &&
     (process.env.GMAIL_USER || '').trim() &&
     (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '')
   )
 
-  if (isProduction && !hasValidGas && !hasValidResendConfig) {
-    const errorMsg = 'Hệ thống gửi email chưa được cấu hình. Thiếu GAS_EMAIL_WEBHOOK_URL + GAS_WEBHOOK_SECRET hoặc RESEND_API_KEY + RESEND_FROM_EMAIL hợp lệ.'
+  if (isProduction && !hasValidResendConfig && !hasLocalSmtp) {
+    const errorMsg = 'Hệ thống gửi email chưa được cấu hình. Thiếu GMAIL_APP_PASSWORD hoặc RESEND_API_KEY + RESEND_FROM_EMAIL hợp lệ.'
     console.error(`❌ [EMAIL CONFIG ERROR] ${errorMsg}`)
     recordEmailOutbox({ id: requestId, purpose, recipient: nonSyntheticList, status: 'failed', errorCode: 'EMAIL_NOT_CONFIGURED' })
 
@@ -605,8 +590,8 @@ export async function sendEmailViaHttps(options) {
   }
 
   // Khi EMAIL_REAL_SEND=true ở non-prod: vẫn phải có ít nhất 1 transport hợp lệ
-  if (!hasValidGas && !hasValidResendConfig && !hasLocalSmtp) {
-    const errorMsg = 'Hệ thống gửi email chưa được cấu hình. Thiếu GAS_EMAIL_WEBHOOK_URL + GAS_WEBHOOK_SECRET hoặc RESEND_API_KEY hợp lệ.'
+  if (!hasValidResendConfig && !hasLocalSmtp) {
+    const errorMsg = 'Hệ thống gửi email chưa được cấu hình. Thiếu GMAIL_APP_PASSWORD hoặc RESEND_API_KEY hợp lệ.'
     console.error(`❌ [EMAIL CONFIG ERROR] ${errorMsg}`)
     recordEmailOutbox({ id: requestId, purpose, recipient: deliverable, status: 'failed', errorCode: 'EMAIL_NOT_CONFIGURED' })
 
@@ -624,85 +609,6 @@ export async function sendEmailViaHttps(options) {
 
   const to = deliverable.length === 1 ? deliverable[0] : deliverable
   const errors = []
-
-  // ─────────────────────────────────────────────────────────────
-  // ƯU TIÊN 1: Google Apps Script HTTPS Bridge (Port 443)
-  // ─────────────────────────────────────────────────────────────
-  if (hasValidGas) {
-    const gasTimeoutMs = parseInt(process.env.EMAIL_GAS_TIMEOUT_MS || '25000', 10)
-    try {
-      console.log(`📡 [EMAIL TRANSPORT 1] Đang gửi qua Google Apps Script Webhook tới: ${maskEmail(to)} (RequestId: ${requestId})...`)
-      const payload = {
-        action: 'SEND_EMAIL',
-        secret: gasSecret,
-        requestId,
-        to: Array.isArray(to) ? to.join(', ') : to,
-        subject,
-        html: html || text,
-        text: text || undefined,
-        name: fromName,
-        fromName,
-        ...(validatedReplyTo ? { replyTo: validatedReplyTo } : {}),
-        timestamp: Date.now(),
-      }
-
-      const res = await fetch(gasUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Request-Id': requestId,
-        },
-        body: JSON.stringify(payload),
-        redirect: 'follow',
-        signal: AbortSignal.timeout(gasTimeoutMs),
-      })
-
-      if (res.ok) {
-        const data = await res.json().catch(() => ({}))
-        if (data && (data.success === true || data.status === 'success' || data.code === 'OK')) {
-          console.log(`✅ [EMAIL TRANSPORT 1: GAS] Gửi thành công tới ${maskEmail(to)}`)
-          recordEmailOutbox({ id: requestId, purpose, recipient: to, status: sentStatus, transport: 'google_apps_script' })
-          return {
-            ok: true,
-            success: true,
-            transport: 'google_apps_script',
-            messageId: data.messageId || `gas_${Date.now()}`,
-            requestId,
-            code: 'OK',
-          }
-        }
-
-        const errCode = data?.code || 'GAS_REJECTED'
-        const errMsg = data?.error || 'Google Apps Script trả về success=false'
-        console.warn(`⚠️ [GAS REJECTED]: [${errCode}] ${errMsg}`)
-        errors.push(`Google Apps Script: [${errCode}] ${errMsg}`)
-        recordEmailOutbox({ id: requestId, purpose, recipient: to, status: 'failed', transport: 'google_apps_script', errorCode: errCode })
-      } else {
-        const statusText = `HTTP ${res.status} ${res.statusText}`
-        console.warn(`⚠️ [GAS HTTP ERROR]: ${statusText}`)
-        errors.push(`Google Apps Script HTTP: ${statusText}`)
-        recordEmailOutbox({ id: requestId, purpose, recipient: to, status: 'failed', transport: 'google_apps_script', errorCode: `HTTP_${res.status}` })
-      }
-    } catch (gasErr) {
-      console.warn(`⚠️ [GAS EXCEPTION]: ${gasErr.message}`)
-
-      // WP-B B2: Phân loại lỗi KHÔNG RÕ (Timeout / Network abort sau khi đã gửi request)
-      const isTimeout = gasErr.name === 'TimeoutError' || gasErr.name === 'AbortError' || /timeout|aborted/i.test(gasErr.message)
-      if (isTimeout) {
-        console.warn(`⚠️ [GAS UNKNOWN DELIVERY] Request gửi tới Apps Script đã timeout sau ${gasTimeoutMs}ms. Không thể chắc chắn thư đã đến Google hay chưa. Dừng gửi fallback để chống gửi trùng mã.`)
-        recordEmailOutbox({ id: requestId, purpose, recipient: to, status: 'unknown', transport: 'google_apps_script', errorCode: 'TIMEOUT' })
-
-        const unknownErr = new Error('Quá thời gian kết nối tới máy chủ gửi email. Yêu cầu đang được xử lý, quý khách vui lòng kiểm tra hòm thư sau ít phút.')
-        unknownErr.status = 504
-        unknownErr.code = 'UNKNOWN_DELIVERY'
-        unknownErr.isUnknown = true
-        unknownErr.requestId = requestId
-        throw unknownErr
-      }
-
-      errors.push(`Google Apps Script Exception: ${gasErr.message}`)
-    }
-  }
 
   // ─────────────────────────────────────────────────────────────
   // ƯU TIÊN 2: Resend HTTP API (Port 443)
@@ -817,40 +723,26 @@ export function getEmailServiceStatus() {
     }
   } catch (_) {}
 
-  const gasUrl = (
-    process.env.GAS_EMAIL_WEBHOOK_URL ||
-    process.env.GMAIL_APP_SCRIPT_URL ||
-    process.env.GMAIL_BRIDGE_WEBHOOK_URL ||
-    ''
-  ).trim()
-
-  const gasSecret = (
-    process.env.GAS_WEBHOOK_SECRET ||
-    process.env.GMAIL_BRIDGE_SECRET ||
-    ''
-  ).trim()
-
   const resendKey = (process.env.RESEND_API_KEY || '').trim()
   const resendFrom = (process.env.RESEND_FROM_EMAIL || '').trim()
   const policy = resolveSendPolicy(process.env, process.execArgv)
   const isProduction = policy.isProduction
-
-  const gasReady = Boolean(gasUrl && gasUrl.startsWith('https://') && gasSecret)
+  const isRender = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL || process.env.RENDER_SERVICE_ID)
+  const smtpReady = Boolean(!isRender && (process.env.GMAIL_USER || '').trim() && (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, ''))
   const resendReady = Boolean(resendKey && resendFrom && (!isProduction || !resendFrom.toLowerCase().includes('@resend.dev')))
 
   const { metrics24h, activeSuppressions } = getEmailOutboxStats24h()
   checkAndAlertEmailAnomalies(isProduction)
 
   return {
-    gasConfigured: Boolean(gasUrl && gasUrl.startsWith('https://')),
-    gasSecretConfigured: Boolean(gasSecret),
     resendConfigured: Boolean(resendKey),
     resendDomainVerified: Boolean(resendFrom && !resendFrom.toLowerCase().includes('@resend.dev')),
+    smtpConfigured: smtpReady,
     replyToConfigured: Boolean((process.env.EMAIL_REPLY_TO || '').trim()),
     sendMode: policy.mode,
     realSendAllowed: policy.allowRealSend,
-    ready: Boolean(gasReady || resendReady || policy.mode === 'test_mock'),
-    isRender: Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL || process.env.RENDER_SERVICE_ID),
+    ready: Boolean(resendReady || smtpReady || policy.mode === 'test_mock'),
+    isRender,
     metrics24h,
     activeSuppressions,
   }

@@ -27,7 +27,6 @@ import {
 import { recordPaymentTransaction } from './paymentTransactions.js'
 import { verifyTrackingToken } from './orderTokenService.js'
 import { logSecurityAudit } from './auditLogger.js'
-import { getBridgeHealth } from './bridgeHealth.js'
 
 // Persistent Store và Idempotency Tracking
 export const orderPaymentStore = orderPersistence

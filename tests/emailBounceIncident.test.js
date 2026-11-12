@@ -242,8 +242,7 @@ describe('WP-1: Cách ly .env, chính sách sandbox mặc định, bỏ heuristi
 
   it('T3: NODE_ENV=production trong node --test vẫn fail-closed EMAIL_NOT_CONFIGURED khi thiếu cấu hình, và khóa chạm mạng khi đủ cấu hình', async () => {
     process.env.NODE_ENV = 'production'
-    delete process.env.GAS_EMAIL_WEBHOOK_URL
-    delete process.env.GAS_WEBHOOK_SECRET
+    delete process.env.GMAIL_APP_PASSWORD
     delete process.env.RESEND_API_KEY
     delete process.env.RESEND_FROM_EMAIL
 
@@ -258,8 +257,8 @@ describe('WP-1: Cách ly .env, chính sách sandbox mặc định, bỏ heuristi
       (err) => err && err.code === 'EMAIL_NOT_CONFIGURED'
     )
 
-    process.env.GAS_EMAIL_WEBHOOK_URL = 'https://script.google.com/macros/s/test-mock/exec'
-    process.env.GAS_WEBHOOK_SECRET = 'mock-secret-for-unit-test'
+    process.env.GMAIL_APP_PASSWORD = 'mock-password-16'
+    process.env.GMAIL_USER = 'shop@example.invalid'
     __setDnsResolverForTests(makeDnsStub({ mx: [{ priority: 10, exchange: `mx.${OUTLOOK_DOMAIN}` }] }))
 
     const lockedResult = await sendEmailViaHttps({

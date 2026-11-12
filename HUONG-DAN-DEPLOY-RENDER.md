@@ -66,12 +66,9 @@ Tại trang cấu hình Web Service trên Render, cuộn xuống mục **Environ
 | `ORDER_TOKEN_SECRET` | `[Chuỗi ngẫu nhiên >= 32 ký tự]` | **Bắt buộc**: Khóa ký `trackingToken` đơn hàng |
 | `CUSTOMER_AUTH_SECRET` | `[Chuỗi ngẫu nhiên >= 32 ký tự]` | **Bắt buộc**: Khóa bảo mật phiên & link hủy đăng ký khách hàng |
 | `JWT_SECRET` | `[Chuỗi ngẫu nhiên >= 32 ký tự]` | **Bắt buộc**: Khóa ký JWT Access Token |
-| `GAS_EMAIL_WEBHOOK_URL` | `https://script.google.com/macros/s/.../exec` | URL Web App Apps Script gửi email OTP qua HTTPS (Port 443) |
-| `GAS_WEBHOOK_SECRET` | `[Khóa bí mật khớp QNS_SEND_SECRET]` | Khóa xác thực gửi email qua Apps Script |
-| `GMAIL_BRIDGE_SECRET` | `[Chuỗi ngẫu nhiên >= 32 ký tự]` | Khóa ký HMAC đồng bộ biến động số dư ngân hàng (`QNS_SECRET`) |
-| `RESEND_API_KEY` | `[Mã API Resend của bạn]` | (Tùy chọn) Dự phòng Dual-Transport qua Resend HTTP API |
+| `RESEND_API_KEY` | `[Mã API Resend của bạn]` | (Tùy chọn) Gửi qua Resend HTTP API |
 | `RESEND_FROM_EMAIL` | `QuanNguyenS <support@quannguyens.com>` | (Tùy chọn) Địa chỉ gửi Resend với domain đã xác minh SPF/DKIM |
-| `EMAIL_GAS_TIMEOUT_MS` | `25000` | Thời gian timeout kết nối Apps Script (mặc định 25 giây) |
+| `GMAIL_APP_PASSWORD` | `[Mật khẩu ứng dụng Gmail 16 ký tự]` | (Tùy chọn) Gửi qua Gmail SMTP trực tiếp |
 | `GMAIL_USER` | `quannguyens403@gmail.com` | Email người gửi mặc định |
 | `OWNER_EMAIL` | `quannguyens403@gmail.com` | Email nhận thông báo khi có khách đặt hàng |
 | `BANK_CODE` | `VCB` | Mã ngân hàng nhận chuyển khoản (Vietcombank) |

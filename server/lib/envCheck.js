@@ -209,12 +209,8 @@ export function validateEnvironment(env = process.env) {
     }
   }
 
-  // Kiểm tra phương thức gửi email: Ưu tiên HTTPS Bridge (GAS / Resend).
-  // Lưu ý: Render chặn outbound SMTP (25/465/587) và Production chỉ gửi qua HTTPS nên SMTP không tính là đường gửi hợp lệ ở Render/Production.
+  // Kiểm tra phương thức gửi email: Hỗ trợ Resend API hoặc Gmail SMTP (GMAIL_APP_PASSWORD).
   const isRender = Boolean(effectiveEnv.RENDER || effectiveEnv.RENDER_EXTERNAL_URL || effectiveEnv.RENDER_SERVICE_ID)
-  const gasUrl = effectiveEnv.GAS_EMAIL_WEBHOOK_URL || effectiveEnv.GMAIL_APP_SCRIPT_URL || effectiveEnv.GMAIL_BRIDGE_WEBHOOK_URL
-  const gasSecret = effectiveEnv.GAS_WEBHOOK_SECRET || effectiveEnv.GMAIL_BRIDGE_SECRET
-  const hasGasBridge = Boolean(gasUrl && String(gasUrl).trim() && !isPlaceholder(gasUrl) && gasSecret && String(gasSecret).trim() && !isPlaceholder(gasSecret))
   const resendKeyCheck = checkVar('RESEND_API_KEY', true)
   const resendFromCheck = checkVar('RESEND_FROM_EMAIL', false)
   const hasResendKey = resendKeyCheck.status === 'OK'
@@ -223,10 +219,8 @@ export function validateEnvironment(env = process.env) {
   const hasResend = Boolean(hasResendKey && (!isProd || hasVerifiedResendFrom))
   const gmailPassCheck = checkVar('GMAIL_APP_PASSWORD', true, (v) => (v.replace(/\s+/g, '').length === 16 ? true : 'Mật khẩu ứng dụng Gmail phải gồm đúng 16 ký tự'))
   const hasSmtp = gmailPassCheck.status === 'OK'
-  const hasUsableEmailDelivery = hasGasBridge || hasResend || (!isRender && !isProd && hasSmtp)
+  const hasUsableEmailDelivery = hasResend || (!isRender && hasSmtp)
 
-  results.featureGated.push(checkVar('GAS_EMAIL_WEBHOOK_URL', false))
-  results.featureGated.push(checkVar('GAS_WEBHOOK_SECRET', true))
   results.featureGated.push(resendKeyCheck)
   results.featureGated.push(gmailPassCheck)
 
@@ -235,20 +229,20 @@ export function validateEnvironment(env = process.env) {
   }
 
   if (!hasUsableEmailDelivery) {
-    const smtpNote = (isRender || isProd) && hasSmtp
-      ? ' (Lưu ý: GMAIL_APP_PASSWORD/SMTP không hợp lệ trên Render/Production vì outbound SMTP bị chặn)'
+    const smtpNote = isRender && hasSmtp
+      ? ' (Lưu ý: Render chặn outbound SMTP 25/465/587 nên cần cấu hình RESEND_API_KEY + RESEND_FROM_EMAIL)'
       : ''
-    const msg = `Chưa cấu hình đầy đủ gửi email HTTPS: Cần (GAS_EMAIL_WEBHOOK_URL + GAS_WEBHOOK_SECRET) hoặc (RESEND_API_KEY + RESEND_FROM_EMAIL hợp lệ)${smtpNote}`
+    const msg = `Chưa cấu hình đầy đủ gửi email: Cần GMAIL_APP_PASSWORD (16 ký tự) hoặc RESEND_API_KEY + RESEND_FROM_EMAIL hợp lệ${smtpNote}`
     if (effectiveEnv.REQUIRE_EMAIL_DELIVERY === 'true' && isProd) {
       results.errors.push(`[BẮT BUỘC PROD] ${msg}`)
     } else if (isProd) {
       results.emailDeliveryMissingInProd = true
-      results.warnings.push(`[CHẾ ĐỘ DEGRADED] ${msg} — Web vẫn khởi chạy nhưng chức năng gửi email sẽ từ chối fail-closed; khuyến nghị đặt REQUIRE_EMAIL_DELIVERY=true trên Render`)
+      results.warnings.push(`[CHẾ ĐỘ DEGRADED] ${msg} — Web vẫn khởi chạy nhưng chức năng gửi email sẽ từ chối fail-closed; khuyến nghị cấu hình GMAIL_APP_PASSWORD hoặc RESEND_API_KEY`)
     } else {
       results.warnings.push(`[THIẾU DEV] ${msg}`)
     }
-  } else if (!hasSmtp && (hasGasBridge || hasResend)) {
-    results.warnings.push('[TÙY CHỌN FALLBACK] GMAIL_APP_PASSWORD chưa cấu hình (hệ thống gửi email an toàn qua HTTPS Gateway)')
+  } else if (!hasSmtp && hasResend) {
+    results.warnings.push('[TÙY CHỌN FALLBACK] GMAIL_APP_PASSWORD chưa cấu hình (hệ thống gửi email qua Resend API)')
   }
 
   // Kiểm tra Google Sheets: Chế độ Degraded an toàn nếu không bắt buộc (REQUIRE_GOOGLE_SHEETS !== 'true')
@@ -415,7 +409,7 @@ export function printEnvReport(results) {
   }
 
   if (results.emailDeliveryMissingInProd) {
-    console.error('❌ [EMAIL DELIVERY ERROR] Production đang thiếu cấu hình gửi email HTTPS hợp lệ (GAS_EMAIL_WEBHOOK_URL+GAS_WEBHOOK_SECRET hoặc RESEND_API_KEY+RESEND_FROM_EMAIL). Đặt REQUIRE_EMAIL_DELIVERY=true để chặn khởi động khi thiếu.')
+    console.error('❌ [EMAIL DELIVERY ERROR] Production đang thiếu cấu hình gửi email hợp lệ (GMAIL_APP_PASSWORD hoặc RESEND_API_KEY+RESEND_FROM_EMAIL). Đặt REQUIRE_EMAIL_DELIVERY=true để chặn khởi động khi thiếu.')
   }
 
   if (results.warnings.length > 0) {

@@ -105,6 +105,7 @@ export function runEnterpriseMigrations(database) {
           raw_json TEXT,
           matched_order_id TEXT,
           outcome TEXT NOT NULL,
+          status TEXT DEFAULT 'UNMATCHED',
           resolved_at TEXT,
           resolved_by TEXT,
           resolution_note TEXT,

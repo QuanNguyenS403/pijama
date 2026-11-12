@@ -300,12 +300,13 @@ app.get('/api/payment/napas-qr', (req, res) => {
   })
 })
 
-// ── 1c. API Đối Soát Email Ngân Hàng Đã Ngừng Hoạt Động (Thay bằng Admin duyệt thủ công) ──
-app.post('/api/payment/bank-email', (req, res) => {
+
+// ── 1c. Endpoint đối soát email ngân hàng đã ngừng hoạt động vĩnh viễn (HTTP 410 Gone) ──
+app.all('/api/payment/bank-email', (req, res) => {
   return res.status(410).json({
     success: false,
     code: 'BANK_RECONCILIATION_DISCONTINUED',
-    error: 'Hệ thống đối soát biến động số dư qua email ngân hàng đã ngừng hoạt động. Việc xác nhận thanh toán QR được thực hiện thủ công bởi Admin.',
+    error: 'Hệ thống đối soát biến động số dư qua email ngân hàng đã ngừng hoạt động vĩnh viễn.',
   })
 })
 
@@ -1044,11 +1045,6 @@ app.post('/api/admin/orders/:orderId/sync-viettelpost', requireAdminAuth, async 
 })
 
 // ── 9.1c Quản lý Giao Dịch Ngân Hàng Cần Xử Lý (WP8) ──────────────────────────
-app.get('/api/admin/bridge-health', requireAdminAuth, async (req, res) => {
-  const { getBridgeHealth } = await import('./lib/bridgeHealth.js')
-  return res.json({ success: true, health: getBridgeHealth() })
-})
-
 app.get('/api/admin/payment-transactions', requireAdminAuth, async (req, res) => {
   try {
     const { getUnresolvedPaymentTransactions } = await import('./lib/paymentTransactions.js')

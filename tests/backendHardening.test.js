@@ -145,8 +145,8 @@ describe('Backend Security & Infrastructure Hardening Suite', () => {
       SHOP_NAME: 'QuanNguyenS',
       SHOP_PHONE: '0981753082',
       SHOP_ADDRESS: 'Hà Nội',
-      GAS_EMAIL_WEBHOOK_URL: 'https://script.google.com/macros/s/test/exec',
-      GAS_WEBHOOK_SECRET: 'test-gas-webhook-secret-over-32-chars',
+      RESEND_API_KEY: 're_test_mock_resend_api_key_valid',
+      RESEND_FROM_EMAIL: 'QuanNguyenS <support@brand-test.invalid>',
     }
     const okRes = validateEnvironment(renderEnv)
     assert.equal(okRes.hasFatalErrors, false, `Unexpected errors: ${okRes.errors.join('; ')}`)
@@ -271,32 +271,6 @@ describe('Backend Security & Infrastructure Hardening Suite', () => {
       headers: { Authorization: `Bearer ${loginBody.token}` },
     })
     assert.equal(afterLogoutRes.status, 401)
-  })
-
-  it('[P2-API-6 HTTP] POST /api/payment/bank-email chặn batch vượt quá 50 phần tử', async () => {
-    const emails = Array.from({ length: 51 }, (_, idx) => ({
-      messageId: `msg_${idx}`,
-      from: 'VCBDigibank@info.vietcombank.com.vn',
-      subject: 'Bien dong so du',
-      bodyText: 'Test',
-    }))
-    const payload = { runId: 'run_oversize', emails }
-    const rawBody = JSON.stringify(payload)
-    const ts = Math.floor(Date.now() / 1000)
-    const sig = computeBridgeSignature(rawBody, TEST_ENV.GMAIL_BRIDGE_SECRET, ts)
-
-    const res = await fetch(`${baseUrl}/api/payment/bank-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-QNS-Timestamp': String(ts),
-        'X-QNS-Signature': sig,
-      },
-      body: rawBody,
-    })
-    assert.equal(res.status, 400)
-    const body = await res.json()
-    assert.match(body.error, /50/)
   })
 
   it('[P1-API-3/P1-API-4/SSE] Tracking chống brute-force đuôi SĐT, Cancel-Request soft-delete giữ tx & SSE kiểm soát quyền chặt', async () => {
@@ -476,9 +450,9 @@ describe('Backend Security & Infrastructure Hardening Suite', () => {
         JWT_SECRET: 'ci-smoke-dummy-jwt-secret-key-length-32ch',
         GMAIL_USER: 'ci-smoke@example.invalid',
         OWNER_EMAIL: 'owner-smoke@example.invalid',
-        GAS_EMAIL_WEBHOOK_URL: 'https://script.google.com/macros/s/ci-smoke/exec',
-        GAS_WEBHOOK_SECRET: 'ci-smoke-dummy-gas-webhook-secret-32ch',
-        GMAIL_BRIDGE_SECRET: 'ci-smoke-dummy-gmail-bridge-secret-32c',
+        RESEND_API_KEY: 're_ci_smoke_dummy_resend_api_key',
+        RESEND_FROM_EMAIL: 'QuanNguyenS <support@brand-test.invalid>',
+        GMAIL_APP_PASSWORD: 'abcd efgh ijkl mnop',
         SEPAY_WEBHOOK_API_KEY: 'ci-smoke-dummy-sepay-webhook-key-32chars',
         BANK_CODE: 'VCB',
         BANK_ACCOUNT_NUMBER: '1050773506',
