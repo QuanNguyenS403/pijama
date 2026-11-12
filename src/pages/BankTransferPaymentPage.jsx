@@ -675,9 +675,8 @@ export default function BankTransferPaymentPage() {
 
                         <div className="bg-white p-2.5 rounded-[2px] border border-[#E8DFD5] flex items-center justify-between">
                           <div>
-                            <p className="text-[10px] text-[#8C7E74] flex items-center gap-1.5 flex-wrap">
-                              <span>Nội dung chuyển khoản:</span>
-                              <span className="text-[#2E7D32] font-semibold text-[10px] bg-[#E8F5E9] px-1.5 py-0.5 rounded-[2px] border border-[#C8E6C9]">(Đã tích hợp sẵn trong mã QR)</span>
+                            <p className="text-[10px] text-[#8C7E74]">
+                              Nội dung chuyển khoản:
                             </p>
                             <p className="font-mono font-bold text-[#631521] text-xs mt-0.5">
                               {transferContent}
@@ -721,10 +720,6 @@ export default function BankTransferPaymentPage() {
                         </span>
                       )}
                     </div>
-
-                    <p className="text-xs text-[#4A3F38] leading-relaxed">
-                      Sau khi chuyển khoản thành công, vui lòng tải lên ảnh chụp màn hình biên lai giao dịch để chủ shop đối soát dòng tiền và xác nhận đơn nhanh hơn.
-                    </p>
 
                     {proofData?.imageUrl && !showUploadForm ? (
                       <div className="bg-[#E8F5E9]/70 border border-[#A5D6A7] rounded-[3px] p-4 space-y-3">
@@ -990,7 +985,7 @@ export default function BankTransferPaymentPage() {
                   <div>
                     <p className="font-bold text-[#1A1614] mb-0.5">Thời gian giao hàng dự kiến:</p>
                     <p className="font-normal leading-relaxed">
-                      Từ <strong>2–4 ngày làm việc</strong>. Bộ phận vận hành sẽ liên hệ qua điện thoại trước khi giao hàng.
+                      Từ <strong>2–4 ngày làm việc</strong>.
                     </p>
                   </div>
                 </div>

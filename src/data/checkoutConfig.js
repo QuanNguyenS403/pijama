@@ -31,7 +31,7 @@ export const PAYMENT_METHODS = [
 
 export const PAYMENT_LABELS = {
   COD: "Thanh toán khi nhận hàng (COD)",
-  BANK_TRANSFER: "Chuyển khoản VietQR (Napas 24/7 - Giảm 10%)",
+  BANK_TRANSFER: "Chuyển khoản",
 }
 
 export const ORDER_STATUSES = {

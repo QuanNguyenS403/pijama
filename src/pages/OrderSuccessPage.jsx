@@ -565,7 +565,7 @@ export default function OrderSuccessPage() {
                           )
                         ) : (
                           <p className="font-normal leading-relaxed text-[#4A3F38]">
-                            Từ <strong>2–4 ngày làm việc</strong>. Bộ phận vận hành sẽ liên hệ qua điện thoại trước khi giao hàng.
+                            Từ <strong>2–4 ngày làm việc</strong>.
                           </p>
                         )}
                       </div>
