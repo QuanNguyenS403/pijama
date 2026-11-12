@@ -371,8 +371,8 @@ export async function handlePaymentWebhook(req) {
 
     console.log(`\n🎉 [XÁC NHẬN TIỀN VỀ THÀNH CÔNG] Đơn hàng ${matchedOrderId}: Đã nhận đúng ${amountIn}đ!`)
 
-    // Gửi email cho khách hàng và chủ shop
-    if (order.customer?.email) {
+    // Gửi email cho khách hàng và chủ shop (nếu markOrderPaid chưa kích hoạt)
+    if (!order.emails?.confirmationSentAt && order.customer?.email) {
       sendCustomerEmail(order)
         .then(() => console.log(`📧 [GMAIL] Đã gửi xác nhận đặt hàng & hóa đơn tới: ${order.customer.email}`))
         .catch((err) => console.error('Lỗi gửi email khách:', err.message))
