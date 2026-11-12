@@ -7,19 +7,42 @@ const __dirname = path.dirname(__filename)
 const rootDir = path.resolve(__dirname, '..')
 
 // Tự động giải phóng cổng nếu có tiến trình Node.js cũ chạy ngầm chưa tắt (tránh EADDRINUSE)
-function freePort(port) {
-  try {
-    if (process.platform === 'win32') {
-      execSync(
-        `powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort ${port} -ErrorAction SilentlyContinue | Where-Object { \\$_.OwningProcess -gt 0 } | ForEach-Object { Stop-Process -Id \\$_.OwningProcess -Force -ErrorAction SilentlyContinue }"`,
-        { stdio: 'ignore' }
-      )
-    } else {
+function freePort(targetPort) {
+  const port = Number(targetPort)
+  if (!Number.isFinite(port) || port <= 0) return false
+  const myPid = process.pid
+
+  if (process.platform === 'win32') {
+    try {
+      const output = execSync('netstat -ano -p tcp', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      const lines = output.split('\n')
+      for (const line of lines) {
+        const parts = line.trim().split(/\s+/)
+        if (parts.length >= 5 && parts[0] === 'TCP') {
+          const localAddr = parts[1]
+          const state = parts[3]
+          const pid = parseInt(parts[4], 10)
+          if (
+            (state === 'LISTENING' || state === 'SYN_SENT') &&
+            localAddr.endsWith(`:${port}`) &&
+            pid &&
+            pid !== myPid
+          ) {
+            try {
+              execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' })
+              console.log(`🧹 [PORT CLEANUP] Đã tự động tắt tiến trình cũ PID ${pid} đang chiếm cổng ${port}.`)
+            } catch {}
+          }
+        }
+      }
+    } catch {}
+  } else {
+    try {
       execSync(`fuser -k ${port}/tcp 2>/dev/null || lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, {
         stdio: 'ignore',
       })
-    }
-  } catch (e) {}
+    } catch {}
+  }
 }
 
 freePort(3001)

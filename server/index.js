@@ -6,6 +6,7 @@ import dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
+import { execSync } from 'child_process'
 import { handleOrderSubmit } from './apiHandler.js'
 import { initializeSheet } from './lib/googleSheets.js'
 import { verifyTransporter } from './lib/emailConfig.js'
@@ -1308,7 +1309,55 @@ if (String(process.env.NODE_ENV || '').trim().toLowerCase() !== 'test' && !isNod
 // Khởi chạy server
 let server = null
 
-if (process.env.NO_AUTO_LISTEN !== 'true') {
+export function forceFreePort(targetPort) {
+  const port = Number(targetPort)
+  if (!Number.isFinite(port) || port <= 0) return false
+  const myPid = process.pid
+
+  if (process.platform === 'win32') {
+    try {
+      const output = execSync('netstat -ano -p tcp', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      const lines = output.split('\n')
+      let killed = false
+      for (const line of lines) {
+        const parts = line.trim().split(/\s+/)
+        if (parts.length >= 5 && parts[0] === 'TCP') {
+          const localAddr = parts[1]
+          const state = parts[3]
+          const pid = parseInt(parts[4], 10)
+          if (
+            (state === 'LISTENING' || state === 'SYN_SENT') &&
+            localAddr.endsWith(`:${port}`) &&
+            pid &&
+            pid !== myPid
+          ) {
+            try {
+              execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' })
+              console.log(`🧹 [PORT CLEANUP] Đã tự động giải phóng cổng ${port} từ tiến trình cũ PID ${pid}.`)
+              killed = true
+            } catch {}
+          }
+        }
+      }
+      return killed
+    } catch {}
+  } else {
+    try {
+      execSync(`fuser -k ${port}/tcp 2>/dev/null || lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, {
+        stdio: 'ignore',
+      })
+      return true
+    } catch {}
+  }
+  return false
+}
+
+let listenRetries = 0
+function startExpressServer() {
+  if (process.env.NODE_ENV !== 'production' && !isNodeTestRunner && listenRetries === 0) {
+    forceFreePort(PORT)
+  }
+
   server = app.listen(PORT, '0.0.0.0', async () => {
     console.log(`\n======================================================`)
     console.log(`🚀 QuanNguyenS Order Server đang lắng nghe tại: http://0.0.0.0:${PORT} (NODE_ENV=${process.env.NODE_ENV || 'development'})`)
@@ -1426,9 +1475,25 @@ if (process.env.NO_AUTO_LISTEN !== 'true') {
   })
 
   server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE' && listenRetries < 2 && process.env.NODE_ENV !== 'production' && !isNodeTestRunner) {
+      listenRetries++
+      console.warn(`⚠️ [PORT OCCUPIED] Cổng HTTP ${PORT} đang bị tiến trình cũ chiếm dụng. Đang tự động giải phóng...`)
+      forceFreePort(PORT)
+      setTimeout(() => {
+        try { server.close() } catch {}
+        console.log(`🔄 [PORT RECONNECT] Đang khởi động lại server trên cổng ${PORT}...`)
+        startExpressServer()
+      }, 600)
+      return
+    }
+
     console.error('❌ [SERVER LISTEN ERROR]: Không thể mở cổng HTTP', PORT, err)
     process.exit(1)
   })
+}
+
+if (process.env.NO_AUTO_LISTEN !== 'true') {
+  startExpressServer()
 }
 
 // Graceful shutdown (OPS-002)
