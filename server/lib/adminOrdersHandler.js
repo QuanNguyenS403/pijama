@@ -64,6 +64,23 @@ export function formatAdminOrder(order) {
     paymentStatus,
     phase: getPaymentPhase(order),
     claimedAt: order.payment?.claimedAt || null,
+    paymentSubmittedAt: order.payment?.submittedAt || null,
+    payment: {
+      method: paymentMethod,
+      methodLabel: order.payment?.methodLabel || (paymentMethod === 'BANK_TRANSFER' ? 'Chuyển khoản VietQR' : 'COD'),
+      status: paymentStatus,
+      submittedAt: order.payment?.submittedAt || null,
+      proofImageUrl: order.payment?.proofImageUrl || null,
+      proofUploadedAt: order.payment?.proofUploadedAt || null,
+      proofNote: order.payment?.proofNote || '',
+    },
+    paymentProof: order.payment?.proofImageUrl
+      ? {
+          imageUrl: order.payment.proofImageUrl,
+          uploadedAt: order.payment.proofUploadedAt || null,
+          note: order.payment.proofNote || '',
+        }
+      : null,
     status: order.status || 'PENDING',
     isDelivered: order.status === 'DELIVERED',
     deliveredAt: order.deliveredAt || (order.status === 'DELIVERED' ? (order.updatedAt || new Date().toISOString()) : null),
@@ -315,8 +332,13 @@ export async function handleAdminOrderAction(orderId, payload = {}) {
     const markResult = markOrderPaid(order, {
       source: 'MANUAL_ADMIN',
       note: markNote,
+      actor: 'admin',
       operator: 'admin',
     })
+
+    const emailDelivery = markResult?.emailPromise
+      ? await markResult.emailPromise.catch(() => ({ customerEmailSent: false, ownerEmailSent: false }))
+      : { customerEmailSent: false, ownerEmailSent: false }
 
     order.adminNote = (order.adminNote ? order.adminNote + ' | ' : '') + `[MARK_PAID] ${markNote}`
     order.updatedAt = new Date().toISOString()
@@ -337,9 +359,10 @@ export async function handleAdminOrderAction(orderId, payload = {}) {
       status: 200,
       data: {
         success: true,
-        message: '✅ Đã xác nhận tiền về thủ công cho đơn hàng!',
+        message: '✅ Đã duyệt thanh toán & gửi email xác nhận đơn hàng đến khách hàng và admin!',
         order: formatted,
         alreadyPaid: markResult.alreadyPaid || false,
+        emailDelivery,
       },
     }
   }

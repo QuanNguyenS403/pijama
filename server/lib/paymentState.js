@@ -6,38 +6,34 @@
  */
 
 import { orderPersistence } from './orderPersistence.js'
-import { releaseVoucher } from './voucherValidator.js'
 import { updateOrderStatusInSheet } from './googleSheets.js'
 import { logSecurityAudit } from './auditLogger.js'
 import { sendOwnerEmail } from './emailOwner.js'
 import { sendCustomerEmail } from './emailCustomer.js'
-import { sendConfirmedEmail } from './emailStatusUpdates.js'
 
 // ==============================================================================
 // 1. CẤU HÌNH & HẰNG SỐ THANH TOÁN (DUY NHẤT - I11)
 // ==============================================================================
-export const PAYMENT_QR_TTL_SECONDS = 600 // 10 phút cố định (không ghi đè qua env)
-export const PAYMENT_DETECTION_GRACE_SECONDS = 600 // 10 phút ân hạn chờ email biến động số dư
-export const PAYMENT_CLAIM_GRACE_SECONDS = 120 // 120 giây ân hạn (legacy)
-export const PAYMENT_CLOCK_TOLERANCE_SECONDS = 60 // 60 giây dung sai đồng hồ ngân hàng
-export const PAYMENT_CLAIM_REVIEW_HOURS = 24 // 24 giờ đối soát đơn cũ
+export const PAYMENT_QR_TTL_SECONDS = 600 // Legacy export compatibility
+export const PAYMENT_DETECTION_GRACE_SECONDS = 600
+export const PAYMENT_CLAIM_GRACE_SECONDS = 120
+export const PAYMENT_CLOCK_TOLERANCE_SECONDS = 60
+export const PAYMENT_CLAIM_REVIEW_HOURS = 24
 
-// Các pha thanh toán chuẩn hoá
+// Các pha thanh toán chuẩn hoá (Không còn hết hạn QR / tự đối soát ngân hàng)
 export const PAYMENT_PHASES = {
   AWAITING: 'AWAITING',
-  RECONCILING: 'RECONCILING',
+  WAITING_CONFIRMATION: 'WAITING_CONFIRMATION',
   PAID: 'PAID',
-  EXPIRED: 'EXPIRED',
   CANCELLED: 'CANCELLED',
 }
 
 /**
  * Xác định pha hiện tại của đơn hàng (Pure function)
  * @param {Object} order - Đơn hàng canonical
- * @param {number} [now=Date.now()] - Timestamp tiêm vào để kiểm thử
- * @returns {'AWAITING' | 'RECONCILING' | 'PAID' | 'EXPIRED' | 'CANCELLED'}
+ * @returns {'AWAITING' | 'WAITING_CONFIRMATION' | 'PAID' | 'CANCELLED'}
  */
-export function getPaymentPhase(order, now = Date.now()) {
+export function getPaymentPhase(order) {
   if (!order) return PAYMENT_PHASES.AWAITING
 
   const paymentStatus = order.payment?.status || order.paymentStatus
@@ -48,40 +44,22 @@ export function getPaymentPhase(order, now = Date.now()) {
     return PAYMENT_PHASES.PAID
   }
 
-  // 2. Nếu đã hết hạn hoặc bị hủy do quá hạn
-  if (paymentStatus === 'EXPIRED_TIMEOUT') {
-    return PAYMENT_PHASES.EXPIRED
-  }
-
+  // 2. Nếu đơn đã bị hủy thủ công
   if (orderStatus === 'CANCELLED') {
-    if (order.cancelReason && order.cancelReason.includes('Hết hạn thanh toán')) {
-      return PAYMENT_PHASES.EXPIRED
-    }
     return PAYMENT_PHASES.CANCELLED
   }
 
-  // 3. Đối với đơn BANK_TRANSFER: kiểm tra TTL và Grace Period
+  // 3. Đối với đơn BANK_TRANSFER: phân biệt đang ở trang quét QR vs đã bấm "Thanh toán" chờ Admin duyệt
   const method = order.payment?.method || order.paymentMethod || 'COD'
   if (method === 'BANK_TRANSFER') {
-    const createdAtMs = order.createdAt ? new Date(order.createdAt).getTime() : now
-    const expiresAt = order.payment?.qrExpiresAt
-      ? new Date(order.payment.qrExpiresAt).getTime()
-      : createdAtMs + PAYMENT_QR_TTL_SECONDS * 1000
-
-    const graceExpiresAt = expiresAt + PAYMENT_DETECTION_GRACE_SECONDS * 1000
-
-    // Trong hạn 10 phút đầu -> AWAITING
-    if (now <= expiresAt) {
-      return PAYMENT_PHASES.AWAITING
+    if (
+      paymentStatus === 'PENDING_ADMIN_CONFIRMATION' ||
+      paymentStatus === 'CUSTOMER_CLAIMED_PAID' ||
+      Boolean(order.payment?.submittedAt)
+    ) {
+      return PAYMENT_PHASES.WAITING_CONFIRMATION
     }
-
-    // Quá 10 phút nhưng còn trong khoảng ân hạn 10 phút đối soát -> RECONCILING
-    if (now > expiresAt && now <= graceExpiresAt) {
-      return PAYMENT_PHASES.RECONCILING
-    }
-
-    // Quá thời gian ân hạn -> EXPIRED
-    return PAYMENT_PHASES.EXPIRED
+    return PAYMENT_PHASES.AWAITING
   }
 
   // 4. Đối với COD hoặc phương thức khác
@@ -131,11 +109,12 @@ export function canAdvanceFulfilment(order) {
 export function markOrderPaid(
   order,
   {
-    source = 'bank-email',
+    source = 'admin',
     txId = '',
     amount = 0,
     bankTime = '',
-    actor = 'system',
+    actor = 'admin',
+    operator = '',
     note = '',
   } = {},
   now = Date.now()
@@ -154,8 +133,11 @@ export function markOrderPaid(
       success: true,
       alreadyPaid: true,
       order,
+      emailPromise: Promise.resolve({ customerEmailSent: false, ownerEmailSent: false, alreadyPaid: true }),
     }
   }
+
+  const effectiveActor = actor || operator || 'admin'
 
   // Cập nhật trạng thái thanh toán chuẩn xác
   order.payment.status = 'PAID'
@@ -164,7 +146,7 @@ export function markOrderPaid(
   order.payment.txId = txId || `TX-${Date.now()}`
   order.payment.paidAmount = amount || order.total
   order.payment.bankTime = bankTime || nowIso
-  order.payment.paidActor = actor
+  order.payment.paidActor = effectiveActor
   order.payment.paidNote = note || ''
   order.payment.isQrInvalidated = true
 
@@ -173,9 +155,7 @@ export function markOrderPaid(
   order.paymentStatus = 'PAID'
   order.updatedAt = nowIso
 
-  // Lưu trữ đơn hàng an toàn (Persistence)
-  // Loại bỏ hoàn toàn đơn hàng khỏi hệ thống lưu trữ backend khi hết hạn QR (Yêu cầu người dùng)
-  orderPersistence.delete(orderId)
+  orderPersistence.set(orderId, order)
 
   // Ghi nhật ký bảo mật (I7)
   logSecurityAudit({
@@ -187,32 +167,73 @@ export function markOrderPaid(
       txId: order.payment.txId,
       amount: order.payment.paidAmount,
       bankTime: order.payment.bankTime,
-      actor,
+      actor: effectiveActor,
       note,
       paidAt: nowIso,
     },
   })
 
-  // I10: Gửi email xác nhận đúng MỘT lần duy nhất
+  // Chuẩn hóa bản ghi an toàn để template email không bao giờ thiếu trường
+  const safeEmailOrder = {
+    ...order,
+    orderId,
+    orderDateVN: order.orderDateVN || new Date(order.createdAt || now).toLocaleString('vi-VN', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+      timeZone: 'Asia/Ho_Chi_Minh',
+    }),
+    items: Array.isArray(order.items) ? order.items : [],
+    customer: {
+      ...(order.customer || {}),
+      fullName: order.customer?.fullName || order.customerName || 'Quý khách',
+      phone: order.customer?.phone || order.customerPhone || '',
+      email: order.customer?.email || order.customerEmail || '',
+    },
+    shipping: {
+      ...(order.shipping || {}),
+      fullAddress: order.shipping?.fullAddress || order.shippingAddress || 'Chưa cung cấp',
+    },
+    payment: {
+      ...(order.payment || {}),
+      methodLabel: order.payment?.methodLabel || 'Chuyển khoản VietQR',
+    },
+  }
+
+  // I10: Gửi ngay lập tức email xác nhận đến CẢ khách hàng và admin đúng MỘT lần duy nhất
   if (!order.emails) order.emails = {}
+  let emailPromise = Promise.resolve({ customerEmailSent: false, ownerEmailSent: false })
+
   if (!order.emails.confirmationSentAt) {
     order.emails.confirmationSentAt = nowIso
     orderPersistence.set(orderId, order)
 
-    Promise.allSettled([
-      sendConfirmedEmail(order),
-      sendCustomerEmail(order),
-      sendOwnerEmail({
-        ...order,
-        notes: `[TIỀN VỀ VIETQR] Nguồn: ${source} | GD: ${order.payment.txId} | Số tiền: ${order.payment.paidAmount}đ ${note ? '| ' + note : ''}`,
-      }),
-      updateOrderStatusInSheet(
-        orderId,
-        'CONFIRMED',
-        `[PAID_${source.toUpperCase()}] Số tiền: ${order.payment.paidAmount}đ | Mã GD: ${order.payment.txId}`
-      ),
-    ]).catch((err) => {
-      console.warn('⚠️ Lỗi gửi email hoặc cập nhật Sheet khi markOrderPaid:', err.message)
+    const customerTask = safeEmailOrder.customer.email
+      ? sendCustomerEmail(safeEmailOrder)
+      : Promise.resolve({ skipped: true })
+
+    const ownerTask = sendOwnerEmail({
+      ...safeEmailOrder,
+      notes: `[ADMIN ĐÃ DUYỆT THANH TOÁN QR] Nguồn: ${source} | GD: ${order.payment.txId} | Số tiền: ${order.payment.paidAmount}đ${note ? ' | ' + note : ''}`,
+    })
+
+    const sheetTask = updateOrderStatusInSheet(
+      orderId,
+      'CONFIRMED',
+      `[PAID_${String(source).toUpperCase()}] Số tiền: ${order.payment.paidAmount}đ | Mã GD: ${order.payment.txId}`
+    )
+
+    emailPromise = Promise.allSettled([customerTask, ownerTask, sheetTask]).then((results) => {
+      const [custRes, ownerRes] = results
+      if (custRes.status === 'rejected') {
+        console.warn('⚠️ Lỗi gửi email xác nhận cho khách hàng:', custRes.reason?.message || custRes.reason)
+      }
+      if (ownerRes.status === 'rejected') {
+        console.warn('⚠️ Lỗi gửi email xác nhận cho admin:', ownerRes.reason?.message || ownerRes.reason)
+      }
+      return {
+        customerEmailSent: custRes.status === 'fulfilled' && !custRes.value?.skipped,
+        ownerEmailSent: ownerRes.status === 'fulfilled',
+      }
     })
   }
 
@@ -220,119 +241,18 @@ export function markOrderPaid(
     success: true,
     alreadyPaid: false,
     order,
+    emailPromise,
   }
 }
 
 /**
- * Tự động hủy đơn hàng quá hạn thanh toán VietQR (I5, I8, I9)
- * Chỉ hủy khi đã vượt qua cả thời gian hiệu lực QR lẫn thời gian ân hạn đối soát (Grace Period)
- * Idempotent, không có await ở giữa lúc đọc và ghi để tránh race condition
- * @param {string} orderId
- * @param {number} [now=Date.now()]
- * @returns {boolean} True nếu đơn vừa được xử lý hết hạn thành công
+ * Cơ chế hết hạn QR tự động đã được loại bỏ theo quy trình duyệt thủ công.
+ * Giữ lại chữ ký hàm trả về false để tương thích an toàn.
  */
-export function expireOrderIfDue(orderId, now = Date.now()) {
-  if (!orderId) return false
-  const order = orderPersistence.get(orderId)
-  if (!order) return false
-
-  const method = order.payment?.method || order.paymentMethod || 'COD'
-  if (method !== 'BANK_TRANSFER') return false
-
-  // I3: Tuyệt đối không hủy đơn đã PAID
-  if (order.payment?.status === 'PAID') return false
-
-  // Đã hủy trước đó
-  if (order.status === 'CANCELLED' || order.payment?.status === 'EXPIRED_TIMEOUT') return false
-
-  const createdAtMs = order.createdAt ? new Date(order.createdAt).getTime() : now
-  const expiresAt = order.payment?.qrExpiresAt
-    ? new Date(order.payment.qrExpiresAt).getTime()
-    : createdAtMs + PAYMENT_QR_TTL_SECONDS * 1000
-
-  const graceExpiresAt = expiresAt + PAYMENT_DETECTION_GRACE_SECONDS * 1000
-
-  // Chưa hết thời gian ân hạn đối soát -> chưa được hủy đơn
-  if (now <= graceExpiresAt) {
-    return false
-  }
-
-  // Quá thời gian ân hạn -> HỦY ĐƠN VÀ ĐÁNH DẤU HẾT HẠN
-  const nowIso = new Date(now).toISOString()
-  order.status = 'CANCELLED'
-  order.cancelReason = `Hết hạn thanh toán VietQR (${Math.round(PAYMENT_QR_TTL_SECONDS / 60)} phút + ${Math.round(PAYMENT_DETECTION_GRACE_SECONDS / 60)} phút ân hạn đối soát)`
-  if (!order.payment) order.payment = {}
-  order.payment.status = 'EXPIRED_TIMEOUT'
-  order.payment.isQrInvalidated = true
-  order.paymentStatus = 'EXPIRED_TIMEOUT'
-  order.updatedAt = nowIso
-
-  orderPersistence.set(orderId, order)
-
-  // Nhả voucher nếu có (I8)
-  if (order.voucherCode) {
-    try {
-      releaseVoucher(order.voucherCode, orderId)
-    } catch (err) {
-      console.warn('⚠️ [EXPIRE VOUCHER ERROR]', err.message)
-    }
-  }
-
-  // Cập nhật Google Sheets (Chỉ áp dụng đơn thực tế, bỏ qua đơn test)
-  try {
-    const idStr = String(orderId).trim()
-    if (
-      !idStr.startsWith('QNS-ADV-') &&
-      !idStr.startsWith('TEST-') &&
-      !idStr.startsWith('QNS-VTTEST-') &&
-      !idStr.includes('-TEST-')
-    ) {
-      updateOrderStatusInSheet(
-        orderId,
-        'CANCELLED',
-        `Hết hạn thanh toán VietQR quá ${Math.round((PAYMENT_QR_TTL_SECONDS + PAYMENT_DETECTION_GRACE_SECONDS) / 60)} phút`
-      ).catch(() => {})
-    }
-  } catch {}
-
-  // Ghi nhật ký bảo mật (I7)
-  logSecurityAudit({
-    action: 'PAYMENT_STATE_EXPIRED',
-    status: 'SUCCESS',
-    details: {
-      orderId,
-      reason: 'EXPIRED_TIMEOUT',
-      expiredAt: nowIso,
-    },
-  })
-
-  return true
+export function expireOrderIfDue() {
+  return false
 }
 
-/**
- * Quét toàn bộ hệ thống đơn hàng để hủy các đơn quá hạn (WP5)
- * @param {number} [now=Date.now()]
- * @returns {{ expiredCount: number }}
- */
-export function sweepExpiredOrders(now = Date.now()) {
-  const allOrders = orderPersistence.getAll()
-  let expiredCount = 0
-
-  for (const order of allOrders) {
-    const orderId = order.orderId || order.id
-    if (!orderId) continue
-
-    const method = order.payment?.method || order.paymentMethod || 'COD'
-    if (method !== 'BANK_TRANSFER') continue
-
-    // Chỉ quét các đơn chưa hoàn tất thanh toán
-    if (order.status === 'AWAITING_PAYMENT' || order.payment?.status === 'AWAITING_PAYMENT') {
-      const didExpire = expireOrderIfDue(orderId, now)
-      if (didExpire) {
-        expiredCount++
-      }
-    }
-  }
-
-  return { expiredCount }
+export function sweepExpiredOrders() {
+  return { expiredCount: 0 }
 }

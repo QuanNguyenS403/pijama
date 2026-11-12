@@ -168,7 +168,7 @@ export async function generateAiNapasQR({
   // Tự động hóa AI chuẩn hóa nội dung chuyển khoản: QNS [MÃ ĐƠN HÀNG]
   let cleanDesc = description || ''
   if (!cleanDesc && orderId) {
-    cleanDesc = `QNS ${orderId}`
+    cleanDesc = orderId.startsWith('QNS') ? orderId : `QNS ${orderId}`
   }
   if (!cleanDesc) {
     cleanDesc = `QNS ${Date.now().toString().slice(-6)}`
@@ -188,10 +188,10 @@ export async function generateAiNapasQR({
   try {
     qrDataUrl = await QRCode.toDataURL(emvcoPayload, {
       errorCorrectionLevel: 'M',
-      margin: 2,
-      width: 480,
+      margin: 1,
+      width: 600,
       color: {
-        dark: '#0f172a', // Luxury Navy Dark Tone
+        dark: '#000000', // Sắc nét chuẩn mã QR đen trắng
         light: '#ffffff',
       },
     })
@@ -208,10 +208,11 @@ export async function generateAiNapasQR({
     console.error('⚠️ [AI NAPAS QR] Lỗi sinh ảnh QR nội bộ:', err.message)
   }
 
-  // 3. Link ảnh CDN VietQR dự phòng
+  // 3. Link ảnh CDN VietQR dự phòng (qr_only: thuần mã QR, không logo VietQR/Napas và không kèm chữ)
   const encodedDesc = encodeURIComponent(cleanDesc)
   const encodedName = encodeURIComponent(accountName)
-  const vietQrUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.png?amount=${sanitizedAmount}&addInfo=${encodedDesc}&accountName=${encodedName}`
+  const cleanBankCode = String(bankCode || 'VCB').toLowerCase()
+  const vietQrUrl = `https://img.vietqr.io/image/${cleanBankCode}-${accountNumber}-qr_only.png?amount=${sanitizedAmount}&addInfo=${encodedDesc}&accountName=${encodedName}`
 
   return {
     success: true,

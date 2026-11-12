@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams, useLocation } from 'react-router-dom'
+import { Link, useSearchParams, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   CheckCircle2,
@@ -22,6 +22,7 @@ import ViettelPostTracker from '../components/shipping/ViettelPostTracker'
 export default function OrderSuccessPage() {
   const [searchParams] = useSearchParams()
   const location = useLocation()
+  const navigate = useNavigate()
   const orderId = searchParams.get('orderId') || 'QNS-' + Date.now().toString().slice(-6)
 
   // Lấy dữ liệu order từ location state, sessionStorage hoặc kho lưu trữ bảo vệ
@@ -168,9 +169,26 @@ export default function OrderSuccessPage() {
   const isBankTransfer = order?.payment?.method === 'BANK_TRANSFER'
   const effectivePhase = serverPhase || (
     order?.payment?.status === 'PAID' ? 'PAID' :
-    order?.payment?.status === 'EXPIRED_TIMEOUT' || order?.status === 'CANCELLED' ? 'EXPIRED' :
+    order?.status === 'CANCELLED' ? 'CANCELLED' :
+    (order?.payment?.status === 'PENDING_ADMIN_CONFIRMATION' || order?.payment?.status === 'CUSTOMER_CLAIMED_PAID' || order?.payment?.submittedAt) ? 'WAITING_CONFIRMATION' :
     'AWAITING'
   )
+
+  // Nếu là đơn thanh toán QR chưa được Admin duyệt, chuyển hướng về đúng bước hiện tại
+  useEffect(() => {
+    if (!order || !isBankTransfer) return
+    if (effectivePhase === 'WAITING_CONFIRMATION') {
+      navigate(`/cho-xac-nhan-thanh-toan?orderId=${encodeURIComponent(orderId)}`, {
+        state: { order },
+        replace: true,
+      })
+    } else if (effectivePhase === 'AWAITING') {
+      navigate(`/thanh-toan-chuyen-khoan?orderId=${encodeURIComponent(orderId)}`, {
+        state: { order },
+        replace: true,
+      })
+    }
+  }, [order, isBankTransfer, effectivePhase, orderId, navigate])
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#1A1614]">
@@ -310,23 +328,20 @@ export default function OrderSuccessPage() {
                         </p>
                       )}
                     </div>
-                  ) : isBankTransfer && effectivePhase === 'EXPIRED' ? (
-                    <div className="bg-[#FFF5F5] border border-[#EF9A9A] p-4 rounded-[4px] text-xs text-[#C62828] space-y-1.5 text-left shadow-xs">
-                      <p className="font-bold flex items-center gap-1.5 text-sm">
-                        <span>⚠️</span> Mã QR thanh toán đã hết hạn hiệu lực
-                      </p>
-                      <p className="text-[#4A3F38] font-normal leading-relaxed">
-                        Thời hạn chuyển khoản cho đơn hàng <strong>#{order.orderId}</strong> đã kết thúc. Vui lòng đặt lại đơn mới hoặc liên hệ hotline 0973 486 218 để được hỗ trợ.
-                      </p>
-                    </div>
                   ) : isBankTransfer && effectivePhase !== 'PAID' ? (
-                    <div className="bg-[#FFF8E1] border border-[#FFE082] p-4 rounded-[4px] text-xs text-[#B45309] space-y-1.5 text-left shadow-xs">
+                    <div className="bg-[#FFF8E1] border border-[#FFE082] p-4 rounded-[4px] text-xs text-[#B45309] space-y-2 text-left shadow-xs">
                       <p className="font-bold flex items-center gap-1.5 text-sm">
-                        <span>⏳</span> Đơn hàng đang chờ quét mã VietQR thanh toán
+                        <span>⏳</span> Đơn hàng chuyển khoản QR đang chờ xác nhận
                       </p>
                       <p className="text-[#4A3F38] font-normal leading-relaxed">
-                        Đơn hàng chưa hoàn tất thanh toán. Vui lòng quét mã QR chuyển khoản để đơn hàng được tự động xác nhận.
+                        Vui lòng hoàn tất quét mã QR, tải lên ảnh chuyển khoản thành công và bấm Thanh toán để admin xác nhận đơn hàng.
                       </p>
+                      <Link
+                        to={`/thanh-toan-chuyen-khoan?orderId=${encodeURIComponent(orderId)}`}
+                        className="inline-block bg-[#631521] text-white text-xs font-bold px-4 py-2 rounded-[2px]"
+                      >
+                        Đi tới trang quét mã QR
+                      </Link>
                     </div>
                   ) : (
                     <p className="text-xs sm:text-sm font-normal text-[#4A3F38] leading-relaxed">
@@ -375,7 +390,7 @@ export default function OrderSuccessPage() {
                   <div className="flex items-center justify-between border-b border-[#E8DFD5] pb-3 flex-wrap gap-2">
                     <div>
                       <span className="font-sans text-xs font-bold uppercase tracking-wider text-[#631521]">
-                        Tóm Tắt Đơn Hàng
+                        Xác Nhận Đơn Hàng
                       </span>
                       <span className="text-xs font-mono text-[#8C7E74] ml-3">
                         {order.orderDateVN || 'Vừa xong'}

@@ -83,14 +83,17 @@ export default function LoyaltyCheckoutPerks({
     fetchPreview()
   }, [subtotal, paymentMethod, member?.id, appliedVoucher?.code, isMixedPreOrder, deliveryOption])
 
-  const perks = preview?.benefitsList || preview?.perks || []
+  const perks = (preview?.benefitsList || preview?.perks || []).filter(
+    (p) => p.id !== 'shipping_perk' && p.type !== 'SHIPPING'
+  )
+  const hasBodyContent = perks.length > 0 || Boolean(member)
   const rewardPoints = member?.rewardPoints ?? preview?.rewardPoints ?? preview?.pricingPreview?.pointsBalance ?? 0
   const isPointVoucherApplied = appliedVoucher?.source === 'points' || appliedVoucher?.discountAmount === 50000
 
   return (
-    <div className="bg-[#FAF8F5] p-4 sm:p-5 rounded-[3px] border border-[#E8DFD5] space-y-4">
+    <div className={`bg-[#FAF8F5] p-4 sm:p-5 rounded-[3px] border border-[#E8DFD5] ${hasBodyContent ? 'space-y-4' : ''}`}>
       {/* Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-[#E8DFD5]">
+      <div className={`flex items-center justify-between ${hasBodyContent ? 'pb-3 border-b border-[#E8DFD5]' : ''}`}>
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-[#D4AF37]" />
           <span className="font-serif text-xs font-bold text-[#631521] uppercase tracking-wider">
@@ -112,40 +115,42 @@ export default function LoyaltyCheckoutPerks({
       </div>
 
       {/* Perks List: Highlight applicable, grey out inapplicable with clear reasons */}
-      <div className="space-y-2">
-        {perks.map((p) => (
-          <div
-            key={p.code}
-            className={`p-2.5 rounded-[2px] text-xs flex items-start justify-between gap-2 border transition-all ${
-              p.applicable
-                ? 'bg-white border-[#C8E6C9] text-[#2E7D32]'
-                : 'bg-[#F9FAFB] border-[#E5E7EB] text-[#8C7E74] opacity-80'
-            }`}
-          >
-            <div className="flex items-start gap-2">
-              <span className="mt-0.5">
-                {p.applicable ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2E7D32] shrink-0" />
-                ) : (
-                  <span className="w-3.5 h-3.5 rounded-full border border-[#D1D5DB] inline-block shrink-0" />
-                )}
-              </span>
-              <div>
-                <p className={`font-semibold ${p.applicable ? 'text-[#1A1614]' : 'text-[#6B7280]'}`}>
-                  {p.title}
-                </p>
-                <p className="text-[11px] text-[#8C7E74] mt-0.5">{p.message}</p>
+      {perks.length > 0 && (
+        <div className="space-y-2">
+          {perks.map((p, idx) => (
+            <div
+              key={p.id || p.code || idx}
+              className={`p-2.5 rounded-[2px] text-xs flex items-start justify-between gap-2 border transition-all ${
+                p.applicable
+                  ? 'bg-white border-[#C8E6C9] text-[#2E7D32]'
+                  : 'bg-[#F9FAFB] border-[#E5E7EB] text-[#8C7E74] opacity-80'
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                <span className="mt-0.5">
+                  {p.applicable ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#2E7D32] shrink-0" />
+                  ) : (
+                    <span className="w-3.5 h-3.5 rounded-full border border-[#D1D5DB] inline-block shrink-0" />
+                  )}
+                </span>
+                <div>
+                  <p className={`font-semibold ${p.applicable ? 'text-[#1A1614]' : 'text-[#6B7280]'}`}>
+                    {p.title}
+                  </p>
+                  <p className="text-[11px] text-[#8C7E74] mt-0.5">{p.message}</p>
+                </div>
               </div>
-            </div>
 
-            {p.applicable && (p.amount ?? p.discountAmount ?? 0) > 0 && (
-              <span className="font-serif font-bold text-[#2E7D32] shrink-0">
-                -{formatVND(p.amount ?? p.discountAmount)}
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
+              {p.applicable && (p.amount ?? p.discountAmount ?? 0) > 0 && (
+                <span className="font-serif font-bold text-[#2E7D32] shrink-0">
+                  -{formatVND(p.amount ?? p.discountAmount)}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Points Redemption Action (10 Points = 50k) */}
       {member && (
@@ -183,15 +188,6 @@ export default function LoyaltyCheckoutPerks({
               </span>
             </button>
           )}
-        </div>
-      )}
-
-      {/* Guest Invitation */}
-      {!member && (
-        <div className="pt-2 border-t border-[#E8DFD5] text-center">
-          <p className="text-[11px] text-[#8C7E74]">
-            Bạn là hội viên? Đơn hàng đặt với SĐT đã đăng ký sẽ tự động tích điểm sau khi giao hàng thành công.
-          </p>
         </div>
       )}
 

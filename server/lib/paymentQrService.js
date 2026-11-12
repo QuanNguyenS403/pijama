@@ -6,7 +6,7 @@
  */
 
 import { orderPersistence } from './orderPersistence.js'
-import { getPaymentPhase, PAYMENT_QR_TTL_SECONDS } from './paymentState.js'
+import { getPaymentPhase } from './paymentState.js'
 import { generateAiNapasQR } from './aiNapasQrService.js'
 
 /**
@@ -52,48 +52,15 @@ export async function getPaymentQrData(orderId, now = Date.now()) {
     }
   }
 
-  // 3. Nếu đơn hàng đã hết hạn -> 410 Gone
-  if (phase === 'EXPIRED') {
-    return {
-      ok: false,
-      status: 410,
-      code: 'QR_EXPIRED',
-      error: 'Mã QR thanh toán cho đơn hàng này đã hết hạn hiệu lực.',
-    }
-  }
-
-  const createdAtMs = order.createdAt ? new Date(order.createdAt).getTime() : now
-  const expiresAt = order.payment?.qrExpiresAt
-    ? new Date(order.payment.qrExpiresAt).getTime()
-    : createdAtMs + PAYMENT_QR_TTL_SECONDS * 1000
-
-  // 4. Nếu đang trong giai đoạn đối soát (RECONCILING): ẩn QR, báo trạng thái
-  if (phase === 'RECONCILING') {
-    return {
-      ok: true,
-      status: 200,
-      data: {
-        success: true,
-        orderId,
-        phase: 'RECONCILING',
-        isQrValid: false,
-        total: order.total,
-        expiresAt,
-        serverNow: now,
-        message: 'Mã QR đã hết hạn hiệu lực. Hệ thống đang kiểm tra sao kê ngân hàng đối soát giao dịch.',
-      },
-    }
-  }
-
-  // 5. Pha AWAITING: Cung cấp mã QR an toàn
+  // 3. Cung cấp mã QR không giới hạn thời gian quét mã (chờ khách tải ảnh & bấm Thanh toán)
   // Số tiền và nội dung LẤY TỪ SERVER, KHÔNG TIN DỮ LIỆU CLIENT
   const canonicalBankCode = process.env.BANK_CODE || 'VCB'
   const canonicalAccountNumber = process.env.BANK_ACCOUNT_NUMBER || '1050773506'
   const canonicalAccountName = process.env.BANK_ACCOUNT_NAME || 'NGUYEN DUC QUAN'
-  const description = `QNS ${orderId}`
+  const description = orderId.startsWith('QNS') ? orderId : `QNS ${orderId}`
 
   let qrDataUrl = null
-  let vietQrUrl = `https://img.vietqr.io/image/${canonicalBankCode.toLowerCase()}-${canonicalAccountNumber}-compact2.png?amount=${order.total}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(canonicalAccountName)}`
+  let vietQrUrl = `https://img.vietqr.io/image/${canonicalBankCode.toLowerCase()}-${canonicalAccountNumber}-qr_only.png?amount=${order.total}&addInfo=${encodeURIComponent(description)}&accountName=${encodeURIComponent(canonicalAccountName)}`
 
   try {
     const aiQr = await generateAiNapasQR({
@@ -125,9 +92,8 @@ export async function getPaymentQrData(orderId, now = Date.now()) {
       accountName: canonicalAccountName,
       vietQrUrl,
       qrDataUrl,
-      phase: 'AWAITING',
+      phase,
       isQrValid: true,
-      expiresAt,
       serverNow: now,
     },
   }

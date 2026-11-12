@@ -17,6 +17,12 @@ import { logSecurityAudit } from './lib/auditLogger.js'
 import { registerAuthEndpoints } from './lib/authEndpoints.js'
 import { registerReviewEndpoints } from './lib/reviewEndpoints.js'
 import { registerLoyaltyEndpoints, resolveLoyaltyMember } from './lib/loyaltyEndpoints.js'
+import {
+  uploadPaymentProofMiddleware,
+  handleUploadPaymentProof,
+  handleGetPaymentProof,
+  handleSubmitQrPayment,
+} from './lib/paymentProofService.js'
 import { verifyTrackingToken } from './lib/orderTokenService.js'
 import { normalizeVietnamesePhone } from './lib/smsService.js'
 import { customerSessionMiddleware } from './lib/customerSessionMiddleware.js'
@@ -293,84 +299,13 @@ app.get('/api/payment/napas-qr', (req, res) => {
   })
 })
 
-// ── 1c. API Tiếp Nhận Email Biến Động Số Dư (Gmail + Apps Script Bridge - WP3) ──
-app.post('/api/payment/bank-email', async (req, res) => {
-  try {
-    const { verifyBridgeHmac } = await import('./lib/gmailBridgeAuth.js')
-    const auth = verifyBridgeHmac(req)
-    if (!auth.valid) {
-      return res.status(auth.status || 401).json({ success: false, error: auth.error })
-    }
-
-    const { recordBridgeHeartbeat } = await import('./lib/bridgeHealth.js')
-    recordBridgeHeartbeat()
-
-    const { parseBankEmail } = await import('./lib/bankEmailParser.js')
-    const { settleBankTransaction } = await import('./lib/paymentTransactions.js')
-
-    const { runId = `run_${Date.now()}`, sentAt = new Date().toISOString(), emails = [] } = req.body || {}
-
-    if (!Array.isArray(emails)) {
-      return res.status(400).json({ success: false, error: 'Trường emails phải là một mảng hợp lệ.' })
-    }
-
-    // P2-API-6: Giới hạn batch tối đa 50 email mỗi lần gửi để chống quá tải
-    if (emails.length > 50) {
-      return res.status(400).json({
-        success: false,
-        error: 'Kích thước lô emails vượt quá giới hạn tối đa (tối đa 50 phần tử/lần).',
-      })
-    }
-
-    // Heartbeat từ Apps Script (Lô rỗng)
-    if (emails.length === 0) {
-      return res.status(200).json({
-        success: true,
-        message: 'Heartbeat received successfully',
-        runId,
-        processed: 0,
-        settled: 0,
-      })
-    }
-
-    let settledCount = 0
-    const results = []
-
-    for (const emailItem of emails) {
-      try {
-        const parsed = parseBankEmail(emailItem)
-        const settleResult = settleBankTransaction({
-          messageId: emailItem.messageId,
-          amount: parsed.amount,
-          content: parsed.content,
-          bankTime: parsed.bankTime,
-          bankRef: parsed.bankRef,
-          accountLast4: parsed.accountLast4,
-          sender: emailItem.from,
-          trust: parsed.trust,
-          matchedOrderId: parsed.matchedOrderId,
-          rawExtracted: parsed,
-          receivedAt: emailItem.internalDate ? new Date(Number(emailItem.internalDate) || Date.now()).toISOString() : sentAt,
-        })
-        if (settleResult.paid) settledCount++
-        results.push({ messageId: emailItem.messageId, outcome: settleResult.outcome })
-      } catch (itemErr) {
-        console.error(`Lỗi xử lý email ${emailItem.messageId}:`, itemErr.message)
-        results.push({ messageId: emailItem.messageId, outcome: 'ERROR', error: safeErrorMessage(itemErr, 'Lỗi phân tích email') })
-      }
-    }
-
-    return res.status(200).json({
-      success: true,
-      runId,
-      processed: emails.length,
-      settled: settledCount,
-      results,
-    })
-  } catch (err) {
-    console.error('Lỗi tiếp nhận email biến động số dư:', err)
-    return res.status(500).json({ success: false, error: safeErrorMessage(err, 'Lỗi tiếp nhận giao dịch email') })
-  }
+// ── 1c. API Đối Soát Email Ngân Hàng Đã Ngừng Hoạt Động (Thay bằng Admin duyệt thủ công) ──
+app.post('/api/payment/bank-email', (req, res) => {
+  return res.status(410).json({
+    success: false,
+    code: 'BANK_RECONCILIATION_DISCONTINUED',
+    error: 'Hệ thống đối soát biến động số dư qua email ngân hàng đã ngừng hoạt động. Việc xác nhận thanh toán QR được thực hiện thủ công bởi Admin.',
+  })
 })
 
 // ── 1d. API Tiếp Nhận Báo Cáo Bounce Nội Bộ (Apps Script Bounce Reader -> Suppression List - WP-3.3) ──
@@ -513,6 +448,11 @@ app.get('/api/orders/status', (req, res) => {
   return res.json(result)
 })
 
+// ── 3b. API Tải Lên Ảnh Chứng Từ & Gửi Yêu Cầu Xác Nhận Thanh Toán QR ───────────
+app.post('/api/orders/payment-proof', uploadPaymentProofMiddleware, handleUploadPaymentProof)
+app.get('/api/orders/payment-proof', lookupLimiter, handleGetPaymentProof)
+app.post('/api/orders/submit-qr-payment', lookupLimiter, handleSubmitQrPayment)
+
 // ── 4. API Xác Nhận Thanh Toán Thủ Công Có Lý Do (Admin Only - G-13 / WP9) ───
 app.post('/api/payment/confirm', requireAdminAuth, submitOrderLimiter, async (req, res) => {
   const { orderId, reason, note } = req.body || {}
@@ -533,11 +473,18 @@ app.post('/api/payment/confirm', requireAdminAuth, submitOrderLimiter, async (re
   }
 
   const { markOrderPaid } = await import('./lib/paymentState.js')
-  markOrderPaid(order, {
+  const markResult = markOrderPaid(order, {
     source: 'admin',
     actor: 'admin_api',
     note: adminNote,
   })
+  const emailDelivery = markResult?.emailPromise
+    ? await markResult.emailPromise.catch(() => ({ customerEmailSent: false, ownerEmailSent: false }))
+    : { customerEmailSent: false, ownerEmailSent: false }
+
+  const { formatAdminOrder } = await import('./lib/adminOrdersHandler.js')
+  const { broadcastOrderUpdate } = await import('./lib/orderEvents.js')
+  broadcastOrderUpdate(formatAdminOrder(order))
 
   logSecurityAudit({
     userId: 'admin',
@@ -545,7 +492,7 @@ app.post('/api/payment/confirm', requireAdminAuth, submitOrderLimiter, async (re
     status: 'SUCCESS',
     ip: req.ip,
     userAgent: req.headers['user-agent'],
-    details: { orderId, note: adminNote },
+    details: { orderId, note: adminNote, emailDelivery },
   })
 
   return res.status(200).json({
@@ -554,6 +501,7 @@ app.post('/api/payment/confirm', requireAdminAuth, submitOrderLimiter, async (re
     orderId,
     status: 'CONFIRMED',
     paymentStatus: 'PAID',
+    emailDelivery,
   })
 })
 
@@ -1428,23 +1376,6 @@ if (process.env.NO_AUTO_LISTEN !== 'true') {
 
     await Promise.allSettled(initTasks)
     isServerReady = true
-
-    // ── Khởi động Background Job quét đơn hàng quá hạn thanh toán VietQR (WP4) ──
-    if (process.env.NODE_ENV !== 'test') {
-      try {
-        const { sweepExpiredOrders } = await import('./lib/paymentState.js')
-        const { expiredCount } = sweepExpiredOrders()
-        if (expiredCount > 0) {
-          console.log(`🧹 [PAYMENT CLEANUP] Đã tự động dọn dẹp ${expiredCount} đơn hàng chuyển khoản quá hạn lúc khởi động.`)
-        }
-        const expiryInterval = setInterval(() => {
-          try { sweepExpiredOrders() } catch (err) { console.error('Lỗi quét đơn hết hạn:', err.message) }
-        }, 30000)
-        if (expiryInterval.unref) expiryInterval.unref()
-      } catch (jobErr) {
-        console.warn('Lỗi khởi động Payment Expiry Job:', jobErr.message)
-      }
-    }
 
     // ── Khởi động tiến trình tự động đồng bộ hành trình Viettel Post định kỳ (mỗi 2 phút) ──
     const VIETTEL_SYNC_INTERVAL_MS = 2 * 60 * 1000

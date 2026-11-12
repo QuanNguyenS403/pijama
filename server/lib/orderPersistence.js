@@ -71,6 +71,8 @@ export async function syncOrderToSupabase(order, options = {}) {
         voucherDiscount: Number(order.voucherDiscount ?? 0),
         bankTransferDiscount: Number(order.bankTransferDiscount ?? 0),
         hasPreOrder: Boolean(order.hasPreOrder),
+        paymentProofUrl: order.payment?.proofImageUrl || null,
+        paymentProofUploadedAt: order.payment?.proofUploadedAt || null,
       },
       updated_at: new Date().toISOString(),
     }

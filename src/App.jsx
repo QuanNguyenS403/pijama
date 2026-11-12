@@ -10,6 +10,7 @@ const ProductDetailPage = lazy(() => import('./pages/ProductDetailPage'))
 const CartPage = lazy(() => import('./pages/CartPage'))
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'))
 const BankTransferPaymentPage = lazy(() => import('./pages/BankTransferPaymentPage'))
+const QrPaymentWaitingPage = lazy(() => import('./pages/QrPaymentWaitingPage'))
 const OrderSuccessPage = lazy(() => import('./pages/OrderSuccessPage'))
 const AdminOrdersPage = lazy(() => import('./pages/admin/AdminOrdersPage'))
 const AdminBroadcastPage = lazy(() => import('./pages/admin/AdminBroadcastPage'))
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/gio-hang" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/thanh-toan-chuyen-khoan" element={<BankTransferPaymentPage />} />
+          <Route path="/cho-xac-nhan-thanh-toan" element={<QrPaymentWaitingPage />} />
           <Route path="/dat-hang-thanh-cong" element={<OrderSuccessPage />} />
           <Route path="/admin" element={<Navigate to="/admin/orders" replace />} />
           <Route path="/admin/login" element={<Navigate to="/admin/orders" replace />} />

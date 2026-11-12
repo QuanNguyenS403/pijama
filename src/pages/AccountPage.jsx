@@ -1485,12 +1485,10 @@ export default function AccountPage() {
                                 ? 'Đang vận chuyển'
                                 : ord.status === 'CANCELLED'
                                 ? 'Đã hủy'
-                                : ord.paymentStatus === 'CUSTOMER_CLAIMED_PAID' || ord.payment?.status === 'CUSTOMER_CLAIMED_PAID'
-                                ? 'Đã báo CK — chờ đối soát'
-                                : ord.paymentStatus === 'EXPIRED_TIMEOUT' || ord.payment?.status === 'EXPIRED_TIMEOUT'
-                                ? 'Hết hạn thanh toán'
+                                : (ord.paymentStatus === 'PENDING_ADMIN_CONFIRMATION' || ord.payment?.status === 'PENDING_ADMIN_CONFIRMATION' || ord.paymentStatus === 'CUSTOMER_CLAIMED_PAID' || ord.payment?.status === 'CUSTOMER_CLAIMED_PAID' || Boolean(ord.payment?.submittedAt)) && ord.paymentStatus !== 'PAID' && ord.payment?.status !== 'PAID'
+                                ? 'Chờ admin xác nhận thanh toán'
                                 : ord.status === 'AWAITING_PAYMENT'
-                                ? 'Chờ thanh toán'
+                                ? 'Chờ thanh toán QR'
                                 : 'Đang xử lý'}
                             </span>
                           </div>
@@ -1529,13 +1527,40 @@ export default function AccountPage() {
                           </div>
                         )}
 
-                        <div className="pt-2 flex justify-between items-center border-t border-[#E8DFD5] text-xs">
+                        <div className="pt-2 flex justify-between items-center border-t border-[#E8DFD5] text-xs flex-wrap gap-2">
                           <span className="text-[#8C7E74]">
-                            Phương thức: {ord.paymentMethod === 'BANK_TRANSFER' ? 'VietQR (Chuyển khoản)' : 'COD (Tiền mặt)'}
+                            Phương thức: {(ord.paymentMethod || ord.payment?.method) === 'BANK_TRANSFER' ? 'VietQR (Chuyển khoản)' : 'COD (Tiền mặt)'}
                           </span>
-                          <span className="font-serif text-base font-bold text-[#631521]">
-                            Tổng: {formatVND(ord.total)}
-                          </span>
+                          <div className="flex items-center gap-3">
+                            {(ord.paymentMethod === 'BANK_TRANSFER' || ord.payment?.method === 'BANK_TRANSFER') &&
+                              ord.paymentStatus !== 'PAID' &&
+                              ord.payment?.status !== 'PAID' &&
+                              ord.status !== 'CANCELLED' && (
+                                <Link
+                                  to={
+                                    ord.paymentStatus === 'PENDING_ADMIN_CONFIRMATION' ||
+                                    ord.payment?.status === 'PENDING_ADMIN_CONFIRMATION' ||
+                                    ord.paymentStatus === 'CUSTOMER_CLAIMED_PAID' ||
+                                    ord.payment?.status === 'CUSTOMER_CLAIMED_PAID' ||
+                                    Boolean(ord.payment?.submittedAt)
+                                      ? `/cho-xac-nhan-thanh-toan?orderId=${encodeURIComponent(ord.orderId)}`
+                                      : `/thanh-toan-chuyen-khoan?orderId=${encodeURIComponent(ord.orderId)}`
+                                  }
+                                  className="text-[11px] font-bold text-[#631521] hover:underline"
+                                >
+                                  {ord.paymentStatus === 'PENDING_ADMIN_CONFIRMATION' ||
+                                  ord.payment?.status === 'PENDING_ADMIN_CONFIRMATION' ||
+                                  ord.paymentStatus === 'CUSTOMER_CLAIMED_PAID' ||
+                                  ord.payment?.status === 'CUSTOMER_CLAIMED_PAID' ||
+                                  Boolean(ord.payment?.submittedAt)
+                                    ? 'Theo dõi chờ xác nhận →'
+                                    : 'Quét mã & Tải ảnh CK →'}
+                                </Link>
+                              )}
+                            <span className="font-serif text-base font-bold text-[#631521]">
+                              Tổng: {formatVND(ord.total)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     ))

@@ -84,7 +84,7 @@ export default function CheckoutPage() {
           }
         }
       }
-    } catch {}
+    } catch { }
     return {
       fullName: '',
       phone: '',
@@ -188,7 +188,7 @@ export default function CheckoutPage() {
       const next = { ...prev, [field]: value }
       try {
         localStorage.setItem('qns_checkout_customer_info', JSON.stringify(next))
-      } catch {}
+      } catch { }
       return next
     })
     // If field was already touched, validate in real-time
@@ -306,18 +306,22 @@ export default function CheckoutPage() {
           }
         }
 
+        const savedOrder = result.trackingToken
+          ? { ...orderPayload, trackingToken: result.trackingToken }
+          : orderPayload
+
         // Lưu đơn hàng vừa tạo vào session storage & localStorage (kèm kho lưu trữ vĩnh viễn)
         try {
-          sessionStorage.setItem('latest_order', JSON.stringify(orderPayload))
+          sessionStorage.setItem('latest_order', JSON.stringify(savedOrder))
           const existingOrders = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
-          const filtered = existingOrders.filter((o) => (o.orderId || o.id) !== orderPayload.orderId)
-          localStorage.setItem('pijama_orders', JSON.stringify([orderPayload, ...filtered]))
+          const filtered = existingOrders.filter((o) => (o.orderId || o.id) !== savedOrder.orderId)
+          localStorage.setItem('pijama_orders', JSON.stringify([savedOrder, ...filtered]))
 
           try {
             const archive = JSON.parse(localStorage.getItem('pijama_orders_archive') || '[]')
-            const filteredArchive = archive.filter((o) => (o.orderId || o.id) !== orderPayload.orderId)
-            localStorage.setItem('pijama_orders_archive', JSON.stringify([orderPayload, ...filteredArchive]))
-          } catch {}
+            const filteredArchive = archive.filter((o) => (o.orderId || o.id) !== savedOrder.orderId)
+            localStorage.setItem('pijama_orders_archive', JSON.stringify([savedOrder, ...filteredArchive]))
+          } catch { }
 
           window.dispatchEvent(new Event('orders_updated'))
         } catch (err) {
@@ -328,7 +332,7 @@ export default function CheckoutPage() {
         try {
           localStorage.setItem('qns_checkout_customer_info', JSON.stringify(formData))
           localStorage.setItem('qns_last_ordered_items', JSON.stringify(items))
-        } catch {}
+        } catch { }
 
         // 3. Xóa giỏ hàng: Đối với COD xóa ngay, đối với Chuyển khoản (VietQR) bảo lưu giỏ hàng cho đến khi thanh toán thành công
         if (formData.paymentMethod !== 'BANK_TRANSFER') {
@@ -338,11 +342,11 @@ export default function CheckoutPage() {
         // 4. Chuyển hướng theo phương thức thanh toán
         if (formData.paymentMethod === 'BANK_TRANSFER') {
           navigate(`/thanh-toan-chuyen-khoan?orderId=${result.orderId}`, {
-            state: { order: orderPayload },
+            state: { order: savedOrder },
           })
         } else {
           navigate(`/dat-hang-thanh-cong?orderId=${result.orderId}`, {
-            state: { order: orderPayload },
+            state: { order: savedOrder },
           })
         }
       } else {
@@ -442,11 +446,10 @@ export default function CheckoutPage() {
                         onChange={(e) => handleInputChange('fullName', e.target.value)}
                         onBlur={() => handleBlur('fullName')}
                         placeholder="Ví dụ: Nguyễn Văn A"
-                        className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
-                          errors.fullName && touched.fullName
-                            ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
-                            : 'border-[#E8DFD5] focus:border-[#631521]'
-                        }`}
+                        className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${errors.fullName && touched.fullName
+                          ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
+                          : 'border-[#E8DFD5] focus:border-[#631521]'
+                          }`}
                       />
                       {errors.fullName && touched.fullName && (
                         <p className="mt-1 text-xs text-[#631521] font-sans flex items-center gap-1">
@@ -468,11 +471,10 @@ export default function CheckoutPage() {
                           onChange={(e) => handleInputChange('phone', e.target.value)}
                           onBlur={() => handleBlur('phone')}
                           placeholder="0973 486 218"
-                          className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
-                            errors.phone && touched.phone
-                              ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
-                              : 'border-[#E8DFD5] focus:border-[#631521]'
-                          }`}
+                          className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${errors.phone && touched.phone
+                            ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
+                            : 'border-[#E8DFD5] focus:border-[#631521]'
+                            }`}
                         />
                         {errors.phone && touched.phone && (
                           <p className="mt-1 text-xs text-[#631521] font-sans flex items-center gap-1">
@@ -492,11 +494,10 @@ export default function CheckoutPage() {
                           onChange={(e) => handleInputChange('email', e.target.value)}
                           onBlur={() => handleBlur('email')}
                           placeholder="name@gmail.com"
-                          className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
-                            errors.email && touched.email
-                              ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
-                              : 'border-[#E8DFD5] focus:border-[#631521]'
-                          }`}
+                          className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${errors.email && touched.email
+                            ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
+                            : 'border-[#E8DFD5] focus:border-[#631521]'
+                            }`}
                         />
                         {errors.email && touched.email ? (
                           <p className="mt-1 text-xs text-[#631521] font-sans flex items-center gap-1">
@@ -557,11 +558,10 @@ export default function CheckoutPage() {
                           onChange={(e) => handleInputChange('district', e.target.value)}
                           onBlur={() => handleBlur('district')}
                           placeholder="Ví dụ: Quận Hai Bà Trưng"
-                          className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
-                            errors.district && touched.district
-                              ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
-                              : 'border-[#E8DFD5] focus:border-[#631521]'
-                          }`}
+                          className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${errors.district && touched.district
+                            ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
+                            : 'border-[#E8DFD5] focus:border-[#631521]'
+                            }`}
                         />
                         {errors.district && touched.district && (
                           <p className="mt-1 text-xs text-[#631521] font-sans flex items-center gap-1">
@@ -581,11 +581,10 @@ export default function CheckoutPage() {
                           onChange={(e) => handleInputChange('ward', e.target.value)}
                           onBlur={() => handleBlur('ward')}
                           placeholder="Ví dụ: Phường Vĩnh Tuy"
-                          className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
-                            errors.ward && touched.ward
-                              ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
-                              : 'border-[#E8DFD5] focus:border-[#631521]'
-                          }`}
+                          className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${errors.ward && touched.ward
+                            ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
+                            : 'border-[#E8DFD5] focus:border-[#631521]'
+                            }`}
                         />
                         {errors.ward && touched.ward && (
                           <p className="mt-1 text-xs text-[#631521] font-sans flex items-center gap-1">
@@ -607,11 +606,10 @@ export default function CheckoutPage() {
                         onChange={(e) => handleInputChange('address', e.target.value)}
                         onBlur={() => handleBlur('address')}
                         placeholder="Số nhà, toà nhà, tên đường, ngõ/ngách..."
-                        className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${
-                          errors.address && touched.address
-                            ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
-                            : 'border-[#E8DFD5] focus:border-[#631521]'
-                        }`}
+                        className={`w-full px-3.5 py-2.5 bg-[#FAF8F5] border text-base sm:text-sm rounded-[2px] focus:bg-white focus:outline-none transition-colors ${errors.address && touched.address
+                          ? 'border-[#631521] focus:ring-1 focus:ring-[#631521]'
+                          : 'border-[#E8DFD5] focus:border-[#631521]'
+                          }`}
                       />
                       {errors.address && touched.address && (
                         <p className="mt-1 text-xs text-[#631521] font-sans flex items-center gap-1">
@@ -677,24 +675,22 @@ export default function CheckoutPage() {
                             if (isCodDisabled) return
                             handleInputChange('paymentMethod', method.value)
                           }}
-                          className={`p-4 rounded-[3px] border transition-all ${
-                            isCodDisabled
-                              ? 'border-[#E8DFD5] bg-[#FAF8F5] opacity-60 cursor-not-allowed'
-                              : isSelected
+                          className={`p-4 rounded-[3px] border transition-all ${isCodDisabled
+                            ? 'border-[#E8DFD5] bg-[#FAF8F5] opacity-60 cursor-not-allowed'
+                            : isSelected
                               ? 'border-[#631521] bg-[#FAF5F0] shadow-xs ring-1 ring-[#631521] cursor-pointer'
                               : 'border-[#E8DFD5] bg-white hover:border-[#631521]/60 hover:bg-[#FAF8F5] cursor-pointer'
-                          }`}
+                            }`}
                         >
                           <div className="flex items-start gap-3.5">
                             <div className="pt-0.5">
                               <div
-                                className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                                  isCodDisabled
-                                    ? 'border-[#D9CFC4] bg-[#E8DFD5]'
-                                    : isSelected
+                                className={`w-4 h-4 rounded-full border flex items-center justify-center ${isCodDisabled
+                                  ? 'border-[#D9CFC4] bg-[#E8DFD5]'
+                                  : isSelected
                                     ? 'border-[#631521] bg-[#631521]'
                                     : 'border-[#8C7E74]'
-                                }`}
+                                  }`}
                               >
                                 {isSelected && !isCodDisabled && <Check className="w-3 h-3 text-white stroke-[3]" />}
                               </div>
@@ -716,7 +712,7 @@ export default function CheckoutPage() {
                                   )}
                                   {isCod && !isCodDisabled && (
                                     <span className="inline-flex items-center gap-1 bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] text-[10px] font-bold px-2 py-0.5 rounded-[2px]">
-                                      Áp dụng trong bán kính 30km từ kho 622 Minh Khai, Hà Nội
+                                      Áp dụng cho khu vực Hà Nội
                                     </span>
                                   )}
                                   {hasDiscount && (
@@ -742,7 +738,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* ─── RIGHT COLUMN (40% ~ 5 cols): Tóm Tắt Đơn Hàng (Sticky) ─── */}
+              {/* ─── RIGHT COLUMN (40% ~ 5 cols): Xác Nhận Đơn Hàng (Sticky) ─── */}
               <div className="lg:col-span-5 lg:sticky lg:top-24 space-y-6">
                 <div className="bg-white p-6 sm:p-8 rounded-[4px] border border-[#E8DFD5] shadow-luxury">
                   <div className="flex items-center justify-between pb-4 mb-5 border-b border-[#E8DFD5]">
@@ -883,7 +879,7 @@ export default function CheckoutPage() {
                   {/* Voucher Input */}
                   <div className="pt-2 pb-2 border-t border-[#E8DFD5]">
                     <span className="font-serif text-xs font-bold text-[#631521] uppercase tracking-wider block mb-1">
-                      Mã Ưu Đãi / Voucher (Tối đa 01 mã/đơn)
+                      Mã Voucher
                     </span>
                     <VoucherInput
                       onApply={(v) => setAppliedVoucher(v)}
@@ -911,9 +907,6 @@ export default function CheckoutPage() {
                         )}
                       </span>
                     </div>
-                    <p className="text-[11px] text-[#6B5D54] -mt-1.5">
-                      Freeship áp dụng cho đơn từ 500.000đ (tính theo tạm tính trước giảm giá)
-                    </p>
 
                     {pricingTotals.splitShippingFee > 0 && (
                       <div className="flex justify-between text-[#4A3F38]">
@@ -983,9 +976,6 @@ export default function CheckoutPage() {
                             (Đã áp dụng giảm 10% VietQR theo chiết khấu lũy tiến)
                           </span>
                         )}
-                        <span className="text-[0.65rem] text-[#8C7E74] mt-1 block">
-                          (Đã bao gồm VAT)&nbsp;
-                        </span>
                       </div>
                     </div>
                   </div>

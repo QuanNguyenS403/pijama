@@ -128,9 +128,9 @@ export default function Section12Footer() {
                 Thông Tin Liên Hệ
               </h3>
               <div className="space-y-2.5 font-sans text-xs sm:text-sm text-white/75 leading-relaxed">
-                <div className="flex items-start gap-2.5">
-                  <MapPin className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
-                  <span>{'\u00a0Hai Bà Trưng, Hà Nội'}</span>
+                <div className="flex items-center gap-2.5">
+                  <MapPin className="w-4 h-4 text-[#D4AF37] shrink-0" />
+                  <span>Hai Bà Trưng, Hà Nội</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <Phone className="w-4 h-4 text-[#D4AF37] shrink-0" />

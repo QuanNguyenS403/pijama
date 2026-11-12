@@ -43,12 +43,6 @@ export default function AdminOrdersPage() {
   const [toast, setToast]                 = useState(null)
   const [isSyncingViettel, setIsSyncingViettel] = useState(false)
   const [quickFilter, setQuickFilter]           = useState('')
-  const [unresolvedTx, setUnresolvedTx]         = useState([])
-  const [bridgeHealth, setBridgeHealth]         = useState(null)
-  const [showTxPanel, setShowTxPanel]           = useState(false)
-  const [assigningTx, setAssigningTx]           = useState(null)
-  const [assignOrderId, setAssignOrderId]       = useState('')
-  const [assignNote, setAssignNote]             = useState('')
 
   const getAdminHeaders = () => {
     const token = sessionStorage.getItem('qns_admin_token') || ''
@@ -58,59 +52,54 @@ export default function AdminOrdersPage() {
     }
   }
 
-  // ── Computed Displayed Orders theo Quick Filter (WP8) ────
+  const isOrderWaitingQrConfirm = (o) => {
+    const payStatus = o.paymentStatus || o.payment?.status || ''
+    return (
+      (payStatus === 'PENDING_ADMIN_CONFIRMATION' ||
+        payStatus === 'CUSTOMER_CLAIMED_PAID' ||
+        Boolean(o.payment?.submittedAt) ||
+        Boolean(o.paymentProof?.imageUrl)) &&
+      payStatus !== 'PAID'
+    )
+  }
+
+  const proofWaitingCount = useMemo(() => {
+    return orders.filter(isOrderWaitingQrConfirm).length
+  }, [orders])
+
+  // ── Computed Displayed Orders theo Quick Filter ────
   const displayedOrders = useMemo(() => {
     let list = [...orders]
     if (quickFilter === 'CLAIMED') {
-      list = list.filter(o => o.paymentStatus === 'CUSTOMER_CLAIMED_PAID' || o.payment?.status === 'CUSTOMER_CLAIMED_PAID')
-      list.sort((a, b) => new Date(b.claimedAt || b.createdAt).getTime() - new Date(a.claimedAt || a.createdAt).getTime())
+      list = list.filter(isOrderWaitingQrConfirm)
+      list.sort(
+        (a, b) =>
+          new Date(b.paymentSubmittedAt || b.paymentProof?.uploadedAt || b.claimedAt || b.createdAt).getTime() -
+          new Date(a.paymentSubmittedAt || a.paymentProof?.uploadedAt || a.claimedAt || a.createdAt).getTime()
+      )
     } else if (quickFilter === 'AWAITING') {
-      list = list.filter(o => (o.status === 'AWAITING_PAYMENT' || o.paymentStatus === 'AWAITING_PAYMENT') && o.paymentStatus !== 'CUSTOMER_CLAIMED_PAID')
-    } else if (quickFilter === 'EXPIRED') {
-      list = list.filter(o => o.paymentStatus === 'EXPIRED_TIMEOUT' || String(o.cancelReason || '').includes('Hết hạn'))
+      list = list.filter(
+        (o) =>
+          (o.status === 'AWAITING_PAYMENT' || o.paymentStatus === 'AWAITING_PAYMENT') &&
+          !isOrderWaitingQrConfirm(o)
+      )
     }
     return list
   }, [orders, quickFilter])
 
-  // ── Fetch Unresolved Transactions ──────────────
-  const fetchUnresolvedTx = useCallback(async () => {
-    try {
-      const token = sessionStorage.getItem('qns_admin_token') || ''
-      const res = await fetch('/api/admin/payment-transactions', {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-        },
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setUnresolvedTx(data.transactions || [])
-      }
-    } catch {}
-  }, [])
-
-  const fetchBridgeHealth = useCallback(async () => {
-    try {
-      const token = sessionStorage.getItem('qns_admin_token') || ''
-      const res = await fetch('/api/admin/bridge-health', {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
-        },
-      })
-      if (res.ok) {
-        const data = await res.json()
-        if (data.success && data.health) {
-          setBridgeHealth(data.health)
-        }
-      }
-    } catch {}
-  }, [])
-
-  useEffect(() => {
-    fetchUnresolvedTx()
-    fetchBridgeHealth()
-  }, [fetchUnresolvedTx, fetchBridgeHealth])
+  const openMarkPaidModal = (order) => {
+    const id = order.orderId || order.id
+    const hasProof = Boolean(order.paymentProof?.imageUrl)
+    setActionInput(
+      hasProof ? 'Đã kiểm tra ảnh chuyển khoản khách gửi và xác nhận nhận đủ tiền' : ''
+    )
+    setActionModal({
+      type: 'MARK_PAID',
+      orderId: id,
+      total: order.total,
+      paymentProof: order.paymentProof || null,
+    })
+  }
 
   // ── Fetch orders ────────────────────────────────
   const fetchOrders = useCallback(async (isManual = false) => {
@@ -302,23 +291,27 @@ export default function AdminOrdersPage() {
   const ActionButtons = ({ order }) => {
     const orderId = order.orderId || order.id
     const status = order.status || 'PENDING'
+    const isUnpaidBankTransfer =
+      (order.payment?.method || order.paymentMethod) === 'BANK_TRANSFER' &&
+      (order.payment?.status || order.paymentStatus) !== 'PAID'
 
     return (
       <div style={{ display:'flex', gap:'6px', flexWrap:'wrap' }}>
         {(status === 'PENDING' || status === 'AWAITING_PAYMENT') && (
           <>
-            {((order.payment?.method || order.paymentMethod) === 'BANK_TRANSFER' && (order.payment?.status || order.paymentStatus) !== 'PAID') && (
+            {isUnpaidBankTransfer ? (
               <ActionBtn
-                label="💳 Xác nhận đã nhận tiền"
+                label="💳 Duyệt thanh toán & Xác nhận"
                 color="#059669"
-                onClick={() => setActionModal({ type:'MARK_PAID', orderId, total: order.total })}
+                onClick={() => openMarkPaidModal(order)}
+              />
+            ) : (
+              <ActionBtn
+                label="✅ Xác nhận"
+                color="#2563EB"
+                onClick={() => setActionModal({ type:'CONFIRM', orderId })}
               />
             )}
-            <ActionBtn
-              label="✅ Xác nhận"
-              color="#2563EB"
-              onClick={() => setActionModal({ type:'CONFIRM', orderId })}
-            />
             <ActionBtn
               label="❌ Hủy đơn"
               color="#6B7280"
@@ -431,31 +424,6 @@ export default function AdminOrdersPage() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-          {bridgeHealth && (
-            <div
-              title={`Cầu nối Gmail Apps Script: ${bridgeHealth.status === 'GREEN' ? 'Hoạt động tốt' : (bridgeHealth.status === 'YELLOW' ? 'Hơi chậm' : 'Ngừng kết nối')} (Lần cuối: ${bridgeHealth.minutesAgo !== null ? bridgeHealth.minutesAgo + ' phút trước' : 'Chưa có'})`}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                borderRadius: '20px',
-                fontSize: '11px',
-                fontWeight: 600,
-                background: bridgeHealth.status === 'GREEN' ? '#ECFDF5' : (bridgeHealth.status === 'YELLOW' ? '#FEF3C7' : '#FEE2E2'),
-                color: bridgeHealth.status === 'GREEN' ? '#065F46' : (bridgeHealth.status === 'YELLOW' ? '#92400E' : '#991B1B'),
-                border: `1px solid ${bridgeHealth.status === 'GREEN' ? '#A7F3D0' : (bridgeHealth.status === 'YELLOW' ? '#FDE68A' : '#FECACA')}`,
-              }}
-            >
-              <span style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: bridgeHealth.status === 'GREEN' ? '#10B981' : (bridgeHealth.status === 'YELLOW' ? '#F59E0B' : '#EF4444'),
-              }} />
-              <span>Gmail Bridge: {bridgeHealth.status === 'GREEN' ? 'Online' : (bridgeHealth.status === 'YELLOW' ? `${bridgeHealth.minutesAgo}p trước` : 'Mất tín hiệu')}</span>
-            </div>
-          )}
           <Link
             to="/admin/members"
             title="Quản lý hồ sơ hội viên, tích điểm, voucher và cảnh báo"
@@ -562,106 +530,7 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
-      {/* ── GIAO DỊCH NGÂN HÀNG CẦN ĐỐI SOÁT (WP8) ─────────────────── */}
-      {unresolvedTx.length > 0 && (
-        <div style={{
-          background: '#FFFBEB',
-          border: '1px solid #FCD34D',
-          padding: '16px',
-          marginBottom: '20px',
-          borderRadius: '4px',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#B45309', fontWeight: 600, fontSize: '14px' }}>
-              <span>⚠️</span>
-              <span>Có {unresolvedTx.length} giao dịch ngân hàng cần đối soát (Tiền về trễ, sai số tiền hoặc chưa khớp đơn)</span>
-            </div>
-            <button
-              onClick={() => setShowTxPanel(p => !p)}
-              style={{ ...btnStyle, background: '#D97706', fontSize: '11px', padding: '6px 12px' }}
-            >
-              {showTxPanel ? 'Thu gọn' : 'Xem chi tiết giao dịch'}
-            </button>
-          </div>
-
-          {showTxPanel && (
-            <div style={{ marginTop: '14px', overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: '#fff' }}>
-                <thead>
-                  <tr style={{ background: '#FDF6B2', color: '#723B13' }}>
-                    <th style={{ padding: '8px 10px', textAlign: 'left' }}>Mã GD (tx_id)</th>
-                    <th style={{ padding: '8px 10px', textAlign: 'left' }}>Thời gian</th>
-                    <th style={{ padding: '8px 10px', textAlign: 'right' }}>Số tiền</th>
-                    <th style={{ padding: '8px 10px', textAlign: 'left' }}>Nội dung CK</th>
-                    <th style={{ padding: '8px 10px', textAlign: 'left' }}>Tình trạng</th>
-                    <th style={{ padding: '8px 10px', textAlign: 'center' }}>Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {unresolvedTx.map((tx) => (
-                    <tr key={tx.tx_id} style={{ borderBottom: '1px solid #E5E7EB' }}>
-                      <td style={{ padding: '8px 10px', fontFamily: 'Inter, sans-serif' }}>{tx.tx_id}</td>
-                      <td style={{ padding: '8px 10px' }}>{tx.received_at}</td>
-                      <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600, color: '#059669' }}>
-                        {Number(tx.amount || 0).toLocaleString('vi-VN')}đ
-                      </td>
-                      <td style={{ padding: '8px 10px' }}>{tx.content}</td>
-                      <td style={{ padding: '8px 10px', color: '#DC2626', fontWeight: 600 }}>{tx.outcome}</td>
-                      <td style={{ padding: '8px 10px', textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                          <button
-                            onClick={() => {
-                              const targetId = prompt(`Nhập mã đơn hàng (QNS-...) muốn gán cho giao dịch ${tx.tx_id} (${Number(tx.amount).toLocaleString('vi-VN')}đ):`)
-                              if (!targetId) return
-                              const note = prompt('Nhập lý do đối soát:', 'Gán thủ công từ sao kê ngân hàng') || ''
-                              fetch(`/api/admin/payment-transactions/${encodeURIComponent(tx.tx_id)}/resolve`, {
-                                method: 'POST',
-                                headers: getAdminHeaders(),
-                                body: JSON.stringify({ action: 'ASSIGN_ORDER', orderId: targetId.trim(), note }),
-                              }).then(r => r.json()).then(res => {
-                                if (res.success) {
-                                  alert('Gán đơn thành công!')
-                                  fetchUnresolvedTx()
-                                  fetchOrders(true)
-                                } else {
-                                  alert(res.error || 'Lỗi gán đơn')
-                                }
-                              })
-                            }}
-                            style={{ ...btnStyle, background: '#059669', fontSize: '11px', padding: '4px 8px' }}
-                          >
-                            Gán vào đơn
-                          </button>
-                          <button
-                            onClick={() => {
-                              const reason = prompt('Lý do bỏ qua / đã hoàn tiền:') || ''
-                              fetch(`/api/admin/payment-transactions/${encodeURIComponent(tx.tx_id)}/resolve`, {
-                                method: 'POST',
-                                headers: getAdminHeaders(),
-                                body: JSON.stringify({ action: 'IGNORE', note: reason }),
-                              }).then(r => r.json()).then(res => {
-                                if (res.success) {
-                                  alert('Đã cập nhật trạng thái giao dịch')
-                                  fetchUnresolvedTx()
-                                }
-                              })
-                            }}
-                            style={{ ...btnStyle, background: '#6B7280', fontSize: '11px', padding: '4px 8px' }}
-                          >
-                            Bỏ qua
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── THANH BỘ LỌC NHANH (WP8) ──────────────────── */}
+      {/* ── THANH BỘ LỌC NHANH ──────────────────── */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
         <button
           onClick={() => setQuickFilter('')}
@@ -688,7 +557,7 @@ export default function AdminOrdersPage() {
             fontWeight: 600,
           }}
         >
-          📩 Khách báo CK — Chờ đối soát
+          🧾 Chờ admin duyệt thanh toán QR{proofWaitingCount > 0 ? ` (${proofWaitingCount})` : ''}
         </button>
         <button
           onClick={() => setQuickFilter('AWAITING')}
@@ -701,20 +570,7 @@ export default function AdminOrdersPage() {
             fontSize: '12px',
           }}
         >
-          ⏳ Chờ thanh toán
-        </button>
-        <button
-          onClick={() => setQuickFilter('EXPIRED')}
-          style={{
-            ...btnStyle,
-            background: quickFilter === 'EXPIRED' ? '#DC2626' : '#F5F0E8',
-            color: quickFilter === 'EXPIRED' ? '#FAF8F5' : '#DC2626',
-            border: '1px solid #FECACA',
-            padding: '6px 14px',
-            fontSize: '12px',
-          }}
-        >
-          ⌛ Hết hạn thanh toán
+          ⏳ Chờ khách chuyển khoản QR
         </button>
       </div>
 
@@ -871,8 +727,40 @@ export default function AdminOrdersPage() {
                           transition: 'all 0.15s ease',
                         }}
                       >
-                        {order.paymentStatus === 'PAID' ? '✅ Đã TT' : '⏳ Chưa TT'}
+                        {order.paymentStatus === 'PAID'
+                          ? '✅ Đã TT'
+                          : isOrderWaitingQrConfirm(order)
+                          ? '🧾 Chờ admin duyệt'
+                          : '⏳ Chưa TT'}
                       </button>
+                      {order.paymentProof?.imageUrl && (
+                        <div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedOrder(order)
+                            }}
+                            title="Xem ảnh chuyển khoản khách hàng đã tải lên"
+                            style={{
+                              marginTop: '4px',
+                              background: '#EEF2FF',
+                              color: '#4338CA',
+                              border: '1px solid #C7D2FE',
+                              padding: '2px 7px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              borderRadius: '2px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            🧾 Xem ảnh CK
+                          </button>
+                        </div>
+                      )}
                     </td>
 
                     {/* Trạng thái */}
@@ -947,15 +835,47 @@ export default function AdminOrdersPage() {
             boxShadow:'0 20px 40px rgba(0,0,0,0.2)',
             borderRadius:'4px',
           }}>
-            {/* MARK_PAID modal (WP8) */}
+            {/* MARK_PAID modal */}
             {actionModal.type === 'MARK_PAID' && (
               <>
-                <h2 style={modalTitle}>💳 Xác nhận đã nhận tiền (VietQR)</h2>
+                <h2 style={modalTitle}>💳 Duyệt thanh toán QR & Xác nhận đơn</h2>
                 <p style={modalDesc}>
-                  Đơn hàng: <strong>#{actionModal.orderId}</strong> — Cần khớp: <strong>{(actionModal.total || 0).toLocaleString('vi-VN')}đ</strong>.
+                  Đơn hàng: <strong>#{actionModal.orderId}</strong> — Số tiền cần khớp: <strong>{(actionModal.total || 0).toLocaleString('vi-VN')}đ</strong>.
                   <br />
-                  Chỉ xác nhận sau khi đã đối chiếu biến động số dư / sao kê Vietcombank thực tế.
+                  Kiểm tra ảnh chuyển khoản của khách và xác nhận. Ngay sau khi duyệt, email xác nhận đơn hàng sẽ gửi tức thì tới khách hàng và admin.
                 </p>
+                {actionModal.paymentProof?.imageUrl && (
+                  <div style={{ display:'flex', gap:'12px', alignItems:'flex-start', background:'#FAF7F3', border:'1px solid #E8DFD5', padding:'10px', borderRadius:'4px', marginBottom:'14px' }}>
+                    <a href={actionModal.paymentProof.imageUrl} target="_blank" rel="noopener noreferrer" title="Mở ảnh kích thước đầy đủ">
+                      <img
+                        src={actionModal.paymentProof.imageUrl}
+                        alt="Ảnh chuyển khoản khách gửi"
+                        style={{ width:'72px', height:'90px', objectFit:'cover', borderRadius:'2px', border:'1px solid #D9CFC4' }}
+                      />
+                    </a>
+                    <div style={{ fontSize:'12px', color:'#4A3F38', lineHeight:'1.5' }}>
+                      <div style={{ fontWeight:700, color:'#631521' }}>🧾 Ảnh CK khách tải lên</div>
+                      {actionModal.paymentProof.uploadedAt && (
+                        <div style={{ fontSize:'11px', color:'#7A6E6E' }}>
+                          {new Date(actionModal.paymentProof.uploadedAt).toLocaleString('vi-VN')}
+                        </div>
+                      )}
+                      {actionModal.paymentProof.note && (
+                        <div style={{ marginTop:'4px', fontSize:'11px' }}>
+                          <strong>Ghi chú:</strong> {actionModal.paymentProof.note}
+                        </div>
+                      )}
+                      <a
+                        href={actionModal.paymentProof.imageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ display:'inline-block', marginTop:'4px', fontSize:'11px', color:'#2563EB', fontWeight:600 }}
+                      >
+                        Mở ảnh đầy đủ ↗
+                      </a>
+                    </div>
+                  </div>
+                )}
                 <textarea
                   placeholder="Lý do / Ghi chú đối soát sao kê (Bắt buộc tối thiểu 10 ký tự, ví dụ: 'Đã nhận 390k lúc 14:02 VCB mã GD 123456')"
                   value={actionInput}
@@ -974,7 +894,7 @@ export default function AdminOrdersPage() {
                     disabled={actionLoading}
                     style={{ ...btnStyle, background:'#059669' }}
                   >
-                    {actionLoading ? 'Đang xử lý...' : '💳 Xác nhận đã nhận tiền'}
+                    {actionLoading ? 'Đang duyệt & gửi email...' : '💳 Duyệt thanh toán & Gửi email xác nhận'}
                   </button>
                   <button
                     onClick={() => setActionModal(null)}
@@ -1159,12 +1079,67 @@ export default function AdminOrdersPage() {
                 <div><strong>Email:</strong> {selectedOrder.customerEmail || selectedOrder.customer?.email}</div>
               )}
               <div><strong>Địa chỉ nhận:</strong> {selectedOrder.shippingAddress || selectedOrder.shipping?.fullAddress || 'Chưa cung cấp'}</div>
-              <div><strong>Phương thức TT:</strong> {PAYMENT_LABELS[selectedOrder.paymentMethod] || selectedOrder.paymentMethod} ({selectedOrder.paymentStatus === 'PAID' ? '✅ Đã TT' : '⏳ Chưa TT'})</div>
+              <div><strong>Phương thức TT:</strong> {PAYMENT_LABELS[selectedOrder.paymentMethod] || selectedOrder.paymentMethod} ({selectedOrder.paymentStatus === 'PAID' ? '✅ Đã TT' : isOrderWaitingQrConfirm(selectedOrder) ? '🧾 Chờ admin duyệt' : '⏳ Chưa TT'})</div>
               {selectedOrder.customerNote && <div><strong>Ghi chú khách:</strong> {selectedOrder.customerNote}</div>}
               {selectedOrder.adminNote && <div><strong>Ghi chú nội bộ:</strong> {selectedOrder.adminNote}</div>}
               {selectedOrder.trackingNumber && <div><strong>Mã vận đơn:</strong> {selectedOrder.trackingNumber} ({selectedOrder.carrier || 'Viettel Post'})</div>}
               {selectedOrder.cancelReason && <div style={{ color: '#EF4444' }}><strong>Lý do hủy:</strong> {selectedOrder.cancelReason}</div>}
             </div>
+
+            {selectedOrder.paymentProof?.imageUrl && (
+              <div style={{ background:'#EEF2FF', border:'1px solid #C7D2FE', padding:'14px', marginBottom:'16px', borderRadius:'4px' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px', flexWrap:'wrap', gap:'8px' }}>
+                  <div style={{ fontWeight:700, color:'#3730A3', fontSize:'13px' }}>
+                    🧾 ẢNH CHUYỂN KHOẢN KHÁCH HÀNG ĐÃ TẢI LÊN
+                  </div>
+                  {selectedOrder.paymentProof.uploadedAt && (
+                    <span style={{ fontSize:'11px', color:'#4338CA' }}>
+                      {new Date(selectedOrder.paymentProof.uploadedAt).toLocaleString('vi-VN')}
+                    </span>
+                  )}
+                </div>
+                <div style={{ display:'flex', gap:'14px', alignItems:'flex-start', flexWrap:'wrap' }}>
+                  <a
+                    href={selectedOrder.paymentProof.imageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Bấm để xem ảnh kích thước đầy đủ"
+                    style={{ display:'block', border:'1px solid #C7D2FE', borderRadius:'4px', overflow:'hidden', background:'#fff' }}
+                  >
+                    <img
+                      src={selectedOrder.paymentProof.imageUrl}
+                      alt="Ảnh chứng từ chuyển khoản"
+                      style={{ maxWidth:'180px', maxHeight:'220px', objectFit:'contain', display:'block' }}
+                    />
+                  </a>
+                  <div style={{ flex:1, minWidth:'180px', fontSize:'12px', color:'#312E81', lineHeight:'1.6' }}>
+                    <div><strong>Số tiền đơn hàng cần khớp:</strong> <span style={{ color:'#631521', fontWeight:700 }}>{vnd(selectedOrder.total)}</span></div>
+                    {selectedOrder.paymentProof.note && (
+                      <div style={{ marginTop:'4px' }}><strong>Ghi chú giao dịch:</strong> {selectedOrder.paymentProof.note}</div>
+                    )}
+                    <div style={{ display:'flex', gap:'8px', flexWrap:'wrap', marginTop:'10px' }}>
+                      <a
+                        href={selectedOrder.paymentProof.imageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ ...btnStyle, background:'#4338CA', textDecoration:'none', fontSize:'11px', padding:'6px 12px' }}
+                      >
+                        🔍 Mở ảnh đầy đủ
+                      </a>
+                      {selectedOrder.paymentStatus !== 'PAID' && (
+                        <button
+                          type="button"
+                          onClick={() => openMarkPaidModal(selectedOrder)}
+                          style={{ ...btnStyle, background:'#059669', fontSize:'11px', padding:'6px 12px' }}
+                        >
+                          💳 Duyệt thanh toán & Gửi email xác nhận
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Khối Hành trình Viettel Post tự động */}
             {(selectedOrder.status === 'SHIPPED' || selectedOrder.status === 'DELIVERED' || selectedOrder.trackingNumber) && (

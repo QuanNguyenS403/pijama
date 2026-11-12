@@ -899,21 +899,44 @@ export function registerAuthEndpoints(app) {
 
       return res.json({
         success: true,
-        orders: userOrders.map((o) => ({
-          orderId: o.orderId,
-          createdAt: o.createdAt,
-          status: o.status,
-          total: o.total,
-          subtotal: o.subtotal,
-          shippingFee: o.shippingFee,
-          discount: o.discount,
-          paymentMethod: o.payment?.method || o.paymentMethod,
-          paymentStatus: o.payment?.status || o.paymentStatus,
-          items: o.items || [],
-          trackingCode: o.trackingCode || null,
-          carrier: o.carrier || 'Viettel Post',
-          shippingAddress: o.shippingAddress || o.shipping?.fullAddress || '',
-        })),
+        orders: userOrders.map((o) => {
+          const payMethod = o.payment?.method || o.paymentMethod || 'COD'
+          const payStatus = o.payment?.status || o.paymentStatus || (payMethod === 'BANK_TRANSFER' ? 'AWAITING_PAYMENT' : 'UNPAID')
+          return {
+            orderId: o.orderId,
+            createdAt: o.createdAt,
+            orderDateVN: o.orderDateVN || '',
+            status: o.status,
+            total: o.total,
+            subtotal: o.subtotal,
+            shippingFee: o.shippingFee,
+            discount: o.discount,
+            paymentMethod: payMethod,
+            paymentStatus: payStatus,
+            payment: {
+              method: payMethod,
+              methodLabel: o.payment?.methodLabel || (payMethod === 'BANK_TRANSFER' ? 'Chuyển khoản VietQR' : 'COD'),
+              status: payStatus,
+              submittedAt: o.payment?.submittedAt || null,
+              proofImageUrl: o.payment?.proofImageUrl || null,
+              proofUploadedAt: o.payment?.proofUploadedAt || null,
+              proofNote: o.payment?.proofNote || '',
+            },
+            paymentProof: o.payment?.proofImageUrl
+              ? {
+                  imageUrl: o.payment.proofImageUrl,
+                  uploadedAt: o.payment.proofUploadedAt || null,
+                  note: o.payment.proofNote || '',
+                }
+              : null,
+            customer: o.customer || {},
+            shipping: o.shipping || {},
+            items: o.items || [],
+            trackingCode: o.trackingCode || null,
+            carrier: o.carrier || 'Viettel Post',
+            shippingAddress: o.shippingAddress || o.shipping?.fullAddress || '',
+          }
+        }),
       })
     } catch (err) {
       console.error('Get my orders error:', err)

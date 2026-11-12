@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X,
@@ -21,36 +22,27 @@ import { formatVND, getCarrierTrackingUrl, PAYMENT_METHODS } from '../../data/ch
 import { syncBatchOrders, getSavedOrders, purgeCancelledOrdersFromStorage, restoreOrderItemsToCart } from '../../lib/orderSync'
 
 // Order Timeline Stepper Component
-function OrderTrackingTimeline({ status, isVietQR, cancelReason }) {
+function OrderTrackingTimeline({ status, paymentStatus, submittedAt }) {
   const normalizedStatus = String(status || 'PENDING').toUpperCase()
+  const normalizedPayStatus = String(paymentStatus || '').toUpperCase()
+  const isWaitingAdminConfirm =
+    normalizedPayStatus === 'PENDING_ADMIN_CONFIRMATION' ||
+    normalizedPayStatus === 'CUSTOMER_CLAIMED_PAID' ||
+    Boolean(submittedAt)
 
-  if (normalizedStatus === 'CANCELLED' || normalizedStatus === 'EXPIRED_TIMEOUT') {
+  if (normalizedStatus === 'CANCELLED') {
     return null
   }
 
-  if (normalizedStatus === 'CUSTOMER_CLAIMED_PAID') {
+  if (isWaitingAdminConfirm && normalizedPayStatus !== 'PAID' && normalizedStatus === 'AWAITING_PAYMENT') {
     return (
-      <div className="py-2.5 px-3 bg-[#FAF5F0] border border-[#D4AF37]/60 rounded-[3px] flex items-center justify-between text-xs text-[#631521] font-sans">
+      <div className="py-2.5 px-3 bg-[#FFF8E1] border border-[#FFE082] rounded-[3px] flex items-center justify-between text-xs text-[#B45309] font-sans gap-2">
         <span className="flex items-center gap-1.5 font-semibold">
-          <Clock className="w-4 h-4 text-[#D4AF37]" />
-          Đã báo chuyển khoản — chờ đối soát
+          <Clock className="w-4 h-4 text-[#D97706] shrink-0" />
+          Đã gửi ảnh chuyển khoản — Chờ admin xác nhận
         </span>
-        <span className="text-[11px] bg-white px-2 py-0.5 rounded border border-[#D4AF37]/40 font-medium">
-          Đang kiểm tra
-        </span>
-      </div>
-    )
-  }
-
-  if (normalizedStatus === 'EXPIRED_TIMEOUT') {
-    return (
-      <div className="py-2.5 px-3 bg-[#FEE2E2] border border-[#FECACA] rounded-[3px] flex items-center justify-between text-xs text-[#DC2626] font-sans">
-        <span className="flex items-center gap-1.5 font-semibold">
-          <AlertCircle className="w-4 h-4 text-[#DC2626]" />
-          Hết hạn thanh toán
-        </span>
-        <span className="text-[11px] bg-white px-2 py-0.5 rounded border border-[#FECACA] font-medium">
-          Mã QR hết hạn
+        <span className="text-[11px] bg-white px-2 py-0.5 rounded border border-[#FDE68A] font-semibold shrink-0">
+          Chờ duyệt
         </span>
       </div>
     )
@@ -58,13 +50,13 @@ function OrderTrackingTimeline({ status, isVietQR, cancelReason }) {
 
   if (normalizedStatus === 'AWAITING_PAYMENT') {
     return (
-      <div className="py-2.5 px-3 bg-[#E8F0FE] border border-[#AECBFA] rounded-[3px] flex items-center justify-between text-xs text-[#1967D2] font-sans">
+      <div className="py-2.5 px-3 bg-[#E8F0FE] border border-[#AECBFA] rounded-[3px] flex items-center justify-between text-xs text-[#1967D2] font-sans gap-2">
         <span className="flex items-center gap-1.5 font-semibold">
-          <QrCode className="w-4 h-4" />
-          Chờ quét mã VietQR để xác nhận
+          <QrCode className="w-4 h-4 shrink-0" />
+          Chờ quét mã QR, tải ảnh CK & bấm Thanh toán
         </span>
-        <span className="text-[11px] bg-white px-2 py-0.5 rounded border border-[#AECBFA] font-medium">
-          Ưu đãi -10%
+        <span className="text-[11px] bg-white px-2 py-0.5 rounded border border-[#AECBFA] font-medium shrink-0">
+          Chuyển khoản QR
         </span>
       </div>
     )
@@ -184,12 +176,12 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
       loadOrders()
       document.body.style.overflow = 'hidden'
 
-      // Tự động kiểm tra trạng thái mới nhất từ server khi mở Drawer
+      // Tự động kiểm tra trạng thái mới nhất từ server khi mở Drawer (force: true để thấy ngay khi admin vừa duyệt)
       try {
         const stored = getSavedOrders({ excludeAccountOrders: true })
         const ids = stored.map((o) => o.orderId || o.id).filter(Boolean)
         if (ids.length > 0) {
-          syncBatchOrders(ids).then(() => {
+          syncBatchOrders(ids, { force: true }).then(() => {
             loadOrders()
           })
         }
@@ -437,16 +429,24 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
 
   // Render individual Order Card
   function renderOrderCard(order) {
-    const isVietQR = order.payment?.method === 'BANK_TRANSFER'
+    const isVietQR = (order.payment?.method || order.paymentMethod) === 'BANK_TRANSFER'
+    const effectivePaymentStatus = order.payment?.status || order.paymentStatus || ''
+    const isPaid = effectivePaymentStatus === 'PAID'
+    const isWaitingAdminConfirm =
+      !isPaid &&
+      (effectivePaymentStatus === 'PENDING_ADMIN_CONFIRMATION' ||
+        effectivePaymentStatus === 'CUSTOMER_CLAIMED_PAID' ||
+        Boolean(order.payment?.submittedAt))
+    const proofImageUrl = order.paymentProof?.imageUrl || order.payment?.proofImageUrl || ''
     const isExpandedQr = expandedQrOrderId === order.orderId
-    const transferContent = order.orderId
+    const transferContent = order.orderId ? (order.orderId.startsWith('QNS') ? order.orderId : `QNS ${order.orderId}`) : ''
     const bankInfo = PAYMENT_METHODS.find((m) => m.value === 'BANK_TRANSFER')?.bankInfo || {
       bankCode: 'VCB',
       accountNumber: '1050773506',
       accountName: 'NGUYEN DUC QUAN',
       bankName: 'Vietcombank',
     }
-    const qrUrl = `https://img.vietqr.io/image/${bankInfo.bankCode}-${bankInfo.accountNumber}-compact2.png?amount=${order.total}&accountName=${encodeURIComponent(bankInfo.accountName)}`
+    const qrUrl = `https://img.vietqr.io/image/${bankInfo.bankCode.toLowerCase()}-${bankInfo.accountNumber}-qr_only.png?amount=${order.total}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(bankInfo.accountName)}`
     const carrierUrl = getCarrierTrackingUrl(order.carrier, order.trackingCode)
 
     return (
@@ -491,21 +491,16 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#2E7D32]" />
                 Đã giao thành công
               </span>
-            ) : isVietQR && order.payment?.status !== 'PAID' ? (
-              order.payment?.status === 'CUSTOMER_CLAIMED_PAID' ? (
-                <span className="inline-flex items-center gap-1 bg-[#FAF5F0] text-[#7C3AED] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#DDD6FE]">
-                  <Clock className="w-3 h-3 text-[#7C3AED]" />
-                  Đã báo CK — Chờ đối soát
-                </span>
-              ) : order.payment?.status === 'EXPIRED_TIMEOUT' ? (
-                <span className="inline-flex items-center gap-1 bg-[#FEE2E2] text-[#DC2626] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#FECACA]">
-                  <AlertCircle className="w-3 h-3 text-[#DC2626]" />
-                  Hết hạn thanh toán
+            ) : isVietQR && !isPaid ? (
+              isWaitingAdminConfirm ? (
+                <span className="inline-flex items-center gap-1 bg-[#FFF8E1] text-[#B45309] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#FDE68A]">
+                  <Clock className="w-3 h-3 text-[#D97706]" />
+                  Chờ admin xác nhận
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 bg-[#E8F0FE] text-[#1967D2] text-[11px] font-bold px-2.5 py-1 rounded-[2px] border border-[#AECBFA]">
                   <QrCode className="w-3 h-3" />
-                  Chờ thanh toán (-10%)
+                  Chờ thanh toán QR
                 </span>
               )
             ) : (
@@ -519,7 +514,11 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
 
         {/* Status Timeline Progression (P1 Item 5) */}
         <div className="p-3.5 sm:p-4 bg-white border-b border-[#E8DFD5]">
-          <OrderTrackingTimeline status={order.status} isVietQR={isVietQR} cancelReason={order.cancelReason} />
+          <OrderTrackingTimeline
+            status={order.status}
+            paymentStatus={effectivePaymentStatus}
+            submittedAt={order.payment?.submittedAt}
+          />
         </div>
 
         {/* Carrier Tracking Box (P1 Item 6) */}
@@ -625,70 +624,108 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* VietQR Quick Payment Toggle */}
-        {isVietQR && order.payment?.status !== 'PAID' && (
-          <div className="p-3.5 sm:p-4 bg-[#FAF5F0] border-t border-[#E8DFD5]">
-            <button
-              onClick={() => setExpandedQrOrderId(isExpandedQr ? null : order.orderId)}
-              className="w-full flex items-center justify-between text-xs font-bold text-[#631521] hover:text-[#4A0D17] transition-colors cursor-pointer"
-            >
-              <span className="flex items-center gap-1.5">
-                <QrCode className="w-4 h-4 text-[#631521]" />
-                {isExpandedQr ? 'Ẩn thông tin quét mã VietQR' : 'Xem mã QR & Thông tin chuyển khoản Vietcombank'}
-              </span>
-              {isExpandedQr ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-
-            <AnimatePresence>
-              {isExpandedQr && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="mt-3 pt-3 border-t border-[#E8DFD5] space-y-3"
-                >
-                  <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-3.5 rounded-[3px] border border-[#E8DFD5]">
-                    {/* QR Code */}
-                    <div className="w-36 h-36 bg-white p-1 rounded border border-[#E8DFD5] shadow-xs shrink-0 flex items-center justify-center">
-                      <img
-                        src={qrUrl}
-                        alt="VietQR Vietcombank"
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-
-                    {/* Bank info */}
-                    <div className="space-y-1.5 text-xs text-[#1A1614] flex-1 w-full">
-                      <p className="font-serif font-bold text-[#631521] uppercase text-[11px]">
-                        {bankInfo.bankName}
-                      </p>
-                      <div className="flex items-center justify-between bg-[#FAF8F5] px-2.5 py-1 rounded border border-[#E8DFD5]">
-                        <span>Số TK: <strong className="font-mono text-sm text-[#631521]">{bankInfo.accountNumber}</strong></span>
-                        <button
-                          onClick={() => handleCopy(bankInfo.accountNumber, `stk-${order.orderId}`)}
-                          className="text-[#631521] text-[11px] font-bold hover:underline flex items-center gap-1"
-                        >
-                          {copiedKey === `stk-${order.orderId}` ? 'Đã sao chép' : 'Sao chép'}
-                        </button>
-                      </div>
-                      <p className="text-[11px]"><strong>Chủ TK:</strong> {bankInfo.accountName}</p>
-                      <div className="flex items-center justify-between bg-[#FAF8F5] px-2.5 py-1 rounded border border-[#E8DFD5]">
-                        <span className="text-[11px]">Nội dung CK: <strong className="font-mono text-[#631521]">{transferContent}</strong></span>
-                        <button
-                          onClick={() => handleCopy(transferContent, `ct-${order.orderId}`)}
-                          className="text-[#631521] text-[11px] font-bold hover:underline flex items-center gap-1"
-                        >
-                          {copiedKey === `ct-${order.orderId}` ? 'Đã sao chép' : 'Sao chép'}
-                        </button>
-                      </div>
-                      <p className="text-[10px] text-[#8C7E74] italic">
-                        * Quý khách vui lòng nhập Nội dung CK: {transferContent} khi thanh toán.
-                      </p>
-                    </div>
+        {/* VietQR Payment Action & Status Navigation */}
+        {isVietQR && !isPaid && (
+          <div className="p-3.5 sm:p-4 bg-[#FAF5F0] border-t border-[#E8DFD5] space-y-2.5">
+            {isWaitingAdminConfirm ? (
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2.5">
+                  {proofImageUrl && (
+                    <a
+                      href={proofImageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-10 h-12 rounded-[2px] border border-[#D4AF37]/50 overflow-hidden bg-white shrink-0"
+                    >
+                      <img src={proofImageUrl} alt="Ảnh chuyển khoản" className="w-full h-full object-cover" />
+                    </a>
+                  )}
+                  <div className="text-xs text-[#4A3F38]">
+                    <p className="font-semibold text-[#B45309]">Đang chờ admin duyệt thanh toán QR</p>
+                    <p className="text-[11px] text-[#8C7E74]">Email xác nhận sẽ gửi ngay khi admin duyệt.</p>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                </div>
+                <Link
+                  to={`/cho-xac-nhan-thanh-toan?orderId=${encodeURIComponent(order.orderId)}`}
+                  onClick={onClose}
+                  className="inline-flex items-center gap-1.5 bg-[#631521] text-white text-[11px] font-bold uppercase tracking-wider px-3.5 py-2 rounded-[2px] hover:bg-[#4A0D17] transition-colors"
+                >
+                  <span>Theo dõi chờ xác nhận</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#D4AF37]" />
+                </Link>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <Link
+                    to={`/thanh-toan-chuyen-khoan?orderId=${encodeURIComponent(order.orderId)}`}
+                    onClick={onClose}
+                    className="inline-flex items-center gap-1.5 bg-[#631521] text-white text-[11px] font-bold uppercase tracking-wider px-3.5 py-2 rounded-[2px] hover:bg-[#4A0D17] transition-colors"
+                  >
+                    <QrCode className="w-3.5 h-3.5 text-[#D4AF37]" />
+                    <span>Quét mã QR & Tải ảnh CK</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-[#D4AF37]" />
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setExpandedQrOrderId(isExpandedQr ? null : order.orderId)}
+                    className="flex items-center gap-1 text-[11px] font-bold text-[#631521] hover:underline cursor-pointer"
+                  >
+                    <span>{isExpandedQr ? 'Ẩn QR nhanh' : 'Xem nhanh mã QR'}</span>
+                    {isExpandedQr ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+
+                <AnimatePresence>
+                  {isExpandedQr && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="pt-2 border-t border-[#E8DFD5] space-y-3"
+                    >
+                      <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-3.5 rounded-[3px] border border-[#E8DFD5]">
+                        <div className="w-36 h-36 bg-white p-1 rounded border border-[#E8DFD5] shadow-xs shrink-0 flex items-center justify-center overflow-hidden">
+                          <img
+                            src={qrUrl}
+                            alt="Mã QR Vietcombank"
+                            className="w-full h-full object-contain aspect-square"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5 text-xs text-[#1A1614] flex-1 w-full">
+                          <p className="font-serif font-bold text-[#631521] uppercase text-[11px]">
+                            {bankInfo.bankName}
+                          </p>
+                          <div className="flex items-center justify-between bg-[#FAF8F5] px-2.5 py-1 rounded border border-[#E8DFD5]">
+                            <span>Số TK: <strong className="font-mono text-sm text-[#631521]">{bankInfo.accountNumber}</strong></span>
+                            <button
+                              onClick={() => handleCopy(bankInfo.accountNumber, `stk-${order.orderId}`)}
+                              className="text-[#631521] text-[11px] font-bold hover:underline flex items-center gap-1"
+                            >
+                              {copiedKey === `stk-${order.orderId}` ? 'Đã sao chép' : 'Sao chép'}
+                            </button>
+                          </div>
+                          <p className="text-[11px]"><strong>Chủ TK:</strong> {bankInfo.accountName}</p>
+                          <div className="flex items-center justify-between bg-[#FAF8F5] px-2.5 py-1 rounded border border-[#E8DFD5]">
+                            <span className="text-[11px]">Nội dung CK: <strong className="font-mono text-[#631521]">{transferContent}</strong></span>
+                            <button
+                              onClick={() => handleCopy(transferContent, `ct-${order.orderId}`)}
+                              className="text-[#631521] text-[11px] font-bold hover:underline flex items-center gap-1"
+                            >
+                              {copiedKey === `ct-${order.orderId}` ? 'Đã sao chép' : 'Sao chép'}
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-[#8C7E74] italic">
+                            * Sau khi chuyển khoản, bấm "Quét mã QR & Tải ảnh CK" để tải ảnh lên và bấm Thanh toán.
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </>
+            )}
           </div>
         )}
 

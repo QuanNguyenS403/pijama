@@ -440,9 +440,6 @@ export function getOrderPaymentStatus(orderId, now = Date.now()) {
     }
   }
 
-  // Tự động quét kiểm tra hết hạn nếu đến hạn (I5)
-  expireOrderIfDue(orderId, now)
-
   const record = orderPaymentStore.get(orderId)
   if (!record) {
     return {
@@ -451,33 +448,32 @@ export function getOrderPaymentStatus(orderId, now = Date.now()) {
       phase: PAYMENT_PHASES.AWAITING,
       status: 'AWAITING_PAYMENT',
       isQrValid: false,
-      expiresInSeconds: 0,
       serverNow: new Date(now).toISOString(),
     }
   }
 
-  const phase = getPaymentPhase(record, now)
-  const qrExpiresAt = record.payment?.qrExpiresAt
-    ? new Date(record.payment.qrExpiresAt).getTime()
-    : (record.createdAt ? new Date(record.createdAt).getTime() + PAYMENT_QR_TTL_SECONDS * 1000 : now)
+  const phase = getPaymentPhase(record)
+  const isQrValid = phase !== PAYMENT_PHASES.PAID && phase !== PAYMENT_PHASES.CANCELLED
 
-  const remainingSeconds = Math.max(0, Math.round((qrExpiresAt - now) / 1000))
-  const isQrValid = phase === PAYMENT_PHASES.AWAITING
+  const mappedStatus =
+    phase === PAYMENT_PHASES.PAID
+      ? 'PAID'
+      : phase === PAYMENT_PHASES.WAITING_CONFIRMATION
+      ? 'WAITING_CONFIRMATION'
+      : phase === PAYMENT_PHASES.CANCELLED
+      ? 'CANCELLED'
+      : (record.payment?.status || 'AWAITING_PAYMENT')
 
-  const bridgeHealth = getBridgeHealth(now)
-
-  // Tương thích ngược với các client đang đọc record.status / isQrValid
   return {
     success: true,
     orderId,
     phase,
-    expiresAt: new Date(qrExpiresAt).toISOString(),
     serverNow: new Date(now).toISOString(),
     isQrValid,
-    bridgeHealthy: bridgeHealth.healthy,
-    status: phase === PAYMENT_PHASES.PAID ? 'PAID' : (phase === PAYMENT_PHASES.EXPIRED ? 'EXPIRED' : (phase === PAYMENT_PHASES.RECONCILING ? 'RECONCILING' : (record.payment?.status || 'AWAITING_PAYMENT'))),
-    expiresInSeconds: remainingSeconds,
+    status: mappedStatus,
     paymentStatus: record.payment?.status || 'AWAITING_PAYMENT',
+    hasPaymentProof: Boolean(record.payment?.proofImageUrl),
+    paymentSubmittedAt: record.payment?.submittedAt || null,
     // Chỉ kèm thông tin đơn tối thiểu an toàn, không rò rỉ secret / PII
     order: phase === PAYMENT_PHASES.PAID ? record : undefined,
   }

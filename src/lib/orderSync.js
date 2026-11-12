@@ -279,6 +279,7 @@ export function applyOrderUpdateLocally(updatedOrder) {
       trackingNumber: updatedOrder.trackingCode || updatedOrder.trackingNumber || existing?.trackingCode || existing?.trackingNumber || '',
       carrier: updatedOrder.carrier || existing?.carrier || 'Viettel Post',
       paymentStatus: updatedOrder.paymentStatus || existing?.paymentStatus || (!isBankTransfer && isDelivered ? 'PAID' : undefined),
+      paymentProof: updatedOrder.paymentProof || existing?.paymentProof || null,
       payment: {
         ...(existing?.payment || {}),
         ...(updatedOrder.payment || {}),

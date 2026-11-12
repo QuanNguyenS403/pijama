@@ -1,23 +1,23 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link, useSearchParams, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   CheckCircle2,
   Package,
   Truck,
-  ShieldCheck,
   QrCode,
   Copy,
   Check,
   Gift,
-  RefreshCw,
   Loader2,
-  Clock,
   Lock,
   AlertTriangle,
-  Sparkles,
-  Bot,
   ShoppingBag,
+  Upload,
+  ImagePlus,
+  X,
+  ExternalLink,
+  ArrowRight,
 } from 'lucide-react'
 import Header from '../components/layout/Header'
 import Section12Footer from '../components/sections/Section12Footer'
@@ -62,24 +62,105 @@ export default function BankTransferPaymentPage() {
 
   const [aiQrDataUrl, setAiQrDataUrl] = useState(null)
   const [bankDetails, setBankDetails] = useState(null)
-  const [bridgeHealthy, setBridgeHealthy] = useState(true)
   const [paymentPhase, setPaymentPhase] = useState(() => {
-    if (order?.payment?.status === 'PAID') return 'PAID'
-    if (order?.payment?.status === 'CUSTOMER_CLAIMED_PAID') return 'CLAIMED'
-    if (order?.payment?.status === 'EXPIRED_TIMEOUT' || order?.status === 'CANCELLED') return 'EXPIRED'
+    if (order?.payment?.status === 'PAID' || order?.paymentStatus === 'PAID') return 'PAID'
+    if (order?.status === 'CANCELLED') return 'CANCELLED'
+    if (
+      order?.payment?.status === 'PENDING_ADMIN_CONFIRMATION' ||
+      order?.payment?.status === 'CUSTOMER_CLAIMED_PAID' ||
+      Boolean(order?.payment?.submittedAt)
+    ) {
+      return 'WAITING_CONFIRMATION'
+    }
     return 'AWAITING'
   })
 
-  // Countdown timer 10 phút (600 seconds) - Thống nhất PAYMENT_QR_TTL_SECONDS (Q-B, WP6)
-  const [timeLeft, setTimeLeft] = useState(() => {
-    if (order?.payment?.qrExpiresAt) {
-      const remaining = Math.round((new Date(order.payment.qrExpiresAt).getTime() - Date.now()) / 1000)
-      return Math.max(0, Math.min(600, remaining))
+  // Upload ảnh chuyển khoản thành công để chủ shop đối soát
+  const [proofData, setProofData] = useState(() => {
+    if (order?.paymentProof?.imageUrl) return order.paymentProof
+    if (order?.payment?.proofImageUrl) {
+      return {
+        imageUrl: order.payment.proofImageUrl,
+        uploadedAt: order.payment.proofUploadedAt || null,
+        note: order.payment.proofNote || '',
+      }
     }
-    return 600
+    return null
   })
+  const [selectedProofFile, setSelectedProofFile] = useState(null)
+  const [proofPreviewUrl, setProofPreviewUrl] = useState('')
+  const [proofNote, setProofNote] = useState('')
+  const [isUploadingProof, setIsUploadingProof] = useState(false)
+  const [proofError, setProofError] = useState('')
+  const [isDraggingProof, setIsDraggingProof] = useState(false)
+  const [showUploadForm, setShowUploadForm] = useState(() => {
+    return !(order?.paymentProof?.imageUrl || order?.payment?.proofImageUrl)
+  })
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false)
+  const [submitPaymentError, setSubmitPaymentError] = useState('')
+  const proofInputRef = useRef(null)
+  const uploadSectionRef = useRef(null)
+  const proofHydratedRef = useRef(false)
 
-  // Polling kiểm tra trạng thái thanh toán từ máy chủ (WP5 / WP6)
+  useEffect(() => {
+    return () => {
+      if (proofPreviewUrl) URL.revokeObjectURL(proofPreviewUrl)
+    }
+  }, [proofPreviewUrl])
+
+  const persistLocalOrderPatch = useCallback((patchFn) => {
+    if (!orderId) return null
+    let updatedSnapshot = null
+    setOrder((prev) => {
+      if (!prev) return prev
+      const updated = patchFn(prev)
+      updatedSnapshot = updated
+      try {
+        sessionStorage.setItem(`last_order_${orderId}`, JSON.stringify(updated))
+        sessionStorage.setItem('latest_order', JSON.stringify(updated))
+        for (const key of ['pijama_orders', 'pijama_orders_archive']) {
+          const list = JSON.parse(localStorage.getItem(key) || '[]')
+          if (Array.isArray(list)) {
+            const exists = list.some((o) => (o.orderId || o.id) === orderId)
+            const nextList = exists
+              ? list.map((o) => ((o.orderId || o.id) === orderId ? updated : o))
+              : [updated, ...list]
+            localStorage.setItem(key, JSON.stringify(nextList))
+          }
+        }
+        window.dispatchEvent(new CustomEvent('orders_updated', { detail: updated }))
+      } catch {}
+      return updated
+    })
+    return updatedSnapshot
+  }, [orderId])
+
+  const persistLocalPaymentProof = useCallback((nextProof) => {
+    if (!nextProof) return
+    persistLocalOrderPatch((prev) => ({
+      ...prev,
+      paymentProof: nextProof,
+      payment: {
+        ...(prev.payment || {}),
+        proofImageUrl: nextProof.imageUrl,
+        proofUploadedAt: nextProof.uploadedAt,
+        proofNote: nextProof.note || '',
+      },
+    }))
+  }, [persistLocalOrderPatch])
+
+  // Nếu đơn đã bấm "Thanh toán" và đang chờ admin duyệt -> điều hướng thẳng sang trang chờ xác nhận
+  useEffect(() => {
+    if (!orderId) return
+    if (paymentPhase === 'WAITING_CONFIRMATION') {
+      navigate(`/cho-xac-nhan-thanh-toan?orderId=${encodeURIComponent(orderId)}`, {
+        state: { order },
+        replace: true,
+      })
+    }
+  }, [paymentPhase, orderId, order, navigate])
+
+  // Polling kiểm tra trạng thái thanh toán từ máy chủ
   const checkStatus = useCallback(async (isManual = false) => {
     if (!orderId) return
     try {
@@ -91,14 +172,20 @@ export default function BankTransferPaymentPage() {
           if (data.phase) {
             setPaymentPhase(data.phase)
           }
-          if (typeof data.expiresInSeconds === 'number') {
-            setTimeLeft(data.expiresInSeconds)
-          }
-          if (typeof data.bridgeHealthy === 'boolean') {
-            setBridgeHealthy(data.bridgeHealthy)
+          if (data.hasPaymentProof && !proofData && !proofHydratedRef.current && order?.trackingToken) {
+            proofHydratedRef.current = true
+            fetch(`/api/orders/payment-proof?orderId=${encodeURIComponent(orderId)}&token=${encodeURIComponent(order.trackingToken)}`)
+              .then((r) => (r.ok ? r.json() : null))
+              .then((proofRes) => {
+                if (proofRes?.success && proofRes.paymentProof) {
+                  setProofData(proofRes.paymentProof)
+                  setShowUploadForm(false)
+                  persistLocalPaymentProof(proofRes.paymentProof)
+                }
+              })
+              .catch(() => {})
           }
 
-          // CHỈ điều hướng sang "thành công" khi máy chủ trả PAID (Invariant I1, WP6)
           if (data.phase === 'PAID' || data.status === 'PAID') {
             setIsQrInvalidated(true)
             setVerifySuccess(true)
@@ -108,66 +195,41 @@ export default function BankTransferPaymentPage() {
               setOrder(data.order)
             }
             setTimeout(() => {
-              navigate(`/dat-hang-thanh-cong?orderId=${orderId}`, {
+              navigate(`/dat-hang-thanh-cong?orderId=${encodeURIComponent(orderId)}`, {
                 state: { order: data.order || order },
                 replace: true,
               })
-            }, 1000)
-          } else if (data.phase === 'EXPIRED' || data.status === 'EXPIRED' || data.status === 'QR_EXPIRED') {
-            setIsQrInvalidated(true)
-            setPaymentPhase('EXPIRED')
-            // Tự động khôi phục sản phẩm vào giỏ hàng & loại bỏ đơn hủy khỏi danh sách lưu trữ
-            restoreOrderItemsToCart(order)
-            purgeCancelledOrderLocally(orderId)
-          } else if (data.phase === 'CLAIMED' || data.status === 'CUSTOMER_CLAIMED_PAID') {
-            setPaymentPhase('CLAIMED')
+            }, 800)
+          } else if (data.phase === 'WAITING_CONFIRMATION' || data.status === 'WAITING_CONFIRMATION') {
+            setPaymentPhase('WAITING_CONFIRMATION')
+          } else if (data.phase === 'CANCELLED' || data.status === 'CANCELLED') {
+            setPaymentPhase('CANCELLED')
           }
         }
       }
-    } catch (err) {
+    } catch {
       // Polling silent catch
     } finally {
       if (isManual) setIsVerifying(false)
     }
-  }, [orderId, order, navigate])
-
-  // Khi hết giờ trên client timer: Gọi server checkStatus() để server xác nhận hết hạn (B3, WP6)
-  // Client KHÔNG tự gán CANCELLED hay EXPIRED_TIMEOUT vào localStorage đơn phương
-  useEffect(() => {
-    if (timeLeft <= 0 && !isQrInvalidated && order && order.status !== 'CANCELLED') {
-      checkStatus(false)
-    }
-  }, [timeLeft, isQrInvalidated, order, checkStatus])
+  }, [orderId, order, navigate, proofData, persistLocalPaymentProof])
 
   // Khôi phục toàn bộ sản phẩm vào giỏ hàng để khách đặt lại nhanh chóng
   const handleRestoreCartAndReorder = () => {
     if (order?.items && order.items.length > 0) {
-      const addItem = useCartStore.getState().addItem
-      order.items.forEach((item) => {
-        addItem({
-          id: item.id || item.productId || item.slug,
-          name: item.productName || item.name,
-          price: item.unitPrice || item.price,
-          quantity: item.quantity || 1,
-          variant: item.variant,
-          image: item.image || item.productImage || '',
-          slug: item.slug || item.productId,
-        })
-      })
+      restoreOrderItemsToCart(order)
+      purgeCancelledOrderLocally(orderId)
     }
     navigate('/checkout')
   }
 
   // Customer & Payment Data
   const customerName = order?.customer?.fullName || 'Quý khách'
-  const customerPhone = order?.customer?.phone || ''
-  const customerEmail = order?.customer?.email || ''
   const total = order?.total || bankDetails?.total || 0
   const discount = order?.discount || 0
-  // PAY-004: Nội dung chuyển khoản chuẩn hóa chứa mã đơn để webhook đối soát
-  const transferContent = `QNS ${orderId}`
+  const transferContent = bankDetails?.description || (orderId ? (orderId.startsWith('QNS') ? orderId : `QNS ${orderId}`) : '')
   const qrUrl = aiQrDataUrl || bankDetails?.vietQrUrl || (total > 0
-    ? `https://img.vietqr.io/image/vietcombank-1050773506-compact2.png?amount=${total}&addInfo=${encodeURIComponent('QNS ' + orderId)}&accountName=NGUYEN%20DUC%20QUAN`
+    ? `https://img.vietqr.io/image/vietcombank-1050773506-qr_only.png?amount=${total}&addInfo=${encodeURIComponent(transferContent)}&accountName=NGUYEN%20DUC%20QUAN`
     : '')
 
   // Tự động lấy mã QR VietQR chuẩn hóa từ server (WP4 - Server-Authoritative)
@@ -202,33 +264,16 @@ export default function BankTransferPaymentPage() {
     }
   }, [orderId])
 
-  // Countdown effect
-  useEffect(() => {
-    if (timeLeft <= 0 || isQrInvalidated) return
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0))
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [timeLeft, isQrInvalidated])
-
-  // Format timer mm:ss
-  const formatTimer = (seconds) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
-
-  // Polling to check order payment status from backend Webhook
+  // Polling nhẹ & SSE đồng bộ khi Admin duyệt thủ công trong lúc khách đang mở trang QR
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
     if (!orderId) return
 
     let isSubscribed = true
-
     checkStatus(false)
     const interval = setInterval(() => {
       if (isSubscribed) checkStatus(false)
-    }, 2000)
+    }, 4000)
 
     const handleOrderEvent = (e) => {
       if (!isSubscribed) return
@@ -239,12 +284,13 @@ export default function BankTransferPaymentPage() {
           setVerifySuccess(true)
           applyOrderUpdateLocally(updated)
           setOrder(updated)
+          useCartStore.getState().clearCart()
           setTimeout(() => {
-            navigate(`/dat-hang-thanh-cong?orderId=${orderId}`, {
+            navigate(`/dat-hang-thanh-cong?orderId=${encodeURIComponent(orderId)}`, {
               state: { order: updated },
               replace: true,
             })
-          }, 1000)
+          }, 800)
         }
       }
     }
@@ -263,6 +309,146 @@ export default function BankTransferPaymentPage() {
     navigator.clipboard.writeText(text)
     setCopiedField(fieldName)
     setTimeout(() => setCopiedField(null), 2000)
+  }
+
+  const handleSelectProofFile = (file) => {
+    setProofError('')
+    setSubmitPaymentError('')
+    if (!file) return
+    const allowedTypes = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
+    if (!allowedTypes.has(String(file.type || '').toLowerCase())) {
+      setProofError('Chỉ hỗ trợ ảnh định dạng JPEG, PNG hoặc WebP.')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setProofError('Dung lượng ảnh không được vượt quá 5MB.')
+      return
+    }
+    if (proofPreviewUrl) URL.revokeObjectURL(proofPreviewUrl)
+    setSelectedProofFile(file)
+    setProofPreviewUrl(URL.createObjectURL(file))
+  }
+
+  const clearSelectedProofFile = () => {
+    if (proofPreviewUrl) URL.revokeObjectURL(proofPreviewUrl)
+    setSelectedProofFile(null)
+    setProofPreviewUrl('')
+    setProofError('')
+    if (proofInputRef.current) proofInputRef.current.value = ''
+  }
+
+  const uploadProofFile = async (file, noteText = '') => {
+    const formData = new FormData()
+    formData.append('proofImage', file)
+    formData.append('orderId', orderId)
+    if (order?.trackingToken) formData.append('trackingToken', order.trackingToken)
+    if (order?.customer?.phone) formData.append('phone', order.customer.phone)
+    if (noteText.trim()) formData.append('note', noteText.trim())
+
+    const res = await fetch('/api/orders/payment-proof', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Không thể tải ảnh chuyển khoản. Vui lòng thử lại.')
+    }
+    setProofData(data.paymentProof)
+    setShowUploadForm(false)
+    setProofNote('')
+    clearSelectedProofFile()
+    persistLocalPaymentProof(data.paymentProof)
+    return data.paymentProof
+  }
+
+  const handleUploadProof = async (e) => {
+    e.preventDefault()
+    if (!selectedProofFile) {
+      setProofError('Vui lòng chọn ảnh chụp màn hình chuyển khoản thành công.')
+      return
+    }
+    setProofError('')
+    setSubmitPaymentError('')
+    setIsUploadingProof(true)
+    try {
+      await uploadProofFile(selectedProofFile, proofNote)
+    } catch (err) {
+      setProofError(err.message || 'Đã có lỗi xảy ra khi tải ảnh lên.')
+    } finally {
+      setIsUploadingProof(false)
+    }
+  }
+
+  const handleConfirmQrPayment = async () => {
+    setSubmitPaymentError('')
+    setProofError('')
+
+    if (!proofData?.imageUrl && !selectedProofFile) {
+      setSubmitPaymentError('Vui lòng tải lên ảnh chuyển khoản thành công ở bước trên trước khi bấm Thanh toán.')
+      uploadSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+
+    setIsSubmittingPayment(true)
+    try {
+      let latestProof = proofData
+      if (selectedProofFile) {
+        latestProof = await uploadProofFile(selectedProofFile, proofNote)
+      }
+
+      const res = await fetch('/api/orders/submit-qr-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          orderId,
+          trackingToken: order?.trackingToken || '',
+          phone: order?.customer?.phone || '',
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Không thể gửi xác nhận thanh toán. Vui lòng thử lại.')
+      }
+
+      if (data.alreadyPaid) {
+        useCartStore.getState().clearCart()
+        navigate(`/dat-hang-thanh-cong?orderId=${encodeURIComponent(orderId)}`, {
+          state: { order },
+          replace: true,
+        })
+        return
+      }
+
+      const finalProof = data.paymentProof || latestProof
+      const updatedOrder = {
+        ...order,
+        status: 'AWAITING_PAYMENT',
+        paymentStatus: 'PENDING_ADMIN_CONFIRMATION',
+        paymentProof: finalProof,
+        payment: {
+          ...(order?.payment || {}),
+          method: 'BANK_TRANSFER',
+          status: 'PENDING_ADMIN_CONFIRMATION',
+          submittedAt: data.submittedAt || new Date().toISOString(),
+          proofImageUrl: finalProof?.imageUrl || order?.payment?.proofImageUrl || null,
+          proofUploadedAt: finalProof?.uploadedAt || order?.payment?.proofUploadedAt || null,
+          proofNote: finalProof?.note || order?.payment?.proofNote || '',
+        },
+      }
+      applyOrderUpdateLocally(updatedOrder)
+      useCartStore.getState().clearCart()
+
+      navigate(`/cho-xac-nhan-thanh-toan?orderId=${encodeURIComponent(orderId)}`, {
+        state: { order: updatedOrder },
+        replace: true,
+      })
+    } catch (err) {
+      setSubmitPaymentError(err.message || 'Không thể gửi xác nhận thanh toán. Vui lòng thử lại.')
+    } finally {
+      setIsSubmittingPayment(false)
+    }
   }
 
   return (
@@ -389,12 +575,11 @@ export default function BankTransferPaymentPage() {
                     Cảm ơn {customerName} đã lựa chọn QuanNguyenS
                   </p>
                   <p className="text-xs sm:text-sm font-normal text-[#4A3F38] leading-relaxed">
-                    Đơn hàng đã được khởi tạo thành công. Vui lòng thanh toán theo mã QR bên dưới trong vòng <strong>10 phút</strong>. 
-                    Quét mã bằng app ngân hàng và chuyển khoản. Hệ thống tự xác nhận, bạn không cần bấm gì.
+                    Vui lòng quét mã QR bên dưới để chuyển khoản (mã QR đã tự động điền sẵn số tiền và nội dung chuyển khoản), sau đó tải lên ảnh chuyển khoản thành công và bấm <strong>Thanh toán</strong> ở cuối trang để gửi yêu cầu xác nhận.
                   </p>
                 </div>
 
-                {/* BOX 1: HƯỚNG DẪN CHUYỂN KHOẢN VIETQR (1 LẦN) */}
+                {/* BOX 1: HƯỚNG DẪN CHUYỂN KHOẢN VIETQR */}
                 <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -403,19 +588,8 @@ export default function BankTransferPaymentPage() {
                   <div className="flex items-center justify-between border-b border-[#E8DFD5] pb-3 flex-wrap gap-2">
                     <span className="font-sans text-xs font-bold uppercase tracking-wider text-[#631521] flex items-center gap-1.5">
                       <QrCode className="w-4 h-4 text-[#631521]" />
-                      Mã QR VietQR 24/7 (Giảm 10%)
+                      Mã QR Tại Đây
                     </span>
-                    {/* Countdown Timer Badge */}
-                    <div className="flex items-center gap-2">
-                      <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded border ${
-                        timeLeft > 60 
-                          ? 'bg-[#E8F5E9] text-[#2E7D32] border-[#C8E6C9]' 
-                          : 'bg-[#FFEBEE] text-[#C62828] border-[#FFCDD2] animate-pulse'
-                      }`}>
-                        <Clock className="w-3.5 h-3.5" />
-                        Thời hạn thanh toán: {formatTimer(timeLeft)}
-                      </span>
-                    </div>
                   </div>
 
                   {isQrInvalidated ? (
@@ -431,32 +605,17 @@ export default function BankTransferPaymentPage() {
                         Hệ thống đã khóa mã QR này để bảo vệ giao dịch và chống chuyển tiền trùng lặp.
                       </p>
                     </div>
-                  ) : paymentPhase === 'RECONCILING' ? (
-                    /* Trạng thái hết 10 phút nhưng đang trong thời gian ân hạn đối soát email ngân hàng (WP7) */
-                    <div className="p-6 bg-white border border-[#FFE082] rounded-[4px] text-center space-y-3.5 shadow-xs">
-                      <Clock className="w-10 h-10 text-[#D4AF37] mx-auto animate-pulse" />
-                      <h4 className="font-serif text-base font-bold text-[#B45309]">
-                        Mã QR Đã Hết Hạn — Hệ Thống Đang Đối Soát
-                      </h4>
-                      <p className="text-xs text-[#4A3F38] max-w-md mx-auto leading-relaxed">
-                        Thời hạn quét mã 10 phút đã kết thúc. Nếu bạn vừa hoàn tất chuyển khoản trên ứng dụng ngân hàng, hệ thống đang kiểm tra biến động số dư và sẽ <strong>tự động chuyển sang trang đặt hàng thành công ngay khi nhận được tín hiệu</strong>. Vui lòng giữ nguyên màn hình trong giây lát.
-                      </p>
-                      <div className="flex items-center justify-center gap-2 text-[11px] text-[#8C7E74] pt-1">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#631521]" />
-                        <span>Đang tự động đối soát với sao kê ngân hàng...</span>
-                      </div>
-                    </div>
-                  ) : paymentPhase === 'EXPIRED' || timeLeft <= 0 ? (
-                    /* Trạng thái mã QR hết hạn 5 phút */
+                  ) : paymentPhase === 'CANCELLED' ? (
                     <div className="p-6 bg-white border border-[#EF9A9A] rounded-[4px] text-center space-y-3.5 shadow-xs">
                       <AlertTriangle className="w-10 h-10 text-[#C62828] mx-auto" />
                       <h4 className="font-serif text-base font-bold text-[#C62828]">
-                        Đơn hàng chưa thanh toán — Mã QR đã hết hạn hiệu lực (10 phút)
+                        Đơn hàng #{orderId} đã bị hủy
                       </h4>
-                      <p className="text-xs text-[#4A3F38] max-w-md mx-auto leading-relaxed">
-                        Thời hạn thanh toán 10 phút cho mã QR này đã kết thúc. Lần đặt hàng này được ghi nhận là không thành công. 
-                        <strong> Toàn bộ thông tin sản phẩm của bạn vẫn được lưu trữ an toàn</strong>, bạn có thể bấm nút bên dưới để khôi phục lại giỏ hàng và đặt lại ngay.
-                      </p>
+                      {order.cancelReason && (
+                        <p className="text-xs text-[#4A3F38]">
+                          <strong>Lý do:</strong> {order.cancelReason}
+                        </p>
+                      )}
                       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                         <button
                           type="button"
@@ -466,24 +625,17 @@ export default function BankTransferPaymentPage() {
                           <ShoppingBag className="w-4 h-4 text-[#D4AF37]" />
                           <span>Khôi phục sản phẩm & Đặt lại đơn</span>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => navigate('/tai-khoan')}
-                          className="w-full sm:w-auto bg-white border border-[#E8DFD5] text-[#4A3F38] text-xs font-semibold px-5 py-3 rounded-[2px] hover:bg-[#FAF8F5] transition-all cursor-pointer"
-                        >
-                          Xem lịch sử đơn hàng
-                        </button>
                       </div>
                     </div>
                   ) : (
                     <div className="flex flex-col md:flex-row items-center gap-5">
                       {/* QR Image */}
                       <div className="flex flex-col items-center shrink-0">
-                        <div className="w-40 h-40 bg-white p-2 rounded border border-[#E8DFD5] shadow-xs flex items-center justify-center relative">
+                        <div className="w-52 h-52 sm:w-56 sm:h-56 bg-white p-2 rounded border border-[#E8DFD5] shadow-xs flex items-center justify-center relative overflow-hidden">
                           <img
                             src={qrUrl}
-                            alt="Mã QR Napas 24/7 Vietcombank"
-                            className="w-full h-full object-contain"
+                            alt="Mã QR Chuyển khoản Vietcombank"
+                            className="w-full h-full object-contain aspect-square"
                           />
                         </div>
                       </div>
@@ -523,8 +675,9 @@ export default function BankTransferPaymentPage() {
 
                         <div className="bg-white p-2.5 rounded-[2px] border border-[#E8DFD5] flex items-center justify-between">
                           <div>
-                            <p className="text-[10px] text-[#8C7E74]">
-                              Nội dung chuyển khoản: <span className="italic text-[#631521] font-semibold">(Quý khách tự nhập khi CK)</span>
+                            <p className="text-[10px] text-[#8C7E74] flex items-center gap-1.5 flex-wrap">
+                              <span>Nội dung chuyển khoản:</span>
+                              <span className="text-[#2E7D32] font-semibold text-[10px] bg-[#E8F5E9] px-1.5 py-0.5 rounded-[2px] border border-[#C8E6C9]">(Đã tích hợp sẵn trong mã QR)</span>
                             </p>
                             <p className="font-mono font-bold text-[#631521] text-xs mt-0.5">
                               {transferContent}
@@ -553,11 +706,219 @@ export default function BankTransferPaymentPage() {
 
                 </motion.div>
 
-                {/* BOX 2: TÓM TẮT ĐƠN HÀNG */}
+                {/* BOX 1b: UPLOAD ẢNH CHUYỂN KHOẢN THÀNH CÔNG ĐỂ CHỦ SHOP ĐỐI SOÁT */}
+                {!isQrInvalidated && paymentPhase !== 'CANCELLED' && (
+                  <div ref={uploadSectionRef} className="bg-white rounded-[4px] border border-[#E8DFD5] p-5 sm:p-6 space-y-4 shadow-xs">
+                    <div className="flex items-center justify-between border-b border-[#E8DFD5] pb-3 flex-wrap gap-2">
+                      <span className="font-sans text-xs font-bold uppercase tracking-wider text-[#631521] flex items-center gap-1.5">
+                        <Upload className="w-4 h-4 text-[#631521]" />
+                        Tải Lên Ảnh Chuyển Khoản Thành Công
+                      </span>
+                      {proofData?.imageUrl && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7]">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Đã gửi ảnh đối soát
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-[#4A3F38] leading-relaxed">
+                      Sau khi chuyển khoản thành công, vui lòng tải lên ảnh chụp màn hình biên lai giao dịch để chủ shop đối soát dòng tiền và xác nhận đơn nhanh hơn.
+                    </p>
+
+                    {proofData?.imageUrl && !showUploadForm ? (
+                      <div className="bg-[#E8F5E9]/70 border border-[#A5D6A7] rounded-[3px] p-4 space-y-3">
+                        <div className="flex flex-col sm:flex-row items-start gap-4">
+                          <a
+                            href={proofData.imageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block w-24 h-28 bg-white rounded-[2px] border border-[#A5D6A7] overflow-hidden shrink-0 hover:opacity-90 transition-opacity"
+                            title="Bấm để xem ảnh kích thước đầy đủ"
+                          >
+                            <img
+                              src={proofData.imageUrl}
+                              alt="Ảnh chứng từ chuyển khoản đã tải lên"
+                              className="w-full h-full object-cover"
+                            />
+                          </a>
+                          <div className="flex-1 space-y-1.5 text-xs">
+                            <p className="font-bold text-[#2E7D32] flex items-center gap-1.5">
+                              <CheckCircle2 className="w-4 h-4 shrink-0" />
+                              Đã tiếp nhận ảnh xác nhận chuyển khoản
+                            </p>
+                            <p className="text-[#4A3F38] leading-relaxed">
+                              Chứng từ của bạn đã được chuyển tới bộ phận đối soát của QuanNguyenS.
+                            </p>
+                            {proofData.uploadedAt && (
+                              <p className="text-[11px] text-[#6B5D54]">
+                                Thời gian tải lên: {new Date(proofData.uploadedAt).toLocaleString('vi-VN')}
+                              </p>
+                            )}
+                            {proofData.note && (
+                              <p className="text-[11px] text-[#4A3F38] bg-white/80 px-2.5 py-1.5 rounded border border-[#C8E6C9]">
+                                <strong>Ghi chú:</strong> {proofData.note}
+                              </p>
+                            )}
+                            <div className="flex flex-wrap items-center gap-3 pt-1">
+                              <a
+                                href={proofData.imageUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#631521] hover:underline"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                Xem ảnh đầy đủ
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => setShowUploadForm(true)}
+                                className="text-[11px] font-semibold text-[#4A3F38] underline hover:text-[#631521] cursor-pointer"
+                              >
+                                Tải lên ảnh khác
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleUploadProof} className="space-y-3">
+                        <input
+                          ref={proofInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={(e) => handleSelectProofFile(e.target.files?.[0] || null)}
+                          className="hidden"
+                          id="payment-proof-file-input"
+                        />
+
+                        {!selectedProofFile ? (
+                          <label
+                            htmlFor="payment-proof-file-input"
+                            onDragOver={(e) => {
+                              e.preventDefault()
+                              setIsDraggingProof(true)
+                            }}
+                            onDragLeave={() => setIsDraggingProof(false)}
+                            onDrop={(e) => {
+                              e.preventDefault()
+                              setIsDraggingProof(false)
+                              handleSelectProofFile(e.dataTransfer.files?.[0] || null)
+                            }}
+                            className={`flex flex-col items-center justify-center gap-2 p-5 border-2 border-dashed rounded-[3px] cursor-pointer transition-colors text-center ${
+                              isDraggingProof
+                                ? 'border-[#631521] bg-[#FAF5F0]'
+                                : 'border-[#D9CFC4] bg-[#FAF8F5] hover:border-[#631521]/70 hover:bg-[#FAF5F0]'
+                            }`}
+                          >
+                            <div className="w-10 h-10 rounded-full bg-white border border-[#E8DFD5] flex items-center justify-center text-[#631521]">
+                              <ImagePlus className="w-5 h-5" />
+                            </div>
+                            <div className="space-y-0.5">
+                              <p className="text-xs font-semibold text-[#1A1614]">
+                                Bấm để chọn ảnh hoặc kéo thả ảnh biên lai vào đây
+                              </p>
+                              <p className="text-[11px] text-[#8C7E74]">
+                                Hỗ trợ JPG, PNG, WebP (tối đa 5MB)
+                              </p>
+                            </div>
+                          </label>
+                        ) : (
+                          <div className="flex items-start gap-3.5 p-3 bg-[#FAF8F5] border border-[#E8DFD5] rounded-[3px]">
+                            <img
+                              src={proofPreviewUrl}
+                              alt="Xem trước ảnh chuyển khoản"
+                              className="w-20 h-24 object-cover rounded-[2px] border border-[#D9CFC4] bg-white shrink-0"
+                            />
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <p className="text-xs font-semibold text-[#1A1614] truncate">
+                                {selectedProofFile.name}
+                              </p>
+                              <p className="text-[11px] text-[#8C7E74]">
+                                {(selectedProofFile.size / 1024).toFixed(0)} KB
+                              </p>
+                              <div className="flex items-center gap-3 pt-1">
+                                <label
+                                  htmlFor="payment-proof-file-input"
+                                  className="text-[11px] font-semibold text-[#631521] hover:underline cursor-pointer"
+                                >
+                                  Chọn ảnh khác
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={clearSelectedProofFile}
+                                  className="inline-flex items-center gap-1 text-[11px] text-[#8C7E74] hover:text-[#C62828] cursor-pointer"
+                                >
+                                  <X className="w-3 h-3" />
+                                  Xóa
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div>
+                          <label htmlFor="payment-proof-note" className="block text-[11px] font-semibold text-[#4A3F38] mb-1">
+                            Ghi chú giao dịch (không bắt buộc)
+                          </label>
+                          <input
+                            id="payment-proof-note"
+                            type="text"
+                            maxLength={200}
+                            value={proofNote}
+                            onChange={(e) => setProofNote(e.target.value)}
+                            placeholder="Ví dụ: Đã chuyển từ Vietcombank lúc 16:30, mã tham chiếu..."
+                            className="w-full px-3 py-2 text-xs bg-[#FAF8F5] border border-[#E8DFD5] rounded-[2px] focus:bg-white focus:outline-none focus:border-[#631521]"
+                          />
+                        </div>
+
+                        {proofError && (
+                          <p className="text-xs text-[#C62828] bg-[#FFEBEE] border border-[#FFCDD2] px-3 py-2 rounded-[2px]">
+                            {proofError}
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-2.5">
+                          <button
+                            type="submit"
+                            disabled={isUploadingProof || !selectedProofFile}
+                            className="flex-1 bg-[#631521] text-[#FAF8F5] font-sans font-bold text-xs uppercase tracking-[0.15em] py-3 px-4 rounded-[2px] hover:bg-[#4A0D17] border border-[#D4AF37]/30 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isUploadingProof ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin text-[#D4AF37]" />
+                                <span>Đang tải ảnh lên...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="w-4 h-4 text-[#D4AF37]" />
+                                <span>Gửi Ảnh Chuyển Khoản</span>
+                              </>
+                            )}
+                          </button>
+                          {proofData?.imageUrl && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                clearSelectedProofFile()
+                                setShowUploadForm(false)
+                              }}
+                              className="px-4 py-3 text-xs font-semibold text-[#4A3F38] bg-[#FAF8F5] border border-[#E8DFD5] rounded-[2px] hover:bg-[#FAF5F0] cursor-pointer"
+                            >
+                              Hủy
+                            </button>
+                          )}
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                )}
+
+                {/* BOX 2: XÁC NHẬN ĐƠN HÀNG */}
                 <div className="bg-[#FAF5F0] rounded-[3px] border border-[#E8DFD5] p-5 sm:p-6 space-y-4">
                   <div className="flex items-center justify-between border-b border-[#E8DFD5] pb-3">
                     <span className="font-sans text-xs font-bold uppercase tracking-wider text-[#631521]">
-                      Tóm Tắt Đơn Hàng
+                      Xác Nhận Đơn Hàng
                     </span>
                     <span className="text-xs font-mono text-[#8C7E74]">
                       {order.orderDateVN || 'Vừa xong'}
@@ -634,49 +995,53 @@ export default function BankTransferPaymentPage() {
                   </div>
                 </div>
 
-                {/* Action Buttons & Manual Verification Trigger (WP6/WP7) */}
-                <div className="space-y-3 pt-2">
-                  {/* HƯỚNG DẪN THANH TOÁN TỰ ĐỘNG HOÀN TOÀN (WP7 - Không cần thao tác) */}
-                  <div className="bg-[#FAF5F0] border border-[#D4AF37]/50 rounded-[4px] p-4 text-center space-y-2 shadow-xs">
-                    <div className="flex items-center justify-center gap-2 text-[#631521] font-serif font-bold text-xs uppercase tracking-wider">
-                      <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-                      <span>XÁC NHẬN THANH TOÁN TỰ ĐỘNG 24/7</span>
+                {/* KHUNG THANH TOÁN NGAY PHÍA DƯỚI THỜI GIAN GIAO HÀNG DỰ KIẾN */}
+                {!isQrInvalidated && paymentPhase !== 'CANCELLED' && (
+                  <div className="bg-[#FAF5F0] border-2 border-[#D4AF37]/60 rounded-[4px] p-4 sm:p-5 space-y-3 shadow-xs">
+                    <div className="flex items-center justify-between flex-wrap gap-2 text-[11px] font-sans text-[#4A3F38]">
+                      <span>
+                        <strong>Bước 1:</strong> Quét QR chuyển khoản → <strong>Bước 2:</strong> Tải ảnh CK → <strong>Bước 3:</strong> Bấm Thanh toán
+                      </span>
+                      {(proofData?.imageUrl || selectedProofFile) ? (
+                        <span className="text-[#2E7D32] font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Đã có ảnh chuyển khoản
+                        </span>
+                      ) : (
+                        <span className="text-[#B45309] font-semibold">
+                          Cần tải ảnh CK ở bước trên
+                        </span>
+                      )}
                     </div>
-                    <p className="text-xs text-[#4A3F38] leading-relaxed max-w-md mx-auto">
-                      Quý khách chỉ cần mở ứng dụng ngân hàng quét mã QR và chuyển khoản. 
-                      <strong> Hệ thống sẽ tự động xác nhận đơn hàng qua biến động số dư ngân hàng, bạn không cần phải bấm bất kỳ thao tác nào.</strong>
-                    </p>
+
+                    {submitPaymentError && (
+                      <p className="text-xs text-[#C62828] bg-[#FFEBEE] border border-[#FFCDD2] px-3 py-2 rounded-[2px]">
+                        {submitPaymentError}
+                      </p>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleConfirmQrPayment}
+                      disabled={isSubmittingPayment || isUploadingProof}
+                      className="w-full bg-[#631521] text-[#FAF8F5] font-sans font-bold text-xs sm:text-sm uppercase tracking-[0.18em] py-4 px-5 rounded-[2px] hover:bg-[#4A0D17] border border-[#D4AF37]/40 shadow-luxury transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {isSubmittingPayment ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-[#D4AF37]" />
+                          <span>Đang gửi yêu cầu xác nhận...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Thanh toán</span>
+                          <ArrowRight className="w-4 h-4 text-[#D4AF37]" />
+                        </>
+                      )}
+                    </button>
                   </div>
-
-                  {/* Cảnh báo khi cầu nối email đang chậm (WP7) */}
-                  {!bridgeHealthy && (
-                    <div className="p-3 bg-[#FFF8E1] border border-[#FFE082] rounded-[3px] text-xs text-[#B45309] text-center flex items-center justify-center gap-2">
-                      <AlertTriangle className="w-4 h-4 shrink-0 text-[#EA580C]" />
-                      <span>Hệ thống đối soát đang chậm; đơn sẽ được xác nhận ngay khi ngân hàng báo tiền hoặc bởi cửa hàng. Hotline 0973 486 218.</span>
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => checkStatus(true)}
-                    disabled={isVerifying}
-                    className="w-full bg-white text-[#4A3F38] font-sans font-semibold text-xs py-3 rounded-[2px] border border-[#E8DFD5] hover:bg-[#FAF8F5] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 text-[#8C7E74] ${isVerifying ? 'animate-spin' : ''}`} />
-                    <span>Kiểm tra lại trạng thái thanh toán</span>
-                  </button>
-                </div>
+                )}
               </>
             )}
-
-            {/* Support footer note */}
-            <div className="text-center pt-4 border-t border-[#E8DFD5] text-xs text-[#8C7E74] space-y-1">
-              <p>Cần hỗ trợ chỉnh sửa đơn hàng hoặc đổi địa chỉ? Vui lòng liên hệ:</p>
-              <p className="font-medium text-[#4A3F38]">
-                Hotline: <a href="tel:0973 486 218" className="text-[#631521] hover:underline">0973 486 218</a> · Email:{' '}
-                <a href="mailto:quannguyens403@gmail.com" className="text-[#631521] hover:underline">quannguyens403@gmail.com</a>
-              </p>
-            </div>
           </div>
         </motion.div>
       </main>

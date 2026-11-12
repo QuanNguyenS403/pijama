@@ -238,21 +238,6 @@ export function previewCheckoutBenefits({
     }
   }
 
-  // 5. Miễn phí vận chuyển cơ bản
-  if (totals.baseShippingFee === 0) {
-    benefitsList.push({
-      id: 'shipping_perk',
-      title: 'Miễn phí vận chuyển tiêu chuẩn toàn quốc',
-      type: 'SHIPPING',
-      applicable: true,
-      amount: originalShippingFee,
-      discountAmount: originalShippingFee,
-      message: validSubtotal >= 500000
-        ? 'Đơn hàng từ 500.000đ tạm tính được Freeship tự động'
-        : 'Được miễn phí vận chuyển theo mã ưu đãi',
-    })
-  }
-
   // Dự tính điểm sẽ nhận được khi đơn giao thành công (A1, A2)
   const qualifyingSpend = totals.afterBankTransfer
   const estimatedPointsToEarn = isMember ? Math.floor(qualifyingSpend / LOYALTY_RULES.SPEND_PER_POINT) : 0
