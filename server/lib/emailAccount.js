@@ -497,6 +497,7 @@ export async function sendGoogleRegisterSuccessEmail({
     to,
     subject: `🎉 [${SHOP_NAME}] Chúc mừng bạn đã đăng ký tài khoản Google thành công — Nhận Voucher 10%`,
     html,
+    purpose: 'GOOGLE_REGISTER_WELCOME',
   })
 }
 
@@ -727,6 +728,7 @@ export async function sendOwnerGoogleAuthNotification({
     to: ownerEmail,
     subject,
     html,
+    purpose: isRegister ? 'OWNER_GOOGLE_REGISTER_ALERT' : 'OWNER_GOOGLE_LOGIN_ALERT',
   })
 }
 

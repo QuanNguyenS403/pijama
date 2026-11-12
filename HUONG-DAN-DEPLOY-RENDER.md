@@ -71,6 +71,7 @@ Tại trang cấu hình Web Service trên Render, cuộn xuống mục **Environ
 | `GMAIL_APP_PASSWORD` | `[Mật khẩu ứng dụng Gmail 16 ký tự]` | (Tùy chọn) Gửi qua Gmail SMTP trực tiếp |
 | `GMAIL_USER` | `quannguyens403@gmail.com` | Email người gửi mặc định |
 | `OWNER_EMAIL` | `quannguyens403@gmail.com` | Email nhận thông báo khi có khách đặt hàng |
+| `EMAIL_REAL_SEND` | `true` | Bắt buộc bật gửi email thật (Production & Staging) |
 | `BANK_CODE` | `VCB` | Mã ngân hàng nhận chuyển khoản (Vietcombank) |
 | `BANK_ACCOUNT_NUMBER` | `1050773506` | Số tài khoản nhận tiền |
 | `BANK_ACCOUNT_NAME` | `NGUYEN DUC QUAN` | Tên chủ tài khoản |

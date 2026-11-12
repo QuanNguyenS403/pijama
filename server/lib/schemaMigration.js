@@ -136,6 +136,7 @@ export function runEnterpriseMigrations(database) {
       if (!colNames.includes('account_last4')) database.exec("ALTER TABLE payment_transactions ADD COLUMN account_last4 TEXT")
       if (!colNames.includes('sender')) database.exec("ALTER TABLE payment_transactions ADD COLUMN sender TEXT")
       if (!colNames.includes('trust')) database.exec("ALTER TABLE payment_transactions ADD COLUMN trust TEXT")
+      if (!colNames.includes('status')) database.exec("ALTER TABLE payment_transactions ADD COLUMN status TEXT DEFAULT 'UNMATCHED'")
     }
     database.exec(`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_tx_id ON payment_transactions(tx_id);

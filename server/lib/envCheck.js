@@ -219,7 +219,7 @@ export function validateEnvironment(env = process.env) {
   const hasResend = Boolean(hasResendKey && (!isProd || hasVerifiedResendFrom))
   const gmailPassCheck = checkVar('GMAIL_APP_PASSWORD', true, (v) => (v.replace(/\s+/g, '').length === 16 ? true : 'Mật khẩu ứng dụng Gmail phải gồm đúng 16 ký tự'))
   const hasSmtp = gmailPassCheck.status === 'OK'
-  const hasUsableEmailDelivery = hasResend || (!isRender && hasSmtp)
+  const hasUsableEmailDelivery = hasResend || hasSmtp
 
   results.featureGated.push(resendKeyCheck)
   results.featureGated.push(gmailPassCheck)
@@ -229,10 +229,7 @@ export function validateEnvironment(env = process.env) {
   }
 
   if (!hasUsableEmailDelivery) {
-    const smtpNote = isRender && hasSmtp
-      ? ' (Lưu ý: Render chặn outbound SMTP 25/465/587 nên cần cấu hình RESEND_API_KEY + RESEND_FROM_EMAIL)'
-      : ''
-    const msg = `Chưa cấu hình đầy đủ gửi email: Cần GMAIL_APP_PASSWORD (16 ký tự) hoặc RESEND_API_KEY + RESEND_FROM_EMAIL hợp lệ${smtpNote}`
+    const msg = 'Chưa cấu hình đầy đủ gửi email: Cần GMAIL_APP_PASSWORD (16 ký tự) hoặc RESEND_API_KEY + RESEND_FROM_EMAIL hợp lệ'
     if (effectiveEnv.REQUIRE_EMAIL_DELIVERY === 'true' && isProd) {
       results.errors.push(`[BẮT BUỘC PROD] ${msg}`)
     } else if (isProd) {

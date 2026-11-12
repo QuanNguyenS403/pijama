@@ -98,11 +98,13 @@ function getLocalDevTransporter() {
 
   if (!localTransporter) {
     localTransporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: { user, pass },
-      connectionTimeout: 8000,
-      greetingTimeout: 8000,
-      socketTimeout: 10000,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     })
   }
   return localTransporter
@@ -418,13 +420,12 @@ export async function sendEmailViaHttps(options) {
     rawResendFrom &&
     (!isProduction || !rawResendFrom.toLowerCase().includes('@resend.dev'))
   )
-  const hasLocalSmtp = Boolean(
-    !isRender &&
+  const hasGmailSmtp = Boolean(
     (process.env.GMAIL_USER || '').trim() &&
     (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '')
   )
 
-  if (isProduction && !hasValidResendConfig && !hasLocalSmtp) {
+  if (isProduction && !hasValidResendConfig && !hasGmailSmtp) {
     const errorMsg = 'Hệ thống gửi email chưa được cấu hình. Thiếu GMAIL_APP_PASSWORD hoặc RESEND_API_KEY + RESEND_FROM_EMAIL hợp lệ.'
     console.error(`❌ [EMAIL CONFIG ERROR] ${errorMsg}`)
     recordEmailOutbox({ id: requestId, purpose, recipient: nonSyntheticList, status: 'failed', errorCode: 'EMAIL_NOT_CONFIGURED' })
@@ -590,7 +591,7 @@ export async function sendEmailViaHttps(options) {
   }
 
   // Khi EMAIL_REAL_SEND=true ở non-prod: vẫn phải có ít nhất 1 transport hợp lệ
-  if (!hasValidResendConfig && !hasLocalSmtp) {
+  if (!hasValidResendConfig && !hasGmailSmtp) {
     const errorMsg = 'Hệ thống gửi email chưa được cấu hình. Thiếu GMAIL_APP_PASSWORD hoặc RESEND_API_KEY hợp lệ.'
     console.error(`❌ [EMAIL CONFIG ERROR] ${errorMsg}`)
     recordEmailOutbox({ id: requestId, purpose, recipient: deliverable, status: 'failed', errorCode: 'EMAIL_NOT_CONFIGURED' })
@@ -665,13 +666,14 @@ export async function sendEmailViaHttps(options) {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // ƯU TIÊN 3: Fallback Localhost Dev SMTP (Chỉ khi dev local, EMAIL_REAL_SEND=true, không chạy trên Render)
+  // ƯU TIÊN 3: Gmail SMTP (Chính thức qua Google Account / App Password)
+  // Gửi trực tiếp qua smtp.gmail.com:465 SSL, hỗ trợ mọi môi trường (Local & Render)
   // ─────────────────────────────────────────────────────────────
-  if (hasLocalSmtp) {
+  if (hasGmailSmtp) {
     const transporter = getLocalDevTransporter()
     if (transporter) {
       try {
-        console.log(`📡 [EMAIL TRANSPORT 3] Thử gửi qua Local SMTP tới: ${maskEmail(to)}...`)
+        console.log(`📡 [EMAIL TRANSPORT GMAIL] Đang gửi qua Gmail SMTP tới: ${maskEmail(to)}...`)
         const user = (process.env.GMAIL_USER || 'quannguyens403@gmail.com').trim()
         const fromHeader = from || `"${fromName}" <${user}>`
         const info = await transporter.sendMail({
@@ -682,19 +684,19 @@ export async function sendEmailViaHttps(options) {
           text,
           ...(validatedReplyTo ? { replyTo: validatedReplyTo } : {}),
         })
-        console.log(`✅ [EMAIL TRANSPORT 3: LOCAL SMTP] Gửi thành công tới ${maskEmail(to)}`)
-        recordEmailOutbox({ id: requestId, purpose, recipient: to, status: sentStatus, transport: 'local_smtp' })
+        console.log(`✅ [EMAIL TRANSPORT GMAIL: SMTP] Gửi thành công tới ${maskEmail(to)}`)
+        recordEmailOutbox({ id: requestId, purpose, recipient: to, status: sentStatus, transport: 'gmail_smtp' })
         return {
           ok: true,
           success: true,
-          transport: 'local_smtp',
+          transport: 'gmail_smtp',
           messageId: info.messageId || `smtp_${Date.now()}`,
           requestId,
           code: 'OK',
         }
       } catch (smtpErr) {
-        console.warn(`⚠️ [LOCAL SMTP ERROR]: ${smtpErr.message}`)
-        errors.push(`Local SMTP: ${smtpErr.message}`)
+        console.warn(`⚠️ [GMAIL SMTP ERROR]: ${smtpErr.message}`)
+        errors.push(`Gmail SMTP: ${smtpErr.message}`)
       }
     }
   }
@@ -728,7 +730,7 @@ export function getEmailServiceStatus() {
   const policy = resolveSendPolicy(process.env, process.execArgv)
   const isProduction = policy.isProduction
   const isRender = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL || process.env.RENDER_SERVICE_ID)
-  const smtpReady = Boolean(!isRender && (process.env.GMAIL_USER || '').trim() && (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, ''))
+  const smtpReady = Boolean((process.env.GMAIL_USER || '').trim() && (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, ''))
   const resendReady = Boolean(resendKey && resendFrom && (!isProduction || !resendFrom.toLowerCase().includes('@resend.dev')))
 
   const { metrics24h, activeSuppressions } = getEmailOutboxStats24h()
