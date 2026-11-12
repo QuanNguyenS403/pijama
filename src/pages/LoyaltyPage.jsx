@@ -180,7 +180,7 @@ export default function LoyaltyPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-[#2C201A] font-sans antialiased selection:bg-[#631521] selection:text-white overflow-x-hidden">
-      <Header onOpenCart={() => setCartOpen(true)} />
+      <Header onCartOpen={() => setCartOpen(true)} />
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
 
       {/* ─── HERO SECTION ─── */}

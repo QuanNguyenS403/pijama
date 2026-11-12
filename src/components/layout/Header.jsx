@@ -7,7 +7,7 @@ import WishlistDrawer from '../ui/WishlistDrawer'
 import OrdersHistoryDrawer from '../ui/OrdersHistoryDrawer'
 import { getSavedOrders } from '../../lib/orderSync'
 
-export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) {
+export default function Header({ onCartOpen, onOpenCart, onAddToCart, onOpenOrdersDrawer }) {
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [wishlistOpen, setWishlistOpen] = useState(false)
@@ -26,6 +26,16 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
   const { totalItems } = useCart()
   const navigate = useNavigate()
   const location = useLocation()
+
+  const handleCartClick = (e) => {
+    if (typeof onCartOpen === 'function') {
+      onCartOpen(e)
+    } else if (typeof onOpenCart === 'function') {
+      onOpenCart(e)
+    } else {
+      navigate('/gio-hang')
+    }
+  }
 
   const isLanding = location.pathname === '/'
 
@@ -332,7 +342,7 @@ export default function Header({ onCartOpen, onAddToCart, onOpenOrdersDrawer }) 
 
               {/* Cart Button (Biểu tượng giỏ hàng — Bỏ chữ) */}
               <button
-                onClick={onCartOpen}
+                onClick={handleCartClick}
                 aria-label={`Giỏ hàng — ${totalItems} sản phẩm`}
                 className="relative text-white/85 hover:text-[#D4AF37] transition-colors p-1 cursor-pointer flex items-center justify-center"
                 title="Giỏ hàng của bạn"
