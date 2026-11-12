@@ -6,19 +6,16 @@ import {
   Package,
   Clock,
   CheckCircle2,
-  Phone,
   Copy,
   Check,
   Search,
-  ChevronDown,
-  ChevronUp,
   QrCode,
   Truck,
   ArrowRight,
   Ban,
   AlertCircle,
 } from 'lucide-react'
-import { formatVND, getCarrierTrackingUrl, PAYMENT_METHODS } from '../../data/checkoutConfig'
+import { formatVND, getCarrierTrackingUrl } from '../../data/checkoutConfig'
 import { syncBatchOrders, getSavedOrders, purgeCancelledOrdersFromStorage, restoreOrderItemsToCart } from '../../lib/orderSync'
 
 // Order Timeline Stepper Component
@@ -30,7 +27,7 @@ function OrderTrackingTimeline({ status, paymentStatus, submittedAt }) {
     normalizedPayStatus === 'CUSTOMER_CLAIMED_PAID' ||
     Boolean(submittedAt)
 
-  if (normalizedStatus === 'CANCELLED') {
+  if (normalizedStatus === 'CANCELLED' || (!isWaitingAdminConfirm && normalizedStatus === 'AWAITING_PAYMENT')) {
     return null
   }
 
@@ -43,20 +40,6 @@ function OrderTrackingTimeline({ status, paymentStatus, submittedAt }) {
         </span>
         <span className="text-[11px] bg-white px-2 py-0.5 rounded border border-[#FDE68A] font-semibold shrink-0">
           Chờ duyệt
-        </span>
-      </div>
-    )
-  }
-
-  if (normalizedStatus === 'AWAITING_PAYMENT') {
-    return (
-      <div className="py-2.5 px-3 bg-[#E8F0FE] border border-[#AECBFA] rounded-[3px] flex items-center justify-between text-xs text-[#1967D2] font-sans gap-2">
-        <span className="flex items-center gap-1.5 font-semibold">
-          <QrCode className="w-4 h-4 shrink-0" />
-          Chờ quét mã QR, tải ảnh CK & bấm Thanh toán
-        </span>
-        <span className="text-[11px] bg-white px-2 py-0.5 rounded border border-[#AECBFA] font-medium shrink-0">
-          Chuyển khoản QR
         </span>
       </div>
     )
@@ -125,7 +108,6 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
   const [orders, setOrders] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
   const [copiedKey, setCopiedKey] = useState(null)
-  const [expandedQrOrderId, setExpandedQrOrderId] = useState(null)
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [syncToast, setSyncToast] = useState(null)
 
@@ -438,15 +420,6 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
         effectivePaymentStatus === 'CUSTOMER_CLAIMED_PAID' ||
         Boolean(order.payment?.submittedAt))
     const proofImageUrl = order.paymentProof?.imageUrl || order.payment?.proofImageUrl || ''
-    const isExpandedQr = expandedQrOrderId === order.orderId
-    const transferContent = order.orderId ? (order.orderId.startsWith('QNS') ? order.orderId : `QNS ${order.orderId}`) : ''
-    const bankInfo = PAYMENT_METHODS.find((m) => m.value === 'BANK_TRANSFER')?.bankInfo || {
-      bankCode: 'VCB',
-      accountNumber: '1050773506',
-      accountName: 'NGUYEN DUC QUAN',
-      bankName: 'Vietcombank',
-    }
-    const qrUrl = `https://img.vietqr.io/image/${bankInfo.bankCode.toLowerCase()}-${bankInfo.accountNumber}-qr_only.png?amount=${order.total}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(bankInfo.accountName)}`
     const carrierUrl = getCarrierTrackingUrl(order.carrier, order.trackingCode)
 
     return (
@@ -512,14 +485,20 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* Status Timeline Progression (P1 Item 5) */}
-        <div className="p-3.5 sm:p-4 bg-white border-b border-[#E8DFD5]">
-          <OrderTrackingTimeline
-            status={order.status}
-            paymentStatus={effectivePaymentStatus}
-            submittedAt={order.payment?.submittedAt}
-          />
-        </div>
+        {/* Status Timeline Progression */}
+        {(() => {
+          const showTimeline = order.status !== 'CANCELLED' && (order.status !== 'AWAITING_PAYMENT' || isWaitingAdminConfirm)
+          if (!showTimeline) return null
+          return (
+            <div className="p-3.5 sm:p-4 bg-white border-b border-[#E8DFD5]">
+              <OrderTrackingTimeline
+                status={order.status}
+                paymentStatus={effectivePaymentStatus}
+                submittedAt={order.payment?.submittedAt}
+              />
+            </div>
+          )
+        })()}
 
         {/* Carrier Tracking Box (P1 Item 6) */}
         {order.trackingCode && (
@@ -655,91 +634,20 @@ export default function OrdersHistoryDrawer({ isOpen, onClose }) {
                 </Link>
               </div>
             ) : (
-              <>
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <Link
-                    to={`/thanh-toan-chuyen-khoan?orderId=${encodeURIComponent(order.orderId)}`}
-                    onClick={onClose}
-                    className="inline-flex items-center gap-1.5 bg-[#631521] text-white text-[11px] font-bold uppercase tracking-wider px-3.5 py-2 rounded-[2px] hover:bg-[#4A0D17] transition-colors"
-                  >
-                    <QrCode className="w-3.5 h-3.5 text-[#D4AF37]" />
-                    <span>Quét mã QR & Tải ảnh CK</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-[#D4AF37]" />
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => setExpandedQrOrderId(isExpandedQr ? null : order.orderId)}
-                    className="flex items-center gap-1 text-[11px] font-bold text-[#631521] hover:underline cursor-pointer"
-                  >
-                    <span>{isExpandedQr ? 'Ẩn QR nhanh' : 'Xem nhanh mã QR'}</span>
-                    {isExpandedQr ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-
-                <AnimatePresence>
-                  {isExpandedQr && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="pt-2 border-t border-[#E8DFD5] space-y-3"
-                    >
-                      <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-3.5 rounded-[3px] border border-[#E8DFD5]">
-                        <div className="w-36 h-36 bg-white p-1 rounded border border-[#E8DFD5] shadow-xs shrink-0 flex items-center justify-center overflow-hidden">
-                          <img
-                            src={qrUrl}
-                            alt="Mã QR Vietcombank"
-                            className="w-full h-full object-contain aspect-square"
-                          />
-                        </div>
-
-                        <div className="space-y-1.5 text-xs text-[#1A1614] flex-1 w-full">
-                          <p className="font-serif font-bold text-[#631521] uppercase text-[11px]">
-                            {bankInfo.bankName}
-                          </p>
-                          <div className="flex items-center justify-between bg-[#FAF8F5] px-2.5 py-1 rounded border border-[#E8DFD5]">
-                            <span>Số TK: <strong className="font-mono text-sm text-[#631521]">{bankInfo.accountNumber}</strong></span>
-                            <button
-                              onClick={() => handleCopy(bankInfo.accountNumber, `stk-${order.orderId}`)}
-                              className="text-[#631521] text-[11px] font-bold hover:underline flex items-center gap-1"
-                            >
-                              {copiedKey === `stk-${order.orderId}` ? 'Đã sao chép' : 'Sao chép'}
-                            </button>
-                          </div>
-                          <p className="text-[11px]"><strong>Chủ TK:</strong> {bankInfo.accountName}</p>
-                          <div className="flex items-center justify-between bg-[#FAF8F5] px-2.5 py-1 rounded border border-[#E8DFD5]">
-                            <span className="text-[11px]">Nội dung CK: <strong className="font-mono text-[#631521]">{transferContent}</strong></span>
-                            <button
-                              onClick={() => handleCopy(transferContent, `ct-${order.orderId}`)}
-                              className="text-[#631521] text-[11px] font-bold hover:underline flex items-center gap-1"
-                            >
-                              {copiedKey === `ct-${order.orderId}` ? 'Đã sao chép' : 'Sao chép'}
-                            </button>
-                          </div>
-                          <p className="text-[10px] text-[#8C7E74] italic">
-                            * Sau khi chuyển khoản, bấm "Quét mã QR & Tải ảnh CK" để tải ảnh lên và bấm Thanh toán.
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <Link
+                  to={`/thanh-toan-chuyen-khoan?orderId=${encodeURIComponent(order.orderId)}`}
+                  onClick={onClose}
+                  className="inline-flex items-center gap-1.5 bg-[#631521] text-white text-[11px] font-bold uppercase tracking-wider px-3.5 py-2 rounded-[2px] hover:bg-[#4A0D17] transition-colors"
+                >
+                  <QrCode className="w-3.5 h-3.5 text-[#D4AF37]" />
+                  <span>Quét mã QR & Tải ảnh CK</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#D4AF37]" />
+                </Link>
+              </div>
             )}
           </div>
         )}
-
-        {/* Order Footer Support */}
-        <div className="px-3.5 py-2.5 bg-white border-t border-[#E8DFD5] flex items-center justify-between text-[11px] text-[#8C7E74] flex-wrap gap-2">
-          <span>Hỗ trợ đơn hàng:</span>
-          <a
-            href="tel:0973 486 218"
-            className="text-[#631521] hover:underline font-medium flex items-center gap-1"
-          >
-            <Phone className="w-3 h-3" />
-            0973 486 218
-          </a>
-        </div>
       </div>
     )
   }
