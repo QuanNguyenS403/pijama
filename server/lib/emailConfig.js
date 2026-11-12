@@ -1,4 +1,4 @@
-// 🔒 CẤU HÌNH GỬI EMAIL GIAO DỊCH (GMAIL SMTP / RESEND HTTP API)
+// 🔒 CẤU HÌNH GỬI EMAIL GIAO DỊCH (GOOGLE APPS SCRIPT / RESEND HTTP API / GMAIL SMTP)
 import { sendEmailViaHttps, getEmailServiceStatus } from './httpsEmailService.js'
 
 /**
@@ -23,7 +23,7 @@ export const getTransporter = () => {
     verify: async () => {
       const status = getEmailServiceStatus()
       if (!status.ready) {
-        throw new Error('Chưa cấu hình biến môi trường GMAIL_APP_PASSWORD hoặc RESEND_API_KEY')
+        throw new Error('Chưa cấu hình biến môi trường GAS_EMAIL_WEBHOOK_URL, GMAIL_APP_PASSWORD hoặc RESEND_API_KEY')
       }
       return true
     },
@@ -38,16 +38,17 @@ export const verifyTransporter = async () => {
     const status = getEmailServiceStatus()
     if (status.ready) {
       const activeTransports = []
+      if (status.gasConfigured && status.gasSecretConfigured) activeTransports.push('Google Apps Script HTTPS Bridge')
       if (status.resendConfigured) activeTransports.push('Resend HTTP API')
       if (status.smtpConfigured) activeTransports.push('Gmail SMTP')
       console.log(`✅ [EMAIL READY] Email service sẵn sàng qua: ${activeTransports.join(' & ')}`)
       return { success: true, transports: activeTransports }
     }
 
-    console.warn('⚠️ [EMAIL WARNING] Chưa cấu hình biến môi trường gửi email (GMAIL_APP_PASSWORD hoặc RESEND_API_KEY)')
+    console.warn('⚠️ [EMAIL WARNING] Chưa cấu hình biến môi trường gửi email (GAS_EMAIL_WEBHOOK_URL, GMAIL_APP_PASSWORD hoặc RESEND_API_KEY)')
     return {
       success: false,
-      error: 'Chưa cấu hình GMAIL_APP_PASSWORD hoặc RESEND_API_KEY',
+      error: 'Chưa cấu hình GAS_EMAIL_WEBHOOK_URL, GMAIL_APP_PASSWORD hoặc RESEND_API_KEY',
     }
   } catch (error) {
     return { success: false, error: error.message }

@@ -209,8 +209,25 @@ export function validateEnvironment(env = process.env) {
     }
   }
 
-  // Kiểm tra phương thức gửi email: Hỗ trợ Resend API hoặc Gmail SMTP (GMAIL_APP_PASSWORD).
+  // Kiểm tra phương thức gửi email: Hỗ trợ Google Apps Script HTTPS Bridge, Resend API hoặc Gmail SMTP (GMAIL_APP_PASSWORD).
   const isRender = Boolean(effectiveEnv.RENDER || effectiveEnv.RENDER_EXTERNAL_URL || effectiveEnv.RENDER_SERVICE_ID)
+  const gasUrlKey = effectiveEnv.GAS_EMAIL_WEBHOOK_URL
+    ? 'GAS_EMAIL_WEBHOOK_URL'
+    : effectiveEnv.GMAIL_APP_SCRIPT_URL
+      ? 'GMAIL_APP_SCRIPT_URL'
+      : effectiveEnv.GMAIL_BRIDGE_WEBHOOK_URL
+        ? 'GMAIL_BRIDGE_WEBHOOK_URL'
+        : 'GAS_EMAIL_WEBHOOK_URL'
+  const gasSecretKey = effectiveEnv.GAS_WEBHOOK_SECRET
+    ? 'GAS_WEBHOOK_SECRET'
+    : effectiveEnv.GMAIL_BRIDGE_SECRET
+      ? 'GMAIL_BRIDGE_SECRET'
+      : 'GAS_WEBHOOK_SECRET'
+
+  const gasUrlCheck = checkVar(gasUrlKey, false, (v) => v.startsWith('https://') || 'URL Google Apps Script phải bắt đầu bằng https://')
+  const gasSecretCheck = checkVar(gasSecretKey, true)
+  const hasGas = gasUrlCheck.status === 'OK' && gasSecretCheck.status === 'OK'
+
   const resendKeyCheck = checkVar('RESEND_API_KEY', true)
   const resendFromCheck = checkVar('RESEND_FROM_EMAIL', false)
   const hasResendKey = resendKeyCheck.status === 'OK'
@@ -219,8 +236,10 @@ export function validateEnvironment(env = process.env) {
   const hasResend = Boolean(hasResendKey && (!isProd || hasVerifiedResendFrom))
   const gmailPassCheck = checkVar('GMAIL_APP_PASSWORD', true, (v) => (v.replace(/\s+/g, '').length === 16 ? true : 'Mật khẩu ứng dụng Gmail phải gồm đúng 16 ký tự'))
   const hasSmtp = gmailPassCheck.status === 'OK'
-  const hasUsableEmailDelivery = hasResend || hasSmtp
+  const hasUsableEmailDelivery = hasGas || hasResend || hasSmtp
 
+  results.featureGated.push(gasUrlCheck)
+  results.featureGated.push(gasSecretCheck)
   results.featureGated.push(resendKeyCheck)
   results.featureGated.push(gmailPassCheck)
 
@@ -229,16 +248,16 @@ export function validateEnvironment(env = process.env) {
   }
 
   if (!hasUsableEmailDelivery) {
-    const msg = 'Chưa cấu hình đầy đủ gửi email: Cần GMAIL_APP_PASSWORD (16 ký tự) hoặc RESEND_API_KEY + RESEND_FROM_EMAIL hợp lệ'
+    const msg = 'Chưa cấu hình đầy đủ gửi email: Cần GAS_EMAIL_WEBHOOK_URL, GMAIL_APP_PASSWORD (16 ký tự) hoặc RESEND_API_KEY + RESEND_FROM_EMAIL hợp lệ'
     if (effectiveEnv.REQUIRE_EMAIL_DELIVERY === 'true' && isProd) {
       results.errors.push(`[BẮT BUỘC PROD] ${msg}`)
     } else if (isProd) {
       results.emailDeliveryMissingInProd = true
-      results.warnings.push(`[CHẾ ĐỘ DEGRADED] ${msg} — Web vẫn khởi chạy nhưng chức năng gửi email sẽ từ chối fail-closed; khuyến nghị cấu hình GMAIL_APP_PASSWORD hoặc RESEND_API_KEY`)
+      results.warnings.push(`[CHẾ ĐỘ DEGRADED] ${msg} — Web vẫn khởi chạy nhưng chức năng gửi email sẽ từ chối fail-closed; khuyến nghị cấu hình GAS_EMAIL_WEBHOOK_URL, GMAIL_APP_PASSWORD hoặc RESEND_API_KEY`)
     } else {
       results.warnings.push(`[THIẾU DEV] ${msg}`)
     }
-  } else if (!hasSmtp && hasResend) {
+  } else if (!hasSmtp && !hasGas && hasResend) {
     results.warnings.push('[TÙY CHỌN FALLBACK] GMAIL_APP_PASSWORD chưa cấu hình (hệ thống gửi email qua Resend API)')
   }
 
