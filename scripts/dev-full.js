@@ -1,10 +1,29 @@
-import { spawn } from 'child_process'
+import { spawn, execSync } from 'child_process'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const rootDir = path.resolve(__dirname, '..')
+
+// Tự động giải phóng cổng nếu có tiến trình Node.js cũ chạy ngầm chưa tắt (tránh EADDRINUSE)
+function freePort(port) {
+  try {
+    if (process.platform === 'win32') {
+      execSync(
+        `powershell -NoProfile -Command "Get-NetTCPConnection -LocalPort ${port} -ErrorAction SilentlyContinue | Where-Object { \\$_.OwningProcess -gt 0 } | ForEach-Object { Stop-Process -Id \\$_.OwningProcess -Force -ErrorAction SilentlyContinue }"`,
+        { stdio: 'ignore' }
+      )
+    } else {
+      execSync(`fuser -k ${port}/tcp 2>/dev/null || lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, {
+        stdio: 'ignore',
+      })
+    }
+  } catch (e) {}
+}
+
+freePort(3001)
+freePort(3000)
 
 console.log('===================================================')
 console.log('🚀 KHỞI CHẠY HỆ THỐNG QUANNGUYENS FULL-STACK')
