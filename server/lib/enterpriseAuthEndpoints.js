@@ -15,7 +15,13 @@ import {
 import { verifyTurnstileToken } from './turnstileService.js'
 import { logSecurityAudit } from './auditLogger.js'
 import { parseCookies, setCustomerSessionCookie, clearCustomerSessionCookie } from './customerSessionMiddleware.js'
-import { sendVerificationCodeEmail, sendWelcomeVoucherEmail, sendPasswordResetOtpEmail } from './emailAccount.js'
+import {
+  sendVerificationCodeEmail,
+  sendWelcomeVoucherEmail,
+  sendPasswordResetOtpEmail,
+  sendPasswordResetSuccessEmail,
+  sendOwnerGoogleAuthNotification,
+} from './emailAccount.js'
 import { checkEmailDeliverability, isAutomatedTestEnvironment, UNDELIVERABLE_EMAIL_MESSAGE } from './emailRecipientGuard.js'
 import {
   createWelcomeVoucher,
@@ -602,12 +608,28 @@ export function registerEnterpriseAuthEndpoints(app) {
         `).run(`ident_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`, userId, userId, email.toLowerCase(), now)
       } catch (_) {}
 
-      // 5. Cấp voucher chào mừng WELCOME10
+      // 5. Cấp voucher chào mừng WELCOME10 & gửi email chúc mừng thành viên
       let voucherCode = 'WELCOME10'
       try {
         const welcomeVoucher = createWelcomeVoucher(userId)
         voucherCode = welcomeVoucher?.code || 'WELCOME10'
       } catch (_) {}
+
+      sendWelcomeVoucherEmail({
+        to: email.toLowerCase(),
+        code: voucherCode,
+        name: data.fullName || 'Quý khách',
+      }).catch((e) => console.warn('⚠️ Lỗi gửi email voucher chào mừng:', e.message))
+
+      sendOwnerGoogleAuthNotification({
+        action: 'REGISTER',
+        customerName: data.fullName || 'Khách Hàng Mới',
+        email: email.toLowerCase(),
+        googleSub: 'Email Đăng Ký Thủ Công (Đã Xác Minh OTP)',
+        ip,
+        userAgent,
+        voucherCode,
+      }).catch((e) => console.warn('⚠️ Lỗi gửi thông báo đăng ký cho chủ shop:', e.message))
 
       // 6. Khởi tạo phiên & tokens (tự động đăng nhập luôn không cần đăng nhập lại)
       const user = { id: userId, email: email.toLowerCase(), full_name: data.fullName, role: 'customer' }
@@ -1418,6 +1440,24 @@ export function registerEnterpriseAuthEndpoints(app) {
         userAgent,
         details: { email },
       })
+
+      // Gửi email bảo mật thông báo đặt lại mật khẩu thành công tới khách hàng
+      sendPasswordResetSuccessEmail({
+        to: email,
+        name: user.full_name || 'Quý khách',
+        ip,
+        userAgent,
+      }).catch((e) => console.warn('⚠️ Lỗi gửi thông báo đổi mật khẩu cho khách:', e.message))
+
+      // Gửi cảnh báo bảo mật tới chủ shop
+      sendOwnerGoogleAuthNotification({
+        action: 'LOGIN',
+        customerName: user.full_name || 'Khách Hàng',
+        email: email.toLowerCase(),
+        googleSub: 'Đặt Lại Mật Khẩu Thành Công (Xác Minh Qua OTP Email)',
+        ip,
+        userAgent,
+      }).catch((e) => console.warn('⚠️ Lỗi gửi thông báo đổi mật khẩu cho chủ shop:', e.message))
 
       return res.json({
         success: true,

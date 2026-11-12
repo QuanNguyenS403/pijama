@@ -852,3 +852,98 @@ Hotline: ${SHOP_PHONE} · Email: ${user}
     purpose: 'PASSWORD_RESET_OTP',
   })
 }
+
+/**
+ * Gửi email thông báo đặt lại mật khẩu thành công cho Khách hàng (Security Notice)
+ * Tuân thủ WP-B B6: Thư chính thức mang nhận diện thương hiệu QuanNguyenS
+ */
+export async function sendPasswordResetSuccessEmail({
+  to,
+  name = 'Quý khách',
+  timeStr = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+  ip = 'Không xác định',
+  userAgent = '',
+}) {
+  const user = getSenderEmail()
+  const safeName = escapeHtml(name)
+  const safeTo = escapeHtml(to)
+  const device = formatDeviceName(userAgent)
+
+  const text = `Kính gửi ${name},
+
+Hệ thống ghi nhận mật khẩu cho tài khoản ${to} tại website ${SHOP_NAME} vừa được cập nhật thành công.
+Thời gian: ${timeStr}
+Thiết bị: ${device}
+Địa chỉ IP: ${ip}
+
+Lưu ý an ninh: Nếu bạn KHÔNG thực hiện thay đổi này, tài khoản của bạn có thể đã bị truy cập trái phép. Vui lòng liên hệ ngay với chúng tôi qua hotline ${SHOP_PHONE} hoặc đổi lại mật khẩu ngay lập tức.
+
+${SHOP_NAME} — Style to be lived in
+Hotline: ${SHOP_PHONE} · Email: ${user}
+`
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="vi">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Thông Báo Đặt Lại Mật Khẩu Thành Công — ${escapeHtml(SHOP_NAME)}</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .wrap { max-width: 580px; margin: 0 auto; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 6px; overflow: hidden; }
+        .top-bar { background: #631521; padding: 22px 28px; border-bottom: 2px solid #D4AF37; }
+        .top-bar h1 { color: #ffffff; font-size: 20px; margin: 0; font-family: 'Georgia', serif; }
+        .top-bar p { color: #D4AF37; font-size: 11px; margin: 4px 0 0; letter-spacing: 2px; text-transform: uppercase; }
+        .body { padding: 28px; }
+        .info-box { background: #FAF8F5; border: 1px solid #E8DFD5; border-radius: 4px; padding: 16px 20px; margin: 20px 0; }
+        .info-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px solid #f0ebe4; }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: #7A6E6E; }
+        .info-value { color: #1A1614; font-weight: 600; }
+        .warning-box { background: #FFF9F0; border-left: 3px solid #D4AF37; padding: 14px 18px; margin: 20px 0; font-size: 13px; line-height: 1.6; color: #631521; }
+        .footer { background: #FAF8F5; padding: 20px; text-align: center; font-size: 11px; color: #8C7E74; border-top: 1px solid #E8DFD5; }
+      </style>
+    </head>
+    <body>
+      <div class="wrap">
+        <div class="top-bar">
+          <h1>🔐 Thông Báo Bảo Mật — ${escapeHtml(SHOP_NAME)}</h1>
+          <p>Style to be lived in</p>
+        </div>
+        <div class="body">
+          <p style="font-size: 15px; color: #1A1614; margin-top: 0;">Xin chào <strong>${safeName}</strong>,</p>
+          <p style="font-size: 13.5px; line-height: 1.6; color: #4A3F38;">
+            Mật khẩu cho tài khoản <strong>${safeTo}</strong> tại website <strong>${escapeHtml(SHOP_NAME)}</strong> vừa được cập nhật thành công.
+          </p>
+
+          <div class="info-box">
+            <div class="info-row"><span class="info-label">Thời gian thực hiện:</span><span class="info-value">${timeStr}</span></div>
+            <div class="info-row"><span class="info-label">Thiết bị / Trình duyệt:</span><span class="info-value">${escapeHtml(device)}</span></div>
+            <div class="info-row"><span class="info-label">Địa chỉ IP:</span><span class="info-value">${escapeHtml(ip)}</span></div>
+            <div class="info-row"><span class="info-label">Trạng thái:</span><span class="info-value" style="color: #059669;">✓ Thành công</span></div>
+          </div>
+
+          <div class="warning-box">
+            <strong>⚠️ Bạn không thực hiện yêu cầu này?</strong><br>
+            Nếu bạn không vừa thay đổi mật khẩu, tài khoản của bạn có thể đã bị truy cập trái phép. Vui lòng liên hệ ngay với chúng tôi qua hotline <strong>${escapeHtml(SHOP_PHONE)}</strong> để khóa tài khoản và được hỗ trợ kịp thời.
+          </div>
+        </div>
+        <div class="footer">
+          ${escapeHtml(SHOP_NAME)} — Hotline: ${escapeHtml(SHOP_PHONE)} · Email: ${escapeHtml(user)}<br>
+          ${escapeHtml(SHOP_ADDRESS)}
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+
+  return dispatchEmail({
+    from: `"${SHOP_NAME}" <${user}>`,
+    to,
+    subject: `[${SHOP_NAME}] Thông báo đặt lại mật khẩu thành công`,
+    html,
+    text,
+    purpose: 'PASSWORD_RESET_SUCCESS',
+  })
+}
