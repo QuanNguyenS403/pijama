@@ -78,7 +78,7 @@ Tại mục **Environment** của Web Service trên Render Dashboard, cấu hìn
 | `ORDER_TOKEN_SECRET` | `[64 ký tự hex độc lập #2]` | **Bắt buộc**: Khóa ký `trackingToken` & chữ ký ảnh chứng từ |
 | `CUSTOMER_AUTH_SECRET` | `[64 ký tự hex độc lập #3]` | **Bắt buộc**: Khóa bảo mật phiên & link hủy đăng ký khách hàng |
 | `JWT_SECRET` | `[64 ký tự hex độc lập #4]` | **Bắt buộc**: Khóa ký JWT Access Token |
-| `GAS_EMAIL_WEBHOOK_URL` | `https://script.google.com/macros/s/AKfycbzUsjZs4n3-0-a60D4UVSS1VTGZsTNXzeWt3ll5Wgmp970JJb2ybRzspM7ftxplCAGR/exec` | **Khuyến nghị số 1 (Render Free)**: URL cầu Apps Script HTTPS 443 |
+| `GAS_EMAIL_WEBHOOK_URL` | `https://script.google.com/macros/s/<DEPLOYMENT_ID>/exec` | **Khuyến nghị số 1 (Render Free)**: URL cầu Apps Script HTTPS 443 |
 | `GAS_WEBHOOK_SECRET` | `[Khớp với Script Properties]` | **Khuyến nghị số 1 (Render Free)**: Khóa bí mật cầu Apps Script |
 | `RESEND_API_KEY` | `re_...` | (Tùy chọn) Gửi qua Resend HTTPS 443 |
 | `RESEND_FROM_EMAIL` | `QuanNguyenS <...>` | (Khi dùng Resend) Địa chỉ thuộc tên miền đã có MX & DKIM |

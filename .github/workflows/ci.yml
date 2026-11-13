@@ -122,7 +122,7 @@ jobs:
           BANK_ACCOUNT_NUMBER: '1050773506'
           BANK_ACCOUNT_NAME: 'NGUYEN DUC QUAN'
           SHOP_NAME: 'QuanNguyenS'
-          SHOP_PHONE: '0981753082'
-          SHOP_ADDRESS: 'Amber Riverside, 622 Minh Khai, Vinh Tuy, Ha Noi'
+          SHOP_PHONE: '0973 486 218'
+          SHOP_ADDRESS: 'Hai Bà Trưng, Hà Nội'
         run: |
           timeout 5s npm start || if [ $? -eq 124 ]; then echo "Server started and ran for 5s cleanly"; else exit $?; fi

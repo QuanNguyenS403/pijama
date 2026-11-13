@@ -44,7 +44,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: GAS_EMAIL_WEBHOOK_URL
-        value: "https://script.google.com/macros/s/AKfycbzUsjZs4n3-0-a60D4UVSS1VTGZsTNXzeWt3ll5Wgmp970JJb2ybRzspM7ftxplCAGR/exec"
+        sync: false
       - key: GAS_WEBHOOK_SECRET
         sync: false
       - key: RESEND_API_KEY
