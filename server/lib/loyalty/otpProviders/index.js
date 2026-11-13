@@ -3,7 +3,7 @@ import { sendZaloOtp, isZaloConfigured } from './zaloProvider.js'
 export { isZaloConfigured }
 import { maskPhone, createAlert } from '../loyaltyDb.js'
 import { normalizeVietnamesePhone } from '../../smsService.js'
-import { sendOtpVerificationEmail } from '../../emailAccount.js'
+import { sendVerificationCodeEmail, sendOtpVerificationEmail } from '../../emailAccount.js'
 
 // In-memory store chỉ dùng cho môi trường test/dev nội bộ
 const testOtpStore = new Map()
@@ -118,12 +118,15 @@ export async function sendOtpViaProvider({
     try {
       const emailPurpose = purpose === 'login' ? 'login' : 'register'
       const emailRes = await sendOtpVerificationEmail({
+        to: cleanEmail,
         email: cleanEmail,
-        fullName: fullName || 'Quý khách',
+        code: String(code),
         otpCode: String(code),
+        name: fullName || 'Quý khách',
+        fullName: fullName || 'Quý khách',
         purpose: emailPurpose,
       })
-      if (emailRes && (emailRes.sent || emailRes.mocked)) {
+      if (emailRes && (emailRes.ok || emailRes.success || emailRes.sent || emailRes.mocked)) {
         const [u, d] = cleanEmail.split('@')
         const maskedEmail = `${u.slice(0, 2)}***@${d}`
         return {

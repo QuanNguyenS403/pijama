@@ -179,6 +179,30 @@ Hotline: ${SHOP_PHONE} · Email: ${user}
 }
 
 /**
+ * Alias tương thích cho hệ thống Loyalty OTP & xác thực Email
+ */
+export async function sendOtpVerificationEmail({
+  to,
+  email,
+  code,
+  otpCode,
+  name,
+  fullName,
+} = {}) {
+  const res = await sendVerificationCodeEmail({
+    to: to || email,
+    code: code || otpCode,
+    name: name || fullName || 'Quý khách',
+  })
+  return {
+    ...(res || {}),
+    ok: Boolean(res?.ok || res?.success),
+    sent: Boolean(res?.ok || res?.success),
+    mocked: Boolean(res?.sandboxed),
+  }
+}
+
+/**
  * Gửi email chúc mừng & tặng mã Voucher chào mừng 10% + Freeship
  */
 export async function sendWelcomeVoucherEmail({ to, code, name = 'Quý khách' }) {
