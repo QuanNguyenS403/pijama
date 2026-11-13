@@ -190,13 +190,15 @@ export default function BankTransferPaymentPage() {
             setIsQrInvalidated(true)
             setVerifySuccess(true)
             useCartStore.getState().clearCart()
+            let nextOrderSnapshot = order
             if (data.order) {
-              applyOrderUpdateLocally(data.order)
-              setOrder(data.order)
+              const merged = applyOrderUpdateLocally(data.order) || { ...(order || {}), ...data.order }
+              nextOrderSnapshot = merged
+              setOrder(merged)
             }
             setTimeout(() => {
               navigate(`/dat-hang-thanh-cong?orderId=${encodeURIComponent(orderId)}`, {
-                state: { order: data.order || order },
+                state: { order: nextOrderSnapshot },
                 replace: true,
               })
             }, 800)

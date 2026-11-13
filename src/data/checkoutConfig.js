@@ -94,10 +94,21 @@ export const validators = {
   payment: (v) => (!v || v === "" ? "Vui lòng chọn phương thức thanh toán" : null),
 }
 
-// Helper: Tạo mã đơn hàng duy nhất dạng QNS-XXXXXX-XXXX
+// Helper: Tạo mã đơn hàng duy nhất dạng QNS-XXXXXX-XXXXXX (ngẫu nhiên mật mã học)
 export const generateOrderId = () => {
   const ts = Date.now().toString().slice(-6)
-  const rand = Math.random().toString(36).slice(2, 6).toUpperCase()
+  let rand = ''
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+      const bytes = new Uint8Array(6)
+      crypto.getRandomValues(bytes)
+      const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+      rand = Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('')
+    }
+  } catch {}
+  if (!rand) {
+    rand = Math.random().toString(36).slice(2, 8).toUpperCase().padEnd(6, 'X')
+  }
   return `QNS-${ts}-${rand}`
 }
 

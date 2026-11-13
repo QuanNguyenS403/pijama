@@ -49,7 +49,7 @@ Gam màu Đỏ biểu trưng cho năng lượng Hỏa — biểu tượng của 
         hex: "#80262F",          // representative swatch color (Đỏ Ruby / Đỏ Rượu)
         patternPreview: true,    // swatch preview
         patternType: "red",
-        stock: { S: 10, L: 8, M: 8 },
+        stock: { S: 10, M: 8 },
       },
     ],
 
@@ -174,7 +174,7 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
         hex: "#222636",
         patternPreview: true,
         patternType: "plaid",
-        stock: { S: 50, L: 50, M: 50 },
+        stock: { S: 50, M: 50 },
       },
     ],
 
@@ -439,10 +439,10 @@ export const sampleReviews = [
     date: '03/10/2026',
     rating: 5,
     color: 'Caro Navy',
-    size: 'L',
+    size: 'M',
     verified: true,
     photo: '/images/reviews/review-navy-3.jpg',
-    text: 'Bạn gái mua tặng mình Size L (mình 66kg cao 1m74). Áo dài qua mông nhẹ, form suông rộng rãi thoải mái cực kỳ. Chất vải dày dặn vừa phải, không lộ bên trong, mặc làm việc tại nhà hay bước xuống sảnh chung cư lấy đồ ăn đều đàng hoàng chỉn chu.',
+    text: 'Bạn gái mua tặng mình Size M (mình 64kg cao 1m70). Áo dài qua mông nhẹ, form suông rộng rãi thoải mái cực kỳ. Chất vải dày dặn vừa phải, không lộ bên trong, mặc làm việc tại nhà hay bước xuống sảnh chung cư lấy đồ ăn đều đàng hoàng chỉn chu.',
   },
   {
     id: 'rv-12',
@@ -463,7 +463,7 @@ export const sampleReviews = [
     date: '17/09/2026',
     rating: 5,
     color: 'Caro Navy',
-    size: 'L',
+    size: 'M',
     verified: true,
     photo: null,
     text: 'Bộ này đúng nghĩa "từ nhà ra phố". Sáng dậy lười thay đồ chỉ cần khoác thêm chiếc áo trench coat mỏng hoặc cardigan len là đi bộ xuống quán cafe góc đường ăn sáng tự tin luôn. Vải tự nhiên thoáng khí 10 điểm.',
@@ -475,7 +475,7 @@ export const sampleReviews = [
     date: '09/09/2026',
     rating: 5,
     color: 'Caro Navy',
-    size: 'L',
+    size: 'M',
     verified: true,
     photo: null,
     text: 'Mua đôi với người yêu set này, cả 2 đứa đều ưng ý. Vải giặt máy không bị nhăn nhúm, phơi trong bóng râm khô nhanh. Quần có túi sâu để vừa điện thoại iPhone Pro Max không bị rơi ra ngoài.',
@@ -487,7 +487,7 @@ export const sampleReviews = [
     date: '20/08/2026',
     rating: 5,
     color: 'Caro Navy',
-    size: 'L',
+    size: 'M',
     verified: true,
     photo: null,
     text: 'Hộp quà cứng cáp bọc ruy băng nhìn rất sang trọng. Thích trải nghiệm mua hàng trên web, thanh toán chuyển khoản nhận ưu đãi nhanh gọn không cần tạo tài khoản lằng nhằng. Sẽ ủng hộ tiếp các BST sau.',

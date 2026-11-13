@@ -8,6 +8,7 @@
 import crypto from 'crypto'
 import { getDb } from '../accountDb.js'
 import { getTransporter } from '../emailConfig.js'
+import { escapeHtml } from '../emailAccount.js'
 import { scrubPII } from './scrubPII.js'
 import { isValidVnPhone } from './handoff.js'
 
@@ -61,6 +62,12 @@ async function notifyOwnerByEmail({ id, feedbackType, customerName, phone, email
     else if (feedbackType === 'request') subjectPrefix = '💌 [YÊU CẦU ĐẶC BIỆT]'
 
     const subject = `${subjectPrefix} ${customerName || 'Khách hàng'} — ${phone}`
+    const safeName = escapeHtml(customerName || 'Chưa cung cấp')
+    const safePhone = escapeHtml(phone || '')
+    const safeEmail = escapeHtml(email || '')
+    const safeOrderId = escapeHtml(orderId || '')
+    const safeContent = escapeHtml(content || '')
+    const safeZaloPhone = escapeHtml(String(phone || '').replace(/\s+/g, '').replace(/^\+84/, '0'))
 
     const html = `
     <!DOCTYPE html>
@@ -69,43 +76,43 @@ async function notifyOwnerByEmail({ id, feedbackType, customerName, phone, email
     <body style="font-family: Arial, sans-serif; background: #FAF8F5; margin: 0; padding: 20px; color: #2C201A;">
       <div style="max-width: 580px; margin: 0 auto; background: #ffffff; border: 1px solid #E8DFD5; border-radius: 4px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.06);">
         <div style="background: ${feedbackType === 'complaint' ? '#8C1D2F' : '#631521'}; padding: 18px 24px; color: #FAF8F5;">
-          <h2 style="margin: 0; font-size: 18px; font-weight: bold; letter-spacing: 0.5px;">${typeLabel.toUpperCase()}</h2>
+          <h2 style="margin: 0; font-size: 18px; font-weight: bold; letter-spacing: 0.5px;">${escapeHtml(typeLabel.toUpperCase())}</h2>
           <p style="margin: 4px 0 0; font-size: 12px; opacity: 0.85;">Thời gian tiếp nhận: ${new Date(createdAt).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}</p>
         </div>
         <div style="padding: 24px;">
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
             <tr>
               <td style="padding: 8px 0; color: #8C7E74; width: 140px; font-weight: bold;">HỌ VÀ TÊN:</td>
-              <td style="padding: 8px 0; font-weight: bold; color: #631521;">${customerName || 'Chưa cung cấp'}</td>
+              <td style="padding: 8px 0; font-weight: bold; color: #631521;">${safeName}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #8C7E74; font-weight: bold;">SỐ ĐIỆN THOẠI:</td>
-              <td style="padding: 8px 0; font-weight: bold;"><a href="tel:${phone}" style="color: #631521; text-decoration: none;">${phone}</a></td>
+              <td style="padding: 8px 0; font-weight: bold;"><a href="tel:${safePhone}" style="color: #631521; text-decoration: none;">${safePhone}</a></td>
             </tr>
-            ${email ? `
+            ${safeEmail ? `
             <tr>
               <td style="padding: 8px 0; color: #8C7E74; font-weight: bold;">EMAIL:</td>
-              <td style="padding: 8px 0;">${email}</td>
+              <td style="padding: 8px 0;">${safeEmail}</td>
             </tr>` : ''}
-            ${orderId ? `
+            ${safeOrderId ? `
             <tr>
               <td style="padding: 8px 0; color: #8C7E74; font-weight: bold;">MÃ ĐƠN HÀNG:</td>
-              <td style="padding: 8px 0; font-weight: bold; color: #D4AF37;">${orderId}</td>
+              <td style="padding: 8px 0; font-weight: bold; color: #D4AF37;">${safeOrderId}</td>
             </tr>` : ''}
             <tr>
               <td style="padding: 8px 0; color: #8C7E74; font-weight: bold;">PHÂN LOẠI:</td>
-              <td style="padding: 8px 0; font-weight: 600;">${typeLabel}</td>
+              <td style="padding: 8px 0; font-weight: 600;">${escapeHtml(typeLabel)}</td>
             </tr>
           </table>
 
           <div style="background: #FAF5F0; border-left: 4px solid #D4AF37; padding: 14px 18px; margin-bottom: 24px; font-size: 14px; line-height: 1.6;">
             <b style="color: #631521;">Nội dung khách hàng chia sẻ:</b><br/>
-            <div style="margin-top: 6px; white-space: pre-wrap; color: #2C201A;">${content}</div>
+            <div style="margin-top: 6px; white-space: pre-wrap; color: #2C201A;">${safeContent}</div>
           </div>
 
           <div style="text-align: center; margin-top: 24px;">
-            <a href="tel:${phone}" style="display: inline-block; background: #631521; color: #ffffff; padding: 10px 22px; text-decoration: none; font-weight: bold; border-radius: 2px; font-size: 13px;">GỌI NGAY CHO KHÁCH</a>
-            <a href="https://zalo.me/${phone.replace(/^\+84/, '0')}" style="display: inline-block; background: #0068FF; color: #ffffff; padding: 10px 22px; text-decoration: none; font-weight: bold; border-radius: 2px; font-size: 13px; margin-left: 8px;">NHẮN TIN ZALO</a>
+            <a href="tel:${safePhone}" style="display: inline-block; background: #631521; color: #ffffff; padding: 10px 22px; text-decoration: none; font-weight: bold; border-radius: 2px; font-size: 13px;">GỌI NGAY CHO KHÁCH</a>
+            <a href="https://zalo.me/${safeZaloPhone}" style="display: inline-block; background: #0068FF; color: #ffffff; padding: 10px 22px; text-decoration: none; font-weight: bold; border-radius: 2px; font-size: 13px; margin-left: 8px;">NHẮN TIN ZALO</a>
           </div>
         </div>
       </div>

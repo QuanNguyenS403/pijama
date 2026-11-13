@@ -168,7 +168,7 @@ export const policiesData = {
         content: [
           '• Hàng có sẵn: Giao nhanh toàn quốc trong 2-4 ngày làm việc kể từ thời điểm xác nhận đơn hàng.',
           '• Hàng đặt trước (Pre-order): Chuẩn bị và giao hàng dự kiến trong 7–10 ngày làm việc.',
-          '• Thanh toán khi nhận hàng (COD): Áp dụng cho các đơn hàng trong bán kính 30km từ kho hàng (Amber Riverside, Hai Bà Trưng, Hà Nội).',
+          '• Thanh toán khi nhận hàng (COD): Áp dụng cho các đơn hàng trong bán kính 30km từ kho hàng (Hai Bà Trưng, Hà Nội).',
           '• Quý khách ở các tỉnh thành khác áp dụng thanh toán chuyển khoản VietQR và nhận ngay ưu đãi giảm thêm 10% trực tiếp.',
         ],
       },

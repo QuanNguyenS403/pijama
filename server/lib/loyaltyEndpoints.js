@@ -130,7 +130,7 @@ export function registerLoyaltyEndpoints(app) {
   // ── 1. GỬI MÃ OTP XÁC THỰC SĐT (PUBLIC) ─────────────────────
   app.post('/api/loyalty/phone/send-otp', loyaltyOtpIpLimiter, async (req, res) => {
     try {
-      const { phone, purpose: rawPurpose = 'enrollment', turnstileToken } = req.body || {}
+      const { phone, email, fullName, purpose: rawPurpose = 'enrollment', turnstileToken } = req.body || {}
       const purpose = rawPurpose === 'enroll' ? 'enrollment' : rawPurpose
       const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || req.ip || ''
       const userAgent = req.headers['user-agent'] || ''
@@ -179,6 +179,8 @@ export function registerLoyaltyEndpoints(app) {
 
       const result = await sendLoyaltyOtp({
         phone,
+        email: email || req.customerAccount?.email || req.loyaltyMember?.email || '',
+        fullName: fullName || req.customerAccount?.fullName || req.loyaltyMember?.full_name || '',
         purpose,
         ip: clientIp,
         userAgent,

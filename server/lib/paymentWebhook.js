@@ -463,6 +463,34 @@ export function getOrderPaymentStatus(orderId, now = Date.now()) {
       ? 'CANCELLED'
       : (record.payment?.status || 'AWAITING_PAYMENT')
 
+  const safePaidOrder =
+    phase === PAYMENT_PHASES.PAID
+      ? {
+          id: record.orderId || record.id || orderId,
+          orderId: record.orderId || record.id || orderId,
+          status: record.status || 'CONFIRMED',
+          isDelivered: record.status === 'DELIVERED',
+          paymentStatus: record.payment?.status || 'PAID',
+          payment: {
+            method: record.payment?.method || 'BANK_TRANSFER',
+            methodLabel: record.payment?.methodLabel || 'Chuyển khoản VietQR',
+            status: record.payment?.status || 'PAID',
+            paidAt: record.payment?.paidAt || null,
+            submittedAt: record.payment?.submittedAt || null,
+          },
+          items: Array.isArray(record.items) ? record.items : [],
+          subtotal: Number(record.subtotal) || 0,
+          shippingFee: Number(record.shippingFee) || 0,
+          discount: Number(record.discount) || 0,
+          total: Number(record.total) || 0,
+          carrier: record.carrier || 'Viettel Post',
+          trackingCode: record.trackingCode || record.trackingNumber || '',
+          createdAt: record.createdAt || record.orderDate || '',
+          orderDateVN: record.orderDateVN || '',
+          updatedAt: record.updatedAt || new Date(now).toISOString(),
+        }
+      : undefined
+
   return {
     success: true,
     orderId,
@@ -474,7 +502,7 @@ export function getOrderPaymentStatus(orderId, now = Date.now()) {
     hasPaymentProof: Boolean(record.payment?.proofImageUrl),
     paymentSubmittedAt: record.payment?.submittedAt || null,
     // Chỉ kèm thông tin đơn tối thiểu an toàn, không rò rỉ secret / PII
-    order: phase === PAYMENT_PHASES.PAID ? record : undefined,
+    order: safePaidOrder,
   }
 }
 

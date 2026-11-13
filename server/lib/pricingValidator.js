@@ -172,7 +172,7 @@ export function validateOrderPricing(order, options = {}) {
     summary: {
       subtotal: totals.subtotal,
       tierDiscountPercent: totals.tierDiscountPercent,
-      tierDiscountAmount: totals.tierDiscountAmount,
+      tierDiscountAmount: Math.min(totals.tierDiscountAmount, totals.subtotal),
       baseShippingFee: totals.baseShippingFee,
       splitShippingFee: totals.splitShippingFee,
       shippingFee: totals.shippingFee,

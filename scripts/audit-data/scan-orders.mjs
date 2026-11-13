@@ -16,9 +16,12 @@ const rootDir = path.resolve(__dirname, '../..')
 const args = process.argv.slice(2)
 const isApply = args.includes('--apply') && process.env.CONFIRM_ORDER_CLEANUP === 'YES_ARCHIVE_JUNK'
 const targetFileArg = args.find((a) => a.startsWith('--file='))?.split('=')[1]
+const csvOutArg = args.find((a) => a.startsWith('--csv='))?.split('=')[1]
 const storeFile = targetFileArg
   ? path.resolve(targetFileArg)
-  : path.resolve(rootDir, 'server/data/orders_store.json')
+  : process.env.DATA_DIR
+    ? path.resolve(process.env.DATA_DIR, 'orders_store.json')
+    : path.resolve(rootDir, 'server/data/orders_store.json')
 
 function maskPhone(phone) {
   const clean = String(phone || '').replace(/\D/g, '')
@@ -56,6 +59,12 @@ function isTestOrder(order) {
 
   if (
     email.endsWith('@example.com') ||
+    email.endsWith('@example.org') ||
+    email.endsWith('@example.net') ||
+    email.startsWith('ent_user_') ||
+    email.startsWith('otp_') ||
+    email.startsWith('test_') ||
+    email.startsWith('unsub_test') ||
     email.includes('probe_') ||
     email.includes('adversarial') ||
     name.includes('test user') ||
@@ -152,6 +161,18 @@ function main() {
   }
 
   if (!isApply) {
+    if (csvOutArg) {
+      const csvPath = path.resolve(csvOutArg)
+      const csvLines = ['category,order_id,status,payment_status,masked_phone,masked_email,total,created_at']
+      for (const o of testOrders) {
+        csvLines.push(`TEST_SYNTHETIC,${o.orderId || o.id},${o.status || ''},${o.paymentStatus || o.payment?.status || ''},${maskPhone(o.customer?.phone)},${maskEmail(o.customer?.email)},${o.total || 0},${o.createdAt || ''}`)
+      }
+      for (const o of staleUnpaidBankOrders) {
+        csvLines.push(`STALE_UNPAID_QR_OVER_24H,${o.orderId || o.id},${o.status || ''},${o.paymentStatus || o.payment?.status || ''},${maskPhone(o.customer?.phone)},${maskEmail(o.customer?.email)},${o.total || 0},${o.createdAt || ''}`)
+      }
+      fs.writeFileSync(csvPath, csvLines.join('\n') + '\n', 'utf-8')
+      console.log(`\n📄 Đã xuất danh sách đơn nghi ngờ (đã che PII) ra CSV: ${csvPath}`)
+    }
     console.log('\n🔒 KẾT THÚC CHẾ ĐỘ CHỈ-ĐỌC (--dry-run). Không có dữ liệu nào bị thay đổi.')
     if (testOrders.length > 0) {
       console.log('💡 Để tách lưu trữ riêng đơn TEST (giữ nguyên toàn bộ đơn thật & đơn hủy lịch sử), chạy:')

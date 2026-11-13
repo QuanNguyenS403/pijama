@@ -15,12 +15,23 @@ export default function LoyaltyRegisterModal({
   const [step, setStep] = useState(1) // 1: Thông tin & SĐT, 2: Nhập OTP
   const [fullName, setFullName] = useState(initialName)
   const [phone, setPhone] = useState(initialPhone)
+  const [email, setEmail] = useState(initialEmail)
+  const [otpDeliveryMessage, setOtpDeliveryMessage] = useState('')
 
   useEffect(() => {
     if (!isOpen) return
     if (initialName && !fullName) setFullName(initialName)
     if (initialPhone && !phone) setPhone(initialPhone)
-    if ((!initialName || !initialPhone) && typeof fetch === 'function') {
+    if (initialEmail && !email) setEmail(initialEmail)
+    try {
+      const savedCheckout = JSON.parse(localStorage.getItem('qns_checkout_customer_info') || 'null')
+      if (savedCheckout) {
+        if (savedCheckout.fullName && !fullName && !initialName) setFullName(savedCheckout.fullName)
+        if (savedCheckout.phone && !phone && !initialPhone) setPhone(savedCheckout.phone)
+        if (savedCheckout.email && !email && !initialEmail) setEmail(savedCheckout.email)
+      }
+    } catch {}
+    if ((!initialName || !initialPhone || !initialEmail) && typeof fetch === 'function') {
       fetch('/api/auth/me', { credentials: 'include' })
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => {
@@ -28,11 +39,12 @@ export default function LoyaltyRegisterModal({
           if (u) {
             if (u.fullName && !fullName) setFullName(u.fullName)
             if (u.phone && !phone) setPhone(u.phone)
+            if (u.email && !email) setEmail(u.email)
           }
         })
         .catch(() => {})
     }
-  }, [isOpen, initialName, initialPhone])
+  }, [isOpen, initialName, initialPhone, initialEmail])
   const [combinedConsent, setCombinedConsent] = useState(false)
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
@@ -79,6 +91,11 @@ export default function LoyaltyRegisterModal({
         setError('Vui lòng nhập họ và tên của quý khách.')
         return
       }
+      const cleanEmail = email.trim()
+      if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        setError('Vui lòng nhập địa chỉ Email hợp lệ để nhận mã xác thực OTP.')
+        return
+      }
     }
 
     setLoading(true)
@@ -87,8 +104,11 @@ export default function LoyaltyRegisterModal({
       const res = await fetch('/api/loyalty/phone/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           phone: cleanPhone,
+          email: email.trim() || undefined,
+          fullName: fullName.trim() || undefined,
           purpose,
         }),
       })
@@ -99,6 +119,7 @@ export default function LoyaltyRegisterModal({
         return
       }
 
+      setOtpDeliveryMessage(data.message || '')
       setStep(2)
       setResendCooldown(data.cooldownRemaining || 60)
     } catch (err) {
@@ -133,6 +154,7 @@ export default function LoyaltyRegisterModal({
           body: JSON.stringify({
             phone: phone.trim(),
             fullName: fullName.trim(),
+            email: email.trim() || undefined,
             otpCode: cleanOtp,
             consentToTerms: true,
             ageConsent: true,
@@ -257,6 +279,23 @@ export default function LoyaltyRegisterModal({
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
+                    Email nhận mã OTP {mode === 'enroll' && <span className="text-[#631521]">*</span>}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      inputMode="email"
+                      required={mode === 'enroll'}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@gmail.com"
+                      className="w-full px-3 py-2 bg-[#FAF8F5] border border-[#E8DFD5] text-xs sm:text-sm rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden"
+                    />
+                  </div>
+                </div>
+
                 <button
                   type="submit"
                   disabled={loading}
@@ -288,8 +327,12 @@ export default function LoyaltyRegisterModal({
               /* BƯỚC 2: NHẬP MÃ OTP VÀ XÁC NHẬN */
               <form onSubmit={handleCompleteAuth} className="space-y-4">
                 <div className="p-3 bg-[#FAF5F0] border border-[#D4AF37]/50 rounded-[2px] text-xs text-[#4A3F38] text-center">
-                  Mã xác thực 6 chữ số đã gửi tới số{' '}
-                  <strong className="text-[#631521] font-mono">{phone}</strong>
+                  {otpDeliveryMessage || (
+                    <>
+                      Mã xác thực 6 chữ số đã gửi cho số{' '}
+                      <strong className="text-[#631521] font-mono">{phone}</strong>
+                    </>
+                  )}
                 </div>
 
                 <div>

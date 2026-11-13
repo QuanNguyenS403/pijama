@@ -10,7 +10,10 @@ import { isAutomatedTestEnvironment, isNodeTestRunner } from './emailRecipientGu
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const DATA_DIR = path.resolve(__dirname, '../data')
+const DEFAULT_DATA_DIR = path.resolve(__dirname, '../data')
+const DATA_DIR = String(process.env.DATA_DIR || '').trim()
+  ? path.resolve(String(process.env.DATA_DIR).trim())
+  : DEFAULT_DATA_DIR
 const isTestEnv = isNodeTestRunner() || isAutomatedTestEnvironment()
 
 function resolveTestSafeFilePath(envVarValue, defaultProdName, defaultTestName) {
@@ -18,7 +21,11 @@ function resolveTestSafeFilePath(envVarValue, defaultProdName, defaultTestName) 
   if (isTestEnv) {
     if (raw) {
       const resolved = path.resolve(raw)
-      const isInsideRealDataDir = resolved === DATA_DIR || resolved.startsWith(DATA_DIR + path.sep)
+      const isInsideRealDataDir =
+        resolved === DATA_DIR ||
+        resolved.startsWith(DATA_DIR + path.sep) ||
+        resolved === DEFAULT_DATA_DIR ||
+        resolved.startsWith(DEFAULT_DATA_DIR + path.sep)
       if (!isInsideRealDataDir) return resolved
     }
     return path.join(os.tmpdir(), `qns-test-${process.pid}`, defaultTestName)
@@ -73,6 +80,7 @@ export async function syncOrderToSupabase(order, options = {}) {
         hasPreOrder: Boolean(order.hasPreOrder),
         paymentProofUrl: order.payment?.proofImageUrl || null,
         paymentProofUploadedAt: order.payment?.proofUploadedAt || null,
+        rawOrder: order,
       },
       updated_at: new Date().toISOString(),
     }
@@ -88,6 +96,121 @@ export async function syncOrderToSupabase(order, options = {}) {
   } catch (err) {
     console.warn('⚠️ [SUPABASE SYNC] Ngoại lệ khi chuẩn bị đồng bộ đơn:', err?.message || err)
     return false
+  }
+}
+
+/**
+ * Khôi phục toàn bộ đơn hàng từ Supabase Cloud về bộ nhớ & SQLite khi khởi động trên Render Free Tier
+ */
+export async function syncOrdersFromSupabase() {
+  if (isNodeTestRunner() || isAutomatedTestEnvironment()) return 0
+  try {
+    const client = getSupabase()
+    if (!client) return 0
+
+    const { data, error } = await client
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: true })
+      .limit(1000)
+
+    if (error) {
+      console.warn('⚠️ [SUPABASE SYNC] Lỗi tải orders từ Supabase:', error.message)
+      return 0
+    }
+    if (!Array.isArray(data) || data.length === 0) return 0
+
+    let restoredCount = 0
+    const db = getDb()
+    for (const row of data) {
+      const orderId = String(row.order_id || row.id || '').trim()
+      if (!orderId) continue
+
+      const meta = row.metadata && typeof row.metadata === 'object' ? row.metadata : {}
+      const baseRaw = meta.rawOrder && typeof meta.rawOrder === 'object' ? meta.rawOrder : null
+
+      const restoredOrder = baseRaw
+        ? {
+            ...baseRaw,
+            orderId,
+            status: row.order_status || baseRaw.status || 'PENDING',
+            trackingCode: row.tracking_code || baseRaw.trackingCode || null,
+            payment: {
+              ...(baseRaw.payment || {}),
+              method: row.payment_method || baseRaw.payment?.method || 'COD',
+              status: row.payment_status || baseRaw.payment?.status || 'PENDING',
+              proofImageUrl: meta.paymentProofUrl || baseRaw.payment?.proofImageUrl || null,
+              proofUploadedAt: meta.paymentProofUploadedAt || baseRaw.payment?.proofUploadedAt || null,
+            },
+            updatedAt: row.updated_at || baseRaw.updatedAt || new Date().toISOString(),
+          }
+        : {
+            orderId,
+            createdAt: row.created_at || new Date().toISOString(),
+            orderDate: row.created_at || new Date().toISOString(),
+            updatedAt: row.updated_at || row.created_at || new Date().toISOString(),
+            status: row.order_status || 'PENDING',
+            trackingCode: row.tracking_code || null,
+            customer: {
+              fullName: row.customer_name || 'Khách hàng',
+              phone: row.customer_phone || '',
+              email: row.customer_email || '',
+            },
+            shipping: {
+              fullAddress: row.shipping_address || '',
+              address: row.shipping_address || '',
+            },
+            items: Array.isArray(row.items) ? row.items : [],
+            subtotal: Number(row.subtotal ?? 0),
+            discount: Number(row.discount_amount ?? 0),
+            shippingFee: Number(row.shipping_fee ?? 0),
+            baseShippingFee: Number(meta.baseShippingFee ?? row.shipping_fee ?? 0),
+            splitShippingFee: Number(meta.splitShippingFee ?? 0),
+            tierDiscountPercent: Number(meta.tierDiscountPercent ?? 0),
+            tierDiscountAmount: Number(meta.tierDiscountAmount ?? 0),
+            voucherDiscount: Number(meta.voucherDiscount ?? 0),
+            bankTransferDiscount: Number(meta.bankTransferDiscount ?? 0),
+            voucherCode: meta.voucherCode || null,
+            deliveryOption: meta.deliveryOption || 'COMBINED',
+            isMixedPreOrder: Boolean(meta.isMixedPreOrder),
+            hasPreOrder: Boolean(meta.hasPreOrder),
+            total: Number(row.total ?? 0),
+            note: row.notes || '',
+            payment: {
+              method: row.payment_method || 'COD',
+              status: row.payment_status || 'PENDING',
+              proofImageUrl: meta.paymentProofUrl || null,
+              proofUploadedAt: meta.paymentProofUploadedAt || null,
+            },
+          }
+
+      const existing = ordersMap.get(orderId)
+      const existingTime = existing?.updatedAt ? new Date(existing.updatedAt).getTime() : 0
+      const remoteTime = restoredOrder.updatedAt ? new Date(restoredOrder.updatedAt).getTime() : 0
+
+      if (!existing || remoteTime >= existingTime) {
+        ordersMap.set(orderId, restoredOrder)
+        try {
+          upsertOrderToDb(restoredOrder, db)
+        } catch {}
+        if (restoredOrder.status === 'DELIVERED') {
+          try {
+            Promise.resolve(handleOrderDeliveredHook(restoredOrder)).catch(() => {})
+          } catch {}
+        }
+        restoredCount++
+      }
+    }
+
+    if (restoredCount > 0) {
+      try {
+        saveToDisk()
+      } catch {}
+    }
+    return restoredCount
+  } catch (err) {
+    console.warn('⚠️ [SUPABASE SYNC] Ngoại lệ khi khôi phục orders từ Supabase:', err?.message || err)
+    return 0
   }
 }
 

@@ -10,6 +10,7 @@ import { updateOrderStatusInSheet } from './googleSheets.js'
 import { logSecurityAudit } from './auditLogger.js'
 import { sendOwnerEmail } from './emailOwner.js'
 import { sendCustomerEmail } from './emailCustomer.js'
+import { releaseVoucher } from './voucherValidator.js'
 
 // ==============================================================================
 // 1. CẤU HÌNH & HẰNG SỐ THANH TOÁN (DUY NHẤT - I11)
@@ -246,13 +247,167 @@ export function markOrderPaid(
 }
 
 /**
- * Cơ chế hết hạn QR tự động đã được loại bỏ theo quy trình duyệt thủ công.
- * Giữ lại chữ ký hàm trả về false để tương thích an toàn.
+ * Kiểm tra đơn VietQR bị bỏ dở (chưa tải ảnh chứng từ, chưa bấm "Thanh toán", chưa thanh toán).
+ * RÀNG BUỘC BẮT BUỘC (G6): Đơn đã có proofImageUrl hoặc submittedAt (PENDING_ADMIN_CONFIRMATION)
+ * TUYỆT ĐỐI KHÔNG bao giờ bị coi là đơn bỏ dở — luôn chờ Admin duyệt thủ công.
  */
-export function expireOrderIfDue() {
-  return false
+export function isAbandonedUnpaidQrOrder(order) {
+  if (!order || typeof order !== 'object') return false
+  const method = order.payment?.method || order.paymentMethod || 'COD'
+  if (method !== 'BANK_TRANSFER') return false
+  if (order.status !== 'AWAITING_PAYMENT') return false
+
+  const paymentStatus = order.payment?.status || order.paymentStatus || 'AWAITING_PAYMENT'
+  if (
+    paymentStatus === 'PAID' ||
+    paymentStatus === 'PENDING_ADMIN_CONFIRMATION' ||
+    paymentStatus === 'CUSTOMER_CLAIMED_PAID'
+  ) {
+    return false
+  }
+
+  const hasProof = Boolean(order.payment?.proofImageUrl || order.paymentProof?.imageUrl)
+  const hasSubmitted = Boolean(order.payment?.submittedAt || order.payment?.claimedAt)
+  if (hasProof || hasSubmitted) return false
+
+  return true
 }
 
-export function sweepExpiredOrders() {
-  return { expiredCount: 0 }
+function getOrderTimestampMs(order) {
+  if (Number.isFinite(order?.payment?.qrGeneratedAt) && order.payment.qrGeneratedAt > 0) {
+    return order.payment.qrGeneratedAt
+  }
+  const parsed = Date.parse(order?.createdAt || order?.orderDate || '')
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+/**
+ * Thống kê lượng đơn VietQR chưa thanh toán đang giữ tồn kho để cảnh báo cho Admin (G6).
+ */
+export function getAbandonedQrBacklogMetrics(nowMs = Date.now()) {
+  let unpaidWithoutProofTotal = 0
+  let unpaidWithoutProofOver1h = 0
+  let unpaidWithoutProofOver24h = 0
+  let waitingAdminConfirmationCount = 0
+
+  for (const order of orderPersistence.values()) {
+    if (!order || order.status === 'CANCELLED') continue
+    const method = order.payment?.method || order.paymentMethod || 'COD'
+    if (method !== 'BANK_TRANSFER') continue
+
+    const phase = getPaymentPhase(order)
+    if (phase === PAYMENT_PHASES.WAITING_CONFIRMATION) {
+      waitingAdminConfirmationCount += 1
+      continue
+    }
+
+    if (isAbandonedUnpaidQrOrder(order)) {
+      unpaidWithoutProofTotal += 1
+      const createdMs = getOrderTimestampMs(order)
+      if (createdMs > 0) {
+        const ageMs = nowMs - createdMs
+        if (ageMs >= 60 * 60 * 1000) unpaidWithoutProofOver1h += 1
+        if (ageMs >= 24 * 60 * 60 * 1000) unpaidWithoutProofOver24h += 1
+      }
+    }
+  }
+
+  const rawHours = Number.parseFloat(String(process.env.UNPAID_QR_AUTOCANCEL_HOURS || '0'))
+  const autoCancelHours = Number.isFinite(rawHours) && rawHours > 0 ? rawHours : 0
+
+  return {
+    unpaidWithoutProofTotal,
+    unpaidWithoutProofOver1h,
+    unpaidWithoutProofOver24h,
+    waitingAdminConfirmationCount,
+    autoCancelHours,
+    warning:
+      unpaidWithoutProofOver1h >= 3 && autoCancelHours === 0
+        ? `Đang có ${unpaidWithoutProofOver1h} đơn VietQR bỏ dở (>1 giờ, chưa tải ảnh CK) đang giữ tồn kho SKU. Hãy hủy đơn rác hoặc đặt UNPAID_QR_AUTOCANCEL_HOURS=24.`
+        : null,
+  }
+}
+
+/**
+ * Cơ chế hết hạn QR tự động mặc định tắt (UNPAID_QR_AUTOCANCEL_HOURS=0) để giữ nguyên hành vi thủ công.
+ * Khi Quan bật UNPAID_QR_AUTOCANCEL_HOURS > 0 (ví dụ 24 giờ), hệ thống chỉ tự hủy các đơn
+ * AWAITING_PAYMENT CHƯA tải ảnh chứng từ và CHƯA bấm đã thanh toán để nhả tồn kho & voucher (G6).
+ */
+export function expireOrderIfDue(order, options = {}) {
+  const rawHours =
+    options.maxAgeHours !== undefined
+      ? Number(options.maxAgeHours)
+      : Number.parseFloat(String(process.env.UNPAID_QR_AUTOCANCEL_HOURS || '0'))
+  if (!Number.isFinite(rawHours) || rawHours <= 0) return false
+  if (!isAbandonedUnpaidQrOrder(order)) return false
+
+  const createdMs = getOrderTimestampMs(order)
+  if (!createdMs) return false
+  const nowMs = options.nowMs || Date.now()
+  if (nowMs - createdMs < rawHours * 60 * 60 * 1000) return false
+
+  const orderId = order.orderId || order.id
+  const nowIso = new Date(nowMs).toISOString()
+  order.status = 'CANCELLED'
+  order.cancelReason = `Tự động hủy đơn VietQR bỏ dở quá ${rawHours} giờ (chưa tải ảnh chứng từ)`
+  order.cancelledAt = nowIso
+  order.updatedAt = nowIso
+  if (!order.payment) order.payment = {}
+  order.payment.status = 'EXPIRED_TIMEOUT'
+  order.paymentStatus = 'EXPIRED_TIMEOUT'
+
+  if (order.voucherCode && orderId) {
+    try {
+      releaseVoucher(order.voucherCode, orderId)
+    } catch (_) {}
+  }
+
+  if (orderId) {
+    orderPersistence.set(orderId, order)
+    logSecurityAudit({
+      action: 'ABANDONED_QR_ORDER_AUTOCANCELLED',
+      status: 'SUCCESS',
+      details: { orderId, maxAgeHours: rawHours },
+    })
+    updateOrderStatusInSheet(orderId, 'CANCELLED', order.cancelReason).catch(() => {})
+  }
+  return true
+}
+
+export function sweepExpiredOrders(options = {}) {
+  const rawHours =
+    options.maxAgeHours !== undefined
+      ? Number(options.maxAgeHours)
+      : Number.parseFloat(String(process.env.UNPAID_QR_AUTOCANCEL_HOURS || '0'))
+  const nowMs = options.nowMs || Date.now()
+
+  if (!Number.isFinite(rawHours) || rawHours <= 0) {
+    const backlog = getAbandonedQrBacklogMetrics(nowMs)
+    if (backlog.unpaidWithoutProofOver24h > 0) {
+      console.warn(
+        `⚠️ [QR STOCK BACKLOG] Có ${backlog.unpaidWithoutProofOver24h} đơn VietQR bỏ dở > 24h chưa có ảnh chứng từ đang giữ tồn kho. Đặt UNPAID_QR_AUTOCANCEL_HOURS=24 để tự động nhả kho.`
+      )
+    }
+    return { expiredCount: 0, autoCancelEnabled: false, backlog }
+  }
+
+  let expiredCount = 0
+  const cancelledOrderIds = []
+  for (const order of orderPersistence.values()) {
+    if (expireOrderIfDue(order, { maxAgeHours: rawHours, nowMs })) {
+      expiredCount += 1
+      cancelledOrderIds.push(order.orderId || order.id)
+    }
+  }
+
+  if (expiredCount > 0) {
+    console.log(`🧹 [QR AUTO-SWEEP] Đã tự động hủy ${expiredCount} đơn VietQR bỏ dở quá ${rawHours}h và nhả tồn kho/voucher.`)
+  }
+
+  return {
+    expiredCount,
+    cancelledOrderIds,
+    autoCancelEnabled: true,
+    maxAgeHours: rawHours,
+  }
 }

@@ -92,19 +92,19 @@ function adviseSize(weight, height) {
 
   if (weight && weight >= 59 && weight <= 66) {
     return {
-      recommendedSize: 'Size M',
-      reason: `với cân nặng ${weight}kg${height ? ` và chiều cao ${height}cm` : ''}, anh/chị tham khảo **Size L** trên các mẫu sau ạ:\n` +
-        `• **THE STILLWATER SET** (Caro Navy): Size L dài áo 70,5 cm · ngực 135,0 cm · max eo ≈116,0 cm · đùi 72,8 cm · dài quần 100,3 cm.\n` +
-        `• **THE DAYBREAK SET** (Đỏ): Size L dài áo 66,0 cm · ngực 118,0 cm · max eo 103,7 cm · đùi 73,0 cm · dài quần 94,8 cm.\n` +
-        `(Lưu ý: Mẫu **THE HEARTH SET** hiện chỉ có tới Size M đến 58 kg).`,
-      models: 'Cả **THE STILLWATER SET (Caro Navy - 550.000đ)** và **THE DAYBREAK SET (Đỏ - 490.000đ)** đều có **Size L** ạ.',
+      recommendedSize: 'Size M (Form thoải mái) / Tư vấn theo số đo',
+      reason: `dạ hiện tại cả 3 mẫu trên website (**FELIZ SET**, **GALAXIA SET**, **THE HEARTH SET**) đều có 2 size là **Size S** và **Size M** ạ. Với cân nặng ${weight}kg${height ? ` và chiều cao ${height}cm` : ''}, anh/chị tham khảo **Size M** có thông số form rộng rãi như sau ạ:\n` +
+        `• **GALAXIA SET** (Caro Navy - 598.000đ): **Size M** dài áo 70,5 cm · ngực áo 135,0 cm · max eo ≈116,0 cm · đùi 72,8 cm · dài quần 100,3 cm.\n` +
+        `• **FELIZ SET** (Đỏ - 698.000đ): **Size M** dài áo 66,0 cm · ngực áo 118,0 cm · max eo 103,7 cm · đùi 73,0 cm · dài quần 94,8 cm.\n` +
+        `(Lưu ý: Mẫu **THE HEARTH SET** Size M khuyến nghị cho 51–58 kg, Ngực 87–93 cm, Eo 71–77 cm).`,
+      models: 'Hai mẫu **GALAXIA SET (Caro Navy - 598.000đ)** và **FELIZ SET (Đỏ - 698.000đ)** có form **Size M** rộng rãi rất dễ mặc ạ.',
     }
   }
 
   if (weight && weight > 66) {
     return {
-      recommendedSize: 'Tư vấn theo số đo chi tiết / may đo riêng',
-      reason: `dạ hiện trên website các mẫu may sẵn có bảng size tối đa như sau ạ: **GALAXIA SET** Size M (ngực áo 135,0 cm · max eo ≈116,0 cm · đùi 72,8 cm), **FELIZ SET** Size M (ngực áo 118,0 cm · max eo 103,7 cm · đùi 73,0 cm), và **THE HEARTH SET** Size M (51–58 kg). Với cân nặng ${weight}kg, nếu vòng ngực/vòng eo thực tế vẫn nằm trong khoảng max eo trên thì Size L mặc vẫn vừa, hoặc em có thể kết nối chủ shop để tư vấn kích thước/may đo phù hợp nhất cho mình nhé ạ!`,
+      recommendedSize: 'Tư vấn theo số đo chi tiết / hỗ trợ trực tiếp',
+      reason: `dạ hiện trên website cả 3 mẫu may sẵn chỉ có **Size S** và **Size M** với thông số tối đa ở **Size M** như sau ạ: **GALAXIA SET** Size M (ngực áo 135,0 cm · max eo ≈116,0 cm · đùi 72,8 cm), **FELIZ SET** Size M (ngực áo 118,0 cm · max eo 103,7 cm · đùi 73,0 cm), và **THE HEARTH SET** Size M (51–58 kg). Với cân nặng ${weight}kg, nếu vòng ngực/vòng eo thực tế vẫn nằm trong khoảng thông số trên thì **Size M** của **GALAXIA SET** hoặc **FELIZ SET** vẫn vừa, hoặc em có thể kết nối chủ shop để tư vấn kích thước phù hợp nhất cho mình nhé ạ!`,
       models: null,
       needsHandoff: true,
     }
@@ -227,7 +227,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     return {
       reply:
         'Dạ bộ **GALAXIA SET** là thiết kế sleepwear cổ V hiện đại được rất nhiều khách hàng yêu thích:\n\n' +
-        '• **Giá bán**: 658.000đ.\n' +
+        '• **Giá bán**: 598.000đ.\n' +
         '• **Màu sắc**: Họa tiết Caro Navy lịch lãm, chiều sâu tĩnh tại của hành Thủy mang lại cảm giác an yên, thư thái.\n' +
         '• **Chất liệu**: 95% sợi gỗ tự nhiên Modal & 5% Spandex cao cấp định lượng 180 GSM, sờ vào mềm mướt mát lạnh và chống nhăn tự nhiên.\n' +
         `• **Kích cỡ trên website (Size S, M)**:\n${formatInlineSizes('galaxia-set')}\n` +

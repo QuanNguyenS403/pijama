@@ -12,8 +12,11 @@ import { isAutomatedTestEnvironment, isNodeTestRunner, extractEmailAddress } fro
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// Thư mục lưu trữ database độc lập cho tài khoản & voucher
-const dataDir = path.resolve(__dirname, '../data')
+// Thư mục lưu trữ database độc lập cho tài khoản & voucher (hỗ trợ DATA_DIR cho Persistent Disk)
+const defaultDataDir = path.resolve(__dirname, '../data')
+const dataDir = String(process.env.DATA_DIR || '').trim()
+  ? path.resolve(String(process.env.DATA_DIR).trim())
+  : defaultDataDir
 
 const isTestEnv = isNodeTestRunner() || isAutomatedTestEnvironment()
 
@@ -23,7 +26,10 @@ function resolveAccountDbPath() {
     if (envDbRaw) {
       const resolvedEnvDb = path.resolve(envDbRaw)
       const isInsideRealDataDir =
-        resolvedEnvDb === dataDir || resolvedEnvDb.startsWith(dataDir + path.sep)
+        resolvedEnvDb === dataDir ||
+        resolvedEnvDb.startsWith(dataDir + path.sep) ||
+        resolvedEnvDb === defaultDataDir ||
+        resolvedEnvDb.startsWith(defaultDataDir + path.sep)
       if (!isInsideRealDataDir) {
         return resolvedEnvDb
       }
@@ -45,6 +51,10 @@ export function getAccountDbPath() {
   return dbPath
 }
 
+export function getDataDirPath() {
+  return dataDir
+}
+
 export function getDb() {
   if (!db) {
     db = new Database(dbPath)
@@ -56,6 +66,18 @@ export function getDb() {
     runEnterpriseMigrations(db)
   }
   return db
+}
+
+export function closeDb() {
+  if (db) {
+    try {
+      db.pragma('wal_checkpoint(TRUNCATE)')
+    } catch (_) {}
+    try {
+      db.close()
+    } catch (_) {}
+    db = null
+  }
 }
 
 function initSchema(database) {
@@ -538,7 +560,11 @@ export function markAccountVerified(id, { marketingOptIn = null } = {}) {
   params.push(id)
 
   database.prepare(query).run(...params)
-  return findAccountById(id)
+  const updated = findAccountById(id)
+  if (updated?.email) {
+    syncUserToSupabase(updated).catch(() => {})
+  }
+  return updated
 }
 
 export function updateAccountEmail(id, email) {
@@ -550,7 +576,11 @@ export function updateAccountEmail(id, email) {
   try {
     database.prepare('UPDATE users SET email = ?, updated_at = ? WHERE id = ?').run(cleanEmail, now, id)
   } catch (_) {}
-  return findAccountById(id)
+  const updated = findAccountById(id)
+  if (updated?.email) {
+    syncUserToSupabase(updated).catch(() => {})
+  }
+  return updated
 }
 
 export function updateAccountProfile(id, { fullName = null, avatarUrl = null, email = null } = {}) {
@@ -580,7 +610,11 @@ export function updateAccountProfile(id, { fullName = null, avatarUrl = null, em
   params.push(id)
 
   database.prepare(`UPDATE accounts SET ${updates.join(', ')} WHERE id = ?`).run(...params)
-  return findAccountById(id)
+  const updated = findAccountById(id)
+  if (updated?.email) {
+    syncUserToSupabase(updated).catch(() => {})
+  }
+  return updated
 }
 
 export function updateMarketingPreferences(accountId, optIn) {
@@ -949,7 +983,9 @@ export function createWelcomeVoucher(account_id) {
   `).run(id, account_id, code, now)
 
   const created = database.prepare('SELECT * FROM vouchers WHERE id = ?').get(id)
-  return formatVoucherRow(created)
+  const formatted = formatVoucherRow(created)
+  syncVoucherToSupabase(formatted).catch(() => {})
+  return formatted
 }
 
 function formatVoucherRow(row) {
@@ -1014,9 +1050,16 @@ export function releaseVoucher(code, orderId) {
 
   const result = database.prepare(`
     UPDATE vouchers 
-    SET status = 'active', reserved_order_id = NULL, reserved_at = NULL
-    WHERE UPPER(code) = ? AND reserved_order_id = ? AND used = 0
-  `).run(cleanCode, orderId)
+    SET used = 0, status = 'active', used_at = NULL, order_id = NULL, reserved_order_id = NULL, reserved_at = NULL
+    WHERE UPPER(code) = ? AND (reserved_order_id = ? OR order_id = ?)
+  `).run(cleanCode, orderId, orderId)
+
+  if (result.changes > 0) {
+    const updatedRow = database.prepare('SELECT * FROM vouchers WHERE UPPER(code) = ?').get(cleanCode)
+    if (updatedRow) {
+      syncVoucherToSupabase(formatVoucherRow(updatedRow)).catch(() => {})
+    }
+  }
 
   return result.changes > 0
 }
@@ -1031,6 +1074,13 @@ export function markVoucherUsed(code, order_id) {
     SET used = 1, status = 'used', used_at = ?, order_id = ?
     WHERE UPPER(code) = ? AND used = 0
   `).run(now, order_id || null, cleanCode)
+
+  if (result.changes > 0) {
+    const updatedRow = database.prepare('SELECT * FROM vouchers WHERE UPPER(code) = ?').get(cleanCode)
+    if (updatedRow) {
+      syncVoucherToSupabase(formatVoucherRow(updatedRow)).catch(() => {})
+    }
+  }
 
   return result.changes > 0
 }
@@ -1346,6 +1396,9 @@ export function upsertUnifiedOAuthAccount({
 
     const finalAccount = findAccountById(userId)
     const voucher = createWelcomeVoucher(userId)
+    if (finalAccount?.email) {
+      syncUserToSupabase(finalAccount).catch(() => {})
+    }
 
     return {
       account: finalAccount,
@@ -1484,11 +1537,75 @@ export async function syncUsersFromSupabase(database = getDb()) {
 
     const insertMany = database.transaction((rows) => {
       for (const r of rows) {
+        const now = new Date().toISOString()
+
+        // Khôi phục hồ sơ hội viên Loyalty (role = 'loyalty_member' hoặc id bắt đầu bằng 'mem_')
+        if (r.role === 'loyalty_member' || String(r.id || '').startsWith('mem_')) {
+          if (!r.phone) continue
+          let meta = {}
+          try {
+            if (r.avatar_url && String(r.avatar_url).startsWith('{')) {
+              meta = JSON.parse(r.avatar_url)
+            }
+          } catch {}
+          try {
+            database.exec(`
+              CREATE TABLE IF NOT EXISTS loyalty_members (
+                id TEXT PRIMARY KEY,
+                phone TEXT UNIQUE NOT NULL,
+                phone_verified_at TEXT,
+                account_id TEXT,
+                full_name TEXT NOT NULL,
+                email TEXT,
+                birth_day INTEGER,
+                birth_month INTEGER,
+                tier TEXT NOT NULL DEFAULT 'MEMBER',
+                tier_changed_at TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'active',
+                consent_version TEXT NOT NULL,
+                consent_at TEXT NOT NULL,
+                marketing_opt_in INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+              );
+            `)
+            database.prepare(`
+              INSERT INTO loyalty_members (
+                id, phone, phone_verified_at, account_id, full_name, email,
+                birth_day, birth_month, tier, tier_changed_at, status,
+                consent_version, consent_at, marketing_opt_in, created_at, updated_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '1.0.0', ?, ?, ?, ?)
+              ON CONFLICT(phone) DO UPDATE SET
+                full_name = excluded.full_name,
+                email = COALESCE(excluded.email, loyalty_members.email),
+                tier = excluded.tier,
+                status = excluded.status,
+                updated_at = excluded.updated_at
+            `).run(
+              r.id,
+              r.phone,
+              r.verified_at || r.created_at || now,
+              meta.account_id || null,
+              r.full_name || 'Khách hàng thân thiết',
+              meta.email || null,
+              meta.birth_day || null,
+              meta.birth_month || null,
+              meta.tier || 'MEMBER',
+              meta.tier_changed_at || r.created_at || now,
+              r.status || 'active',
+              r.created_at || now,
+              r.marketing_email_opt_in ? 1 : 0,
+              r.created_at || now,
+              r.updated_at || now
+            )
+          } catch {}
+          continue
+        }
+
         if (!r.email) continue
         const cleanEmail = String(r.email).toLowerCase()
         const verifiedVal = r.verified ? 1 : 0
         const optInVal = r.marketing_email_opt_in ? 1 : 0
-        const now = new Date().toISOString()
 
         stmtUser.run(
           r.id,
@@ -1567,6 +1684,97 @@ export async function syncUserToSupabase(user) {
     }
   } catch (err) {
     console.warn('⚠️ [SUPABASE SYNC] Lỗi khi lưu user lên Supabase:', err.message)
+  }
+}
+
+/**
+ * Đẩy một mã ưu đãi (voucher) lên Supabase Cloud (bảng public.vouchers)
+ */
+export async function syncVoucherToSupabase(voucher) {
+  if (isNodeTestRunner() || isAutomatedTestEnvironment()) return false
+  if (!isSupabaseConfigured() || !voucher || !voucher.code) return false
+  const client = getSupabase()
+  if (!client) return false
+
+  try {
+    const cleanCode = String(voucher.code).trim().toUpperCase()
+    const payload = {
+      code: cleanCode,
+      account_id: voucher.account_id || 'system',
+      discount_percent: Number(voucher.discount_percent ?? 10),
+      freeship: voucher.free_shipping ? 1 : 0,
+      single_use: 1,
+      used: voucher.used ? 1 : 0,
+      used_at: voucher.used_at || null,
+      order_id: voucher.order_id || null,
+      created_at: voucher.created_at || new Date().toISOString(),
+    }
+    const { error } = await client.from('vouchers').upsert(payload, { onConflict: 'code' })
+    if (error) {
+      console.warn('⚠️ [SUPABASE SYNC] Lỗi upsert voucher lên Supabase:', error.message)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.warn('⚠️ [SUPABASE SYNC] Ngoại lệ khi lưu voucher lên Supabase:', err.message)
+    return false
+  }
+}
+
+/**
+ * Đồng bộ toàn bộ mã ưu đãi (vouchers) từ Supabase Cloud về SQLite khi khởi động máy chủ (Render Free Tier)
+ */
+export async function syncVouchersFromSupabase(database = getDb()) {
+  if (isNodeTestRunner() || isAutomatedTestEnvironment()) return 0
+  if (!isSupabaseConfigured()) return 0
+  const client = getSupabase()
+  if (!client) return 0
+
+  try {
+    const { data, error } = await client.from('vouchers').select('*')
+    if (error) {
+      console.warn('⚠️ [SUPABASE SYNC] Lỗi tải vouchers từ Supabase:', error.message)
+      return 0
+    }
+    if (!data || data.length === 0) return 0
+
+    const stmt = database.prepare(`
+      INSERT INTO vouchers (
+        id, account_id, code, discount_percent, free_shipping, used, used_at, order_id, status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(code) DO UPDATE SET
+        used = MAX(vouchers.used, excluded.used),
+        used_at = COALESCE(excluded.used_at, vouchers.used_at),
+        order_id = COALESCE(excluded.order_id, vouchers.order_id),
+        status = CASE WHEN MAX(vouchers.used, excluded.used) = 1 THEN 'used' ELSE vouchers.status END
+    `)
+
+    const insertMany = database.transaction((rows) => {
+      for (const r of rows) {
+        if (!r.code) continue
+        const cleanCode = String(r.code).trim().toUpperCase()
+        const isUsed = r.used ? 1 : 0
+        const status = isUsed ? 'used' : 'active'
+        stmt.run(
+          `vouch_sb_${cleanCode.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+          r.account_id || 'system',
+          cleanCode,
+          Number(r.discount_percent ?? 10),
+          r.freeship !== undefined ? (r.freeship ? 1 : 0) : 1,
+          isUsed,
+          r.used_at || null,
+          r.order_id || null,
+          status,
+          r.created_at || new Date().toISOString()
+        )
+      }
+    })
+
+    insertMany(data)
+    return data.length
+  } catch (err) {
+    console.warn('⚠️ [SUPABASE SYNC] Ngoại lệ khi đồng bộ vouchers từ Supabase:', err.message)
+    return 0
   }
 }
 
@@ -2140,6 +2348,57 @@ export function getCustomerCart(accountId, database = getDb()) {
   }
 }
 
+const MAX_CART_JSON_BYTES = 32 * 1024 // 32KB max payload
+
+function sanitizeCartItemRecord(rawItem) {
+  if (!rawItem || typeof rawItem !== 'object') return null
+  const cleanStr = (val, maxLen = 160) =>
+    val !== undefined && val !== null ? String(val).trim().slice(0, maxLen) : undefined
+  const qtyRaw = Number.parseInt(String(rawItem.quantity ?? 1), 10)
+  const quantity = Number.isFinite(qtyRaw) ? Math.min(Math.max(qtyRaw, 1), 99) : 1
+  const priceRaw = Number(rawItem.price ?? rawItem.unitPrice ?? 0)
+  const price = Number.isFinite(priceRaw) && priceRaw >= 0 && priceRaw <= 100_000_000 ? priceRaw : 0
+
+  const sanitized = {}
+  const strFields = [
+    ['id', 100],
+    ['productId', 100],
+    ['slug', 120],
+    ['name', 160],
+    ['productName', 160],
+    ['color', 80],
+    ['colorLabel', 80],
+    ['variant', 80],
+    ['size', 20],
+    ['image', 300],
+    ['sku', 100],
+  ]
+  for (const [key, maxLen] of strFields) {
+    if (rawItem[key] !== undefined && rawItem[key] !== null) {
+      sanitized[key] = cleanStr(rawItem[key], maxLen)
+    }
+  }
+  sanitized.quantity = quantity
+  sanitized.price = price
+  if (rawItem.unitPrice !== undefined) sanitized.unitPrice = price
+  if (rawItem.isPreOrder !== undefined) sanitized.isPreOrder = Boolean(rawItem.isPreOrder)
+  return sanitized
+}
+
+function sanitizeAppliedVoucherRecord(rawVoucher) {
+  if (!rawVoucher || typeof rawVoucher !== 'object') return null
+  const code = String(rawVoucher.code || '').trim().toUpperCase().slice(0, 64)
+  if (!code) return null
+  const sanitized = { code }
+  if (rawVoucher.type !== undefined) sanitized.type = String(rawVoucher.type || '').slice(0, 32)
+  if (rawVoucher.description !== undefined) sanitized.description = String(rawVoucher.description || '').slice(0, 200)
+  const discountVal = Number(rawVoucher.discountAmount ?? rawVoucher.discount ?? 0)
+  if (Number.isFinite(discountVal) && discountVal >= 0 && discountVal <= 100_000_000) {
+    sanitized.discountAmount = discountVal
+  }
+  return sanitized
+}
+
 export function saveCustomerCart(
   accountId,
   { items = [], appliedVoucher = null, deliveryOption = 'COMBINED' } = {},
@@ -2147,9 +2406,21 @@ export function saveCustomerCart(
 ) {
   if (!accountId) return null
   ensureCustomerCartTable(database)
-  const safeItems = Array.isArray(items) ? items.slice(0, 50) : []
-  const safeVoucher = appliedVoucher && typeof appliedVoucher === 'object' ? appliedVoucher : null
+  const safeItems = Array.isArray(items)
+    ? items.slice(0, 50).map(sanitizeCartItemRecord).filter(Boolean)
+    : []
+  const safeVoucher = sanitizeAppliedVoucherRecord(appliedVoucher)
   const safeDelivery = deliveryOption === 'SPLIT_SHIPPING' ? 'SPLIT_SHIPPING' : 'COMBINED'
+  const itemsJson = JSON.stringify(safeItems)
+  const voucherJson = safeVoucher ? JSON.stringify(safeVoucher) : null
+
+  if (Buffer.byteLength(itemsJson, 'utf8') + (voucherJson ? Buffer.byteLength(voucherJson, 'utf8') : 0) > MAX_CART_JSON_BYTES) {
+    const sizeErr = new Error('Dữ liệu giỏ hàng vượt quá giới hạn dung lượng cho phép (32KB).')
+    sizeErr.status = 400
+    sizeErr.code = 'CART_PAYLOAD_TOO_LARGE'
+    throw sizeErr
+  }
+
   const now = new Date().toISOString()
 
   database.prepare(`
@@ -2162,8 +2433,8 @@ export function saveCustomerCart(
       updated_at = excluded.updated_at
   `).run(
     accountId,
-    JSON.stringify(safeItems),
-    safeVoucher ? JSON.stringify(safeVoucher) : null,
+    itemsJson,
+    voucherJson,
     safeDelivery,
     now
   )

@@ -5,9 +5,13 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const DATA_DIR = path.resolve(__dirname, '../data')
+const DEFAULT_DATA_DIR = path.resolve(__dirname, '../data')
+const getDataDir = () =>
+  String(process.env.DATA_DIR || '').trim()
+    ? path.resolve(String(process.env.DATA_DIR).trim())
+    : DEFAULT_DATA_DIR
 const getBackupDir = () =>
-  process.env.BACKUP_DIR ? path.resolve(process.env.BACKUP_DIR) : path.resolve(DATA_DIR, 'backups')
+  process.env.BACKUP_DIR ? path.resolve(process.env.BACKUP_DIR) : path.resolve(getDataDir(), 'backups')
 const MAX_BACKUPS_RETAINED = 14
 
 export function ensureBackupDir() {
@@ -22,6 +26,7 @@ export function ensureBackupDir() {
  * Tự động tạo bản sao lưu snapshot của orders_store.json, processed_tx.json và accounts.db
  */
 export async function performDatabaseBackup() {
+  const dataDir = getDataDir()
   const backupDir = ensureBackupDir()
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
   const results = { ordersStore: false, processedTx: false, accountsDb: false, timestamp, backupDir }
@@ -29,7 +34,7 @@ export async function performDatabaseBackup() {
   // 1. Sao lưu orders_store.json
   const ordersFile = process.env.ORDER_STORE_FILE
     ? path.resolve(process.env.ORDER_STORE_FILE)
-    : path.resolve(DATA_DIR, 'orders_store.json')
+    : path.resolve(dataDir, 'orders_store.json')
   if (fs.existsSync(ordersFile)) {
     try {
       const backupPath = path.resolve(backupDir, `orders_store_${timestamp}.json`)
@@ -44,7 +49,7 @@ export async function performDatabaseBackup() {
   // 1b. Sao lưu processed_tx.json (chống replay giao dịch ngân hàng sau khôi phục)
   const txFile = process.env.TX_STORE_FILE
     ? path.resolve(process.env.TX_STORE_FILE)
-    : path.resolve(DATA_DIR, 'processed_tx.json')
+    : path.resolve(dataDir, 'processed_tx.json')
   if (fs.existsSync(txFile)) {
     try {
       const txBackupPath = path.resolve(backupDir, `processed_tx_${timestamp}.json`)

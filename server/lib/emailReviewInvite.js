@@ -7,7 +7,7 @@ import { resolveCanonicalProductSlug } from '../../src/lib/productUtils.js'
 
 const SHOP_NAME = process.env.SHOP_NAME || 'QuanNguyenS'
 const SHOP_PHONE = process.env.SHOP_PHONE || '0973 486 218'
-const SHOP_ADDRESS = process.env.SHOP_ADDRESS || 'Amber Riverside, 622 Minh Khai, Hai Bà Trưng, Hà Nội'
+const SHOP_ADDRESS = process.env.SHOP_ADDRESS || 'Hai Bà Trưng, Hà Nội'
 const APP_URL = process.env.APP_URL || process.env.CLIENT_ORIGIN || 'https://quannguyens.com'
 
 /**

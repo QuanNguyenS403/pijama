@@ -8,6 +8,12 @@ services:
     startCommand: npm start
     healthCheckPath: /livez
     autoDeploy: true
+    # LƯU Ý QUAN TRỌNG (G3): Render gói Free không hỗ trợ Persistent Disk (ổ tạm sẽ mất dữ liệu khi redeploy/spin-down).
+    # Khi nâng lên plan: starter ($7/tháng), bỏ comment khối disk bên dưới và đặt DATA_DIR=/var/data/qns/data, UPLOADS_DIR=/var/data/qns/uploads/payment-proofs, PERSISTENT_STORAGE_CONFIRMED=true.
+    # disk:
+    #   name: qns-persistent-data
+    #   mountPath: /var/data/qns
+    #   sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: 22.14.0
@@ -16,11 +22,11 @@ services:
       - key: SHOP_NAME
         value: QuanNguyenS
       - key: SHOP_PHONE
-        value: "0981753082"
+        value: "0973 486 218"
       - key: SHOP_ADDRESS
-        value: "Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội"
+        value: "Hai Bà Trưng, Hà Nội"
       - key: SHOP_SLOGAN
-        value: "Dressed for Life. Even at Home."
+        value: "Style To Be Lived In"
       - key: BANK_CODE
         value: VCB
       - key: BANK_ACCOUNT_NUMBER
@@ -37,14 +43,26 @@ services:
         generateValue: true
       - key: JWT_SECRET
         generateValue: true
-      - key: GMAIL_USER
+      - key: GAS_EMAIL_WEBHOOK_URL
+        value: "https://script.google.com/macros/s/AKfycbzUsjZs4n3-0-a60D4UVSS1VTGZsTNXzeWt3ll5Wgmp970JJb2ybRzspM7ftxplCAGR/exec"
+      - key: GAS_WEBHOOK_SECRET
         sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
+      - key: GMAIL_USER
+        value: "quannguyens403@gmail.com"
       - key: GMAIL_APP_PASSWORD
         sync: false
+      - key: EMAIL_ALLOW_SMTP_ON_RENDER
+        value: "false"
       - key: OWNER_EMAIL
-        sync: false
+        value: "quannguyens403@gmail.com"
       - key: EMAIL_REAL_SEND
         value: "true"
+      - key: UNPAID_QR_AUTOCANCEL_HOURS
+        value: "24"
       - key: GOOGLE_SHEET_ID
         sync: false
       - key: GOOGLE_SERVICE_ACCOUNT_EMAIL
@@ -64,12 +82,10 @@ services:
       - key: PAYMENT_WEBHOOK_SECRET
         sync: false
       - key: SUPABASE_URL
-        sync: false
+        value: "https://llzcsqxiwnhrjqpdmtdn.supabase.co"
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: SUPABASE_ANON_KEY
-        sync: false
-      - key: RESEND_API_KEY
         sync: false
       - key: VIETTELPOST_WEBHOOK_SECRET
         sync: false

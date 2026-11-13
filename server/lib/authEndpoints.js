@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import { createRateLimiter } from './rateLimiter.js'
+import { createSignedProofUrl } from './orderTokenService.js'
 import {
   upsertUnifiedOAuthAccount,
   createAccount,
@@ -902,6 +903,9 @@ export function registerAuthEndpoints(app) {
         orders: userOrders.map((o) => {
           const payMethod = o.payment?.method || o.paymentMethod || 'COD'
           const payStatus = o.payment?.status || o.paymentStatus || (payMethod === 'BANK_TRANSFER' ? 'AWAITING_PAYMENT' : 'UNPAID')
+          const signedProofUrl = o.payment?.proofImageUrl
+            ? createSignedProofUrl(o.payment.proofImageUrl)
+            : null
           return {
             orderId: o.orderId,
             createdAt: o.createdAt,
@@ -918,13 +922,13 @@ export function registerAuthEndpoints(app) {
               methodLabel: o.payment?.methodLabel || (payMethod === 'BANK_TRANSFER' ? 'Chuyển khoản VietQR' : 'COD'),
               status: payStatus,
               submittedAt: o.payment?.submittedAt || null,
-              proofImageUrl: o.payment?.proofImageUrl || null,
+              proofImageUrl: signedProofUrl,
               proofUploadedAt: o.payment?.proofUploadedAt || null,
               proofNote: o.payment?.proofNote || '',
             },
-            paymentProof: o.payment?.proofImageUrl
+            paymentProof: signedProofUrl
               ? {
-                  imageUrl: o.payment.proofImageUrl,
+                  imageUrl: signedProofUrl,
                   uploadedAt: o.payment.proofUploadedAt || null,
                   note: o.payment.proofNote || '',
                 }
@@ -1200,10 +1204,35 @@ export function registerAuthEndpoints(app) {
 
   app.put('/api/cart', requireCustomerAuth, verifyCsrfOrigin, (req, res) => {
     try {
+      const rawBodyStr = req.rawBody || JSON.stringify(req.body || {})
+      if (Buffer.byteLength(rawBodyStr, 'utf8') > 32 * 1024) {
+        return res.status(413).json({
+          success: false,
+          code: 'CART_PAYLOAD_TOO_LARGE',
+          error: 'Dữ liệu giỏ hàng vượt quá giới hạn dung lượng cho phép (32KB).',
+        })
+      }
       const { items = [], appliedVoucher = null, deliveryOption = 'COMBINED' } = req.body || {}
+      if (!Array.isArray(items) || items.length > 50) {
+        return res.status(400).json({
+          success: false,
+          code: 'INVALID_CART_ITEMS',
+          error: 'Danh sách sản phẩm trong giỏ hàng không hợp lệ (tối đa 50 mặt hàng).',
+        })
+      }
+      if (appliedVoucher !== null && (typeof appliedVoucher !== 'object' || Array.isArray(appliedVoucher))) {
+        return res.status(400).json({
+          success: false,
+          code: 'INVALID_CART_VOUCHER',
+          error: 'Dữ liệu mã giảm giá trong giỏ hàng không hợp lệ.',
+        })
+      }
       const saved = saveCustomerCart(req.customerAccount.id, { items, appliedVoucher, deliveryOption })
       return res.json({ success: true, ...saved })
     } catch (err) {
+      if (err?.code === 'CART_PAYLOAD_TOO_LARGE' || err?.status === 400) {
+        return res.status(400).json({ success: false, code: err.code || 'INVALID_CART', error: err.message })
+      }
       console.error('PUT /api/cart error:', err)
       return res.status(500).json({ success: false, error: 'Không thể lưu giỏ hàng đồng bộ' })
     }

@@ -76,7 +76,7 @@ export async function queryViettelPostTracking(trackingCode, fallbackOrder = nul
             carrierName: 'Tổng Công ty Cổ phần Bưu chính Viettel (Viettel Post)',
             carrierLogo: '/images/viettelpost-badge.png',
             hotline: '1900 8095',
-            postOffice: 'Bưu cục Viettel Post 622 Minh Khai, Hai Bà Trưng, Hà Nội',
+            postOffice: 'Bưu cục Viettel Post Hai Bà Trưng, Hà Nội',
             currentStatus: isDelivered
               ? 'Giao hàng thành công — Khách hàng đã ký nhận'
               : (journey[journey.length - 1]?.status || 'Đang giao hàng'),
@@ -115,7 +115,7 @@ export async function queryViettelPostTracking(trackingCode, fallbackOrder = nul
       statusCode: 'ACCEPTED',
       status: 'Đã tạo vận đơn trên hệ thống Viettel Post',
       time: formatStepTime(createdAt),
-      location: 'Bưu cục Viettel Post Hai Bà Trưng (Amber Riverside, 622 Minh Khai)',
+      location: 'Bưu cục Viettel Post Hai Bà Trưng, Hà Nội',
       note: 'Người gửi đã hoàn tất đóng gói và tạo đơn thành công',
       completed: true,
     },
@@ -124,7 +124,7 @@ export async function queryViettelPostTracking(trackingCode, fallbackOrder = nul
       statusCode: 'PICKED_UP',
       status: 'Bưu tá Viettel Post đã lấy hàng tại shop',
       time: formatStepTime(new Date(createdAt.getTime() + 3 * 3600 * 1000)),
-      location: 'Kho Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội',
+      location: 'Kho Hai Bà Trưng, Hà Nội',
       note: 'Bưu phẩm nguyên đai nguyên kiện đã bàn giao cho bưu tá',
       completed: ['SHIPPED', 'DELIVERED'].includes(orderStatus),
     },
@@ -151,7 +151,9 @@ export async function queryViettelPostTracking(trackingCode, fallbackOrder = nul
       statusCode: 'DELIVERED',
       status: 'Giao hàng thành công — Khách hàng đã ký nhận',
       time: (orderStatus === 'DELIVERED' || fallbackOrder?.isDelivered || cleanCode.includes('DELIVERED')) ? formatStepTime(now) : 'Dự kiến hôm nay',
-      location: fallbackOrder?.shipping?.fullAddress || 'Địa chỉ khách hàng',
+      location: fallbackOrder?.shipping?.district
+        ? `${fallbackOrder.shipping.district}, ${fallbackOrder.shipping.city || 'Hà Nội'}`
+        : 'Địa chỉ người nhận',
       note: (orderStatus === 'DELIVERED' || fallbackOrder?.isDelivered || cleanCode.includes('DELIVERED')) ? 'Đã hoàn tất phát hàng thành công' : 'Đang tiến hành giao phát',
       completed: orderStatus === 'DELIVERED' || Boolean(fallbackOrder?.isDelivered) || cleanCode.includes('DELIVERED'),
     },
@@ -183,7 +185,7 @@ export async function queryViettelPostTracking(trackingCode, fallbackOrder = nul
     carrier: 'Viettel Post',
     carrierName: 'Tổng Công ty Cổ phần Bưu chính Viettel (Viettel Post)',
     hotline: '1900 8095',
-    postOffice: 'Bưu cục Viettel Post 622 Minh Khai, Vĩnh Tuy, Hà Nội',
+    postOffice: 'Bưu cục Viettel Post Hai Bà Trưng, Hà Nội',
     currentStatus: currentStatusText,
     currentStatusCode,
     isDelivered,
@@ -241,6 +243,13 @@ export async function trackOrderUniversal(query, { strictTrackingOnly = false } 
 
     const trackingCode = matchedOrder.trackingCode || matchedOrder.trackingNumber
     const trackingInfo = await queryViettelPostTracking(trackingCode, matchedOrder)
+    const rawName = String(matchedOrder.customerName || matchedOrder.customer?.fullName || '').trim()
+    const maskedName = rawName ? `${rawName.charAt(0)}***` : 'Khách hàng'
+    const rawPhone = String(matchedOrder.customerPhone || matchedOrder.customer?.phone || '').replace(/[^0-9]/g, '')
+    const maskedPhone = rawPhone.length >= 7 ? `${rawPhone.slice(0, 3)}***${rawPhone.slice(-3)}` : ''
+    const maskedAddr = matchedOrder.shipping?.district
+      ? `***, ${matchedOrder.shipping.district}, ${matchedOrder.shipping.city || ''}`
+      : 'Đã ẩn vì lý do bảo mật'
     return {
       ...trackingInfo,
       order: {
@@ -256,9 +265,9 @@ export async function trackOrderUniversal(query, { strictTrackingOnly = false } 
         trackingCode: trackingCode,
         paymentMethod: matchedOrder.payment?.method || matchedOrder.paymentMethod || 'COD',
         paymentStatus: matchedOrder.payment?.status || matchedOrder.paymentStatus || 'UNPAID',
-        customerName: matchedOrder.customerName || matchedOrder.customer?.fullName,
-        customerPhone: matchedOrder.customerPhone || matchedOrder.customer?.phone,
-        shippingAddress: matchedOrder.shippingAddress || matchedOrder.shipping?.fullAddress,
+        customerName: maskedName,
+        customerPhone: maskedPhone,
+        shippingAddress: maskedAddr,
         orderDate: matchedOrder.createdAt || matchedOrder.orderDate,
       },
     }
@@ -330,21 +339,21 @@ export async function trackOrderUniversal(query, { strictTrackingOnly = false } 
           step: 1,
           status: 'Đã tiếp nhận đơn hàng tại hệ thống QuanNguyenS',
           time: new Date(matchedOrder.createdAt || Date.now()).toLocaleString('vi-VN'),
-          location: 'Amber Riverside, 622 Minh Khai, Hà Nội',
+          location: 'Hai Bà Trưng, Hà Nội',
           completed: true,
         },
         {
           step: 2,
           status: 'Đang chuẩn bị và đóng gói sản phẩm',
           time: 'Đang xử lý',
-          location: 'Kho xuất hàng Amber Riverside',
+          location: 'Kho xuất hàng Hai Bà Trưng, Hà Nội',
           completed: true,
         },
         {
           step: 3,
           status: 'Chờ bàn giao bưu tá Viettel Post lấy hàng',
           time: 'Dự kiến trong ngày',
-          location: 'Bưu cục Viettel Post 622 Minh Khai',
+          location: 'Bưu cục Viettel Post Hai Bà Trưng, Hà Nội',
           completed: false,
         },
       ],

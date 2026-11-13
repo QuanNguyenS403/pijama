@@ -33,6 +33,8 @@ export const ALLOWED_PURPOSES = [
  */
 export async function sendLoyaltyOtp({
   phone,
+  email = '',
+  fullName = '',
   purpose = 'enrollment',
   ip = '',
   userAgent = '',
@@ -136,9 +138,32 @@ export async function sendLoyaltyOtp({
     ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?)
   `).run(id, cleanPhone, codeHash, salt, purpose, expiresAt, LOYALTY_RULES.OTP_MAX_ATTEMPTS, ipHash, now)
 
-  // 6. Gửi mã qua provider thống nhất
+  // 6. Gửi mã qua provider thống nhất (hỗ trợ tự động gửi qua Email khi chưa cấu hình Zalo ZNS trên Render Free)
+  let resolvedEmail = String(email || '').trim().toLowerCase()
+  let resolvedFullName = String(fullName || '').trim()
+  if (!resolvedEmail) {
+    const existingMember = getMemberByPhone(cleanPhone)
+    if (existingMember?.email) {
+      resolvedEmail = String(existingMember.email).trim().toLowerCase()
+      if (!resolvedFullName && existingMember.full_name) resolvedFullName = existingMember.full_name
+    }
+    if (!resolvedEmail) {
+      try {
+        const accountRow = db
+          .prepare('SELECT email, full_name FROM accounts WHERE phone = ? AND email IS NOT NULL ORDER BY updated_at DESC LIMIT 1')
+          .get(cleanPhone)
+        if (accountRow?.email) {
+          resolvedEmail = String(accountRow.email).trim().toLowerCase()
+          if (!resolvedFullName && accountRow.full_name) resolvedFullName = accountRow.full_name
+        }
+      } catch {}
+    }
+  }
+
   const providerResult = await sendOtpViaProvider({
     phone: cleanPhone,
+    email: resolvedEmail,
+    fullName: resolvedFullName,
     code,
     purpose,
     ttlMinutes,

@@ -7,7 +7,11 @@ import { fileURLToPath } from 'url'
 import multer from 'multer'
 import { orderPersistence } from './orderPersistence.js'
 import { getOrderFromDb } from './accountDb.js'
-import { verifyTrackingToken } from './orderTokenService.js'
+import {
+  verifyTrackingToken,
+  createSignedProofUrl,
+  stripProofUrlSignature,
+} from './orderTokenService.js'
 import { normalizeVietnamesePhone } from './smsService.js'
 import { checkRateLimit } from './cacheService.js'
 import { broadcastOrderUpdate } from './orderEvents.js'
@@ -22,6 +26,7 @@ const __dirname = path.dirname(__filename)
 
 const PROD_UPLOADS_DIR = path.resolve(__dirname, '../../public/uploads/payment-proofs')
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
+const MAX_PROOF_UPLOADS_PER_ORDER = 5
 const OWNER_NOTIFY_COOLDOWN_MS = 5 * 60 * 1000
 const lastProofEmailSentAt = new Map()
 
@@ -36,12 +41,22 @@ function escapeHtml(str) {
 }
 
 /**
- * Xác định thư mục lưu ảnh chứng từ chuyển khoản (tách biệt thư mục tạm khi chạy test).
+ * Xác định thư mục lưu ảnh chứng từ chuyển khoản (tách biệt thư mục tạm khi chạy test, hỗ trợ UPLOADS_DIR).
  */
 export function resolveProofUploadsDir() {
   const isTest = isNodeTestRunner() || isAutomatedTestEnvironment()
-  const dir = isTest
-    ? path.join(os.tmpdir(), `qns-test-uploads-${process.pid}`, 'payment-proofs')
+  if (isTest) {
+    const testDir = path.join(os.tmpdir(), `qns-test-uploads-${process.pid}`, 'payment-proofs')
+    if (!fs.existsSync(testDir)) {
+      fs.mkdirSync(testDir, { recursive: true })
+    }
+    return testDir
+  }
+  const customUploadsDir = String(process.env.UPLOADS_DIR || '').trim()
+  const dir = customUploadsDir
+    ? (customUploadsDir.replace(/[\\/]+$/, '').endsWith('payment-proofs')
+        ? path.resolve(customUploadsDir)
+        : path.resolve(customUploadsDir, 'payment-proofs'))
     : PROD_UPLOADS_DIR
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true })
@@ -120,7 +135,7 @@ function findOrderRecord(orderId) {
   return orderPersistence.get(cleanId) || getOrderFromDb(cleanId) || null
 }
 
-function isOrderUploadAuthorized(order, { trackingToken, phone, customerAccount }) {
+function isOrderUploadAuthorized(order, { trackingToken, phone, customerAccount, allowPhoneFallback = true }) {
   const orderId = order.orderId || order.id
   const orderPhone = String(order.customer?.phone || order.customerPhone || '').trim()
   const cleanOrderPhone = normalizeVietnamesePhone(orderPhone)
@@ -129,19 +144,21 @@ function isOrderUploadAuthorized(order, { trackingToken, phone, customerAccount 
   if (trackingToken && verifyTrackingToken(orderId, orderPhone, String(trackingToken))) {
     return true
   }
-  if (cleanInputPhone && cleanOrderPhone && cleanInputPhone === cleanOrderPhone) {
+  const orderAccountId = order.accountId || order.customer?.accountId
+  if (customerAccount?.id && orderAccountId && customerAccount.id === orderAccountId) {
     return true
   }
-  if (customerAccount?.id && order.accountId && customerAccount.id === order.accountId) {
+  if (allowPhoneFallback && cleanInputPhone && cleanOrderPhone && cleanInputPhone === cleanOrderPhone) {
     return true
   }
   return false
 }
 
 function removeReplacedProofFile(previousUrl, uploadsDir) {
-  if (!previousUrl || typeof previousUrl !== 'string') return
-  if (!previousUrl.startsWith('/uploads/payment-proofs/')) return
-  const oldFileName = path.basename(previousUrl)
+  const cleanPrev = stripProofUrlSignature(previousUrl)
+  if (!cleanPrev || typeof cleanPrev !== 'string') return
+  if (!cleanPrev.startsWith('/uploads/payment-proofs/')) return
+  const oldFileName = path.basename(cleanPrev)
   if (!oldFileName || oldFileName.includes('..')) return
   const oldFilePath = path.join(uploadsDir, oldFileName)
   try {
@@ -165,7 +182,8 @@ async function notifyOwnerProofUploaded(order, imageUrl, note) {
     return
   }
 
-  const sheetNote = `[ẢNH CK KHÁCH GỬI] ${imageUrl}${note ? ` | Ghi chú: ${note}` : ''}`
+  // G4: Không ghi URL trực tiếp của ảnh chứng từ vào Google Sheets để tránh lộ chứng từ qua trang tính chia sẻ
+  const sheetNote = `[ẢNH CK KHÁCH GỬI] Đã tải ảnh chứng từ cho đơn ${orderId}${note ? ` | Ghi chú: ${note}` : ''}`
   updateOrderStatusInSheet(orderId, order.status, sheetNote).catch(() => {})
 
   const lastSent = lastProofEmailSentAt.get(orderId) || 0
@@ -179,7 +197,8 @@ async function notifyOwnerProofUploaded(order, imageUrl, note) {
     const customerName = escapeHtml(order.customer?.fullName || order.customerName || 'Khách hàng')
     const customerPhone = escapeHtml(order.customer?.phone || order.customerPhone || '')
     const publicBase = String(process.env.RENDER_EXTERNAL_URL || process.env.PUBLIC_SITE_URL || '').replace(/\/+$/, '')
-    const fullImageUrl = publicBase ? `${publicBase}${imageUrl}` : imageUrl
+    const signedImageUrl = createSignedProofUrl(imageUrl)
+    const fullImageUrl = publicBase ? `${publicBase}${signedImageUrl}` : signedImageUrl
 
     await transporter.sendMail({
       from: `"QuanNguyenS System" <${process.env.GMAIL_USER || ownerEmail}>`,
@@ -192,7 +211,7 @@ async function notifyOwnerProofUploaded(order, imageUrl, note) {
           <p><strong>Khách hàng:</strong> ${customerName}${customerPhone ? ` (${customerPhone})` : ''}</p>
           <p><strong>Tổng thanh toán:</strong> ${escapeHtml(totalFormatted)}</p>
           ${note ? `<p><strong>Ghi chú của khách:</strong> ${escapeHtml(note)}</p>` : ''}
-          <p><strong>Đường dẫn ảnh:</strong> <a href="${escapeHtml(fullImageUrl)}">${escapeHtml(fullImageUrl)}</a></p>
+          <p><strong>Đường dẫn ảnh (có chữ ký bảo mật):</strong> <a href="${escapeHtml(fullImageUrl)}">Xem ảnh chứng từ #${escapeHtml(orderId)}</a></p>
           <p style="font-size:12px;color:#6B5D54;margin-top:16px;">Vui lòng mở trang Quản Trị Đơn Hàng (/admin/orders) để xem ảnh và đối soát dòng tiền trước khi bấm xác nhận đã nhận tiền.</p>
         </div>
       `,
@@ -253,15 +272,53 @@ export async function handleUploadPaymentProof(req, res) {
       })
     }
 
+    if (
+      order.payment?.status === 'PAID' ||
+      ['CONFIRMED', 'PROCESSING', 'PACKING', 'SHIPPED', 'DELIVERED', 'COMPLETED'].includes(order.status)
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: 'Đơn hàng đã được xác nhận thanh toán, không thể thay đổi ảnh chứng từ.',
+      })
+    }
+
+    const orderRateCheck = await checkRateLimit(`payment_proof_order:${orderId}`, 6, 900)
+    if (!orderRateCheck.allowed) {
+      return res.status(429).json({
+        success: false,
+        error: `Đơn hàng này đã tải ảnh quá nhiều lần trong thời gian ngắn. Vui lòng thử lại sau ${orderRateCheck.retryAfter} giây.`,
+      })
+    }
+
+    const currentUploadCount = Number(order.payment?.proofUploadCount || 0)
+    if (currentUploadCount >= MAX_PROOF_UPLOADS_PER_ORDER) {
+      return res.status(429).json({
+        success: false,
+        error: `Đơn hàng đã đạt giới hạn tối đa ${MAX_PROOF_UPLOADS_PER_ORDER} lần tải ảnh chứng từ. Vui lòng liên hệ Hotline/Zalo của shop nếu cần hỗ trợ.`,
+      })
+    }
+
+    // G5: Nếu đơn hàng đã có ảnh chứng từ trên hệ thống, không cho phép chỉ dùng SĐT để ghi đè (bắt buộc trackingToken hoặc phiên đăng nhập chủ đơn)
+    const alreadyHasProof = Boolean(order.payment?.proofImageUrl || order.paymentProof?.imageUrl)
     const authorized = isOrderUploadAuthorized(order, {
       trackingToken: req.body?.trackingToken || req.headers['x-order-token'],
       phone: req.body?.phone,
       customerAccount: req.customerAccount,
+      allowPhoneFallback: !alreadyHasProof,
     })
     if (!authorized) {
+      logSecurityAudit({
+        action: 'PAYMENT_PROOF_UPLOAD_UNAUTHORIZED',
+        status: 'BLOCKED',
+        ip: clientIp,
+        userAgent: req.headers['user-agent'],
+        details: { orderId, alreadyHasProof },
+      })
       return res.status(401).json({
         success: false,
-        error: 'Không thể xác thực quyền tải ảnh cho đơn hàng này.',
+        error: alreadyHasProof
+          ? 'Đơn hàng đã có chứng từ. Để thay đổi ảnh chứng từ, vui lòng mở đúng liên kết thanh toán của đơn hàng hoặc đăng nhập tài khoản đặt hàng.'
+          : 'Không thể xác thực quyền tải ảnh cho đơn hàng này.',
       })
     }
 
@@ -272,16 +329,22 @@ export async function handleUploadPaymentProof(req, res) {
     fs.writeFileSync(filePath, req.file.buffer)
 
     const imageUrl = `/uploads/payment-proofs/${fileName}`
+    const signedImageUrl = createSignedProofUrl(imageUrl)
     const previousUrl = order.payment?.proofImageUrl
     const nowIso = new Date().toISOString()
 
     if (!order.payment) order.payment = {}
     order.payment.proofImageUrl = imageUrl
     order.payment.proofUploadedAt = nowIso
+    order.payment.proofUploadCount = currentUploadCount + 1
     if (cleanNote) {
       order.payment.proofNote = cleanNote
     } else {
       delete order.payment.proofNote
+    }
+    order.paymentProofBackup = {
+      fileName,
+      base64: req.file.buffer.toString('base64'),
     }
     order.updatedAt = nowIso
 
@@ -295,7 +358,7 @@ export async function handleUploadPaymentProof(req, res) {
       status: 'SUCCESS',
       ip: clientIp,
       userAgent: req.headers['user-agent'],
-      details: { orderId, imageUrl, hasNote: Boolean(cleanNote) },
+      details: { orderId, fileName, uploadCount: order.payment.proofUploadCount, hasNote: Boolean(cleanNote) },
     })
 
     notifyOwnerProofUploaded(order, imageUrl, cleanNote).catch(() => {})
@@ -304,7 +367,7 @@ export async function handleUploadPaymentProof(req, res) {
       success: true,
       message: 'Đã gửi ảnh xác nhận chuyển khoản. Chủ shop sẽ đối soát dòng tiền và xác nhận đơn cho bạn.',
       paymentProof: {
-        imageUrl,
+        imageUrl: signedImageUrl,
         uploadedAt: nowIso,
         note: cleanNote,
       },
@@ -344,7 +407,7 @@ export function handleGetPaymentProof(req, res) {
     success: true,
     paymentProof: order.payment?.proofImageUrl
       ? {
-          imageUrl: order.payment.proofImageUrl,
+          imageUrl: createSignedProofUrl(order.payment.proofImageUrl),
           uploadedAt: order.payment.proofUploadedAt || null,
           note: order.payment.proofNote || '',
         }
@@ -396,22 +459,33 @@ export async function handleSubmitQrPayment(req, res) {
       trackingToken: req.body?.trackingToken || req.headers['x-order-token'],
       phone: req.body?.phone,
       customerAccount: req.customerAccount,
+      allowPhoneFallback: !order.payment?.submittedAt,
     })
     if (!authorized) {
+      logSecurityAudit({
+        action: 'QR_PAYMENT_SUBMIT_UNAUTHORIZED',
+        status: 'BLOCKED',
+        ip: clientIp,
+        userAgent: req.headers['user-agent'],
+        details: { orderId, alreadySubmitted: Boolean(order.payment?.submittedAt) },
+      })
       return res.status(401).json({
         success: false,
         error: 'Không thể xác thực quyền xác nhận thanh toán cho đơn hàng này.',
       })
     }
 
-    if (order.payment?.status === 'PAID') {
+    if (
+      order.payment?.status === 'PAID' ||
+      ['CONFIRMED', 'PROCESSING', 'PACKING', 'SHIPPED', 'DELIVERED', 'COMPLETED'].includes(order.status)
+    ) {
       return res.status(200).json({
         success: true,
         alreadyPaid: true,
         orderId,
         phase: 'PAID',
-        paymentStatus: 'PAID',
-        status: 'CONFIRMED',
+        paymentStatus: order.payment?.status || 'PAID',
+        status: order.status || 'CONFIRMED',
       })
     }
 
@@ -441,7 +515,6 @@ export async function handleSubmitQrPayment(req, res) {
       userAgent: req.headers['user-agent'],
       details: {
         orderId,
-        proofImageUrl: order.payment.proofImageUrl,
         submittedAt: order.payment.submittedAt,
       },
     })
@@ -456,7 +529,7 @@ export async function handleSubmitQrPayment(req, res) {
       updateOrderStatusInSheet(
         orderId,
         'AWAITING_PAYMENT',
-        `[CHỜ ADMIN DUYỆT CK] Khách đã bấm Thanh toán & tải ảnh ${order.payment.proofImageUrl}`
+        `[CHỜ ADMIN DUYỆT CK] Khách đã bấm Thanh toán & đính kèm chứng từ`
       ).catch(() => {})
     }
 
@@ -469,7 +542,7 @@ export async function handleSubmitQrPayment(req, res) {
       paymentStatus: 'PENDING_ADMIN_CONFIRMATION',
       submittedAt: order.payment.submittedAt,
       paymentProof: {
-        imageUrl: order.payment.proofImageUrl,
+        imageUrl: createSignedProofUrl(order.payment.proofImageUrl),
         uploadedAt: order.payment.proofUploadedAt || null,
         note: order.payment.proofNote || '',
       },

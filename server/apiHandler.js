@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import { appendOrderToSheet } from './lib/googleSheets.js'
 import { sendCustomerEmail } from './lib/emailCustomer.js'
 import { sendOwnerEmail } from './lib/emailOwner.js'
@@ -8,17 +9,77 @@ import { calculateShippingDistance } from './lib/distanceService.js'
 import { redeemVoucher } from './lib/voucherValidator.js'
 import { generateTrackingToken } from './lib/orderTokenService.js'
 import { PAYMENT_QR_TTL_SECONDS } from './lib/paymentState.js'
+import { maskEmail } from './lib/httpsEmailService.js'
+import { verifyTurnstileToken } from './lib/turnstileService.js'
+
+function timingSafeEqualStr(a = '', b = '') {
+  const strA = String(a || '')
+  const strB = String(b || '')
+  if (!strA || !strB) return false
+  const bufA = Buffer.from(strA, 'utf8')
+  const bufB = Buffer.from(strB, 'utf8')
+  if (bufA.length !== bufB.length) return false
+  return crypto.timingSafeEqual(bufA, bufB)
+}
+
+function maskPhoneForLog(phone = '') {
+  const digits = String(phone || '').replace(/\D/g, '')
+  if (digits.length < 7) return '***'
+  return `${digits.slice(0, 3)}***${digits.slice(-3)}`
+}
+
+/**
+ * Xác minh người gửi trùng orderId thực sự là chủ sở hữu đơn hàng đó (G5-b)
+ * trước khi trả lại trackingToken trong nhánh idempotency.
+ */
+function isCallerOwnerOfExistingOrder(existingOrder, incomingOrder, context = {}) {
+  if (!existingOrder || !incomingOrder) return false
+
+  const existingAccountId = existingOrder.accountId || existingOrder.customer?.accountId || null
+  if (context.customerAccount?.id && existingAccountId && context.customerAccount.id === existingAccountId) {
+    return true
+  }
+
+  const existingPhone = String(existingOrder.customer?.phone || '').replace(/\D/g, '')
+  const incomingPhone = String(incomingOrder.customer?.phone || '').replace(/\D/g, '')
+  const existingEmail = String(existingOrder.customer?.email || '').trim().toLowerCase()
+  const incomingEmail = String(incomingOrder.customer?.email || '').trim().toLowerCase()
+
+  return (
+    timingSafeEqualStr(existingPhone, incomingPhone) &&
+    timingSafeEqualStr(existingEmail, incomingEmail)
+  )
+}
+
+function buildIdempotentOrderResponse(existingOrder, incomingOrder, context = {}) {
+  const callerIsOwner = isCallerOwnerOfExistingOrder(existingOrder, incomingOrder, context)
+  if (!callerIsOwner) {
+    console.warn(`⚠️ [IDEMPOTENCY TOKEN GUARD] Từ chối trả trackingToken cho đơn ${existingOrder.orderId} do thông tin người gọi không khớp chủ đơn.`)
+  }
+  return {
+    status: 200,
+    data: {
+      success: true,
+      orderId: existingOrder.orderId,
+      status: existingOrder.status,
+      trackingToken: callerIsOwner
+        ? (existingOrder.trackingToken || generateTrackingToken(existingOrder.orderId, existingOrder.customer?.phone))
+        : '',
+      message: 'Đơn hàng đã được tiếp nhận thành công.',
+      qrExpiresAt: callerIsOwner ? existingOrder.payment?.qrExpiresAt : undefined,
+    },
+  }
+}
 
 /**
  * Controller xử lý submit đơn hàng:
- * 1. Idempotency check: Tránh duplicate orderId (COM-002 / G-18)
- * 2. Validate payload cơ bản & schema
- * 3. Validate ĐƠN GIÁ & TỔNG TIỀN độc lập từ catalog server (P0-1)
- * 4. Validate TỒN KHO THỰC TẾ (P0-4 / INV-001)
- * 5. Phân loại luồng theo Phương thức thanh toán:
+ * 1. Idempotency check: Tránh duplicate orderId (COM-002 / G-18 / G5-b)
+ * 2. Kiểm tra bán kính 30km COD (Async trước bước kiểm tồn đồng bộ)
+ * 3. Vùng đồng bộ nguyên tử: Validate ĐƠN GIÁ + TỒN KHO + Ghi đơn + Khóa voucher (P0-1 / P0-4 / G6)
+ * 4. Phân loại luồng theo Phương thức thanh toán:
  *    - COD: Ghi Sheet + Gửi Email xác nhận đặt hàng ngay lập tức.
  *    - BANK_TRANSFER: Ghi Sheet ở trạng thái CHỜ THANH TOÁN. Trạng thái payment ban đầu là AWAITING_PAYMENT.
- *      TUYỆT ĐỐI CHƯA gửi email xác nhận thanh toán cho đến khi tiền thực sự về tài khoản (qua Webhook có secret).
+ *      TUYỆT ĐỐI CHƯA gửi email xác nhận thanh toán cho đến khi tiền thực sự về tài khoản.
  */
 export async function handleOrderSubmit(order, context = {}) {
   // Bind verified account from session if available; strip client-spoofed accountId on HTTP requests
@@ -42,53 +103,31 @@ export async function handleOrderSubmit(order, context = {}) {
     }
   }
 
-  // 1.1 Idempotency check: Nếu đơn hàng đã tồn tại trong store (COM-002 / G-18)
+  // 1.1 Idempotency check: Nếu đơn hàng đã tồn tại trong store (COM-002 / G-18 / G5-b)
   const existingOrder = orderPaymentStore.get(order.orderId)
   if (existingOrder) {
     console.log(`ℹ️ [IDEMPOTENCY] Đơn hàng ${order.orderId} đã tồn tại. Trả lại canonical response không lặp side-effects.`)
-    return {
-      status: 200,
-      data: {
-        success: true,
-        orderId: existingOrder.orderId,
-        status: existingOrder.status,
-        trackingToken: existingOrder.trackingToken || generateTrackingToken(existingOrder.orderId, existingOrder.customer?.phone),
-        message: 'Đơn hàng đã được tiếp nhận thành công.',
-        qrExpiresAt: existingOrder.payment?.qrExpiresAt,
-      },
+    return buildIdempotentOrderResponse(existingOrder, order, context)
+  }
+
+  // 1.2 Tùy chọn kiểm tra Cloudflare Turnstile trước khi đặt đơn (khi bật TURNSTILE_ENFORCE_ORDER=true)
+  if (String(process.env.TURNSTILE_ENFORCE_ORDER || '').trim().toLowerCase() === 'true') {
+    const turnstileToken = order.turnstileToken || context.turnstileToken || ''
+    const turnstileCheck = await verifyTurnstileToken(turnstileToken, context.clientIp || '')
+    if (!turnstileCheck.success) {
+      return {
+        status: 403,
+        data: {
+          success: false,
+          code: 'CAPTCHA_FAILED',
+          error: 'Xác thực chống bot không hợp lệ. Vui lòng tải lại trang và thử lại.',
+        },
+      }
     }
   }
 
-  // 2. Kiểm tra tính toàn vẹn giá (P0-1)
-  const pricingCheck = validateOrderPricing(order, {
-    loyaltyMember: context.loyaltyMember || null,
-    accountId: context.accountId || order.accountId || null,
-  })
-  if (!pricingCheck.isValid) {
-    console.warn(`⛔ [PRICING REJECTED] Đơn hàng ${order.orderId} bị từ chối: ${pricingCheck.error}`)
-    return {
-      status: 400,
-      data: {
-        success: false,
-        error: pricingCheck.error || 'Giá sản phẩm hoặc tổng tiền không hợp lệ',
-      },
-    }
-  }
-
-  // 3. Kiểm tra tồn kho khả dụng (P0-4 / INV-001)
-  const stockCheck = validateOrderStock(order)
-  if (!stockCheck.isValid) {
-    console.warn(`⛔ [STOCK REJECTED] Đơn hàng ${order.orderId} bị từ chối: ${stockCheck.error}`)
-    return {
-      status: 400,
-      data: {
-        success: false,
-        error: stockCheck.error || 'Sản phẩm đã hết hàng trong kho',
-      },
-    }
-  }
-
-  // 3.1 Kiểm tra bán kính 30km từ Amber Riverside đối với phương thức Ship COD
+  // 2. Kiểm tra bán kính 30km từ kho Hai Bà Trưng, Hà Nội đối với phương thức Ship COD
+  // Thực hiện async TRƯỚC bước kiểm tồn + giữ đơn đồng bộ để không có await xen giữa kiểm tồn và giữ đơn (G6)
   const effectivePaymentMethod = order.payment?.method || order.paymentMethod || 'COD'
   if (effectivePaymentMethod === 'COD') {
     const shipping = order.shipping || order.customer || {}
@@ -105,12 +144,50 @@ export async function handleOrderSubmit(order, context = {}) {
         status: 400,
         data: {
           success: false,
-          error: `Phương thức Ship COD chỉ áp dụng cho đơn hàng trong bán kính 30km từ kho Amber Riverside, 622 Minh Khai, Hà Nội (Khoảng cách tính toán: ~${codCheck.distanceKm}km). Vui lòng chọn phương thức Chuyển khoản VietQR để nhận ưu đãi giảm 10%.`,
+          error: `Phương thức Ship COD chỉ áp dụng cho đơn hàng trong bán kính 30km từ kho Hai Bà Trưng, Hà Nội (Khoảng cách tính toán: ~${codCheck.distanceKm}km). Vui lòng chọn phương thức Chuyển khoản VietQR để nhận ưu đãi giảm 10%.`,
           code: 'COD_DISTANCE_EXCEEDED',
           distanceKm: codCheck.distanceKm,
           maxCodRadiusKm: codCheck.maxCodRadiusKm,
         },
       }
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 3. VÙNG ĐỒNG BỘ NGUYÊN TỬ (ATOMIC SYNCHRONOUS SECTION — KHÔNG CÓ AWAIT)
+  // Kiểm lại idempotency -> Kiểm giá -> Kiểm tồn kho -> Ghi đơn -> Khóa voucher
+  // ─────────────────────────────────────────────────────────────────────────
+  const existingAfterAsync = orderPaymentStore.get(order.orderId)
+  if (existingAfterAsync) {
+    return buildIdempotentOrderResponse(existingAfterAsync, order, context)
+  }
+
+  // 3.1 Kiểm tra tính toàn vẹn giá (P0-1)
+  const pricingCheck = validateOrderPricing(order, {
+    loyaltyMember: context.loyaltyMember || null,
+    accountId: context.accountId || order.accountId || null,
+  })
+  if (!pricingCheck.isValid) {
+    console.warn(`⛔ [PRICING REJECTED] Đơn hàng ${order.orderId} bị từ chối: ${pricingCheck.error}`)
+    return {
+      status: 400,
+      data: {
+        success: false,
+        error: pricingCheck.error || 'Giá sản phẩm hoặc tổng tiền không hợp lệ',
+      },
+    }
+  }
+
+  // 3.2 Kiểm tra tồn kho khả dụng (P0-4 / INV-001)
+  const stockCheck = validateOrderStock(order)
+  if (!stockCheck.isValid) {
+    console.warn(`⛔ [STOCK REJECTED] Đơn hàng ${order.orderId} bị từ chối: ${stockCheck.error}`)
+    return {
+      status: 400,
+      data: {
+        success: false,
+        error: stockCheck.error || 'Sản phẩm đã hết hàng trong kho',
+      },
     }
   }
 
@@ -150,7 +227,7 @@ export async function handleOrderSubmit(order, context = {}) {
   }
 
   console.log(`\n📦 [ORDER VALIDATED] Đang tiếp nhận đơn hàng: ${order.orderId}`)
-  console.log(`👤 Khách hàng: ${order.customer?.fullName} (${order.customer?.phone} | ${order.customer?.email})`)
+  console.log(`👤 Khách hàng: ${order.customer?.fullName} (${maskPhoneForLog(order.customer?.phone)} | ${maskEmail(order.customer?.email)})`)
   console.log(`💰 Tổng tiền xác thực: ${orderRecord.total}đ (Tạm tính: ${orderRecord.subtotal}đ, Giảm: ${orderRecord.discount}đ, Ship: ${orderRecord.shippingFee}đ) | Phương thức: ${order.payment?.methodLabel || order.payment?.method}`)
   if (orderRecord.voucherCode) {
     console.log(`🎟️ Áp dụng voucher: ${orderRecord.voucherCode}`)

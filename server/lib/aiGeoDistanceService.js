@@ -13,8 +13,8 @@
 
 // ── Tọa độ kho hàng trung tâm của QuanNguyenS ────────────────────────────────
 export const SHOP_ORIGIN = {
-  name: 'Amber Riverside',
-  address: 'Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hai Bà Trưng, Hà Nội',
+  name: 'Kho Hai Bà Trưng, Hà Nội',
+  address: 'Hai Bà Trưng, Hà Nội',
   lat: 20.998436,
   lng: 105.868725,
   maxCodRadiusKm: 30.0,
@@ -24,7 +24,7 @@ export const SHOP_ORIGIN = {
 // CƠ SỞ TRI THỨC TỌA ĐỘ ĐỊA CHÍNH (KNOWLEDGE BASE CHO SPATIAL AGENT)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// 1. Tọa độ & khoảng cách đường bộ 30 quận/huyện Hà Nội so với Amber Riverside
+// 1. Tọa độ & khoảng cách đường bộ 30 quận/huyện Hà Nội so với kho Hai Bà Trưng, Hà Nội
 export const HANOI_DISTRICTS_MAP = {
   // Nội thành (<= 15km)
   'hai bà trưng': { dist: 2.5, lat: 21.0069, lng: 105.8524, factor: 1.22 },
@@ -192,6 +192,18 @@ export function calculateHaversineKm(lat1, lon1, lat2, lon2) {
   return R * c
 }
 
+export function stripVietnameseTones(str = '') {
+  return String(str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .replace(/[\r\n\t]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. AGENT: AddressIntelligenceAgent
 // ─────────────────────────────────────────────────────────────────────────────
@@ -205,22 +217,24 @@ class AddressIntelligenceAgent {
       .trim()
   }
 
-  parse(input) {
+  parse(input = {}) {
     const address = this.normalizeText(input.address)
     const ward = this.normalizeText(input.ward)
     const district = this.normalizeText(input.district)
-    const city = this.normalizeText(input.city || 'hà nội')
+    const city = this.normalizeText(input.city)
 
-    const rawCombined = `${address} ${ward} ${district} ${city}`
+    const rawCombined = `${address} ${ward} ${district} ${city}`.replace(/\s+/g, ' ').trim()
     const cleanCombined = rawCombined
       .replace(/thành phố|tỉnh|quận|huyện|thị xã|phường|xã|thị trấn|đường|phố|số nhà|ngõ|ngách/g, ' ')
       .replace(/\s+/g, ' ')
       .trim()
+    const asciiCombined = stripVietnameseTones(rawCombined)
 
-    // Bóc tách Landmark
+    // Bóc tách Landmark (hỗ trợ cả có dấu và không dấu)
     let detectedLandmark = null
     for (const [landmarkKey, data] of Object.entries(LANDMARKS_MAP)) {
-      if (rawCombined.includes(landmarkKey)) {
+      const asciiKey = stripVietnameseTones(landmarkKey)
+      if (rawCombined.includes(landmarkKey) || (asciiKey.length >= 5 && asciiCombined.includes(asciiKey))) {
         detectedLandmark = { name: landmarkKey, ...data }
         break
       }
@@ -230,6 +244,7 @@ class AddressIntelligenceAgent {
       raw: { address, ward, district, city },
       combined: rawCombined,
       cleanCombined,
+      asciiCombined,
       landmark: detectedLandmark,
     }
   }
@@ -242,15 +257,35 @@ function hasTermBoundary(text, term) {
   if (!text || !term) return false
   const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const re = new RegExp(`(?:^|[\\s,.;:/\\-()])${escaped}(?=$|[\\s,.;:/\\-()])`, 'i')
-  return re.test(text)
+  if (re.test(text)) return true
+
+  // H4: Hỗ trợ địa danh tiếng Việt viết không dấu (đa từ hoặc >= 5 ký tự để tránh trùng từ đơn ngắn)
+  const asciiTerm = stripVietnameseTones(term)
+  if (asciiTerm.includes(' ') || asciiTerm.length >= 5) {
+    const asciiText = stripVietnameseTones(text)
+    const escapedAscii = asciiTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const reAscii = new RegExp(`(?:^|[\\s,.;:/\\-()])${escapedAscii}(?=$|[\\s,.;:/\\-()])`, 'i')
+    return reAscii.test(asciiText)
+  }
+  return false
+}
+
+function includesTermOrAscii(text, term) {
+  if (!text || !term) return false
+  if (text.includes(term)) return true
+  const asciiTerm = stripVietnameseTones(term)
+  if (asciiTerm.includes(' ') || asciiTerm.length >= 5) {
+    return stripVietnameseTones(text).includes(asciiTerm)
+  }
+  return false
 }
 
 function isExplicitFarProvinceCity(rawCity) {
   if (!rawCity) return false
   return Object.keys(PROVINCES_LONG_DISTANCE_MAP).some((provinceName) => {
     if (provinceName === 'hưng yên' || provinceName === 'bắc ninh') return false
-    if (provinceName === 'huế') return hasTermBoundary(rawCity, 'huế') || rawCity.includes('thừa thiên huế')
-    return hasTermBoundary(rawCity, provinceName) || rawCity.includes(provinceName)
+    if (provinceName === 'huế') return hasTermBoundary(rawCity, 'huế') || includesTermOrAscii(rawCity, 'thừa thiên huế')
+    return hasTermBoundary(rawCity, provinceName) || includesTermOrAscii(rawCity, provinceName)
   })
 }
 
@@ -260,6 +295,7 @@ class SpatialGeocodingAgent {
     const isExplicitHanoi =
       raw.city.includes('hà nội') ||
       raw.city.includes('ha noi') ||
+      raw.city === 'hn' ||
       combined.includes('hà nội') ||
       combined.includes('ha noi')
     const farCityDeclared = isExplicitFarProvinceCity(raw.city)
@@ -284,8 +320,8 @@ class SpatialGeocodingAgent {
           hasTermBoundary(raw.district, communeName) ||
           hasTermBoundary(combined, communeName) ||
           hasTermBoundary(cleanCombined, communeName) ||
-          combined.includes(communeName) ||
-          cleanCombined.includes(communeName)
+          includesTermOrAscii(combined, communeName) ||
+          includesTermOrAscii(cleanCombined, communeName)
         ) {
           return {
             precision: 'COMMUNE_BORDER_LEVEL',
@@ -303,14 +339,18 @@ class SpatialGeocodingAgent {
     if (isExplicitHanoi || !farCityDeclared) {
       for (const [districtName, data] of Object.entries(HANOI_DISTRICTS_MAP)) {
         if (
-          raw.district.includes(districtName) ||
+          includesTermOrAscii(raw.district, districtName) ||
           hasTermBoundary(combined, districtName) ||
           hasTermBoundary(cleanCombined, districtName)
         ) {
           let finalDist = data.dist
           // Tinh chỉnh với các xã vùng sâu của Quốc Oai / Chương Mỹ
-          if ((districtName === 'quốc oai' || districtName === 'chương mỹ') &&
-              (raw.ward.includes('xuân mai') || combined.includes('xuân mai') || combined.includes('miếu môn'))) {
+          if (
+            (districtName === 'quốc oai' || districtName === 'chương mỹ') &&
+            (includesTermOrAscii(raw.ward, 'xuân mai') ||
+              includesTermOrAscii(combined, 'xuân mai') ||
+              includesTermOrAscii(combined, 'miếu môn'))
+          ) {
             finalDist = 34.0
           }
 
@@ -332,7 +372,7 @@ class SpatialGeocodingAgent {
       if (provinceName === 'huế') {
         const isTrueHue =
           hasTermBoundary(raw.city, 'huế') ||
-          raw.city.includes('thừa thiên huế') ||
+          includesTermOrAscii(raw.city, 'thừa thiên huế') ||
           (!isExplicitHanoi && !combined.includes('phố huế') && !cleanCombined.includes('pho hue') && hasTermBoundary(combined, 'huế'))
         if (isTrueHue) {
           return {
@@ -348,7 +388,7 @@ class SpatialGeocodingAgent {
         continue
       }
 
-      const cityMatched = hasTermBoundary(raw.city, provinceName) || raw.city.includes(provinceName)
+      const cityMatched = hasTermBoundary(raw.city, provinceName) || includesTermOrAscii(raw.city, provinceName)
       const combinedMatched = !isExplicitHanoi && hasTermBoundary(combined, provinceName)
       if (cityMatched || combinedMatched) {
         return {
@@ -363,8 +403,24 @@ class SpatialGeocodingAgent {
       }
     }
 
-    // 5. Fallback nếu chỉ có chữ "Hà Nội" mà không rõ quận
+    // 5. Fallback nếu có chữ "Hà Nội":
+    // H4: Nếu người dùng nhập một district lạ không khớp bất kỳ quận/huyện/landmark nào của Hà Nội,
+    // fail-closed (>30km) để tránh lách luật COD 30km bằng tên huyện viết sai.
     if (isExplicitHanoi) {
+      const cleanDistrict = raw.district
+        .replace(/quận|huyện|thị xã|thành phố|hà nội|ha noi/g, '')
+        .trim()
+      if (cleanDistrict.length > 0) {
+        return {
+          precision: 'UNVERIFIED_DISTRICT_FALLBACK',
+          lat: null,
+          lng: null,
+          directDistanceKm: 35.0,
+          confidence: 0.50,
+          matchedName: 'Khu vực ngoại thành chưa xác thực cự ly (<30km)',
+          isFarProvince: true,
+        }
+      }
       return {
         precision: 'CITY_CENTER_FALLBACK',
         lat: 21.0285,
@@ -452,11 +508,11 @@ class ShippingPolicyAgent {
 
     if (isCodAllowed) {
       estimatedDelivery = distanceKm <= 10 ? 'Trong ngày hoặc 24 giờ' : '1 - 2 ngày làm việc'
-      message = `Khoảng cách ~${distanceKm}km từ kho Amber Riverside — Nằm trong bán kính 30km, đủ điều kiện giao hàng Ship COD.`
+      message = `Khoảng cách ~${distanceKm}km từ kho Hai Bà Trưng, Hà Nội — Nằm trong bán kính 30km, đủ điều kiện giao hàng Ship COD.`
       recommendedAction = 'ALLOW_COD'
     } else {
       estimatedDelivery = distanceKm <= 150 ? '1 - 2 ngày (Viettel Post)' : '2 - 4 ngày (Viettel Post Toàn Quốc)'
-      message = `Khoảng cách ~${distanceKm}km vượt quá bán kính 30km hỗ trợ Ship COD từ kho Amber Riverside. Đơn hàng sẽ được chuyển phát nhanh Viettel Post. Quý khách vui lòng chọn chuyển khoản VietQR Napas 24/7 để nhận ưu đãi giảm ngay 10% và miễn phí vận chuyển.`
+      message = `Khoảng cách ~${distanceKm}km vượt quá bán kính 30km hỗ trợ Ship COD từ kho Hai Bà Trưng, Hà Nội. Đơn hàng sẽ được chuyển phát nhanh Viettel Post. Quý khách vui lòng chọn chuyển khoản VietQR Napas 24/7 để nhận ưu đãi giảm ngay 10% và miễn phí vận chuyển.`
       recommendedAction = 'REQUIRE_VIETQR_NAPAS'
     }
 

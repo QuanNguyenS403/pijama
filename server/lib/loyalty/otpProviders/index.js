@@ -3,6 +3,7 @@ import { sendZaloOtp, isZaloConfigured } from './zaloProvider.js'
 export { isZaloConfigured }
 import { maskPhone, createAlert } from '../loyaltyDb.js'
 import { normalizeVietnamesePhone } from '../../smsService.js'
+import { sendOtpVerificationEmail } from '../../emailAccount.js'
 
 // In-memory store chỉ dùng cho môi trường test/dev nội bộ
 const testOtpStore = new Map()
@@ -46,6 +47,8 @@ export function resolveOtpProvider(providerOverride = null) {
  */
 export async function sendOtpViaProvider({
   phone,
+  email = '',
+  fullName = '',
   code,
   purpose = 'enrollment',
   ttlMinutes = 5,
@@ -54,6 +57,7 @@ export async function sendOtpViaProvider({
   const isProd = process.env.NODE_ENV === 'production'
   const provider = resolveOtpProvider(providerOverride)
   const cleanPhone = normalizeVietnamesePhone(phone)
+  const cleanEmail = String(email || '').trim().toLowerCase()
 
   // Cấm hoàn toàn mock/test provider trên Production (Fail-closed)
   if (isProd && (provider === 'test' || provider === 'mock')) {
@@ -109,7 +113,31 @@ export async function sendOtpViaProvider({
     }
   }
 
-  // 3. Chế độ unconfigured (Fail-closed trên Production)
+  // 3. Chế độ Email OTP Fallback (Dành cho Render Free khi chưa cấu hình Zalo ZNS trả phí)
+  if ((provider === 'email' || provider === 'sms_unconfigured') && cleanEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    try {
+      const emailPurpose = purpose === 'login' ? 'login' : 'register'
+      const emailRes = await sendOtpVerificationEmail({
+        email: cleanEmail,
+        fullName: fullName || 'Quý khách',
+        otpCode: String(code),
+        purpose: emailPurpose,
+      })
+      if (emailRes && (emailRes.sent || emailRes.mocked)) {
+        const [u, d] = cleanEmail.split('@')
+        const maskedEmail = `${u.slice(0, 2)}***@${d}`
+        return {
+          ok: true,
+          provider: 'email',
+          message: `Mã xác thực 6 chữ số đã được gửi tới email ${maskedEmail}`,
+        }
+      }
+    } catch (emailErr) {
+      console.warn('⚠️ [LOYALTY EMAIL OTP FALLBACK ERROR]:', emailErr?.message || emailErr)
+    }
+  }
+
+  // 4. Chế độ unconfigured (Fail-closed trên Production)
   createAlert({
     type: 'SYSTEM_ERROR',
     severity: 'critical',
@@ -121,6 +149,8 @@ export async function sendOtpViaProvider({
     ok: false,
     provider: 'sms_unconfigured',
     errorCode: 'PROVIDER_UNCONFIGURED',
-    error: 'Dịch vụ gửi tin xác thực hiện chưa được thiết lập trên máy chủ. Vui lòng liên hệ hotline: 0973 486 218.',
+    error: cleanEmail
+      ? 'Không thể gửi mã xác thực qua email lúc này. Vui lòng thử lại sau giây lát hoặc liên hệ hotline: 0973 486 218.'
+      : 'Vui lòng nhập địa chỉ Email nhận mã xác thực OTP hoặc đăng nhập tài khoản để tiếp tục.',
   }
 }

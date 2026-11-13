@@ -1,125 +1,119 @@
-# 🚀 HƯỚNG DẪN TRIỂN KHAI QNS CLOTHES LÊN RENDER.COM CHẠY 24/24 MIỄN PHÍ
+# 🚀 HƯỚNG DẪN TRIỂN KHAI QUANNGUYENS LÊN RENDER.COM & VẬN HÀNH THỰC TẾ
 
-> **Mục tiêu:** Đưa toàn bộ hệ thống (Giao diện mua sắm React/Vite + Máy chủ Express xử lý đơn hàng, thanh toán VietQR & tự động gửi Gmail xác nhận) lên nền tảng đám mây **Render.com**. Web hoạt động độc lập 24/24 mà **hoàn toàn không cần bật máy tính cá nhân** và **không cần mua VPS**.
+> **Cập nhật quan trọng (13/11/2026):**
+> 1. **Gửi Email trên Render gói Free:** Từ ngày **26/09/2025**, Render đã **chặn hoàn toàn cổng SMTP 25/465/587 trên gói Free** ([Render Changelog](https://render.com/changelog/free-web-services-will-no-longer-allow-outbound-traffic-to-smtp-ports)). Vì vậy, trên Render gói Free, bạn **bắt buộc dùng Google Apps Script HTTPS Webhook (`GAS_EMAIL_WEBHOOK_URL` + `GAS_WEBHOOK_SECRET` qua cổng 443 — miễn phí 100%)** hoặc **Resend API (`RESEND_API_KEY`)**, hoặc nâng lên gói Render trả phí (`Starter` $7/tháng) và đặt `EMAIL_ALLOW_SMTP_ON_RENDER=true`.
+> 2. **Đồng bộ 2 chiều với Supabase trên Render gói Free (0đ):** Gói Free dùng ổ đĩa tạm (ephemeral disk) — nhưng khi đã cấu hình `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, hệ thống tự động lưu trữ bền vững và khôi phục 2 chiều toàn bộ **Tài khoản khách hàng (`users`), Mã giảm giá Welcome (`vouchers`), và Đơn hàng (`orders`)** ngay khi server khởi động lại sau redeploy hoặc spin-down.
+> 3. **Luồng thanh toán VietQR hiện hành:** Khách quét mã VietQR -> tải ảnh chụp màn hình chuyển khoản lên web -> bấm "Hoàn tất thanh toán" -> Chủ shop đối soát và bấm xác nhận tại `/admin/orders` (các biến `BANK_EMAIL_ALLOWED_SENDERS` / `BANK_EMAIL_AUTO_SETTLE` cũ đã ngừng sử dụng).
 
 ---
 
 ## 📌 PHẦN 1: TỔNG QUAN KIẾN TRÚC TRIỂN KHAI
 
-Hệ thống được thiết kế theo mô hình **All-in-One**:
-- **Frontend:** Code React/Tailwind được Vite build thành các file tĩnh tối ưu trong thư mục `dist/`.
-- **Backend:** Máy chủ Express (Node.js 22) phục vụ trực tiếp các file tĩnh của Frontend, đồng thời cung cấp các API:
-  - Tiếp nhận đơn hàng (`/api/orders/submit`).
-  - Tự động kích hoạt luồng gửi email xác nhận Gmail qua SMTP (`server/lib/emailConfig.js`).
-  - Tạo mã QR thanh toán Napas/VietQR tự động.
-  - Lắng nghe Webhook SePay/Ngân hàng.
-  - Liveness Check (`/livez`) phục vụ duy trì kết nối 24/24.
+Hệ thống hoạt động theo mô hình **All-in-One Monolith**:
+- **Frontend:** React + Vite được build ra thư mục tĩnh `dist/`.
+- **Backend:** Máy chủ Express (Node.js 22) phục vụ `dist/` và cung cấp hệ thống API:
+  - Đặt hàng & kiểm tra cự ly COD 30km (`/api/orders/submit`, `/api/shipping/check-cod`).
+  - Sinh mã VietQR chuẩn Napas 24/7 (`/api/payment/qr`) & tải ảnh chứng từ có chữ ký bảo mật (`/api/orders/payment-proof`, `/api/orders/submit-qr-payment`).
+  - Gửi email xác nhận & OTP qua HTTPS Port 443 (`server/lib/httpsEmailService.js`).
+  - Quản trị đơn hàng (`/admin/orders`), Hội viên Loyalty (`/api/loyalty/*`), và Chatbot tư vấn 0đ (`/api/chat`).
+  - Kiểm tra sức khỏe tức thì (`/livez`, `/readyz`, `/api/health`).
 
 ---
 
-## 📌 PHẦN 2: CÁC BƯỚC ĐẨY CODE LÊN GITHUB (ĐÃ ĐƯỢC CẤU HÌNH SẴN)
+## 📌 PHẦN 2: CẤU HÌNH CẦU GỬI GMAIL QUA GOOGLE APPS SCRIPT (HTTPS 443 — MIỄN PHÍ 100% TRÊN RENDER FREE)
 
-Kho lưu trữ GitHub đã được liên kết với:
-`https://github.com/QuanNguyenS403/pijama.git`
+Vì Render gói Free chặn cổng SMTP 465/587, cách gửi Gmail chính chủ `quannguyens403@gmail.com` miễn phí và ổn định nhất là tạo 1 Web App Google Apps Script:
 
-Khi bạn muốn cập nhật code mới nhất từ máy tính lên GitHub, chỉ cần mở terminal tại thư mục `pijama` và chạy:
-```bash
-git add .
-git commit -m "feat: deploy to render"
-git push origin main
-```
-*(Nếu trợ lý AI đã push giúp bạn, bước này code đã sẵn sàng trên GitHub)*.
+1. Đăng nhập [https://script.google.com](https://script.google.com) bằng tài khoản **`quannguyens403@gmail.com`**.
+2. Nhấn **Dự án mới (New Project)**, xóa code mặc định trong `Code.gs` và dán đoạn mã sau:
+   ```javascript
+   function doPost(e) {
+     try {
+       var props = PropertiesService.getScriptProperties();
+       var expectedSecret = (props.getProperty('GAS_WEBHOOK_SECRET') || '').trim();
+       var payload = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+       if (!expectedSecret || payload.secret !== expectedSecret) {
+         return jsonOut({ ok: false, error: 'UNAUTHORIZED' });
+       }
+       var remaining = MailApp.getRemainingDailyQuota();
+       if (remaining <= 0) {
+         return jsonOut({ ok: false, error: 'QUOTA_EXCEEDED', remainingQuota: 0 });
+       }
+       var options = {
+         name: payload.fromName || 'QuanNguyenS',
+         htmlBody: payload.html || payload.text || ''
+       };
+       if (payload.replyTo) options.replyTo = payload.replyTo;
+       GmailApp.sendEmail(payload.to, payload.subject || 'QuanNguyenS', payload.text || '', options);
+       return jsonOut({ ok: true, success: true, code: 'OK', remainingQuota: remaining - 1 });
+     } catch (err) {
+       return jsonOut({ ok: false, success: false, error: String(err && err.message ? err.message : err) });
+     }
+   }
+   function jsonOut(obj) {
+     return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+   }
+   ```
+3. Vào **Cài đặt dự án (Project Settings ⚙)** -> **Thuộc tính tập lệnh (Script Properties)** -> Nhấn **Thêm thuộc tính tập lệnh**:
+   - **Thuộc tính:** `GAS_WEBHOOK_SECRET`
+   - **Giá trị:** Chuỗi bí mật ngẫu nhiên 64 ký tự hex (dùng chung giá trị này cho biến `GAS_WEBHOOK_SECRET` trên Render).
+4. Nhấn **Triển khai (Deploy)** -> **Tạo bản triển khai mới (New deployment)**:
+   - Chọn loại: **Ứng dụng web (Web app)**.
+   - **Thực thi dưới dạng (Execute as):** `Tôi (quannguyens403@gmail.com)`.
+   - **Ai có quyền truy cập (Who has access):** `Bất kỳ ai (Anyone)`.
+   - Nhấn **Triển khai**, cấp quyền Gmail và sao chép URL `https://script.google.com/macros/s/.../exec` dán vào biến `GAS_EMAIL_WEBHOOK_URL` trên Render.
 
 ---
 
-## 📌 PHẦN 3: TẠO WEB SERVICE TRÊN RENDER.COM
+## 📌 PHẦN 3: DANH SÁCH BIẾN MÔI TRƯỜNG TRÊN RENDER (ENVIRONMENT VARIABLES)
 
-### Cách 1: Tạo thủ công (Khuyên dùng - Cực kỳ trực quan)
-
-1. **Đăng nhập Render:** Truy cập [https://dashboard.render.com](https://dashboard.render.com) (Đăng nhập bằng tài khoản GitHub `QuanNguyenS403`).
-2. **Tạo Web Service mới:**
-   - Nhấn **New +** ở góc trên cùng bên phải -> Chọn **Web Service**.
-   - Chọn mục **Build and deploy from a Git repository** -> Nhấn **Next**.
-   - Chọn kho lưu trữ **`pijama`** (hoặc `QuanNguyenS403/pijama`).
-3. **Điền thông số cấu hình Web Service:**
-   - **Name:** `qns-clothes` (hoặc tên tùy thích, ví dụ `quannguyens`).
-   - **Region:** Chọn **Singapore (Southeast Asia)** để khách truy cập tại Việt Nam có tốc độ nhanh nhất.
-   - **Branch:** `main`
-   - **Root Directory:** *(Để trống)*
-   - **Runtime:** `Node`
-   - **Build Command:** `npm install --include=dev && npm run build`
-   - **Start Command:** `npm start`
-   - **Instance Type:** Chọn gói **Free** ($0/tháng).
-
----
-
-## 📌 PHẦN 4: CẤU HÌNH BIẾN MÔI TRƯỜNG (ENVIRONMENT VARIABLES)
-
-Tại trang cấu hình Web Service trên Render, cuộn xuống mục **Environment Variables** (hoặc tab **Environment** sau khi tạo). Nhấn **Add Environment Variable** để thêm các biến sau:
+Tại mục **Environment** của Web Service trên Render Dashboard, cấu hình các biến sau:
 
 | Tên biến (Key) | Giá trị (Value) | Giải thích |
 |---|---|---|
-| `NODE_VERSION` | `22.14.0` | **Bắt buộc**: Render sẽ dùng Node.js 22 |
-| `NODE_ENV` | `production` | **Bắt buộc**: Kích hoạt chế độ Production |
-| `ADMIN_PASSWORD` | `[Mật khẩu quản trị của bạn]` | **Bắt buộc** (tối thiểu 8 ký tự): Mật khẩu vào `/admin/orders` |
-| `ADMIN_SESSION_SECRET` | `[Chuỗi ngẫu nhiên >= 32 ký tự]` | **Bắt buộc**: Khóa ký session Admin (tách riêng khỏi `JWT_SECRET`) |
-| `ORDER_TOKEN_SECRET` | `[Chuỗi ngẫu nhiên >= 32 ký tự]` | **Bắt buộc**: Khóa ký `trackingToken` đơn hàng |
-| `CUSTOMER_AUTH_SECRET` | `[Chuỗi ngẫu nhiên >= 32 ký tự]` | **Bắt buộc**: Khóa bảo mật phiên & link hủy đăng ký khách hàng |
-| `JWT_SECRET` | `[Chuỗi ngẫu nhiên >= 32 ký tự]` | **Bắt buộc**: Khóa ký JWT Access Token |
-| `RESEND_API_KEY` | `[Mã API Resend của bạn]` | (Tùy chọn) Gửi qua Resend HTTP API |
-| `RESEND_FROM_EMAIL` | `QuanNguyenS <support@quannguyens.com>` | (Tùy chọn) Địa chỉ gửi Resend với domain đã xác minh SPF/DKIM |
-| `GMAIL_APP_PASSWORD` | `[Mật khẩu ứng dụng Gmail 16 ký tự]` | (Tùy chọn) Gửi qua Gmail SMTP trực tiếp |
-| `GMAIL_USER` | `quannguyens403@gmail.com` | Email người gửi mặc định |
-| `OWNER_EMAIL` | `quannguyens403@gmail.com` | Email nhận thông báo khi có khách đặt hàng |
-| `EMAIL_REAL_SEND` | `true` | Bắt buộc bật gửi email thật (Production & Staging) |
-| `BANK_CODE` | `VCB` | Mã ngân hàng nhận chuyển khoản (Vietcombank) |
-| `BANK_ACCOUNT_NUMBER` | `1050773506` | Số tài khoản nhận tiền |
-| `BANK_ACCOUNT_NAME` | `NGUYEN DUC QUAN` | Tên chủ tài khoản |
+| `NODE_VERSION` | `22.14.0` | **Bắt buộc**: Chạy Node.js 22 LTS |
+| `NODE_ENV` | `production` | **Bắt buộc**: Kích hoạt chế độ bảo mật Production |
+| `ADMIN_PASSWORD` | `[Mật khẩu quản trị >= 8 ký tự]` | **Bắt buộc**: Mật khẩu đăng nhập `/admin/orders` |
+| `ADMIN_SESSION_SECRET` | `[64 ký tự hex độc lập #1]` | **Bắt buộc**: Khóa ký phiên Admin |
+| `ORDER_TOKEN_SECRET` | `[64 ký tự hex độc lập #2]` | **Bắt buộc**: Khóa ký `trackingToken` & chữ ký ảnh chứng từ |
+| `CUSTOMER_AUTH_SECRET` | `[64 ký tự hex độc lập #3]` | **Bắt buộc**: Khóa bảo mật phiên & link hủy đăng ký khách hàng |
+| `JWT_SECRET` | `[64 ký tự hex độc lập #4]` | **Bắt buộc**: Khóa ký JWT Access Token |
+| `GAS_EMAIL_WEBHOOK_URL` | `https://script.google.com/macros/s/AKfycbzUsjZs4n3-0-a60D4UVSS1VTGZsTNXzeWt3ll5Wgmp970JJb2ybRzspM7ftxplCAGR/exec` | **Khuyến nghị số 1 (Render Free)**: URL cầu Apps Script HTTPS 443 |
+| `GAS_WEBHOOK_SECRET` | `[Khớp với Script Properties]` | **Khuyến nghị số 1 (Render Free)**: Khóa bí mật cầu Apps Script |
+| `RESEND_API_KEY` | `re_...` | (Tùy chọn) Gửi qua Resend HTTPS 443 |
+| `RESEND_FROM_EMAIL` | `QuanNguyenS <...>` | (Khi dùng Resend) Địa chỉ thuộc tên miền đã có MX & DKIM |
+| `GMAIL_USER` | `quannguyens403@gmail.com` | Email thương hiệu mặc định |
+| `GMAIL_APP_PASSWORD` | `[16 ký tự App Password mới]` | Chỉ dùng ở Local/VPS hoặc Render trả phí (`EMAIL_ALLOW_SMTP_ON_RENDER=true`) |
+| `EMAIL_ALLOW_SMTP_ON_RENDER` | `false` | Đặt `true` chỉ khi đã nâng gói Render trả phí |
+| `OWNER_EMAIL` | `quannguyens403@gmail.com` | Email nhận thông báo đơn hàng & ảnh chứng từ |
+| `EMAIL_REAL_SEND` | `true` | Cho phép gửi email thật |
+| `BANK_CODE` | `VCB` | Ngân hàng Vietcombank |
+| `BANK_ACCOUNT_NUMBER` | `1050773506` | Số tài khoản nhận chuyển khoản |
+| `BANK_ACCOUNT_NAME` | `NGUYEN DUC QUAN` | Chủ tài khoản |
 | `SHOP_NAME` | `QuanNguyenS` | Tên thương hiệu |
 | `SHOP_PHONE` | `0973 486 218` | Hotline cửa hàng |
-| `SHOP_ADDRESS` | `Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội` | Địa chỉ shop |
-| `GOOGLE_SHEET_ID` | `[ID Google Sheets của bạn]` | Bảng tính lưu trữ đơn hàng |
-| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | `[Email service account]` | Google Cloud Service Account |
-| `GOOGLE_PRIVATE_KEY` | `-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n` | Private Key của Google Service Account |
-| `GOOGLE_CLIENT_ID` | `745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com` | Google One-Tap Đăng nhập |
-| `VITE_GOOGLE_CLIENT_ID` | `745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com` | Client ID cho Frontend (phải trùng `GOOGLE_CLIENT_ID`) |
-| `TURNSTILE_SECRET_KEY` | `[Cloudflare Turnstile Secret]` | (Tùy chọn) Chống bot spam đặt hàng Cloudflare |
-| `VITE_TURNSTILE_SITE_KEY` | `[Cloudflare Turnstile Site Key]` | (Tùy chọn) Site key hiển thị CAPTCHA |
-| `BANK_EMAIL_ALLOWED_SENDERS` | `vietcombank@vietcombank.com.vn,ibanking@vietcombank.com.vn` | Danh sách email ngân hàng Vietcombank hợp lệ |
-| `BANK_EMAIL_AUTO_SETTLE` | `true` | Tự động xác nhận đơn hàng khi tiền về khớp 100% |
-| `SEPAY_WEBHOOK_API_KEY` | `[Mã API SePay của bạn]` | Key xác thực biến động số dư SePay (tùy chọn dự phòng) |
-
-> ⚠️ **Cảnh báo quan trọng khi copy từ `.env.local`:**
-> - **KHÔNG** dán các biến local vào Render: `PORT=3001`, `NODE_ENV=development`, `APP_URL=http://localhost:3000`, `VITE_BACKEND_URL=http://localhost:3001`, `REDIS_URL=redis://localhost:6379`, hoặc `AUTH_TEST_MODE=...`.
-> - Hãy để Render tự cấp `PORT` (`10000`) và `RENDER_EXTERNAL_URL` — server sẽ tự động nhận diện `APP_URL` và `ALLOWED_ORIGINS`.
-> - Đảm bảo **Start Command** trên Render là `npm start` (KHÔNG dùng `npm run preview` hay `npm run dev`), và **Health Check Path** là `/livez`.
-> - Nếu deploy bị lỗi `Port scan timeout reached`, hãy mở tab **Logs** (Runtime Logs) trên Render Dashboard để xem dòng `🛑 [CRITICAL ERROR]` hoặc `🛑 [CRITICAL DETAILS]` báo chính xác biến nào đang thiếu/sai.
-
-4. Nhấn **Create Web Service**. Render sẽ bắt đầu clone code từ GitHub, cài đặt thư viện và build web tự động trong khoảng 2-3 phút.
+| `SHOP_ADDRESS` | `Hai Bà Trưng, Hà Nội` | Địa chỉ kho/cửa hàng |
+| `UNPAID_QR_AUTOCANCEL_HOURS` | `24` (hoặc `0`) | Tự hủy đơn QR bỏ dở chưa tải ảnh CK sau 24 giờ (`0` = tắt) |
+| `GOOGLE_CLIENT_ID` | `745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com` | Google Sign-In Client ID |
+| `VITE_GOOGLE_CLIENT_ID` | `745618651365-0bo8817pnd3hgtsgd8bp9paq4h8gs0kn.apps.googleusercontent.com` | Phải trùng khớp với `GOOGLE_CLIENT_ID` |
+| `GOOGLE_SHEET_ID` | `[ID Google Sheet]` | **Khuyến nghị (Render Free 0đ)**: Lưu sổ đơn hàng vĩnh viễn trên Google Sheets |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | `[Email Service Account]` | **Khuyến nghị (Render Free 0đ)**: Tài khoản dịch vụ Google Sheets |
+| `GOOGLE_PRIVATE_KEY` | `-----BEGIN PRIVATE KEY-----\n...` | **Khuyến nghị (Render Free 0đ)**: Khóa riêng Google Sheets |
+| `SUPABASE_URL` | `https://llzcsqxiwnhrjqpdmtdn.supabase.co` | **Bắt buộc trên Render Free**: Đồng bộ 2 chiều tài khoản, voucher & đơn hàng lên Supabase Free |
+| `SUPABASE_SERVICE_ROLE_KEY` | `[Service Role Key]` | **Bắt buộc trên Render Free**: Khóa ghi/khôi phục dữ liệu Backend từ Supabase |
 
 ---
 
-## 📌 PHẦN 5: BÍ QUYẾT GIỮ WEB CHẠY 24/24 KHÔNG BAO GIỜ NGỦ (KEEP-ALIVE MIỄN PHÍ)
+## 📌 PHẦN 4: BẢO TOÀN DỮ LIỆU 100% MIỄN PHÍ TRÊN RENDER GÓI FREE (0Đ)
 
-Trên gói Free của Render, máy chủ sẽ tự động tạm dừng ("spin down" / ngủ) sau 15 phút nếu không có ai truy cập. Khi có khách vào, web mất khoảng 30 - 45 giây để khởi động lại.
+Vì Render gói **Free (`plan: free`)** sử dụng ổ đĩa tạm (ephemeral disk — tự xóa file cục bộ khi redeploy hoặc spin-down), để vận hành **hoàn toàn miễn phí (0đ)** mà không mất đơn hàng và tài khoản khách hàng:
 
-Để giải quyết vấn đề này mà **không mất 1 đồng chi phí**, bạn chỉ cần thiết lập **Keep-Alive Ping**:
-
-### Dùng dịch vụ Cron-Job.org (Miễn phí 100% vĩnh viễn):
-1. Truy cập [https://cron-job.org](https://cron-job.org) và đăng ký tài khoản miễn phí.
-2. Nhấn **Create Cronjob**:
-   - **Title:** `QNS Render Keep Alive`
-   - **URL:** `https://www.quannguyens.com/api/health` (hoặc `https://<ten-web-cua-ban>.onrender.com/api/health`)
-   - **Schedule:** Chọn **Every 10 to 14 minutes** (Mỗi 10–14 phút một lần).
-3. Nhấn **Create**.
-
-👉 **Kết quả:** Cứ mỗi 10 phút, Cron-Job sẽ gửi 1 tín hiệu siêu nhẹ (0.001 giây) tới máy chủ Render, báo cho Render biết máy chủ vẫn đang hoạt động. **Web của bạn sẽ thức liên tục 24/24, không bao giờ bị ngủ, khách vào lúc nào cũng mở tức thì!**
-
----
-
-## 📌 PHẦN 6: GẮN TÊN MIỀN RIÊNG (NẾU CÓ - VÍ DỤ QUANNGUYENS.COM)
-
-Nếu bạn có tên miền riêng:
-1. Vào Web Service trên Render -> Chọn tab **Settings** -> Mục **Custom Domains**.
-2. Nhấn **Add Custom Domain** -> Nhập `quannguyens.com` và `www.quannguyens.com`.
-3. Render sẽ hiển thị bản ghi CNAME hoặc A Record. Bạn vào nơi quản lý tên miền (như Cloudflare, PA Vietnam, Mat Bao...) trỏ bản ghi theo hướng dẫn của Render. Render sẽ tự động cấp chứng chỉ SSL HTTPS miễn phí!
+1. **Đồng bộ Đơn hàng tức thời lên Google Sheets (Miễn phí 100%):**
+   - Tạo bảng tính Google Sheets và chia sẻ quyền **Editor** cho `GOOGLE_SERVICE_ACCOUNT_EMAIL`.
+   - Cấu hình `GOOGLE_SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY` trên Render.
+   - Mọi đơn hàng đặt mới, tải ảnh chứng từ, xác nhận thanh toán hoặc hủy đơn đều được ghi ngay lập tức lên Google Sheets.
+2. **Đồng bộ Tài khoản & Đơn hàng lên Supabase Free Tier (Miễn phí 100%):**
+   - Tạo project miễn phí tại [https://supabase.com](https://supabase.com), mở **SQL Editor** và chạy nội dung file `scripts/supabase-schema.sql` trong repo.
+   - Lấy `Project URL` và `service_role secret` (trong **Project Settings -> API**) điền vào `SUPABASE_URL` và `SUPABASE_SERVICE_ROLE_KEY` trên Render.
+3. **Nhận Ảnh chứng từ chuyển khoản trực tiếp qua Email Chủ Shop (`OWNER_EMAIL`):**
+   - Ngay khi khách tải ảnh chứng từ chuyển khoản lên web, hệ thống lập tức gửi email thông báo kèm link xem ảnh chứng từ có chữ ký bảo mật về `quannguyens403@gmail.com`.

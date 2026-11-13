@@ -26,6 +26,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Verify No Real Credentials In Tracked Config & Env Templates
+        run: |
+          if grep -rnE 'GMAIL_APP_PASSWORD\s*=\s*["'\'']?[a-z]{4}\s+[a-z]{4}\s+[a-z]{4}\s+[a-z]{4}' *.env.example render.yaml 2>/dev/null; then
+            echo "ERROR: Real Gmail App Password detected in tracked template!"
+            exit 1
+          fi
+          if grep -rnE 'script\.google\.com/macros/s/AKfy[a-zA-Z0-9_-]+' *.env.example render.yaml 2>/dev/null; then
+            echo "ERROR: Real Google Apps Script deployment URL detected in tracked template!"
+            exit 1
+          fi
+          if grep -rnE '^(GMAIL_APP_PASSWORD|GAS_WEBHOOK_SECRET|GMAIL_BRIDGE_SECRET|SUPABASE_SERVICE_ROLE_KEY)\s*=\s*["'\'']?[^"'\''#\s]+' *.env.example 2>/dev/null | grep -vE '(CHANGE_ME|your_|change-me|placeholder|example|xxxx)'; then
+            echo "ERROR: Non-empty secret value detected in *.env.example!"
+            exit 1
+          fi
+
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:

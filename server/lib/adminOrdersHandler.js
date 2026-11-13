@@ -4,6 +4,8 @@ import { searchOrdersFromSheet, updateOrderStatusInSheet } from './googleSheets.
 import { sendConfirmedEmail, sendShippedEmail, sendCancelledEmail } from './emailStatusUpdates.js'
 import { broadcastOrderUpdate } from './orderEvents.js'
 import { canAdvanceFulfilment, getPaymentPhase, markOrderPaid } from './paymentState.js'
+import { releaseVoucher } from './voucherValidator.js'
+import { createSignedProofUrl } from './orderTokenService.js'
 
 export const VALID_TRANSITIONS = {
   PENDING:          ['CONFIRMED', 'CANCELLED'],
@@ -31,6 +33,9 @@ export function formatAdminOrder(order) {
 
   // Ensure fixed createdAt timestamp never jumps
   const fixedCreatedAt = order.createdAt || order.orderDate || (order.raw && order.raw.createdAt) || '2026-08-26T00:00:00.000Z'
+  const signedProofImageUrl = order.payment?.proofImageUrl
+    ? createSignedProofUrl(order.payment.proofImageUrl)
+    : null
 
   return {
     id,
@@ -70,13 +75,13 @@ export function formatAdminOrder(order) {
       methodLabel: order.payment?.methodLabel || (paymentMethod === 'BANK_TRANSFER' ? 'Chuyển khoản VietQR' : 'COD'),
       status: paymentStatus,
       submittedAt: order.payment?.submittedAt || null,
-      proofImageUrl: order.payment?.proofImageUrl || null,
+      proofImageUrl: signedProofImageUrl,
       proofUploadedAt: order.payment?.proofUploadedAt || null,
       proofNote: order.payment?.proofNote || '',
     },
-    paymentProof: order.payment?.proofImageUrl
+    paymentProof: signedProofImageUrl
       ? {
-          imageUrl: order.payment.proofImageUrl,
+          imageUrl: signedProofImageUrl,
           uploadedAt: order.payment.proofUploadedAt || null,
           note: order.payment.proofNote || '',
         }
@@ -95,7 +100,75 @@ export function formatAdminOrder(order) {
     cancelledAt: order.cancelledAt || null,
     createdAt: fixedCreatedAt,
     orderDateVN: order.orderDateVN || '',
-    raw: order,
+    raw: (() => {
+      if (!order || typeof order !== 'object') return order
+      const { paymentProofBackup, ...safeRaw } = order
+      return safeRaw
+    })(),
+  }
+}
+
+/**
+ * Projection an toàn dành cho API đồng bộ hàng loạt phía khách vãng lai (/api/orders/sync-batch).
+ * Không trả về PII trần (customer/shipping), không trả adminNote, không trả signedProofImageUrl hoặc raw.
+ */
+export function formatPublicBatchSyncOrder(order) {
+  if (!order) return null
+  const id = order.orderId || order.id || order.orderNumber
+  const paymentMethod = order.payment?.method || order.paymentMethod || 'COD'
+  const paymentStatus =
+    order.payment?.status ||
+    order.paymentStatus ||
+    (paymentMethod === 'BANK_TRANSFER' ? 'AWAITING_PAYMENT' : 'UNPAID')
+  const fixedCreatedAt =
+    order.createdAt || order.orderDate || (order.raw && order.raw.createdAt) || '2026-08-26T00:00:00.000Z'
+
+  return {
+    id,
+    orderNumber: id,
+    orderId: id,
+    items: (order.items || []).map((item, idx) => ({
+      id: item.id || idx,
+      productName: item.productName || item.product?.name || item.name || 'Bộ Sleepwear Thiết Kế',
+      color: item.color || item.colorLabel || item.variant || '',
+      colorLabel: item.color || item.colorLabel || item.variant || '',
+      variant: item.variant || item.colorLabel || item.color || '',
+      size: item.size || '',
+      quantity: Number(item.quantity) || 1,
+      unitPrice: Number(item.unitPrice || item.price) || 0,
+      totalPrice: Number(item.totalPrice) || ((Number(item.unitPrice || item.price) || 0) * (Number(item.quantity) || 1)),
+      image: item.image || '',
+    })),
+    subtotal: Number(order.subtotal) || 0,
+    shippingFee: Number(order.shippingFee) || 0,
+    discount: Number(order.discount) || 0,
+    total: Number(order.total) || 0,
+    paymentMethod,
+    paymentStatus,
+    phase: getPaymentPhase(order),
+    claimedAt: order.payment?.claimedAt || null,
+    paymentSubmittedAt: order.payment?.submittedAt || null,
+    payment: {
+      method: paymentMethod,
+      methodLabel: order.payment?.methodLabel || (paymentMethod === 'BANK_TRANSFER' ? 'Chuyển khoản VietQR' : 'COD'),
+      status: paymentStatus,
+      submittedAt: order.payment?.submittedAt || null,
+      proofUploadedAt: order.payment?.proofUploadedAt || null,
+    },
+    status: order.status || 'PENDING',
+    isDelivered: order.status === 'DELIVERED',
+    deliveredAt: order.deliveredAt || (order.status === 'DELIVERED' ? (order.updatedAt || new Date().toISOString()) : null),
+    trackingNumber: order.trackingCode || order.trackingNumber || '',
+    trackingCode: order.trackingCode || order.trackingNumber || '',
+    carrier: order.carrier || 'Viettel Post',
+    viettelPostStatus: order.viettelPostStatus || '',
+    viettelPostLocation: order.viettelPostLocation || '',
+    viettelPostLastSync: order.viettelPostLastSync || '',
+    cancelReason: order.cancelReason || '',
+    cancelledAt: order.cancelledAt || null,
+    createdAt: fixedCreatedAt,
+    orderDateVN: order.orderDateVN || '',
+    updatedAt: order.updatedAt || fixedCreatedAt,
   }
 }
 
@@ -138,7 +211,7 @@ export async function handleSyncBatchOrders(orderIds = []) {
   for (const id of cleanIds) {
     const localOrder = orderPersistence.get(id)
     if (localOrder) {
-      resultOrders.push(formatAdminOrder(localOrder))
+      resultOrders.push(formatPublicBatchSyncOrder(localOrder))
     } else {
       missingIds.push(id)
     }
@@ -150,7 +223,7 @@ export async function handleSyncBatchOrders(orderIds = []) {
       const sheetOrders = await searchOrdersByIdsFromSheet(missingIds)
       for (const order of sheetOrders) {
         if (order && (order.orderId || order.id)) {
-          const formatted = formatAdminOrder(order)
+          const formatted = formatPublicBatchSyncOrder(order)
           resultOrders.push(formatted)
         }
       }
@@ -480,13 +553,33 @@ export async function handleAdminOrderAction(orderId, payload = {}) {
     if (order.voucherCode) {
       try {
         releaseVoucher(order.voucherCode, orderId)
-      } catch {}
+      } catch (releaseErr) {
+        console.warn(`⚠️ Không thể hoàn mã giảm giá ${order.voucherCode} khi hủy đơn #${orderId}:`, releaseErr?.message)
+      }
     }
 
     // Soft-delete: lưu trạng thái CANCELLED vào DB/disk (bảo toàn lịch sử đối soát & payment_transactions)
     orderPersistence.set(orderId, order)
 
     broadcastOrderUpdate({ orderId, status: 'CANCELLED', isDeleted: true, cancelReason: order.cancelReason })
+
+    // Đồng bộ trạng thái CANCELLED lên Google Sheet & gửi email báo hủy cho khách hàng
+    Promise.allSettled([
+      sendCancelledEmail(order, { reason: order.cancelReason }),
+      updateOrderStatusInSheet(
+        orderId,
+        'CANCELLED',
+        order.cancelReason,
+        order.trackingCode || order.trackingNumber || '',
+        order.carrier || ''
+      ),
+    ]).then((results) => {
+      results.forEach((r, i) => {
+        if (r.status === 'rejected') {
+          console.warn(`⚠️ Admin cancel order notify step ${i} failed:`, r.reason?.message)
+        }
+      })
+    })
 
     return {
       status: 200,

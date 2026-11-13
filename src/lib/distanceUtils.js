@@ -1,15 +1,15 @@
 // src/lib/distanceUtils.js
-// Bộ công cụ tính toán khoảng cách và nhận diện điều kiện Ship COD (Bán kính 30km từ Amber Riverside)
+// Bộ công cụ tính toán khoảng cách và nhận diện điều kiện Ship COD (Bán kính 30km từ kho Hai Bà Trưng, Hà Nội)
 
 export const SHOP_ORIGIN = {
-  name: 'Amber Riverside',
-  address: 'Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hai Bà Trưng, Hà Nội',
+  name: 'Kho Hai Bà Trưng, Hà Nội',
+  address: 'Hai Bà Trưng, Hà Nội',
   lat: 20.998436,
   lng: 105.868725,
   maxCodRadiusKm: 30,
 }
 
-// Bán kính / tọa độ trọng tâm của các quận huyện tại Hà Nội so với Amber Riverside (622 Minh Khai)
+// Bán kính / tọa độ trọng tâm của các quận huyện tại Hà Nội so với kho Hai Bà Trưng, Hà Nội
 // Tọa độ và cự ly đường bộ ước tính (km)
 export const HANOI_DISTRICTS_DISTANCE = {
   // ── Các quận nội thành (Cực gần <= 15km) ──
@@ -52,7 +52,7 @@ export const HANOI_DISTRICTS_DISTANCE = {
   'ba vì':         { dist: 65.0, lat: 21.1825, lng: 105.3525 },
 }
 
-// Các huyện lân cận thuộc Hưng Yên & Bắc Ninh gần kho Amber Riverside (Minh Khai / Vĩnh Tuy)
+// Các huyện lân cận thuộc Hưng Yên & Bắc Ninh gần kho Hai Bà Trưng, Hà Nội
 export const NEARBY_PROVINCES_SUBDISTRICTS = {
   // Hưng Yên
   'văn giang':  { dist: 13.5, lat: 20.9325, lng: 105.9525, allowed: true }, // Ecopark, Phụng Công...
@@ -111,7 +111,7 @@ export const CLIENT_LANDMARKS = {
 }
 
 /**
- * Phân tích địa chỉ và tính toán khoảng cách so với Amber Riverside bằng AI Multi-Agent Logic
+ * Phân tích địa chỉ và tính toán khoảng cách so với kho Hai Bà Trưng, Hà Nội bằng AI Multi-Agent Logic
  * @param {Object} param0 { address, ward, district, city }
  * @returns {Object} { distanceKm, isCodAllowed, message, provider }
  */
@@ -133,7 +133,7 @@ export function evaluateCodEligibility({ address = '', ward = '', district = '',
         origin: SHOP_ORIGIN.address,
         destination: `${address ? address + ', ' : ''}${ward ? ward + ', ' : ''}${district ? district + ', ' : ''}${city}`,
         message: isAllowed
-          ? `Địa chỉ cách Amber Riverside ~${lmDist}km (Đủ điều kiện Ship COD).`
+          ? `Địa chỉ cách kho Hai Bà Trưng, Hà Nội ~${lmDist}km (Đủ điều kiện Ship COD).`
           : `Địa chỉ cách kho hàng ~${lmDist}km (vượt quá bán kính 30km hỗ trợ Ship COD). Vui lòng thanh toán qua VietQR.`,
         method: 'ai_landmark_geo',
       }
@@ -190,7 +190,7 @@ export function evaluateCodEligibility({ address = '', ward = '', district = '',
           origin: SHOP_ORIGIN.address,
           destination: `${address ? address + ', ' : ''}${ward ? ward + ', ' : ''}${district ? district + ', ' : ''}${city}`,
           message: isAllowed
-            ? `Địa chỉ trong bán kính ~${data.dist}km từ Amber Riverside (Đủ điều kiện Ship COD).`
+            ? `Địa chỉ trong bán kính ~${data.dist}km từ kho Hai Bà Trưng, Hà Nội (Đủ điều kiện Ship COD).`
             : `Địa chỉ cách kho hàng ~${data.dist}km (vượt quá bán kính 30km hỗ trợ Ship COD). Vui lòng thanh toán qua VietQR.`,
           method: 'nearby_province_district',
         }
@@ -237,7 +237,7 @@ export function evaluateCodEligibility({ address = '', ward = '', district = '',
       origin: SHOP_ORIGIN.address,
       destination: `${address ? address + ', ' : ''}${ward ? ward + ', ' : ''}${district ? district + ', ' : ''}${city}`,
       message: isAllowed
-        ? `Địa chỉ cách Amber Riverside ~${estimatedDist}km (Đủ điều kiện Ship COD).`
+        ? `Địa chỉ cách kho Hai Bà Trưng, Hà Nội ~${estimatedDist}km (Đủ điều kiện Ship COD).`
         : `Địa chỉ cách kho hàng ~${estimatedDist}km (vượt quá bán kính 30km hỗ trợ Ship COD). Vui lòng thanh toán qua VietQR (giảm 10%).`,
       method: 'hanoi_district_resolver',
     }
@@ -263,7 +263,7 @@ export function evaluateCodEligibility({ address = '', ward = '', district = '',
     maxCodRadiusKm: SHOP_ORIGIN.maxCodRadiusKm,
     origin: SHOP_ORIGIN.address,
     destination: `${district}, ${city}`,
-    message: 'Địa chỉ nằm trong bán kính 30km từ kho 622 Minh Khai, Hà Nội (Hỗ trợ Ship COD).',
+    message: 'Địa chỉ nằm trong bán kính 30km từ kho Hai Bà Trưng, Hà Nội (Hỗ trợ Ship COD).',
     method: 'hanoi_fallback',
   }
 }

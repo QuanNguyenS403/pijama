@@ -11,6 +11,8 @@ export default function LoyaltyCheckoutPerks({
   subtotal = 0,
   paymentMethod = 'COD',
   customerPhone = '',
+  customerEmail = '',
+  customerName = '',
   appliedVoucher = null,
   isMixedPreOrder = false,
   deliveryOption = 'COMBINED',
@@ -213,6 +215,8 @@ export default function LoyaltyCheckoutPerks({
         isOpen={isRegisterOpen}
         onClose={() => setIsRegisterOpen(false)}
         initialPhone={customerPhone}
+        initialEmail={customerEmail}
+        initialName={customerName}
         onSuccess={() => {
           fetchMember()
         }}

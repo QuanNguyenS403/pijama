@@ -61,7 +61,8 @@ export default function OrderSuccessPage() {
     if (!trackerData && code) {
       setIsTrackerLoading(true)
       try {
-        const res = await fetch(`/api/shipping/viettelpost/track?query=${encodeURIComponent(code)}`)
+        const tokenParam = order?.trackingToken ? `&token=${encodeURIComponent(order.trackingToken)}` : ''
+        const res = await fetch(`/api/shipping/viettelpost/track?query=${encodeURIComponent(code)}${tokenParam}`)
         const data = await res.json()
         if (data.success) {
           setTrackerData(data)

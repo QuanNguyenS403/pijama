@@ -1,22 +1,26 @@
 # Sổ Tay Vận Hành & Bảo Mật Backend — QuanNguyenS (`pijama`)
 
 > Tài liệu vận hành cho hệ thống backend (`server/`), cơ sở dữ liệu, sao lưu, và các script rà soát dữ liệu.
-> Cập nhật theo đợt rà soát & gia cố backend (HEAD nền `f5513de` + hardening).
+> Cập nhật theo đợt rà soát & gia cố backend Go-Live (HEAD `9002bf6`, 13/11/2026). Xem thêm [`docs/HIEN-TRANG-HE-THONG.md`](./HIEN-TRANG-HE-THONG.md).
 
 ---
 
 ## 1. Kiến Trúc Lưu Trữ & Cảnh Báo Quan Trọng Trên Render
 
 ### Thực trạng cấu hình `render.yaml`
-- `render.yaml` hiện đang chạy gói `plan: free` và **không khai báo `disk:`** (Persistent Disk).
-- Theo tài liệu chính thức của Render, toàn bộ filesystem mặc định trên Web Services là **ephemeral (tạm thời)** và dịch vụ Free không hỗ trợ gắn Persistent Disk; mỗi lần redeploy, khởi động lại, hoặc spin-down (sau ~15 phút không có request), mọi thay đổi ghi xuống đĩa cục bộ (`server/data/accounts.db`, `orders_store.json`, `processed_tx.json`, `server/data/backups/`) **sẽ bị xóa sạch về trạng thái lúc build**.
+- `render.yaml` hiện đang để `plan: free` và comment sẵn khối `disk:` (Persistent Disk).
+- Theo tài liệu chính thức của Render, toàn bộ filesystem mặc định trên Web Services là **ephemeral (tạm thời)** và dịch vụ Free không hỗ trợ gắn Persistent Disk; mỗi lần redeploy, khởi động lại, hoặc spin-down (sau ~15 phút không có request), mọi thay đổi ghi xuống đĩa cục bộ (`server/data/accounts.db`, `orders_store.json`, `processed_tx.json`, `server/data/backups/`, `public/uploads/payment-proofs/`) **sẽ bị xóa sạch về trạng thái lúc build**.
 
 ### Khuyến nghị triển khai cho Quan
-1. **Nếu lưu trữ chính tại SQLite/JSON trên Render:**
-   - Nâng cấp Web Service lên gói trả phí (Starter trở lên) và gắn **Persistent Disk** tại đường dẫn mount (ví dụ `/var/data/quannguyens`), đồng thời cấu hình đường dẫn dữ liệu/backup về ổ đĩa này (`BACKUP_DIR=/var/data/quannguyens/backups`).
-2. **Nếu tiếp tục dùng Render Free hoặc kiến trúc Hybrid Cloud (Supabase):**
-   - Bắt buộc chạy bản cập nhật [`scripts/supabase-schema.sql`](../scripts/supabase-schema.sql) trên Supabase SQL Editor trước khi nhập dữ liệu thật (bản cũ từng mở policy `USING (true)` và `GRANT ALL ... TO anon, authenticated` gây rủi ro lộ bảng qua PostgREST).
-   - Luôn sao lưu định kỳ ra ngoài server (S3 / Cloudflare R2 / tải về máy cá nhân qua `npm run backup-data`).
+1. **Gắn Persistent Disk trên Render (gói Starter $7/tháng trở lên):**
+   - Bỏ comment mục `disk:` trong `render.yaml` (mount tại `/var/data/qns`) và đặt các biến môi trường:
+     - `DATA_DIR=/var/data/qns/data`
+     - `UPLOADS_DIR=/var/data/qns/uploads/payment-proofs`
+     - `BACKUP_DIR=/var/data/qns/backups`
+     - `PERSISTENT_STORAGE_CONFIRMED=true`
+2. **Nếu tiếp tục dùng Render Free hoặc kiến trúc Hybrid Cloud (Supabase + Google Sheets):**
+   - Bắt buộc chạy bản cập nhật [`scripts/supabase-schema.sql`](../scripts/supabase-schema.sql) trên Supabase SQL Editor trước khi nhập dữ liệu thật.
+   - Bật đồng bộ Google Sheets (`GOOGLE_SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_PRIVATE_KEY`) và sao lưu định kỳ ra ngoài server (`npm run backup-data`).
 
 ---
 
@@ -37,7 +41,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ### Chính sách Fail-Closed ở Production (`NODE_ENV=production`)
 - Khi thiếu bất kỳ khóa nào ở trên, module tương ứng và `server/index.js` sẽ **từ chối khởi động hoặc từ chối xác thực**, không dùng chuỗi mặc định hardcoded.
-- Về gửi email: `envCheck.js` chấp nhận qua `RESEND_API_KEY` (hoặc `GMAIL_APP_PASSWORD` qua SMTP).
+- Về gửi email: Trên Render gói Free (chặn cổng SMTP 25/465/587 từ 26/09/2025), `envCheck.js` và `httpsEmailService.js` yêu cầu kênh HTTPS cổng 443 (`GAS_EMAIL_WEBHOOK_URL` + `GAS_WEBHOOK_SECRET` hoặc `RESEND_API_KEY` + `RESEND_FROM_EMAIL`), hoặc đặt `EMAIL_ALLOW_SMTP_ON_RENDER=true` nếu đã nâng gói Render trả phí.
 
 ### Quy trình xoay vòng khóa (Secret Rotation) không gián đoạn
 - **Đối với `ADMIN_SESSION_SECRET` / `ADMIN_PASSWORD`:**

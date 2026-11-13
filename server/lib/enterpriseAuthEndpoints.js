@@ -178,12 +178,13 @@ export function registerEnterpriseAuthEndpoints(app) {
       )
 
       setRefreshTokenCookie(res, tokens.refreshToken)
+      setCustomerSessionCookie(res, tokens.refreshToken)
       createCustomerSession({
         accountId: userId,
+        token: tokens.refreshToken,
         ip,
         userAgent,
         ttlDays: 30,
-        res,
       })
 
       const userPayload = {

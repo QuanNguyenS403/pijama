@@ -18,9 +18,25 @@ const rootDir = path.resolve(__dirname, '../..')
 const args = process.argv.slice(2)
 const isApply = args.includes('--apply') && process.env.CONFIRM_DB_CLEANUP === 'YES_CLEANUP_EXPIRED_ROWS'
 const targetDbArg = args.find((a) => a.startsWith('--db='))?.split('=')[1]
+const csvOutArg = args.find((a) => a.startsWith('--csv='))?.split('=')[1]
 const dbPath = targetDbArg
   ? path.resolve(targetDbArg)
-  : path.resolve(rootDir, 'server/data/accounts.db')
+  : process.env.DATA_DIR
+    ? path.resolve(process.env.DATA_DIR, 'accounts.db')
+    : path.resolve(rootDir, 'server/data/accounts.db')
+
+function maskEmail(email) {
+  const s = String(email || '').trim()
+  if (!s.includes('@')) return '***'
+  const [u, d] = s.split('@')
+  return `${u.slice(0, 2)}***@${d}`
+}
+
+function maskPhone(phone) {
+  const clean = String(phone || '').replace(/\D/g, '')
+  if (clean.length < 7) return '***'
+  return `${clean.slice(0, 3)}***${clean.slice(-3)}`
+}
 
 function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`
@@ -112,12 +128,39 @@ async function main() {
       }
     }
 
-    // 5. Kiểm tra tài khoản/review mẫu & tài khoản test
-    if (tables.includes('accounts')) {
-      const testAccCount = roDb
-        .prepare("SELECT COUNT(*) AS c FROM accounts WHERE email LIKE '%@example.com' OR email LIKE '%probe_%'")
-        .get().c
-      console.log(`\n🧪 Tài khoản nghi ngờ tài khoản test (@example.com / probe_): ${testAccCount}`)
+    // 5. Kiểm tra tài khoản/review mẫu & tài khoản test (G9: ent_user_*, otp_*, test_*, unsub_test*, @example.*, 0900000*)
+    const syntheticWhereSql = `
+      LOWER(COALESCE(email, '')) LIKE 'ent_user_%'
+      OR LOWER(COALESCE(email, '')) LIKE 'otp_%'
+      OR LOWER(COALESCE(email, '')) LIKE 'test_%'
+      OR LOWER(COALESCE(email, '')) LIKE 'unsub_test%'
+      OR LOWER(COALESCE(email, '')) LIKE '%probe_%'
+      OR LOWER(COALESCE(email, '')) LIKE '%adversarial%'
+      OR LOWER(COALESCE(email, '')) LIKE '%@example.%'
+      OR LOWER(COALESCE(email, '')) LIKE '%@test.%'
+      OR COALESCE(phone, '') LIKE '0900000%'
+    `
+    const csvRows = ['table,id,masked_email,masked_phone,created_at,reason']
+
+    for (const accTable of ['accounts', 'users']) {
+      if (tables.includes(accTable)) {
+        const rows = roDb
+          .prepare(`SELECT id, email, phone, created_at FROM "${accTable}" WHERE ${syntheticWhereSql}`)
+          .all()
+        console.log(`\n🧪 Bảng ${accTable} — Bản ghi nghi ngờ dữ liệu thử nghiệm (synthetic): ${rows.length}`)
+        rows.slice(0, 10).forEach((r) => {
+          console.log(`  - [${accTable}] id=${r.id} | email=${maskEmail(r.email)} | phone=${maskPhone(r.phone)} | created=${r.created_at || ''}`)
+        })
+        rows.forEach((r) => {
+          csvRows.push(`${accTable},${r.id},${maskEmail(r.email)},${maskPhone(r.phone)},${r.created_at || ''},SYNTHETIC_PATTERN`)
+        })
+      }
+    }
+
+    if (csvOutArg && csvRows.length > 1) {
+      const csvPath = path.resolve(csvOutArg)
+      fs.writeFileSync(csvPath, csvRows.join('\n') + '\n', 'utf-8')
+      console.log(`\n📄 Đã xuất danh sách nghi ngờ (đã che PII) ra CSV: ${csvPath}`)
     }
 
     if (tables.includes('product_reviews')) {

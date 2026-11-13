@@ -26,7 +26,7 @@ export default function ViettelPostTracker({ trackingData, onRefresh }) {
     carrierName = 'Tổng Công ty Cổ phần Bưu chính Viettel (Viettel Post)',
     currentStatus = 'Đang giao hàng',
     currentStatusCode = 'SHIPPED',
-    postOffice = 'Bưu cục Viettel Post 622 Minh Khai, Hai Bà Trưng, Hà Nội',
+    postOffice = 'Bưu cục Viettel Post Hai Bà Trưng, Hà Nội',
     hotline = '1900 8095',
     expectedDelivery = '24–48 giờ làm việc',
     journey = [],

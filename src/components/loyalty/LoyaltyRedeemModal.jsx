@@ -10,6 +10,7 @@ export default function LoyaltyRedeemModal({ isOpen, onClose, member, onSuccess 
   const [resendCooldown, setResendCooldown] = useState(0)
   const [newVoucher, setNewVoucher] = useState(null)
   const [copied, setCopied] = useState(false)
+  const [otpDeliveryMessage, setOtpDeliveryMessage] = useState('')
 
   useEffect(() => {
     if (resendCooldown <= 0) return
@@ -34,8 +35,11 @@ export default function LoyaltyRedeemModal({ isOpen, onClose, member, onSuccess 
       const res = await fetch('/api/loyalty/phone/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           phone: member.phone,
+          email: member.email || undefined,
+          fullName: member.fullName || member.full_name || undefined,
           purpose: 'step_up_checkout',
         }),
       })
@@ -46,6 +50,7 @@ export default function LoyaltyRedeemModal({ isOpen, onClose, member, onSuccess 
         return
       }
 
+      setOtpDeliveryMessage(data.message || '')
       setStep(2)
       setResendCooldown(60)
     } catch (err) {
@@ -174,7 +179,11 @@ export default function LoyaltyRedeemModal({ isOpen, onClose, member, onSuccess 
             {step === 2 && (
               <form onSubmit={handleConfirmRedeem} className="space-y-4">
                 <p className="text-xs text-[#4A3F38] text-center">
-                  Nhập mã OTP 6 chữ số gửi tới số <strong className="font-mono">{member.phone}</strong>:
+                  {otpDeliveryMessage || (
+                    <>
+                      Nhập mã OTP 6 chữ số xác thực cho số <strong className="font-mono">{member.phone}</strong>:
+                    </>
+                  )}
                 </p>
 
                 <input

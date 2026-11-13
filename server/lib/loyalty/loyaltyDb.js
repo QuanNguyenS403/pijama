@@ -1,8 +1,46 @@
 // server/lib/loyalty/loyaltyDb.js
 import crypto from 'crypto'
 import { getDb } from '../accountDb.js'
+import { getSupabase, isSupabaseConfigured } from '../supabaseClient.js'
+import { isAutomatedTestEnvironment, isNodeTestRunner } from '../emailRecipientGuard.js'
 import { normalizeVietnamesePhone } from '../smsService.js'
 import { LOYALTY_TIERS, TIER_ORDER } from './loyaltyConfig.js'
+
+async function syncLoyaltyMemberToSupabase(member) {
+  if (!member || !member.id || !member.phone) return
+  if (isNodeTestRunner() || isAutomatedTestEnvironment()) return
+  if (!isSupabaseConfigured()) return
+  const client = getSupabase()
+  if (!client) return
+  try {
+    const metaJson = JSON.stringify({
+      tier: member.tier || 'MEMBER',
+      email: member.email || null,
+      account_id: member.account_id || null,
+      birth_day: member.birth_day || null,
+      birth_month: member.birth_month || null,
+      tier_changed_at: member.tier_changed_at || member.created_at,
+    })
+    const payload = {
+      id: member.id,
+      email: null,
+      password_hash: null,
+      full_name: member.full_name || 'Khách hàng thân thiết',
+      avatar_url: metaJson,
+      phone: member.phone,
+      role: 'loyalty_member',
+      status: member.status || 'active',
+      verified: 1,
+      verified_at: member.phone_verified_at || member.created_at || new Date().toISOString(),
+      marketing_email_opt_in: member.marketing_opt_in ? 1 : 0,
+      created_at: member.created_at || new Date().toISOString(),
+      updated_at: member.updated_at || new Date().toISOString(),
+    }
+    await client.from('users').upsert(payload, { onConflict: 'id' })
+  } catch (err) {
+    console.warn('⚠️ [SUPABASE LOYALTY SYNC] Lỗi đồng bộ hội viên:', err?.message || err)
+  }
+}
 
 let isInitialized = false
 
@@ -224,7 +262,11 @@ export function createMember({
     now
   )
 
-  return getMemberById(id)
+  const created = getMemberById(id)
+  if (created) {
+    syncLoyaltyMemberToSupabase(created).catch(() => {})
+  }
+  return created
 }
 
 export function getMemberById(id) {
@@ -281,7 +323,11 @@ export function updateMember(id, updates) {
   values.push(id)
 
   db.prepare(`UPDATE loyalty_members SET ${fields.join(', ')} WHERE id = ?`).run(...values)
-  return getMemberById(id)
+  const created = getMemberById(id)
+  if (created) {
+    syncLoyaltyMemberToSupabase(created).catch(() => {})
+  }
+  return created
 }
 
 export function linkMemberAccount(memberId, accountId) {

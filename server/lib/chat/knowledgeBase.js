@@ -154,12 +154,12 @@ function buildKnowledgeChunks() {
     title: 'Phương thức Thanh toán & Ưu đãi',
     text: [
       'QuanNguyenS hỗ trợ 2 phương thức thanh toán an toàn:',
-      '1. Thanh toán khi nhận hàng (COD): Trả tiền mặt cho shipper khi nhận được hàng trên toàn quốc.',
-      '2. Chuyển khoản VietQR / Napas 24/7: Nhận ngay ưu đãi GIẢM 10% TRỰC TIẾP trên tổng giá trị đơn hàng.',
+      '1. Thanh toán khi nhận hàng (COD): Áp dụng cho đơn hàng trong bán kính 30km từ kho Hai Bà Trưng, Hà Nội; quý khách được đồng kiểm gói hàng cùng bưu tá trước khi thanh toán.',
+      '2. Chuyển khoản VietQR / Napas 24/7 (áp dụng toàn quốc): Nhận ngay ưu đãi GIẢM 10% TRỰC TIẾP trên tổng giá trị sản phẩm.',
       'Thông tin thanh toán: Vietcombank (VCB), STK: 1050773506, Chủ tài khoản: NGUYEN DUC QUAN.',
-      'Mọi giao dịch thanh toán VietQR đều được quét tự động bằng mã QR chuẩn Napas 24/7, xác nhận tức thì.',
+      'Sau khi quét mã VietQR và chuyển khoản thành công, quý khách tải lên ảnh chụp màn hình giao dịch và bấm xác nhận Thanh toán trên trang đơn hàng để chủ shop đối soát và xác nhận đơn.',
     ].join(' '),
-    keywords: 'thanh toan cod chuyen khoan vietqr giam 10% ngan hang vcb napas tien mat',
+    keywords: 'thanh toan cod 30km chuyen khoan vietqr giam 10% ngan hang vcb napas tien mat',
   })
 
   // 5. Chunks Thông tin Shop & Kênh Hỗ trợ
@@ -170,13 +170,13 @@ function buildKnowledgeChunks() {
     text: [
       'Thương hiệu: QuanNguyenS — Thời trang sleepwear cao cấp định vị Style To Be Lived In ("Every girls deserve QuanNguyenS\'s Sleepwear").',
       'Slogan chính: "Style To Be Lived In".',
-      'Địa chỉ: Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hai Bà Trưng, Hà Nội.',
+      'Địa chỉ: Hai Bà Trưng, Hà Nội.',
       'Hotline & Zalo tư vấn 24/7: 0973 486 218.',
-      'Link chat Zalo trực tiếp: https://zalo.me/0973 486 218.',
+      'Link chat Zalo trực tiếp: https://zalo.me/0973486218.',
       'Email: quannguyens403@gmail.com.',
       'Website chính thức: https://quannguyens.com.',
     ].join(' '),
-    keywords: 'dia chi quannguyens amber riverside minh khai ha noi hotline zalo 0973 486 218 email lien he',
+    keywords: 'dia chi quannguyens hai ba trung ha noi hotline zalo 0973 486 218 email lien he',
   })
 
   // 6. Chunks Hướng dẫn Tra cứu Đơn hàng

@@ -13,7 +13,7 @@ import { verifyTransporter } from './lib/emailConfig.js'
 import { handlePaymentWebhook, getOrderPaymentStatus } from './lib/paymentWebhook.js'
 import { createRateLimiter } from './lib/rateLimiter.js'
 import { addSseClient } from './lib/orderEvents.js'
-import { verifyAdminLogin, adminLoginLimiter, requireAdminAuth, revokeAdminToken } from './lib/adminAuth.js'
+import { verifyAdminLogin, adminLoginLimiter, requireAdminAuth, revokeAdminToken, verifyAdminSessionToken } from './lib/adminAuth.js'
 import { logSecurityAudit } from './lib/auditLogger.js'
 import { registerAuthEndpoints } from './lib/authEndpoints.js'
 import { registerReviewEndpoints } from './lib/reviewEndpoints.js'
@@ -23,14 +23,25 @@ import {
   handleUploadPaymentProof,
   handleGetPaymentProof,
   handleSubmitQrPayment,
+  resolveProofUploadsDir,
 } from './lib/paymentProofService.js'
-import { verifyTrackingToken } from './lib/orderTokenService.js'
+import {
+  verifyTrackingToken,
+  verifySignedProofRequest,
+  createSignedProofUrl,
+} from './lib/orderTokenService.js'
 import { normalizeVietnamesePhone } from './lib/smsService.js'
 import { customerSessionMiddleware } from './lib/customerSessionMiddleware.js'
 import { releaseVoucher } from './lib/voucherValidator.js'
 import { calculateShippingDistance } from './lib/distanceService.js'
 import { trackOrderUniversal, queryViettelPostTracking } from './lib/viettelPostService.js'
 import { validateEnvironment, printEnvReport, loadEnvironment } from './lib/envCheck.js'
+import {
+  isProductionEnv,
+  isDevelopmentEnv,
+  isRenderEnvironment,
+  isManagedOrContainerRuntime,
+} from './lib/shopConfig.js'
 import { LEGACY_PRODUCT_SLUG_REDIRECTS } from '../src/lib/productUtils.js'
 
 // Đảm bảo nạp môi trường nếu module được import trong ngữ cảnh đặc biệt
@@ -47,15 +58,15 @@ const __dirname = path.dirname(__filename)
 const app = express()
 const rawPort = String(process.env.PORT || '').trim()
 const parsedPort = Number.parseInt(rawPort, 10)
-const isRenderEnv = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL || process.env.RENDER_SERVICE_ID)
+const isRenderEnv = isRenderEnvironment(process.env)
 const PORT = Number.isFinite(parsedPort) && parsedPort > 0 ? parsedPort : (isRenderEnv ? 10000 : 3001)
 
-if (process.env.NODE_ENV !== 'test') {
+if (String(process.env.NODE_ENV || '').trim().toLowerCase() !== 'test') {
   console.log(`⏳ [BOOT] Khởi tạo QuanNguyenS Server (NODE_ENV=${process.env.NODE_ENV || 'development'}, PORT=${PORT}, RENDER=${isRenderEnv})...`)
 }
 
 export function safeErrorMessage(err, fallback = 'Đã có lỗi xảy ra trên máy chủ.') {
-  return process.env.NODE_ENV === 'production' ? fallback : (err?.message || fallback)
+  return isProductionEnv() ? fallback : (err?.message || fallback)
 }
 
 export function canonicalPhone(phone) {
@@ -531,6 +542,8 @@ const orderSubmitHandler = async (req, res) => {
       customerAccount: req.customerAccount,
       loyaltyMember: req.loyaltyMember || null,
       accountId: req.customerAccount?.id || null,
+      clientIp: req.ip || req.connection?.remoteAddress || '',
+      turnstileToken: req.body?.turnstileToken || req.headers['x-turnstile-token'] || '',
       fromHttpRequest: true,
     })
     return res.status(result.status).json(result.data)
@@ -658,6 +671,25 @@ function formatCustomerOrderLookup(order, isRedacted = false) {
   const rawPhone = order.customer?.phone || order.customerPhone || ''
   const rawEmail = order.customer?.email || order.customerEmail || ''
   const rawAddress = order.shipping?.fullAddress || order.shippingAddress || ''
+  const paymentMethod = order.payment?.method || order.paymentMethod || 'COD'
+  const paymentStatus =
+    order.payment?.status ||
+    order.paymentStatus ||
+    (paymentMethod === 'BANK_TRANSFER' ? 'AWAITING_PAYMENT' : 'UNPAID')
+
+  const safePayment = isRedacted
+    ? {
+        method: paymentMethod,
+        status: paymentStatus,
+      }
+    : {
+        method: paymentMethod,
+        methodLabel: order.payment?.methodLabel || (paymentMethod === 'BANK_TRANSFER' ? 'Chuyển khoản VietQR' : 'COD'),
+        status: paymentStatus,
+        submittedAt: order.payment?.submittedAt || null,
+        proofImageUrl: order.payment?.proofImageUrl ? createSignedProofUrl(order.payment.proofImageUrl) : null,
+        proofUploadedAt: order.payment?.proofUploadedAt || null,
+      }
 
   return {
     orderId: id,
@@ -665,11 +697,8 @@ function formatCustomerOrderLookup(order, isRedacted = false) {
     status: order.status || 'PENDING',
     isDelivered: order.status === 'DELIVERED',
     deliveredAt: order.deliveredAt || (order.status === 'DELIVERED' ? (order.updatedAt || new Date().toISOString()) : null),
-    paymentStatus: order.payment?.status || order.paymentStatus || (order.payment?.method === 'BANK_TRANSFER' ? 'AWAITING_PAYMENT' : 'UNPAID'),
-    payment: order.payment || {
-      method: order.paymentMethod || 'COD',
-      status: order.paymentStatus || 'UNPAID',
-    },
+    paymentStatus,
+    payment: safePayment,
     items: (order.items || []).map((item, idx) => ({
       id: item.id || idx,
       productName: item.productName || item.product?.name || item.name || 'Bộ Sleepwear Thiết Kế',
@@ -791,7 +820,7 @@ app.get('/api/orders/lookup', lookupLimiter, async (req, res) => {
   }
 })
 
-// ── 7.01 API Kiểm Tra Cự Ly & Điều Kiện Ship COD (Bán Kính 30km từ Amber Riverside) ──
+// ── 7.01 API Kiểm Tra Cự Ly & Điều Kiện Ship COD (Bán Kính 30km từ kho Hai Bà Trưng, Hà Nội) ──
 const checkCodHandler = async (req, res) => {
   try {
     const params = { ...req.query, ...req.body }
@@ -814,8 +843,8 @@ app.post('/api/shipping/check-cod', checkCodHandler)
 // ── 7.02 API Theo Dõi Hành Trình Đơn Hàng Trực Tiếp Qua Viettel Post ──
 app.get('/api/shipping/viettelpost/track', lookupLimiter, async (req, res) => {
   try {
-    const { trackingCode, query, strictTrackingOnly } = req.query
-    const targetCode = trackingCode || query
+    const { trackingCode, query, token } = req.query
+    const targetCode = String(trackingCode || query || '').trim()
     if (!targetCode) {
       return res.status(400).json({
         success: false,
@@ -823,8 +852,17 @@ app.get('/api/shipping/viettelpost/track', lookupLimiter, async (req, res) => {
       })
     }
 
-    const isStrict = strictTrackingOnly !== 'false'
-    const result = await trackOrderUniversal(targetCode, { strictTrackingOnly: isStrict })
+    // Chỉ cho phép tra cứu theo orderId nếu khách hàng kèm trackingToken hợp lệ của chính đơn đó
+    let hasValidOrderToken = false
+    if (token && targetCode.toUpperCase().startsWith('QNS-')) {
+      const existingOrder = orderPersistence.get(targetCode)
+      const orderPhone = existingOrder?.customer?.phone || existingOrder?.customerPhone || ''
+      if (existingOrder && verifyTrackingToken(targetCode, orderPhone, String(token))) {
+        hasValidOrderToken = true
+      }
+    }
+
+    const result = await trackOrderUniversal(targetCode, { strictTrackingOnly: !hasValidOrderToken })
     return res.json(result)
   } catch (err) {
     console.error('Viettel Post track API error:', err)
@@ -1213,11 +1251,86 @@ registerReviewEndpoints(app)
 // ── 10.2 Hệ Thống Ưu Đãi Hội Viên & Điểm Thưởng (Loyalty Program) ──
 registerLoyaltyEndpoints(app)
 
-// Phục vụ thư mục ảnh uploads công khai
+// ── G4: Kiểm soát truy cập chặt chẽ đối với ảnh chứng từ chuyển khoản (/uploads/payment-proofs/*) ──
+// Không cho phép express.static phục vụ công khai chứng từ ngân hàng của khách hàng.
+// Chỉ cho phép khi có chữ ký HMAC hợp lệ (?exp=...&sig=...) hoặc phiên Admin hợp lệ.
 const publicUploadsPath = path.resolve(__dirname, '../public/uploads')
 if (!fs.existsSync(publicUploadsPath)) {
   fs.mkdirSync(publicUploadsPath, { recursive: true })
 }
+
+app.get('/uploads/payment-proofs/:filename', (req, res) => {
+  const rawFilename = String(req.params.filename || '').trim()
+  const cleanFilename = path.basename(rawFilename)
+  if (!/^proof_[a-f0-9]{16,64}\.(jpg|png|webp)$/i.test(cleanFilename)) {
+    return res.status(404).json({ success: false, error: 'Không tìm thấy tệp chứng từ.' })
+  }
+
+  const hasValidSignature = verifySignedProofRequest(cleanFilename, req.query?.exp, req.query?.sig)
+  let hasAdminAccess = false
+  if (!hasValidSignature) {
+    const authHeader = String(req.headers['authorization'] || '')
+    const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : ''
+    const adminToken = bearerToken || String(req.headers['x-admin-token'] || req.query?.adminToken || '').trim()
+    if (adminToken) {
+      hasAdminAccess = Boolean(verifyAdminSessionToken(adminToken)?.isValid)
+    }
+  }
+
+  if (!hasValidSignature && !hasAdminAccess) {
+    return res.status(403).json({
+      success: false,
+      code: 'PROOF_ACCESS_DENIED',
+      error: 'Truy cập bị từ chối: Yêu cầu liên kết chứng từ có chữ ký hợp lệ hoặc quyền quản trị viên.',
+    })
+  }
+
+  const primaryDir = resolveProofUploadsDir()
+  const candidatePaths = [
+    path.join(primaryDir, cleanFilename),
+    path.join(publicUploadsPath, 'payment-proofs', cleanFilename),
+  ]
+  let foundPath = candidatePaths.find((p) => fs.existsSync(p))
+  if (!foundPath) {
+    try {
+      const matchedOrder = orderPersistence.getAll().find((o) => {
+        if (o?.paymentProofBackup?.fileName === cleanFilename && o.paymentProofBackup.base64) {
+          return true
+        }
+        const proofUrl = String(o?.payment?.proofImageUrl || '')
+        return proofUrl.endsWith(`/${cleanFilename}`) && Boolean(o?.paymentProofBackup?.base64)
+      })
+      if (matchedOrder?.paymentProofBackup?.base64) {
+        if (!fs.existsSync(primaryDir)) {
+          fs.mkdirSync(primaryDir, { recursive: true })
+        }
+        const restoredPath = path.join(primaryDir, cleanFilename)
+        fs.writeFileSync(restoredPath, Buffer.from(matchedOrder.paymentProofBackup.base64, 'base64'))
+        foundPath = restoredPath
+      }
+    } catch (restoreErr) {
+      console.warn('⚠️ Không thể khôi phục tệp chứng từ từ bản sao lưu:', restoreErr?.message || restoreErr)
+    }
+  }
+  if (!foundPath) {
+    return res.status(404).json({ success: false, error: 'Tệp chứng từ không tồn tại.' })
+  }
+
+  res.setHeader('Cache-Control', 'private, no-store, max-age=0')
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('Referrer-Policy', 'no-referrer')
+  return res.sendFile(foundPath)
+})
+
+app.use('/uploads/payment-proofs', (_req, res) => {
+  return res.status(403).json({
+    success: false,
+    code: 'PROOF_ACCESS_DENIED',
+    error: 'Thư mục chứng từ thanh toán được bảo vệ.',
+  })
+})
+
+// Phục vụ các tài nguyên uploads công khai khác (ngoài payment-proofs)
 app.use('/uploads', express.static(publicUploadsPath))
 
 // ── 11. Hệ Thống Chatbot Trợ Lý Ảo QuanNguyenS (Chi phí 0đ) ────────
@@ -1305,10 +1418,28 @@ if (String(process.env.NODE_ENV || '').trim().toLowerCase() !== 'test' && !isNod
 // Khởi chạy server
 let server = null
 
+function canAutoFreeDevPort() {
+  const explicitOptIn = String(process.env.DEV_AUTO_FREE_PORT || '').trim().toLowerCase() === 'true'
+  return (
+    explicitOptIn &&
+    isDevelopmentEnv() &&
+    !isProductionEnv() &&
+    !isManagedOrContainerRuntime() &&
+    !isNodeTestRunner
+  )
+}
+
+/**
+ * G7: Chỉ cho phép giải phóng cổng tự động trên máy dev cá nhân khi bật rõ ràng
+ * DEV_AUTO_FREE_PORT=true VÀ NODE_ENV=development VÀ không nằm trong container/PM2/Render/CI.
+ * Tuyệt đối không bao giờ tự giết PID của chính mình hoặc tiến trình cha (ppid).
+ */
 export function forceFreePort(targetPort) {
+  if (!canAutoFreeDevPort()) return false
   const port = Number(targetPort)
   if (!Number.isFinite(port) || port <= 0) return false
   const myPid = process.pid
+  const parentPid = process.ppid
 
   if (process.platform === 'win32') {
     try {
@@ -1322,10 +1453,11 @@ export function forceFreePort(targetPort) {
           const state = parts[3]
           const pid = parseInt(parts[4], 10)
           if (
-            (state === 'LISTENING' || state === 'SYN_SENT') &&
+            state === 'LISTENING' &&
             localAddr.endsWith(`:${port}`) &&
             pid &&
-            pid !== myPid
+            pid !== myPid &&
+            pid !== parentPid
           ) {
             try {
               execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' })
@@ -1339,10 +1471,20 @@ export function forceFreePort(targetPort) {
     } catch {}
   } else {
     try {
-      execSync(`fuser -k ${port}/tcp 2>/dev/null || lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, {
-        stdio: 'ignore',
+      const output = execSync(`lsof -tiTCP:${port} -sTCP:LISTEN 2>/dev/null || true`, {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
       })
-      return true
+      const pids = output
+        .split(/\s+/)
+        .map((s) => Number.parseInt(s.trim(), 10))
+        .filter((pid) => Number.isFinite(pid) && pid > 1 && pid !== myPid && pid !== parentPid)
+      for (const pid of pids) {
+        try {
+          process.kill(pid, 'SIGTERM')
+        } catch {}
+      }
+      return pids.length > 0
     } catch {}
   }
   return false
@@ -1350,7 +1492,7 @@ export function forceFreePort(targetPort) {
 
 let listenRetries = 0
 function startExpressServer() {
-  if (process.env.NODE_ENV !== 'production' && !isNodeTestRunner && listenRetries === 0) {
+  if (canAutoFreeDevPort() && listenRetries === 0) {
     forceFreePort(PORT)
   }
 
@@ -1402,19 +1544,25 @@ function startExpressServer() {
         }
       })(),
 
-      // 3. Đồng bộ người dùng từ Supabase Cloud vào SQLite khi khởi động (DATA-PERSISTENCE)
+      // 3. Đồng bộ người dùng, mã ưu đãi & đơn hàng từ Supabase Cloud vào SQLite khi khởi động (RENDER FREE CLOUD PERSISTENCE)
       (async () => {
         try {
           const { isSupabaseConfigured } = await import('./lib/supabaseClient.js')
           if (isSupabaseConfigured()) {
-            const { syncUsersFromSupabase } = await import('./lib/accountDb.js')
-            const syncedCount = await withStartupTimeout(syncUsersFromSupabase(), 10000, 'Supabase user sync')
-            if (syncedCount > 0) {
-              console.log(`👥 [SUPABASE SYNC] Đã tự động đồng bộ ${syncedCount} tài khoản người dùng từ Supabase Cloud vào SQLite.`)
-            }
+            const { syncUsersFromSupabase, syncVouchersFromSupabase } = await import('./lib/accountDb.js')
+            const { syncOrdersFromSupabase } = await import('./lib/orderPersistence.js')
+
+            const [syncedUsers, syncedVouchers, syncedOrders] = await Promise.all([
+              withStartupTimeout(syncUsersFromSupabase(), 10000, 'Supabase user sync').catch(() => 0),
+              withStartupTimeout(syncVouchersFromSupabase(), 10000, 'Supabase voucher sync').catch(() => 0),
+              withStartupTimeout(syncOrdersFromSupabase(), 10000, 'Supabase order sync').catch(() => 0),
+            ])
+            console.log(
+              `☁️ [SUPABASE SYNC] Khôi phục thành công từ Supabase Cloud: ${syncedUsers} tài khoản, ${syncedVouchers} mã ưu đãi, ${syncedOrders} đơn hàng.`
+            )
           }
         } catch (syncErr) {
-          console.warn('⚠️ [SUPABASE SYNC] Không thể đồng bộ tài khoản người dùng từ Supabase:', syncErr.message)
+          console.warn('⚠️ [SUPABASE SYNC] Không thể đồng bộ dữ liệu từ Supabase:', syncErr.message)
         }
       })(),
     ]
@@ -1468,10 +1616,20 @@ function startExpressServer() {
       if (cleanupTimer.unref) cleanupTimer.unref()
       server.cleanupTimer = cleanupTimer
     }).catch(() => {})
+
+    // Quét định kỳ đơn VietQR bỏ dở (G6: chỉ hủy khi UNPAID_QR_AUTOCANCEL_HOURS > 0 và đơn chưa có ảnh chứng từ)
+    import('./lib/paymentState.js').then(({ sweepExpiredOrders }) => {
+      try { sweepExpiredOrders() } catch {}
+      const qrSweepTimer = setInterval(() => {
+        try { sweepExpiredOrders() } catch (e) { console.warn('QR sweep error:', e.message) }
+      }, 15 * 60 * 1000)
+      if (qrSweepTimer.unref) qrSweepTimer.unref()
+      server.qrSweepTimer = qrSweepTimer
+    }).catch(() => {})
   })
 
   server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE' && listenRetries < 2 && process.env.NODE_ENV !== 'production' && !isNodeTestRunner) {
+    if (err.code === 'EADDRINUSE' && listenRetries < 2 && canAutoFreeDevPort()) {
       listenRetries++
       console.warn(`⚠️ [PORT OCCUPIED] Cổng HTTP ${PORT} đang bị tiến trình cũ chiếm dụng. Đang tự động giải phóng...`)
       forceFreePort(PORT)
@@ -1493,7 +1651,7 @@ if (process.env.NO_AUTO_LISTEN !== 'true') {
 }
 
 // Graceful shutdown (OPS-002)
-const shutdown = (signal) => {
+const shutdown = async (signal) => {
   console.log(`\n🛑 Nhận tín hiệu ${signal}. Đang đóng server an toàn...`)
   isServerReady = false
   if (server?.viettelSyncTimer) {
@@ -1505,12 +1663,23 @@ const shutdown = (signal) => {
   if (server?.cleanupTimer) {
     clearInterval(server.cleanupTimer)
   }
+  if (server?.qrSweepTimer) {
+    clearInterval(server.qrSweepTimer)
+  }
+  const closeSqliteSafely = async () => {
+    try {
+      const { closeDb } = await import('./lib/accountDb.js')
+      closeDb()
+    } catch (_) {}
+  }
   if (server) {
-    server.close(() => {
-      console.log('🔒 Server đã dừng nhận kết nối. Tiến trình kết thúc an toàn.')
+    server.close(async () => {
+      await closeSqliteSafely()
+      console.log('🔒 Server đã dừng nhận kết nối và đóng SQLite an toàn. Tiến trình kết thúc.')
       process.exit(0)
     })
   } else {
+    await closeSqliteSafely()
     process.exit(0)
   }
 }

@@ -8,6 +8,7 @@
 import crypto from 'crypto'
 import { getDb } from '../accountDb.js'
 import { getTransporter } from '../emailConfig.js'
+import { escapeHtml } from '../emailAccount.js'
 import { scrubPII } from './scrubPII.js'
 
 // Khởi tạo bảng chat_handoffs an toàn (Idempotent Migration)
@@ -54,6 +55,12 @@ async function notifyOwnerByEmail({ id, customerName, phone, topic, preferredTim
   try {
     const transporter = getTransporter()
     const ownerEmail = process.env.OWNER_EMAIL || 'quannguyens403@gmail.com'
+    const safeName = escapeHtml(customerName || 'Chưa cung cấp')
+    const safePhone = escapeHtml(phone || '')
+    const safeTopic = escapeHtml(topic || 'Tư vấn sản phẩm / Đơn hàng')
+    const safePreferredTime = escapeHtml(preferredTime || 'Càng sớm càng tốt')
+    const safeSummary = summary ? escapeHtml(summary).replace(/\n/g, '<br/>') : 'Không có tóm tắt chi tiết.'
+    const safeZaloPhone = escapeHtml(String(phone || '').replace(/\s+/g, '').replace(/^\+84/, '0'))
     const subject = `🔔 [CHATBOT HANDOFF] Khách yêu cầu liên hệ lại — ${phone} (${customerName || 'Khách vãng lai'})`
 
     const html = `
@@ -70,30 +77,30 @@ async function notifyOwnerByEmail({ id, customerName, phone, topic, preferredTim
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
             <tr>
               <td style="padding: 8px 0; color: #8C7E74; width: 140px; font-weight: bold;">HỌ VÀ TÊN:</td>
-              <td style="padding: 8px 0; font-weight: bold; color: #631521;">${customerName || 'Chưa cung cấp'}</td>
+              <td style="padding: 8px 0; font-weight: bold; color: #631521;">${safeName}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #8C7E74; font-weight: bold;">SỐ ĐIỆN THOẠI:</td>
-              <td style="padding: 8px 0; font-weight: bold;"><a href="tel:${phone}" style="color: #631521; text-decoration: none;">${phone}</a></td>
+              <td style="padding: 8px 0; font-weight: bold;"><a href="tel:${safePhone}" style="color: #631521; text-decoration: none;">${safePhone}</a></td>
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #8C7E74; font-weight: bold;">CHỦ ĐỀ QUAN TÂM:</td>
-              <td style="padding: 8px 0;">${topic || 'Tư vấn sản phẩm / Đơn hàng'}</td>
+              <td style="padding: 8px 0;">${safeTopic}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0; color: #8C7E74; font-weight: bold;">GIỜ TIỆN GỌI:</td>
-              <td style="padding: 8px 0;">${preferredTime || 'Càng sớm càng tốt'}</td>
+              <td style="padding: 8px 0;">${safePreferredTime}</td>
             </tr>
           </table>
 
           <div style="background: #FAF5F0; border-left: 3px solid #D4AF37; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; line-height: 1.6;">
             <b style="color: #631521;">Tóm tắt hội thoại trước đó:</b><br/>
-            ${summary ? summary.replace(/\n/g, '<br/>') : 'Không có tóm tắt chi tiết.'}
+            ${safeSummary}
           </div>
 
           <div style="text-align: center; margin-top: 24px;">
-            <a href="tel:${phone}" style="display: inline-block; background: #631521; color: #ffffff; padding: 10px 24px; text-decoration: none; font-weight: bold; border-radius: 2px; font-size: 13px;">GỌI NGAY CHO KHÁCH</a>
-            <a href="https://zalo.me/${phone.replace(/^\+84/, '0')}" style="display: inline-block; background: #0068FF; color: #ffffff; padding: 10px 24px; text-decoration: none; font-weight: bold; border-radius: 2px; font-size: 13px; margin-left: 8px;">NHẮN TIN ZALO</a>
+            <a href="tel:${safePhone}" style="display: inline-block; background: #631521; color: #ffffff; padding: 10px 24px; text-decoration: none; font-weight: bold; border-radius: 2px; font-size: 13px;">GỌI NGAY CHO KHÁCH</a>
+            <a href="https://zalo.me/${safeZaloPhone}" style="display: inline-block; background: #0068FF; color: #ffffff; padding: 10px 24px; text-decoration: none; font-weight: bold; border-radius: 2px; font-size: 13px; margin-left: 8px;">NHẮN TIN ZALO</a>
           </div>
         </div>
       </div>

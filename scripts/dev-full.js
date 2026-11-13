@@ -1,16 +1,28 @@
 import { spawn, execSync } from 'child_process'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import {
+  isDevelopmentEnv,
+  isProductionEnv,
+  isManagedOrContainerRuntime,
+} from '../server/lib/shopConfig.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const rootDir = path.resolve(__dirname, '..')
 
-// Tự động giải phóng cổng nếu có tiến trình Node.js cũ chạy ngầm chưa tắt (tránh EADDRINUSE)
+function canAutoFreeDevPort() {
+  const explicitOptIn = String(process.env.DEV_AUTO_FREE_PORT || '').trim().toLowerCase() === 'true'
+  return explicitOptIn && isDevelopmentEnv() && !isProductionEnv() && !isManagedOrContainerRuntime()
+}
+
+// G7: Chỉ giải phóng cổng khi bật rõ DEV_AUTO_FREE_PORT=true trong môi trường development cục bộ
 function freePort(targetPort) {
+  if (!canAutoFreeDevPort()) return false
   const port = Number(targetPort)
   if (!Number.isFinite(port) || port <= 0) return false
   const myPid = process.pid
+  const parentPid = process.ppid
 
   if (process.platform === 'win32') {
     try {
@@ -23,10 +35,11 @@ function freePort(targetPort) {
           const state = parts[3]
           const pid = parseInt(parts[4], 10)
           if (
-            (state === 'LISTENING' || state === 'SYN_SENT') &&
+            state === 'LISTENING' &&
             localAddr.endsWith(`:${port}`) &&
             pid &&
-            pid !== myPid
+            pid !== myPid &&
+            pid !== parentPid
           ) {
             try {
               execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' })
@@ -38,9 +51,19 @@ function freePort(targetPort) {
     } catch {}
   } else {
     try {
-      execSync(`fuser -k ${port}/tcp 2>/dev/null || lsof -ti:${port} | xargs kill -9 2>/dev/null || true`, {
-        stdio: 'ignore',
+      const output = execSync(`lsof -tiTCP:${port} -sTCP:LISTEN 2>/dev/null || true`, {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
       })
+      const pids = output
+        .split(/\s+/)
+        .map((s) => Number.parseInt(s.trim(), 10))
+        .filter((pid) => Number.isFinite(pid) && pid > 1 && pid !== myPid && pid !== parentPid)
+      for (const pid of pids) {
+        try {
+          process.kill(pid, 'SIGTERM')
+        } catch {}
+      }
     } catch {}
   }
 }

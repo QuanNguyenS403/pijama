@@ -306,20 +306,35 @@ export default function CheckoutPage() {
           }
         }
 
-        const savedOrder = result.trackingToken
-          ? { ...orderPayload, trackingToken: result.trackingToken }
-          : orderPayload
+        const finalOrderId = result.orderId || orderPayload.orderId
+        const savedOrder = {
+          ...(result.order || orderPayload),
+          orderId: finalOrderId,
+          id: finalOrderId,
+          payment: (result.order?.payment || orderPayload.payment)
+            ? {
+                ...(result.order?.payment || orderPayload.payment),
+                transferContent: finalOrderId,
+              }
+            : undefined,
+          ...(result.trackingToken ? { trackingToken: result.trackingToken } : {}),
+        }
 
         // Lưu đơn hàng vừa tạo vào session storage & localStorage (kèm kho lưu trữ vĩnh viễn)
         try {
+          sessionStorage.setItem(`last_order_${finalOrderId}`, JSON.stringify(savedOrder))
           sessionStorage.setItem('latest_order', JSON.stringify(savedOrder))
           const existingOrders = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
-          const filtered = existingOrders.filter((o) => (o.orderId || o.id) !== savedOrder.orderId)
+          const filtered = existingOrders.filter(
+            (o) => (o.orderId || o.id) !== finalOrderId && (o.orderId || o.id) !== orderPayload.orderId
+          )
           localStorage.setItem('pijama_orders', JSON.stringify([savedOrder, ...filtered]))
 
           try {
             const archive = JSON.parse(localStorage.getItem('pijama_orders_archive') || '[]')
-            const filteredArchive = archive.filter((o) => (o.orderId || o.id) !== savedOrder.orderId)
+            const filteredArchive = archive.filter(
+              (o) => (o.orderId || o.id) !== finalOrderId && (o.orderId || o.id) !== orderPayload.orderId
+            )
             localStorage.setItem('pijama_orders_archive', JSON.stringify([savedOrder, ...filteredArchive]))
           } catch { }
 
@@ -652,7 +667,7 @@ export default function CheckoutPage() {
                       <AlertCircle className="w-4 h-4 text-[#F57C00] shrink-0 mt-0.5" />
                       <div>
                         <p className="font-semibold text-[#E65100]">
-                          Chỉ hỗ trợ Ship COD trong bán kính 30km từ kho hàng (Amber Riverside, Hà Nội)
+                          Chỉ hỗ trợ Ship COD trong bán kính 30km từ kho hàng (Hai Bà Trưng, Hà Nội)
                         </p>
                         <p className="text-[#5D4037] mt-1 leading-relaxed">
                           Địa chỉ của bạn cách kho hàng ~<strong>{codStatus.distanceKm}km</strong> (vượt quá bán kính 30km). Hệ thống đã tự động chọn phương thức <strong>Chuyển khoản VietQR</strong> để bạn nhận ngay ưu đãi <strong>GIẢM THÊM 10%</strong> trực tiếp!
@@ -726,7 +741,7 @@ export default function CheckoutPage() {
 
                               <p className="font-sans text-xs text-[#4A3F38] mt-1 font-normal leading-relaxed">
                                 {isCodDisabled
-                                  ? `Chỉ áp dụng trong bán kính 30km từ Amber Riverside (622 Minh Khai, Hà Nội). Khoảng cách hiện tại là ~${codStatus.distanceKm}km.`
+                                  ? `Chỉ áp dụng trong bán kính 30km từ kho Hai Bà Trưng, Hà Nội. Khoảng cách hiện tại là ~${codStatus.distanceKm}km.`
                                   : method.description}
                               </p>
                             </div>
@@ -868,6 +883,8 @@ export default function CheckoutPage() {
                       subtotal={subtotal}
                       paymentMethod={formData.paymentMethod}
                       customerPhone={formData.phone}
+                      customerEmail={formData.email}
+                      customerName={formData.fullName}
                       appliedVoucher={appliedVoucher}
                       isMixedPreOrder={fulfillment.isMixed}
                       deliveryOption={deliveryOption}

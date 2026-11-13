@@ -19,22 +19,35 @@ export async function submitOrder(orderPayload) {
       throw new Error(data.error || data.message || 'Lỗi xử lý đơn hàng từ máy chủ')
     }
 
+    const serverOrderId = data.orderId || orderPayload.orderId
     const enrichedOrder = {
       ...orderPayload,
+      orderId: serverOrderId,
+      id: serverOrderId,
+      payment: orderPayload.payment
+        ? {
+            ...orderPayload.payment,
+            transferContent: serverOrderId,
+          }
+        : orderPayload.payment,
       ...(data.trackingToken ? { trackingToken: data.trackingToken } : {}),
     }
 
     // Persist to local storage for instant customer history view
     try {
       const storedOrders = JSON.parse(localStorage.getItem('pijama_orders') || '[]')
-      const filtered = storedOrders.filter((o) => (o.orderId || o.id) !== enrichedOrder.orderId)
+      const filtered = storedOrders.filter(
+        (o) => (o.orderId || o.id) !== enrichedOrder.orderId && (o.orderId || o.id) !== orderPayload.orderId
+      )
       filtered.unshift(enrichedOrder)
       localStorage.setItem('pijama_orders', JSON.stringify(filtered))
 
       // Bảo vệ vĩnh viễn trong kho lưu trữ archive
       try {
         const archive = JSON.parse(localStorage.getItem('pijama_orders_archive') || '[]')
-        const filteredArchive = archive.filter((o) => (o.orderId || o.id) !== enrichedOrder.orderId)
+        const filteredArchive = archive.filter(
+          (o) => (o.orderId || o.id) !== enrichedOrder.orderId && (o.orderId || o.id) !== orderPayload.orderId
+        )
         filteredArchive.unshift(enrichedOrder)
         localStorage.setItem('pijama_orders_archive', JSON.stringify(filteredArchive))
       } catch (archErr) {

@@ -2,6 +2,11 @@ import nodemailer from 'nodemailer'
 import crypto from 'crypto'
 import { loadEnvironment } from './envCheck.js'
 import {
+  isProductionEnv,
+  isRenderEnvironment,
+  isSmtpAllowedOnCurrentPlatform,
+} from './shopConfig.js'
+import {
   isAutomatedTestEnvironment,
   isNodeTestRunner,
   isEmailDeliveryDisabled,
@@ -426,7 +431,7 @@ export async function sendEmailViaHttps(options) {
 
   const resendApiKey = (process.env.RESEND_API_KEY || '').trim()
   const rawResendFrom = (process.env.RESEND_FROM_EMAIL || '').trim()
-  const isRender = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL || process.env.RENDER_SERVICE_ID)
+  const isRender = isRenderEnvironment(process.env)
 
   const hasValidGas = Boolean(gasUrl && gasUrl.startsWith('https://') && gasSecret)
   const hasValidResendConfig = Boolean(
@@ -434,13 +439,18 @@ export async function sendEmailViaHttps(options) {
     rawResendFrom &&
     (!isProduction || !rawResendFrom.toLowerCase().includes('@resend.dev'))
   )
-  const hasGmailSmtp = Boolean(
+  const hasGmailSmtpConfigured = Boolean(
     (process.env.GMAIL_USER || '').trim() &&
     (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, '')
   )
+  const smtpAllowedOnPlatform = isSmtpAllowedOnCurrentPlatform(process.env)
+  const hasGmailSmtp = hasGmailSmtpConfigured && smtpAllowedOnPlatform
 
   if (isProduction && !hasValidGas && !hasValidResendConfig && !hasGmailSmtp) {
-    const errorMsg = 'Hệ thống gửi email chưa được cấu hình. Thiếu GAS_EMAIL_WEBHOOK_URL, GMAIL_APP_PASSWORD hoặc RESEND_API_KEY + RESEND_FROM_EMAIL hợp lệ.'
+    const errorMsg =
+      isRender && hasGmailSmtpConfigured && !smtpAllowedOnPlatform
+        ? '⛔ [EMAIL BLOCKED ON RENDER FREE] Cổng SMTP 465/587 bị Render gói Free chặn (từ 26/09/2025). Vui lòng cấu hình GAS_EMAIL_WEBHOOK_URL (Google Apps Script HTTPS 443) hoặc RESEND_API_KEY + RESEND_FROM_EMAIL hợp lệ, hoặc đặt EMAIL_ALLOW_SMTP_ON_RENDER=true nếu đã nâng gói Render trả phí.'
+        : 'Hệ thống gửi email chưa được cấu hình. Thiếu GAS_EMAIL_WEBHOOK_URL, GMAIL_APP_PASSWORD hoặc RESEND_API_KEY + RESEND_FROM_EMAIL hợp lệ.'
     console.error(`❌ [EMAIL CONFIG ERROR] ${errorMsg}`)
     recordEmailOutbox({ id: requestId, purpose, recipient: nonSyntheticList, status: 'failed', errorCode: 'EMAIL_NOT_CONFIGURED' })
 
@@ -660,7 +670,7 @@ export async function sendEmailViaHttps(options) {
 
       if (res.ok) {
         const data = await res.json().catch(() => ({}))
-        if (data && (data.success === true || data.status === 'success' || data.code === 'OK')) {
+        if (data && (data.ok === true || data.success === true || data.status === 'success' || data.code === 'OK')) {
           console.log(`✅ [EMAIL TRANSPORT 1: GAS] Gửi thành công tới ${maskEmail(to)}`)
           recordEmailOutbox({ id: requestId, purpose, recipient: to, status: sentStatus, transport: 'google_apps_script' })
           return {
@@ -761,7 +771,8 @@ export async function sendEmailViaHttps(options) {
 
   // ─────────────────────────────────────────────────────────────
   // ƯU TIÊN 3: Gmail SMTP (Chính thức qua Google Account / App Password)
-  // Gửi trực tiếp qua smtp.gmail.com:465 SSL, hỗ trợ mọi môi trường (Local & Render)
+  // Lưu ý: Render gói Free chặn cổng SMTP 25/465/587 từ 26/09/2025.
+  // Trên Render chỉ thử SMTP khi EMAIL_ALLOW_SMTP_ON_RENDER=true (gói trả phí).
   // ─────────────────────────────────────────────────────────────
   if (hasGmailSmtp) {
     const transporter = getLocalDevTransporter()
@@ -793,6 +804,11 @@ export async function sendEmailViaHttps(options) {
         errors.push(`Gmail SMTP: ${smtpErr.message}`)
       }
     }
+  } else if (hasGmailSmtpConfigured && !smtpAllowedOnPlatform) {
+    const renderSmtpMsg =
+      'Gmail SMTP: Bỏ qua trên Render vì cổng 465/587 bị Render gói Free chặn (từ 26/09/2025). Hãy cấu hình GAS_EMAIL_WEBHOOK_URL / RESEND_API_KEY qua HTTPS (443) hoặc đặt EMAIL_ALLOW_SMTP_ON_RENDER=true nếu dùng gói trả phí.'
+    console.error(`⛔ [EMAIL BLOCKED ON RENDER FREE] ${renderSmtpMsg}`)
+    errors.push(renderSmtpMsg)
   }
 
   // Tất cả transport đều thất bại
@@ -834,9 +850,11 @@ export function getEmailServiceStatus() {
   const resendFrom = (process.env.RESEND_FROM_EMAIL || '').trim()
   const policy = resolveSendPolicy(process.env, process.execArgv)
   const isProduction = policy.isProduction
-  const isRender = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL || process.env.RENDER_SERVICE_ID)
+  const isRender = isRenderEnvironment(process.env)
+  const smtpAllowedOnPlatform = isSmtpAllowedOnCurrentPlatform(process.env)
   const gasReady = Boolean(gasUrl && gasUrl.startsWith('https://') && gasSecret)
-  const smtpReady = Boolean((process.env.GMAIL_USER || '').trim() && (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, ''))
+  const smtpCredentialsPresent = Boolean((process.env.GMAIL_USER || '').trim() && (process.env.GMAIL_APP_PASSWORD || '').replace(/\s+/g, ''))
+  const smtpReady = smtpCredentialsPresent && smtpAllowedOnPlatform
   const resendReady = Boolean(resendKey && resendFrom && (!isProduction || !resendFrom.toLowerCase().includes('@resend.dev')))
 
   const { metrics24h, activeSuppressions } = getEmailOutboxStats24h()
@@ -847,7 +865,9 @@ export function getEmailServiceStatus() {
     gasSecretConfigured: Boolean(gasSecret),
     resendConfigured: Boolean(resendKey),
     resendDomainVerified: Boolean(resendFrom && !resendFrom.toLowerCase().includes('@resend.dev')),
-    smtpConfigured: smtpReady,
+    smtpConfigured: smtpCredentialsPresent,
+    smtpAllowedOnPlatform,
+    smtpReady,
     replyToConfigured: Boolean((process.env.EMAIL_REPLY_TO || '').trim()),
     sendMode: policy.mode,
     realSendAllowed: policy.allowRealSend,

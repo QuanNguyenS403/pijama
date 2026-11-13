@@ -13,8 +13,8 @@ export const LIVE_CONSTANTS = {
   STANDARD_SHIPPING_FEE: 30000,
   BANK_TRANSFER_DISCOUNT_PERCENT: 10,
   SHOP_HOTLINE: '0973 486 218',
-  SHOP_ZALO_LINK: 'https://zalo.me/0973 486 218',
-  SHOP_ADDRESS: 'Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hai Bà Trưng, Hà Nội',
+  SHOP_ZALO_LINK: 'https://zalo.me/0973486218',
+  SHOP_ADDRESS: 'Hai Bà Trưng, Hà Nội',
 }
 
 /**

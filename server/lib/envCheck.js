@@ -4,6 +4,12 @@ import { fileURLToPath } from 'url'
 import dotenv from 'dotenv'
 import crypto from 'crypto'
 import { isNodeTestRunner } from './emailRecipientGuard.js'
+import {
+  getNormalizedNodeEnv,
+  isProductionEnv,
+  isRenderEnvironment,
+  isSmtpAllowedOnCurrentPlatform,
+} from './shopConfig.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -108,8 +114,9 @@ function isPlaceholder(val) {
 
 export function validateEnvironment(env = process.env) {
   const isCI = env.CI === 'true'
-  const isProd = env.NODE_ENV === 'production'
-  const isTest = env.NODE_ENV === 'test'
+  const normEnv = getNormalizedNodeEnv(env)
+  const isProd = isProductionEnv(env)
+  const isTest = normEnv === 'test'
   const shouldEnforceFatal = isProd && !isCI
 
   // Tạo bản sao env an toàn để tự động suy diễn trên Render nếu cần (không làm bẩn process.env thật khi test)
@@ -210,7 +217,9 @@ export function validateEnvironment(env = process.env) {
   }
 
   // Kiểm tra phương thức gửi email: Hỗ trợ Google Apps Script HTTPS Bridge, Resend API hoặc Gmail SMTP (GMAIL_APP_PASSWORD).
-  const isRender = Boolean(effectiveEnv.RENDER || effectiveEnv.RENDER_EXTERNAL_URL || effectiveEnv.RENDER_SERVICE_ID)
+  // Lưu ý: Render gói Free chặn cổng SMTP 25/465/587 từ 26/09/2025 => trên Render không tính hasSmtp trừ khi EMAIL_ALLOW_SMTP_ON_RENDER=true.
+  const isRender = isRenderEnvironment(effectiveEnv)
+  const smtpAllowedOnPlatform = isSmtpAllowedOnCurrentPlatform(effectiveEnv)
   const gasUrlKey = effectiveEnv.GAS_EMAIL_WEBHOOK_URL
     ? 'GAS_EMAIL_WEBHOOK_URL'
     : effectiveEnv.GMAIL_APP_SCRIPT_URL
@@ -235,7 +244,8 @@ export function validateEnvironment(env = process.env) {
     resendFromCheck.status === 'OK' && !String(effectiveEnv.RESEND_FROM_EMAIL || '').toLowerCase().includes('@resend.dev')
   const hasResend = Boolean(hasResendKey && (!isProd || hasVerifiedResendFrom))
   const gmailPassCheck = checkVar('GMAIL_APP_PASSWORD', true, (v) => (v.replace(/\s+/g, '').length === 16 ? true : 'Mật khẩu ứng dụng Gmail phải gồm đúng 16 ký tự'))
-  const hasSmtp = gmailPassCheck.status === 'OK'
+  const hasSmtpCredentials = gmailPassCheck.status === 'OK'
+  const hasSmtp = hasSmtpCredentials && smtpAllowedOnPlatform
   const hasUsableEmailDelivery = hasGas || hasResend || hasSmtp
 
   results.featureGated.push(gasUrlCheck)
@@ -247,18 +257,39 @@ export function validateEnvironment(env = process.env) {
     results.warnings.push('[RESEND CONFIG] RESEND_API_KEY đã bật nhưng thiếu RESEND_FROM_EMAIL hợp lệ (không dùng @resend.dev ở Production)')
   }
 
+  if (isRender && hasSmtpCredentials && !smtpAllowedOnPlatform) {
+    results.warnings.push(
+      '[RENDER CHẶN SMTP] GMAIL_APP_PASSWORD đã cấu hình nhưng Render gói Free chặn cổng SMTP 25/465/587 (từ 26/09/2025). Hãy cấu hình GAS_EMAIL_WEBHOOK_URL (Apps Script HTTPS 443) hoặc RESEND_API_KEY, hoặc đặt EMAIL_ALLOW_SMTP_ON_RENDER=true nếu dùng gói trả phí.'
+    )
+  }
+
   if (!hasUsableEmailDelivery) {
-    const msg = 'Chưa cấu hình đầy đủ gửi email: Cần GAS_EMAIL_WEBHOOK_URL, GMAIL_APP_PASSWORD (16 ký tự) hoặc RESEND_API_KEY + RESEND_FROM_EMAIL hợp lệ'
+    const msg = isRender
+      ? 'Chưa có kênh gửi email HTTPS hợp lệ trên Render (cổng SMTP 465/587 bị chặn trên gói Free): Cần GAS_EMAIL_WEBHOOK_URL + GAS_WEBHOOK_SECRET hoặc RESEND_API_KEY + RESEND_FROM_EMAIL hợp lệ (hoặc EMAIL_ALLOW_SMTP_ON_RENDER=true nếu dùng gói trả phí)'
+      : 'Chưa cấu hình đầy đủ gửi email: Cần GAS_EMAIL_WEBHOOK_URL, GMAIL_APP_PASSWORD (16 ký tự) hoặc RESEND_API_KEY + RESEND_FROM_EMAIL hợp lệ'
     if (effectiveEnv.REQUIRE_EMAIL_DELIVERY === 'true' && isProd) {
       results.errors.push(`[BẮT BUỘC PROD] ${msg}`)
     } else if (isProd) {
       results.emailDeliveryMissingInProd = true
-      results.warnings.push(`[CHẾ ĐỘ DEGRADED] ${msg} — Web vẫn khởi chạy nhưng chức năng gửi email sẽ từ chối fail-closed; khuyến nghị cấu hình GAS_EMAIL_WEBHOOK_URL, GMAIL_APP_PASSWORD hoặc RESEND_API_KEY`)
+      results.warnings.push(`[CHẾ ĐỘ DEGRADED] ${msg} — Web vẫn khởi chạy nhưng chức năng gửi email sẽ từ chối fail-closed; khuyến nghị cấu hình GAS_EMAIL_WEBHOOK_URL hoặc RESEND_API_KEY`)
     } else {
       results.warnings.push(`[THIẾU DEV] ${msg}`)
     }
   } else if (!hasSmtp && !hasGas && hasResend) {
     results.warnings.push('[TÙY CHỌN FALLBACK] GMAIL_APP_PASSWORD chưa cấu hình (hệ thống gửi email qua Resend API)')
+  }
+
+  // Kiểm tra ổ đĩa bền vững / đồng bộ đám mây trên Render Production (G3)
+  const hasPersistentConfirm = String(effectiveEnv.PERSISTENT_STORAGE_CONFIRMED || '').trim().toLowerCase() === 'true'
+  const customDataDir = String(effectiveEnv.DATA_DIR || '').trim()
+  const hasSupabaseCloud =
+    Boolean(String(effectiveEnv.SUPABASE_URL || '').trim().startsWith('https://')) &&
+    Boolean(String(effectiveEnv.SUPABASE_SERVICE_ROLE_KEY || '').trim())
+  if (isProd && isRender && !hasPersistentConfirm && !customDataDir && !hasSupabaseCloud) {
+    results.ephemeralStorageInProd = true
+    results.warnings.push(
+      '[CẢNH BÁO Ổ TẠM RENDER] DỮ LIỆU ĐANG Ở Ổ TẠM (server/data, public/uploads) — SẼ MẤT KHI REDEPLOY/RESTART! Trên Render Free hãy cấu hình SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (hoặc gắn Persistent Disk trên gói Starter).'
+    )
   }
 
   // Kiểm tra Google Sheets: Chế độ Degraded an toàn nếu không bắt buộc (REQUIRE_GOOGLE_SHEETS !== 'true')
@@ -425,7 +456,11 @@ export function printEnvReport(results) {
   }
 
   if (results.emailDeliveryMissingInProd) {
-    console.error('❌ [EMAIL DELIVERY ERROR] Production đang thiếu cấu hình gửi email hợp lệ (GMAIL_APP_PASSWORD hoặc RESEND_API_KEY+RESEND_FROM_EMAIL). Đặt REQUIRE_EMAIL_DELIVERY=true để chặn khởi động khi thiếu.')
+    console.error('❌ [EMAIL DELIVERY ERROR] Production đang thiếu kênh gửi email hợp lệ (trên Render Free cổng SMTP 465/587 bị chặn — cần GAS_EMAIL_WEBHOOK_URL + GAS_WEBHOOK_SECRET hoặc RESEND_API_KEY + RESEND_FROM_EMAIL). Đặt REQUIRE_EMAIL_DELIVERY=true để chặn khởi động khi thiếu.')
+  }
+
+  if (results.ephemeralStorageInProd) {
+    console.error('🚨 [ERROR: DỮ LIỆU ĐANG Ở Ổ TẠM — SẼ MẤT KHI REDEPLOY] Render chưa cấu hình Persistent Disk (DATA_DIR / UPLOADS_DIR). Mọi đơn hàng, tài khoản SQLite (accounts.db), và ảnh chứng từ trên ổ đĩa container sẽ mất khi redeploy/spin-down!')
   }
 
   if (results.warnings.length > 0) {

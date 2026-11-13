@@ -216,7 +216,7 @@ export function processTier0Intent(message, context = {}) {
       handled: true,
       intentName: 'POLICY_PAYMENT',
       reply:
-        'Dạ QuanNguyenS hỗ trợ 2 phương thức thanh toán linh hoạt và an toàn:\n1. Thanh toán khi nhận hàng (COD): Nhận hàng kiểm tra rồi mới trả tiền cho shipper.\n2. Chuyển khoản VietQR / Napas 24/7: Nhận ngay ưu đãi GIẢM 10% TRỰC TIẾP trên tổng giá trị đơn hàng (Quét mã VietQR tự động, bảo mật và tiện lợi) ạ!',
+        'Dạ QuanNguyenS hỗ trợ 2 phương thức thanh toán linh hoạt và an toàn:\n1. Thanh toán khi nhận hàng (COD): Áp dụng cho đơn hàng trong bán kính 30km từ kho Hai Bà Trưng, Hà Nội; quý khách được đồng kiểm hàng trước khi thanh toán.\n2. Chuyển khoản VietQR / Napas 24/7 (áp dụng toàn quốc): Nhận ngay ưu đãi GIẢM 10% TRỰC TIẾP trên tổng giá trị sản phẩm (sau khi quét mã VietQR, anh/chị tải ảnh chụp màn hình chuyển khoản lên trang đơn hàng để shop đối soát và xác nhận đơn ngay) ạ!',
       quickReplies: ['Xem ưu đãi VietQR', 'Chính sách giao hàng', 'Gặp chủ shop'],
       usedTier: 'tier-0',
     }

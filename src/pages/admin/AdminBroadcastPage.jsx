@@ -428,7 +428,7 @@ Nếu bạn có bất kỳ câu hỏi nào về bảng size hoặc chất liệu
                   {/* Footer preview */}
                   <div className="bg-[#F5EFE6] p-5 text-center text-xs text-[#8C7E74] border-t border-[#E8DFD5] space-y-1">
                     <p className="font-semibold text-[#631521]">QuanNguyenS — Style to be lived in</p>
-                    <p>Hotline: 0973 486 218 · Amber Riverside, 622 Minh Khai, Hà Nội</p>
+                    <p>Hotline: 0973 486 218 · Hai Bà Trưng, Hà Nội</p>
                     <p className="text-[10.5px] text-[#A89F91] mt-2">
                       Bạn nhận được thông báo này vì đã đăng ký thành viên tại website QuanNguyenS.
                     </p>

@@ -171,9 +171,19 @@ export function verifyCsrfOrigin(req, res, next) {
   }
 
   // Kiểm tra Origin / Referer header
-  const origin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null)
+  let origin = null
+  try {
+    origin = req.headers.origin
+      ? String(req.headers.origin).trim().replace(/\/+$/, '')
+      : req.headers.referer
+        ? new URL(req.headers.referer).origin.replace(/\/+$/, '')
+        : null
+  } catch (_) {
+    origin = null
+  }
+
   const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim())
+    ? process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim().replace(/\/+$/, '')).filter(Boolean)
     : [
         'http://localhost:3000',
         'http://localhost:5173',
@@ -185,7 +195,15 @@ export function verifyCsrfOrigin(req, res, next) {
         'https://www.quannguyens.vn',
       ]
 
-  if (process.env.NODE_ENV === 'production') {
+  const extraOrigins = [process.env.RENDER_EXTERNAL_URL, process.env.APP_URL, process.env.CLIENT_ORIGIN]
+  for (const extra of extraOrigins) {
+    const cleaned = String(extra || '').trim().replace(/\/+$/, '')
+    if (cleaned && !allowedOrigins.includes(cleaned)) {
+      allowedOrigins.push(cleaned)
+    }
+  }
+
+  if (String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production') {
     if (!origin || !allowedOrigins.includes(origin)) {
       return res.status(403).json({
         success: false,

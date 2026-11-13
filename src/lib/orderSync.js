@@ -430,15 +430,48 @@ export function initOrderSync() {
   // 2. Kết nối Server-Sent Events (SSE) để nhận sự kiện real-time tức thì từ Admin
   let sseRetryTimer = null
   let sseErrorCount = 0
+  let currentSubscribedOrderId = null
+
+  const findTrackableOrder = () => {
+    try {
+      const latestRaw = sessionStorage.getItem('latest_order')
+      if (latestRaw) {
+        const latest = JSON.parse(latestRaw)
+        if ((latest?.orderId || latest?.id) && latest?.trackingToken) {
+          return { orderId: latest.orderId || latest.id, token: latest.trackingToken }
+        }
+      }
+      const saved = getSavedOrders()
+      const candidate = saved.find((o) => (o?.orderId || o?.id) && o?.trackingToken)
+      if (candidate) {
+        return { orderId: candidate.orderId || candidate.id, token: candidate.trackingToken }
+      }
+    } catch {}
+    return null
+  }
 
   const connectSSE = () => {
     try {
+      const target = findTrackableOrder()
+      if (!target) {
+        if (eventSourceInstance) {
+          eventSourceInstance.close()
+          eventSourceInstance = null
+          currentSubscribedOrderId = null
+        }
+        return
+      }
+      if (eventSourceInstance && currentSubscribedOrderId === target.orderId) {
+        return
+      }
       if (eventSourceInstance) {
         eventSourceInstance.close()
         eventSourceInstance = null
       }
 
-      eventSourceInstance = new EventSource('/api/orders/events')
+      currentSubscribedOrderId = target.orderId
+      const sseUrl = `/api/orders/events?orderId=${encodeURIComponent(target.orderId)}&token=${encodeURIComponent(target.token)}`
+      eventSourceInstance = new EventSource(sseUrl)
 
       eventSourceInstance.onopen = () => {
         sseErrorCount = 0
@@ -462,6 +495,7 @@ export function initOrderSync() {
           if (eventSourceInstance) {
             eventSourceInstance.close()
             eventSourceInstance = null
+            currentSubscribedOrderId = null
           }
           if (sseRetryTimer) clearTimeout(sseRetryTimer)
           sseRetryTimer = setTimeout(() => {
@@ -476,6 +510,9 @@ export function initOrderSync() {
   }
 
   connectSSE()
+  window.addEventListener('orders_updated', () => {
+    connectSSE()
+  })
 
   // 3. Đồng bộ một lần có kiểm soát throttle khi mở ứng dụng
   try {

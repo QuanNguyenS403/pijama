@@ -74,7 +74,7 @@ const renderFooter = () => `
     <div class="footer-logo">QuanNguyenS</div>
     <div class="footer-tag">Style to be lived in</div>
     <div class="footer-info">
-      Amber Riverside, 622 Minh Khai, Vĩnh Tuy, Hà Nội<br>
+      Hai Bà Trưng, Hà Nội<br>
       0973 486 218 · quannguyens403@gmail.com
     </div>
   </div>
