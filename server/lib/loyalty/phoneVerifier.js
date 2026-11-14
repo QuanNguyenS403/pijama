@@ -130,15 +130,16 @@ export async function sendLoyaltyOtp({
   const expiresAt = now + ttlMs
   const id = `vcode_${now}_${Math.random().toString(36).substring(2, 8)}`
 
-  // 5. Lưu hash vào database
+  // 5. Lưu hash vào database (kèm mã tạm thời phục vụ Telegram Bot gửi cho khách)
   db.prepare(`
     INSERT INTO loyalty_phone_verifications (
       id, phone, code_hash, salt, purpose, expires_at,
-      attempts, max_attempts, verified, ip_hash, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?)
-  `).run(id, cleanPhone, codeHash, salt, purpose, expiresAt, LOYALTY_RULES.OTP_MAX_ATTEMPTS, ipHash, now)
+      attempts, max_attempts, verified, ip_hash, created_at,
+      raw_code_temp, delivery_channel
+    ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?, ?, ?)
+  `).run(id, cleanPhone, codeHash, salt, purpose, expiresAt, LOYALTY_RULES.OTP_MAX_ATTEMPTS, ipHash, now, code, 'telegram')
 
-  // 6. Gửi mã qua provider thống nhất (hỗ trợ tự động gửi qua Email khi chưa cấu hình Zalo ZNS trên Render Free)
+  // 6. Gửi mã qua provider thống nhất (Telegram Bot / Telegram Gateway / Zalo / Email)
   let resolvedEmail = String(email || '').trim().toLowerCase()
   let resolvedFullName = String(fullName || '').trim()
   if (!resolvedEmail) {
@@ -168,6 +169,7 @@ export async function sendLoyaltyOtp({
     purpose,
     ttlMinutes,
     providerOverride,
+    verificationId: id,
   })
 
   if (!providerResult.ok) {
@@ -187,8 +189,12 @@ export async function sendLoyaltyOtp({
 
   return {
     success: true,
-    message: providerResult.message || 'Mã xác thực 6 chữ số đã được gửi tới số điện thoại của bạn',
+    verificationId: id,
+    phone: cleanPhone,
+    message: providerResult.message || 'Mã xác thực 6 chữ số đã được gửi qua Telegram tới bạn',
     expiresInSeconds: ttlSec,
+    telegramUrl: providerResult.telegramUrl || null,
+    provider: providerResult.provider || null,
     // TUYỆT ĐỐI KHÔNG TRẢ CODE TRONG RESPONSE KỂ CẢ TEST
   }
 }
@@ -262,6 +268,7 @@ export function verifyLoyaltyOtp({ phone, code, purpose = 'enrollment' }) {
     const remaining = Math.max(0, record.max_attempts - nextAttempts)
 
     if (remaining === 0) {
+      db.prepare('UPDATE loyalty_phone_verifications SET raw_code_temp = NULL WHERE id = ?').run(record.id)
       createAlert({
         type: 'OTP_FLOOD',
         severity: 'warning',
@@ -284,10 +291,10 @@ export function verifyLoyaltyOtp({ phone, code, purpose = 'enrollment' }) {
     }
   }
 
-  // 3. Đánh dấu đã xác thực thành công (single-use)
+  // 3. Đánh dấu đã xác thực thành công (single-use) và xóa mã tạm an toàn
   db.prepare(`
     UPDATE loyalty_phone_verifications 
-    SET verified = 1, verified_at = ? 
+    SET verified = 1, verified_at = ?, raw_code_temp = NULL 
     WHERE id = ?
   `).run(now, record.id)
 

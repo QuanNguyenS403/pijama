@@ -9,6 +9,7 @@ import {
   sendWelcomeVoucherEmail,
   sendPasswordResetSuccessEmail,
 } from '../server/lib/emailAccount.js'
+import { setEmailTransportForTests } from '../server/lib/httpsEmailService.js'
 
 test('Email Service: sendGoogleRegisterSuccessEmail có giao diện và dữ liệu voucher chuẩn', async () => {
   // Test gọi hàm khi không có SMTP transporter thật (sẽ báo thiếu biến môi trường hoặc reject mà không crash)
@@ -117,4 +118,63 @@ test('Email Service: sendWelcomeVoucherEmail và sendPasswordResetSuccessEmail h
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
   })
   assert.ok(resetSuccessRes)
+})
+
+test('Email Service: sendGoogleLoginNotificationEmail và sendOwnerGoogleAuthNotification không chứa emoji lỗi hoặc Địa chỉ IP', async () => {
+  const sentEmails = []
+  setEmailTransportForTests(async (mail) => {
+    sentEmails.push(mail)
+    return { transport: 'custom_test_mock', messageId: `mock_${sentEmails.length}` }
+  })
+
+  try {
+    await sendGoogleLoginNotificationEmail({
+      to: 'customer@example.com',
+      name: 'QuanNguyenS',
+      timeStr: '16:11:57 13/11/2026',
+      ip: '10.29.117.13',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
+    })
+
+    await sendOwnerGoogleAuthNotification({
+      action: 'REGISTER',
+      customerName: 'Khách Hàng Mới',
+      email: 'newcustomer@example.com',
+      googleSub: 'sub-1',
+      timeStr: '16:11:57 13/11/2026',
+      ip: '10.29.117.13',
+      userAgent: 'Mozilla/5.0',
+      voucherCode: 'WELCOME10',
+    })
+
+    await sendOwnerGoogleAuthNotification({
+      action: 'LOGIN',
+      customerName: 'Khách Hàng Cũ',
+      email: 'oldcustomer@example.com',
+      googleSub: 'sub-2',
+      timeStr: '16:11:57 13/11/2026',
+      ip: '10.29.117.13',
+      userAgent: 'Mozilla/5.0',
+    })
+
+    assert.equal(sentEmails.length, 3)
+
+    const customerMail = sentEmails[0]
+    assert.ok(customerMail.html.includes('Thông Báo Bảo Mật Đăng Nhập'))
+    assert.ok(!customerMail.html.includes('🛡️'))
+    assert.ok(!customerMail.html.includes('🌐'))
+    assert.ok(!customerMail.html.includes('Địa chỉ IP'))
+    assert.ok(!customerMail.html.includes('10.29.117.13'))
+    assert.ok(!customerMail.text.includes('Địa chỉ IP'))
+    assert.ok(!customerMail.text.includes('10.29.117.13'))
+
+    for (const adminMail of [sentEmails[1], sentEmails[2]]) {
+      assert.ok(!adminMail.subject.includes('👤'))
+      assert.ok(!adminMail.subject.includes('🔐'))
+      assert.ok(!adminMail.html.includes('👤'))
+      assert.ok(!adminMail.html.includes('🔐'))
+    }
+  } finally {
+    setEmailTransportForTests(null)
+  }
 })

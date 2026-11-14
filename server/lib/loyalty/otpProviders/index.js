@@ -1,6 +1,22 @@
 // server/lib/loyalty/otpProviders/index.js
 import { sendZaloOtp, isZaloConfigured } from './zaloProvider.js'
-export { isZaloConfigured }
+import {
+  sendTelegramOtp,
+  isTelegramConfigured,
+  getTelegramBotUsername,
+  handleTelegramWebhookUpdate,
+  startTelegramPolling,
+  stopTelegramPolling,
+} from './telegramProvider.js'
+
+export {
+  isZaloConfigured,
+  isTelegramConfigured,
+  getTelegramBotUsername,
+  handleTelegramWebhookUpdate,
+  startTelegramPolling,
+  stopTelegramPolling,
+}
 import { maskPhone, createAlert } from '../loyaltyDb.js'
 import { normalizeVietnamesePhone } from '../../smsService.js'
 import { sendVerificationCodeEmail, sendOtpVerificationEmail } from '../../emailAccount.js'
@@ -29,6 +45,7 @@ export function resolveOtpProvider(providerOverride = null) {
   const configuredProvider = (process.env.LOYALTY_OTP_PROVIDER || '').trim().toLowerCase()
   if (configuredProvider) return configuredProvider
 
+  if (isTelegramConfigured()) return 'telegram'
   if (isZaloConfigured()) return 'zalo'
 
   const isProd = process.env.NODE_ENV === 'production'
@@ -43,7 +60,8 @@ export function resolveOtpProvider(providerOverride = null) {
  * @param {string} params.purpose
  * @param {number} params.ttlMinutes
  * @param {string} [params.providerOverride]
- * @returns {Promise<{ ok: boolean, provider: string, message?: string, error?: string, errorCode?: string }>}
+ * @param {string} [params.verificationId]
+ * @returns {Promise<{ ok: boolean, provider: string, message?: string, error?: string, errorCode?: string, telegramUrl?: string, deliveredDirectly?: boolean }>}
  */
 export async function sendOtpViaProvider({
   phone,
@@ -53,6 +71,7 @@ export async function sendOtpViaProvider({
   purpose = 'enrollment',
   ttlMinutes = 5,
   providerOverride = null,
+  verificationId = '',
 }) {
   const isProd = process.env.NODE_ENV === 'production'
   const provider = resolveOtpProvider(providerOverride)
@@ -79,14 +98,52 @@ export async function sendOtpViaProvider({
   if (provider === 'test' || provider === 'mock') {
     testOtpStore.set(cleanPhone, String(code))
     console.log(`🧪 [TEST OTP] Mã gửi tới ${maskPhone(cleanPhone)}: ${code} (mục đích: ${purpose})`)
+    const botUser = getTelegramBotUsername()
     return {
       ok: true,
       provider: 'test',
       message: 'Mã xác thực 6 chữ số đã được gửi tới số điện thoại của bạn',
+      telegramUrl: verificationId ? `https://t.me/${botUser}?start=otp_${verificationId}` : `https://t.me/${botUser}`,
     }
   }
 
-  // 2. Chế độ Zalo ZNS
+  // 2. Chế độ Telegram OTP (Chính thức qua Telegram Bot / Telegram Gateway)
+  if (provider === 'telegram' || provider === 'telegram_bot' || provider === 'telegram_gateway') {
+    const result = await sendTelegramOtp({
+      phone: cleanPhone,
+      code,
+      purpose,
+      ttlMinutes,
+      verificationId,
+    })
+
+    if (result.ok) {
+      console.log(`✈️ [TELEGRAM OTP] Đã phát mã xác thực tới ${maskPhone(cleanPhone)} (${result.provider})`)
+      return {
+        ok: true,
+        provider: result.provider || 'telegram',
+        message: result.message || 'Mã xác thực đã được gửi tới Telegram của bạn',
+        telegramUrl: result.telegramUrl || null,
+        deliveredDirectly: result.deliveredDirectly || false,
+      }
+    }
+
+    createAlert({
+      type: 'SYSTEM_ERROR',
+      severity: 'warning',
+      title: `Lỗi gửi Telegram OTP: ${result.errorCode || 'UNKNOWN'}`,
+      details: { phone: maskPhone(cleanPhone), error: result.error, purpose },
+    })
+
+    return {
+      ok: false,
+      provider: 'telegram',
+      errorCode: result.errorCode || 'TELEGRAM_SEND_FAILED',
+      error: result.error || 'Không thể gửi mã xác thực qua Telegram lúc này. Vui lòng thử lại sau giây lát hoặc liên hệ shop.',
+    }
+  }
+
+  // 3. Chế độ Zalo ZNS
   if (provider === 'zalo') {
     const result = await sendZaloOtp({ phone: cleanPhone, code, ttlMinutes })
     if (result.ok) {

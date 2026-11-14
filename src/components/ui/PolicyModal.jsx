@@ -111,7 +111,7 @@ export default function PolicyModal({ isOpen, onClose, initialPolicy = 'privacy'
             <div className="space-y-6">
               {policy?.sections.map((section, idx) => (
                 <div key={idx} className="bg-white p-5 rounded-[3px] border border-[#E8DFD5] shadow-xs">
-                  <h3 className="font-serif text-lg sm:text-xl md:text-2xl font-black text-[#631521] mb-3 leading-snug">
+                  <h3 className="font-serif text-lg sm:text-xl md:text-2xl font-normal text-[#631521] mb-3 leading-snug">
                     {section.heading}
                   </h3>
                   <ul className="space-y-2.5">

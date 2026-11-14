@@ -9,7 +9,9 @@ import {
   maskPhone,
   createAlert,
   createLoyaltySession,
+  getTelegramUserByPhone,
 } from './loyaltyDb.js'
+import { sendTelegramDirectMessage } from './otpProviders/telegramProvider.js'
 import { verifyLoyaltyOtp } from './phoneVerifier.js'
 import { normalizeVietnamesePhone, isValidVietnamesePhone } from '../smsService.js'
 import { generateSessionToken, hashSessionToken, hashClientMetadata } from '../authCrypto.js'
@@ -95,6 +97,7 @@ export async function enrollLoyaltyMember({
   accountId = null,
   ip = '',
   userAgent = '',
+  allowLoginIfExisting = false,
 }) {
   // 1. Kiểm tra tính hợp lệ của thông tin đăng ký
   const validation = validateEnrollmentInput({
@@ -135,6 +138,43 @@ export async function enrollLoyaltyMember({
   // 3. Kiểm tra xem số điện thoại đã là hội viên chưa (phản hồi trung tính, an toàn)
   const existingMember = getMemberByPhone(cleanPhone)
   if (existingMember) {
+    if (allowLoginIfExisting) {
+      const sessionToken = generateSessionToken()
+      createLoyaltySession({
+        memberId: existingMember.id,
+        token: sessionToken,
+        ip,
+        userAgent,
+      })
+
+      // Thông báo cho chủ shop qua Telegram
+      const ownerChatId = process.env.TELEGRAM_OWNER_CHAT_ID
+      if (ownerChatId) {
+        sendTelegramDirectMessage({
+          chatId: ownerChatId,
+          text: `👑 <b>[HỘI VIÊN KẾT NỐI LẠI]</b>\n` +
+            `Khách hàng: <b>${existingMember.full_name || cleanName || 'Hội viên'}</b>\n` +
+            `Số điện thoại: <b>${maskPhone(cleanPhone)}</b>\n` +
+            `Hạng: <b>${existingMember.tier || 'MEMBER'}</b>\n` +
+            `Đã xác minh số điện thoại chính chủ qua Telegram và kết nối tài khoản thành công!`,
+        }).catch(() => {})
+      }
+
+      return {
+        success: true,
+        alreadyMember: true,
+        member: {
+          id: existingMember.id,
+          phone: existingMember.phone,
+          fullName: existingMember.full_name,
+          tier: existingMember.tier,
+          tierChangedAt: existingMember.tier_changed_at,
+        },
+        sessionToken,
+        message: 'Chào mừng Quý khách quay trở lại với chương trình Hội viên QuanNguyenS!',
+      }
+    }
+
     return {
       success: false,
       code: 'ALREADY_MEMBER',
@@ -188,6 +228,34 @@ export async function enrollLoyaltyMember({
     ip,
     userAgent,
   })
+
+  // 6. Gửi tin nhắn Telegram chúc mừng cho khách hàng và chủ shop
+  try {
+    const tgUser = getTelegramUserByPhone(cleanPhone)
+    if (tgUser?.telegram_id) {
+      sendTelegramDirectMessage({
+        chatId: tgUser.telegram_id,
+        text: `🎉 <b>CHÚC MỪNG QUÝ KHÁCH ĐÃ TRỞ THÀNH HỘI VIÊN THÂN THIẾT!</b>\n\n` +
+          `✨ Đặc quyền của Quý khách đã có hiệu lực ngay lập tức trên website QuanNguyenS:\n` +
+          `• Chiết khấu đặc quyền theo hạng thành viên\n` +
+          `• Tích lũy 1 điểm cho mỗi 100.000đ chi tiêu\n` +
+          `• Tặng Voucher sinh nhật 50.000đ độc quyền\n\n` +
+          `Quý khách có thể mua sắm ngay tại https://quannguyens.com để tận hưởng ưu đãi!`,
+      }).catch(() => {})
+    }
+
+    const ownerChatId = process.env.TELEGRAM_OWNER_CHAT_ID
+    if (ownerChatId) {
+      sendTelegramDirectMessage({
+        chatId: ownerChatId,
+        text: `👑 <b>[HỘI VIÊN MỚI GIA NHẬP]</b>\n` +
+          `Khách hàng: <b>${newMember.full_name || 'Khách vãng lai'}</b>\n` +
+          `Số điện thoại: <b>${maskPhone(cleanPhone)}</b>\n` +
+          `Hạng: <b>${newMember.tier || 'MEMBER'}</b>\n` +
+          `Đã hoàn tất xác thực số điện thoại chính chủ qua Telegram!`,
+      }).catch(() => {})
+    }
+  } catch {}
 
   return {
     success: true,

@@ -111,7 +111,7 @@ export default function PolicyPage() {
           <div className="space-y-8">
             {currentPolicy.sections.map((section, idx) => (
               <div key={idx} className="space-y-3">
-                <h3 className="font-serif text-lg sm:text-xl md:text-2xl font-black text-[#1A1614] flex items-center gap-2.5">
+                <h3 className="font-serif text-lg sm:text-xl md:text-2xl font-normal text-[#1A1614] flex items-center gap-2.5">
                   <span className="w-2 h-2 rounded-full bg-[#631521] shrink-0" />
                   <span>{section.heading}</span>
                 </h3>

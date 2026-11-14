@@ -199,7 +199,89 @@ export function initLoyaltySchema(db) {
     CREATE INDEX IF NOT EXISTS idx_loyalty_sessions_member ON loyalty_sessions(member_id);
   `)
 
+  // 8. Bổ sung các cột Telegram cho loyalty_phone_verifications (idempotent)
+  try {
+    const verifCols = db.pragma('table_info(loyalty_phone_verifications)').map((c) => c.name)
+    if (!verifCols.includes('telegram_chat_id')) {
+      db.exec('ALTER TABLE loyalty_phone_verifications ADD COLUMN telegram_chat_id TEXT')
+    }
+    if (!verifCols.includes('delivery_channel')) {
+      db.exec("ALTER TABLE loyalty_phone_verifications ADD COLUMN delivery_channel TEXT DEFAULT 'telegram'")
+    }
+    if (!verifCols.includes('raw_code_temp')) {
+      db.exec('ALTER TABLE loyalty_phone_verifications ADD COLUMN raw_code_temp TEXT')
+    }
+  } catch (err) {
+    console.warn('⚠️ [LOYALTY MIGRATION] Bỏ qua kiểm tra alter loyalty_phone_verifications:', err.message)
+  }
+
+  // 9. Bảng liên kết tài khoản Telegram với số điện thoại: loyalty_telegram_users
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS loyalty_telegram_users (
+      telegram_id TEXT PRIMARY KEY,
+      phone TEXT UNIQUE NOT NULL,
+      username TEXT,
+      first_name TEXT,
+      last_name TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_loyalty_telegram_phone ON loyalty_telegram_users(phone);
+  `)
+
   isInitialized = true
+}
+
+export function getPendingOtpByVerificationId(id) {
+  if (!id) return null
+  const db = getLoyaltyDb()
+  const now = Date.now()
+  return db
+    .prepare('SELECT * FROM loyalty_phone_verifications WHERE id = ? AND verified = 0 AND expires_at > ?')
+    .get(id, now)
+}
+
+export function getPendingOtpByPhone(phone) {
+  if (!phone) return null
+  const cleanPhone = normalizeVietnamesePhone(phone)
+  const db = getLoyaltyDb()
+  const now = Date.now()
+  return db
+    .prepare('SELECT * FROM loyalty_phone_verifications WHERE phone = ? AND verified = 0 AND expires_at > ? ORDER BY created_at DESC LIMIT 1')
+    .get(cleanPhone, now)
+}
+
+export function saveTelegramUser({ telegramId, phone, username = null, firstName = '', lastName = '' }) {
+  if (!telegramId || !phone) return null
+  const cleanPhone = normalizeVietnamesePhone(phone)
+  const db = getLoyaltyDb()
+  const now = Date.now()
+  db.prepare(`
+    INSERT INTO loyalty_telegram_users (telegram_id, phone, username, first_name, last_name, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(telegram_id) DO UPDATE SET
+      phone = excluded.phone,
+      username = excluded.username,
+      first_name = excluded.first_name,
+      last_name = excluded.last_name,
+      updated_at = excluded.updated_at
+  `).run(String(telegramId), cleanPhone, username, firstName, lastName, now, now)
+
+  return { telegramId: String(telegramId), phone: cleanPhone }
+}
+
+export function getTelegramUserByPhone(phone) {
+  if (!phone) return null
+  const cleanPhone = normalizeVietnamesePhone(phone)
+  const db = getLoyaltyDb()
+  return db.prepare('SELECT * FROM loyalty_telegram_users WHERE phone = ? LIMIT 1').get(cleanPhone)
+}
+
+export function attachTelegramChatIdToVerification(id, chatId) {
+  if (!id || !chatId) return false
+  const db = getLoyaltyDb()
+  const res = db.prepare('UPDATE loyalty_phone_verifications SET telegram_chat_id = ? WHERE id = ?').run(String(chatId), id)
+  return res.changes > 0
 }
 
 export function getLoyaltyDb() {

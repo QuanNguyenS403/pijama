@@ -92,8 +92,8 @@ export default function LoyaltyRegisterModal({
         return
       }
       const cleanEmail = email.trim()
-      if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-        setError('Vui lòng nhập địa chỉ Email hợp lệ để nhận mã xác thực OTP.')
+      if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        setError('Địa chỉ Email không đúng định dạng.')
         return
       }
     }
@@ -120,8 +120,26 @@ export default function LoyaltyRegisterModal({
       }
 
       setOtpDeliveryMessage(data.message || '')
-      setStep(2)
-      setResendCooldown(data.cooldownRemaining || 60)
+
+      // Lưu thông tin phiên xác minh tạm thời
+      const payload = {
+        phone: cleanPhone,
+        fullName: fullName.trim(),
+        verificationId: data.verificationId || '',
+        telegramUrl: data.telegramUrl || '',
+      }
+      try {
+        sessionStorage.setItem('qns_pending_loyalty_verification', JSON.stringify(payload))
+      } catch {}
+
+      // Di chuyển trực tiếp đến trang điền mã xác minh Telegram
+      const searchParams = new URLSearchParams({ phone: cleanPhone })
+      if (fullName.trim()) searchParams.set('name', fullName.trim())
+      if (data.verificationId) searchParams.set('v', data.verificationId)
+      if (data.telegramUrl) searchParams.set('tg', data.telegramUrl)
+
+      window.location.href = `/xac-minh-hoi-vien?${searchParams.toString()}`
+      return
     } catch (err) {
       setError('Lỗi kết nối máy chủ. Vui lòng kiểm tra lại đường truyền internet.')
     } finally {
@@ -280,14 +298,17 @@ export default function LoyaltyRegisterModal({
                 </div>
 
                 <div>
+                  <div className="p-2.5 bg-[#F0F8FF] border border-[#229ED9]/30 rounded-[2px] text-[11px] text-[#229ED9] flex items-center gap-2 mb-2 font-medium">
+                    <span className="w-2 h-2 rounded-full bg-[#229ED9] animate-pulse" />
+                    <span>Mã xác minh bảo mật sẽ được gửi qua <strong>Telegram</strong></span>
+                  </div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
-                    Email nhận mã OTP {mode === 'enroll' && <span className="text-[#631521]">*</span>}
+                    Email liên hệ (Tùy chọn)
                   </label>
                   <div className="relative">
                     <input
                       type="email"
                       inputMode="email"
-                      required={mode === 'enroll'}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@gmail.com"

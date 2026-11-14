@@ -136,7 +136,7 @@ Hotline: ${SHOP_PHONE} · Email: ${user}
                   <!-- Notes -->
                   <div style="background-color: #FAF5F0; border-left: 3px solid #631521; padding: 12px 14px; border-radius: 2px; margin-bottom: 24px;">
                     <p style="margin: 0; font-size: 12.5px; line-height: 1.5; color: #631521;">
-                      🔒 <strong>Lưu ý bảo mật:</strong> Tuyệt đối không chia sẻ mã này cho bất kỳ ai, kể cả nhân viên chăm sóc khách hàng.
+                      <strong>Lưu ý bảo mật:</strong> Tuyệt đối không chia sẻ mã này cho bất kỳ ai, kể cả nhân viên chăm sóc khách hàng.
                     </p>
                   </div>
 
@@ -239,7 +239,7 @@ export async function sendWelcomeVoucherEmail({ to, code, name = 'Quý khách' }
               <tr>
                 <td style="padding: 36px 32px 28px 32px;">
                   <h2 style="font-family: 'Georgia', serif; font-size: 20px; color: #631521; margin: 0 0 14px 0; text-align: center;">
-                    🎉 Chúc Mừng Bạn Đã Kích Hoạt Tài Khoản Thành Công!
+                    Chúc Mừng Bạn Đã Kích Hoạt Tài Khoản Thành Công!
                   </h2>
                   <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #4A3F38; text-align: center;">
                     Chào mừng <strong>${name}</strong> gia nhập cùng QuanNguyenS. Dưới đây là món quà chào mừng dành riêng cho đơn hàng đầu tiên của bạn:
@@ -297,7 +297,7 @@ export async function sendWelcomeVoucherEmail({ to, code, name = 'Quý khách' }
   return dispatchEmail({
     from: `"${SHOP_NAME}" <${user}>`,
     to,
-    subject: `🎁 [${SHOP_NAME}] Chúc mừng bạn nhận Voucher Chào Mừng 10% + Miễn Phí Vận Chuyển (${code})`,
+    subject: `[${SHOP_NAME}] Chúc mừng bạn nhận Voucher Chào Mừng 10% + Miễn Phí Vận Chuyển (${code})`,
     html,
   })
 }
@@ -460,7 +460,7 @@ export async function sendGoogleRegisterSuccessEmail({
                 <td style="padding: 36px 32px 28px 32px;">
                   <div style="text-align: center; margin-bottom: 24px;">
                     <div style="display: inline-block; width: 48px; height: 48px; line-height: 48px; border-radius: 50%; background-color: #FAF5F0; border: 1px solid #D4AF37; font-size: 24px;">
-                      🎉
+                      ✦
                     </div>
                     <h2 style="font-family: 'Georgia', serif; font-size: 21px; color: #631521; margin: 14px 0 6px 0; font-weight: bold;">
                       Chào Mừng Bạn Đến Với QuanNguyenS
@@ -521,7 +521,7 @@ export async function sendGoogleRegisterSuccessEmail({
   return dispatchEmail({
     from: `"${SHOP_NAME}" <${user}>`,
     to,
-    subject: `🎉 [${SHOP_NAME}] Chúc mừng bạn đã đăng ký tài khoản Google thành công — Nhận Voucher 10%`,
+    subject: `[${SHOP_NAME}] Chúc mừng bạn đã đăng ký tài khoản Google thành công — Nhận Voucher 10%`,
     html,
     purpose: 'GOOGLE_REGISTER_WELCOME',
   })
@@ -548,7 +548,6 @@ export async function sendGoogleLoginNotificationEmail({
 
 Hệ thống ghi nhận tài khoản của bạn (${to}) vừa đăng nhập thành công vào website ${SHOP_NAME} bằng liên kết Google.
 - Thời gian: ${timeStr}
-- Địa chỉ IP: ${ip}
 
 Nếu chính bạn vừa thực hiện đăng nhập, bạn có thể hoàn toàn yên tâm và không cần thao tác gì thêm.
 Nếu bạn không thực hiện hành động này, vui lòng liên hệ ngay với chúng tôi qua hotline ${SHOP_PHONE} để khóa phiên và bảo vệ tài khoản.
@@ -587,7 +586,7 @@ Hotline: ${SHOP_PHONE} · Email: ${user}
               <tr>
                 <td style="padding: 36px 32px 28px 32px;">
                   <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #631521; font-weight: 600;">
-                    🛡️ Thông Báo Bảo Mật Đăng Nhập
+                    Thông Báo Bảo Mật Đăng Nhập
                   </h2>
                   <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #4A3F38;">
                     Kính gửi <strong>${safeName}</strong>,
@@ -598,11 +597,8 @@ Hotline: ${SHOP_PHONE} · Email: ${user}
 
                   <!-- Session Details Box -->
                   <div style="background-color: #FAF5F0; border-left: 3px solid #631521; padding: 14px 16px; border-radius: 2px; margin-bottom: 24px; font-size: 13px; line-height: 1.6; color: #4A3F38;">
-                    <div style="margin-bottom: 6px;">
-                      <strong>⏱ Thời gian:</strong> ${safeTimeStr}
-                    </div>
                     <div>
-                      <strong>🌐 Địa chỉ IP:</strong> ${safeIp}
+                      <strong>⏱ Thời gian:</strong> ${safeTimeStr}
                     </div>
                   </div>
 
@@ -667,8 +663,7 @@ export async function sendOwnerGoogleAuthNotification({
 
   const isRegister = action === 'REGISTER'
   const badgeTitle = isRegister ? 'THÀNH VIÊN GOOGLE MỚI' : 'ĐĂNG NHẬP GOOGLE'
-  const emoji = isRegister ? '👤' : '🔐'
-  const subject = `${emoji} [${badgeTitle}] ${customerName} (${email || 'Không có email'})`
+  const subject = `[${badgeTitle}] ${customerName} (${email || 'Không có email'})`
 
   const html = `
     <!DOCTYPE html>
@@ -695,7 +690,7 @@ export async function sendOwnerGoogleAuthNotification({
     <body>
       <div class="wrap">
         <div class="top-bar">
-          <h1>${emoji} ${badgeTitle} — QuanNguyenS</h1>
+          <h1>${badgeTitle} — QuanNguyenS</h1>
           <p>Thời gian: ${timeStr}</p>
         </div>
         <div class="body">
@@ -837,7 +832,7 @@ Hotline: ${SHOP_PHONE} · Email: ${user}
                   <!-- Security Note -->
                   <div style="background-color: #FAF5F0; border-left: 3px solid #631521; padding: 12px 14px; border-radius: 2px; margin-bottom: 24px;">
                     <p style="margin: 0; font-size: 12.5px; line-height: 1.5; color: #631521;">
-                      🔒 <strong>Lưu ý bảo mật:</strong> Tuyệt đối không chia sẻ mã này cho bất kỳ ai. Nếu bạn không yêu cầu đặt lại mật khẩu, xin hãy bỏ qua email này.
+                      <strong>Lưu ý bảo mật:</strong> Tuyệt đối không chia sẻ mã này cho bất kỳ ai. Nếu bạn không yêu cầu đặt lại mật khẩu, xin hãy bỏ qua email này.
                     </p>
                   </div>
 
@@ -934,7 +929,7 @@ Hotline: ${SHOP_PHONE} · Email: ${user}
     <body>
       <div class="wrap">
         <div class="top-bar">
-          <h1>🔐 Thông Báo Bảo Mật — ${escapeHtml(SHOP_NAME)}</h1>
+          <h1>Thông Báo Bảo Mật — ${escapeHtml(SHOP_NAME)}</h1>
           <p>Style to be lived in</p>
         </div>
         <div class="body">

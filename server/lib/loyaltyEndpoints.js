@@ -36,6 +36,7 @@ import { getMemberBenefitsOverview, previewCheckoutBenefits } from './loyalty/be
 import { claimOrderPointsWithOtp } from './loyalty/orderHook.js'
 import { runAllDailyLoyaltyJobs } from './loyalty/jobs.js'
 import { normalizeVietnamesePhone, isValidVietnamesePhone } from './smsService.js'
+import { handleTelegramWebhookUpdate, startTelegramPolling } from './loyalty/otpProviders/index.js'
 
 /**
  * Middleware phân giải phiên Hội viên từ Cookie hoặc Bearer Token
@@ -247,6 +248,7 @@ export function registerLoyaltyEndpoints(app) {
         accountId,
         ip: clientIp,
         userAgent,
+        allowLoginIfExisting: req.body?.allowLoginIfExisting ?? true,
       })
 
       if (!result.success) {
@@ -831,4 +833,64 @@ export function registerLoyaltyEndpoints(app) {
       })
     }
   })
+
+  // ── J. TELEGRAM WEBHOOK ĐÓN NHẬN TƯƠNG TÁC XÁC THỰC ─────────────
+  app.post('/api/telegram/webhook', async (req, res) => {
+    try {
+      const update = req.body
+      const result = await handleTelegramWebhookUpdate(update)
+      return res.status(200).json({ ok: true, result })
+    } catch (err) {
+      console.warn('⚠️ [TELEGRAM WEBHOOK ERROR]:', err?.message || err)
+      return res.status(200).json({ ok: true, error: err?.message })
+    }
+  })
+
+  // ── K. KIỂM TRA TRẠNG THÁI XÁC THỰC SĐT (PUBLIC) ────────────────
+  app.get('/api/loyalty/phone/status', (req, res) => {
+    try {
+      const { v: verificationId, phone } = req.query || {}
+      const db = getLoyaltyDb()
+      let record = null
+
+      if (verificationId) {
+        record = db
+          .prepare(
+            'SELECT id, phone, expires_at, attempts, max_attempts, verified, telegram_chat_id, created_at FROM loyalty_phone_verifications WHERE id = ?'
+          )
+          .get(String(verificationId))
+      } else if (phone) {
+        const cleanPhone = normalizeVietnamesePhone(phone)
+        record = db
+          .prepare(
+            'SELECT id, phone, expires_at, attempts, max_attempts, verified, telegram_chat_id, created_at FROM loyalty_phone_verifications WHERE phone = ? ORDER BY created_at DESC LIMIT 1'
+          )
+          .get(cleanPhone)
+      }
+
+      if (!record) {
+        return res.status(404).json({ success: false, error: 'Không tìm thấy yêu cầu xác thực' })
+      }
+
+      const now = Date.now()
+      return res.status(200).json({
+        success: true,
+        id: record.id,
+        phone: maskPhone(record.phone),
+        delivered: Boolean(record.telegram_chat_id),
+        verified: Boolean(record.verified),
+        isExpired: now > record.expires_at,
+        expiresInSeconds: Math.max(0, Math.ceil((record.expires_at - now) / 1000)),
+      })
+    } catch (err) {
+      return res.status(500).json({ success: false, error: err?.message })
+    }
+  })
+
+  // Tự động khởi động Telegram Bot Polling nếu không chạy test runner và chưa có webhook
+  try {
+    startTelegramPolling()
+  } catch (pollErr) {
+    console.warn('⚠️ [TELEGRAM BOT POLLING START WARNING]:', pollErr?.message || pollErr)
+  }
 }

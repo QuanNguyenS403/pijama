@@ -1,4 +1,5 @@
 import React, { useState, useEffect, Fragment } from 'react'
+import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Sparkles,
@@ -225,15 +226,22 @@ export default function LoyaltyPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4"
+            className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
           >
-            <button
-              type="button"
-              onClick={() => setIsRegisterOpen(true)}
+            <Link
+              to="/uu-dai-hoi-vien"
               className="w-full sm:w-auto px-8 py-3.5 bg-[#631521] hover:bg-[#7D1B2A] text-white border border-[#D4AF37]/50 rounded-[2px] font-sans text-xs font-bold uppercase tracking-[0.18em] shadow-lg transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.99]"
             >
               <Crown className="w-4 h-4 text-[#D4AF37]" />
-              <span>Đăng Ký Hội Viên Ngay</span>
+              <span>Đăng Ký Ưu Đãi Hội Viên</span>
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => setIsRegisterOpen(true)}
+              className="w-full sm:w-auto px-6 py-3.5 bg-[#D4AF37]/20 hover:bg-[#D4AF37]/30 text-[#D4AF37] border border-[#D4AF37]/50 rounded-[2px] font-sans text-xs font-bold uppercase tracking-wider transition-colors text-center cursor-pointer"
+            >
+              Đăng Nhập Hội Viên
             </button>
 
             <a
@@ -465,17 +473,16 @@ export default function LoyaltyPage() {
                 </div>
 
                 <div className="pt-5 mt-5 border-t border-[#E8DFD5]">
-                  <button
-                    type="button"
-                    onClick={() => setIsRegisterOpen(true)}
-                    className={`w-full py-2.5 text-xs font-bold uppercase tracking-wider rounded-[2px] transition-colors cursor-pointer ${
+                  <Link
+                    to="/uu-dai-hoi-vien"
+                    className={`w-full py-2.5 text-xs font-bold uppercase tracking-wider rounded-[2px] transition-colors flex items-center justify-center cursor-pointer ${
                       t.isTop
                         ? 'bg-[#631521] hover:bg-[#4A0D17] text-white shadow-xs'
                         : 'bg-[#FAF8F5] hover:bg-[#631521] text-[#2C201A] hover:text-white border border-[#E8DFD5]'
                     }`}
                   >
                     Đăng Ký Tham Gia
-                  </button>
+                  </Link>
                 </div>
               </div>
             ))}

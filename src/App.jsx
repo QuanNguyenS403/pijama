@@ -19,6 +19,8 @@ const AdminLoginGate = lazy(() => import('./pages/admin/AdminLoginGate'))
 const UnsubscribePage = lazy(() => import('./pages/UnsubscribePage'))
 const AccountPage = lazy(() => import('./pages/AccountPage'))
 const LoyaltyPage = lazy(() => import('./pages/LoyaltyPage'))
+const LoyaltyRegisterPage = lazy(() => import('./pages/LoyaltyRegisterPage'))
+const VerifyLoyaltyPhonePage = lazy(() => import('./pages/VerifyLoyaltyPhonePage'))
 const PolicyPage = lazy(() => import('./pages/PolicyPage'))
 
 function PageFallback() {
@@ -70,6 +72,10 @@ export default function App() {
           <Route path="/admin/members" element={<AdminLoginGate><AdminMembersPage /></AdminLoginGate>} />
           <Route path="/tai-khoan" element={<AccountPage />} />
           <Route path="/hoi-vien" element={<LoyaltyPage />} />
+          <Route path="/uu-dai-hoi-vien" element={<LoyaltyRegisterPage />} />
+          <Route path="/dang-ky-hoi-vien" element={<LoyaltyRegisterPage />} />
+          <Route path="/xac-minh-hoi-vien" element={<VerifyLoyaltyPhonePage />} />
+          <Route path="/hoi-vien/xac-minh" element={<VerifyLoyaltyPhonePage />} />
           <Route path="/chinh-sach" element={<PolicyPage />} />
           <Route path="/chinh-sach-bao-mat" element={<PolicyPage />} />
           <Route path="/privacy-policy" element={<PolicyPage />} />
