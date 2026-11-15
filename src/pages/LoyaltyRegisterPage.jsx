@@ -24,7 +24,7 @@ export default function LoyaltyRegisterPage() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    document.title = 'Đăng Ký Ưu Đãi Hội Viên — QuanNguyenS Privileged'
+    document.title = 'Đăng Ký Ưu Đãi Hội Viên — QuanNguyenS Privileged Club'
     window.scrollTo({ top: 0, behavior: 'instant' })
 
     // Tự động điền thông tin nếu đã từng lưu ở checkout
@@ -111,13 +111,13 @@ export default function LoyaltyRegisterPage() {
       <Header onCartOpen={() => setCartOpen(true)} />
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
 
-      <main className="flex-1 py-8 sm:py-14 px-4 sm:px-6">
+      <main className="flex-1 pt-24 pb-12 sm:pt-28 sm:pb-16 px-4 sm:px-6">
         <div className="max-w-xl mx-auto">
           {/* Header Giới Thiệu */}
           <div className="text-center mx-auto mb-8 sm:mb-12 space-y-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FAF5F0] border border-[#D4AF37]/50 text-[#631521] text-[11px] font-bold uppercase tracking-[0.2em]">
               <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span>QuanNguyenS Privileged Program</span>
+              <span>QuanNguyenS Privileged Club</span>
             </div>
 
             <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#2C201A] leading-tight">

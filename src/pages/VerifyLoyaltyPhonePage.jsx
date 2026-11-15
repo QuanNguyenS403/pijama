@@ -255,7 +255,7 @@ export default function VerifyLoyaltyPhonePage() {
       <Header onCartOpen={() => setCartOpen(true)} />
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
 
-      <main className="flex-1 py-8 sm:py-14 px-4 sm:px-6">
+      <main className="flex-1 pt-24 pb-12 sm:pt-28 sm:pb-16 px-4 sm:px-6">
         <div className="max-w-[560px] mx-auto">
           {/* Breadcrumb / Quay lại */}
           <div className="mb-6 flex items-center justify-between">
