@@ -184,10 +184,10 @@ describe('Gói 3: Compounding Pricing, 30km COD, Mixed Pre-Order & Cart Sync', (
 
   it('validateOrderPricing rejects multiple vouchers and enforces server compounding + mixed split shipping', () => {
     const multiVoucher = validateOrderPricing({
-      items: [{ productId: 'the-daybreak-set', quantity: 1, unitPrice: 798000 }],
+      items: [{ productId: 'the-daybreak-set', quantity: 1, unitPrice: 698000 }],
       payment: { method: 'BANK_TRANSFER' },
       voucherCode: 'QNS10, WELCOME10',
-      subtotal: 798000,
+      subtotal: 698000,
       total: 400000,
     })
     assert.equal(multiVoucher.isValid, false)
@@ -196,26 +196,26 @@ describe('Gói 3: Compounding Pricing, 30km COD, Mixed Pre-Order & Cart Sync', (
     const validMixedSplit = validateOrderPricing(
       {
         items: [
-          { productId: 'the-daybreak-set', quantity: 1, unitPrice: 798000 },
+          { productId: 'the-daybreak-set', quantity: 1, unitPrice: 698000 },
           { productId: 'the-hearth-set', quantity: 1, unitPrice: 989000 },
         ],
         payment: { method: 'BANK_TRANSFER' },
         deliveryOption: 'SPLIT_SHIPPING',
         voucherCode: 'QNS10',
-        // subtotal = 1,787,000; Gold tier 10% (-178,700 -> 1,608,300); QNS10 10% (-160,830 -> 1,447,470);
-        // VietQR 10% (-144,747 -> 1,302,723) + splitShipping 30,000 = 1,332,723
-        subtotal: 1787000,
-        total: 1332723,
+        // subtotal = 1,687,000; Gold tier 10% (-168,700 -> 1,518,300); QNS10 10% (-151,830 -> 1,366,470);
+        // VietQR 10% (-136,647 -> 1,229,823) + splitShipping 30,000 = 1,259,823
+        subtotal: 1687000,
+        total: 1259823,
       },
       { loyaltyMember: { id: 'mem_test_gold', tier: 'GOLD', status: 'active' } }
     )
     assert.equal(validMixedSplit.isValid, true)
     assert.equal(validMixedSplit.summary.deliveryOption, 'SPLIT_SHIPPING')
     assert.equal(validMixedSplit.summary.splitShippingFee, 30000)
-    assert.equal(validMixedSplit.summary.tierDiscountAmount, 178700)
-    assert.equal(validMixedSplit.summary.voucherDiscount, 160830)
-    assert.equal(validMixedSplit.summary.bankTransferDiscount, 144747)
-    assert.equal(validMixedSplit.summary.total, 1332723)
+    assert.equal(validMixedSplit.summary.tierDiscountAmount, 168700)
+    assert.equal(validMixedSplit.summary.voucherDiscount, 151830)
+    assert.equal(validMixedSplit.summary.bankTransferDiscount, 136647)
+    assert.equal(validMixedSplit.summary.total, 1259823)
   })
 
   it('30km COD distance logic handles Văn Giang, Từ Sơn, Thuận Thành, Phố Huế HN, and >30km districts cleanly', async () => {
@@ -490,16 +490,16 @@ describe('Gói 4: Registration BirthDate/Phone/ConfirmPassword & Loyalty Sync', 
             city: 'Hà Nội',
           },
           items: [
-            { productId: 'the-daybreak-set', color: 'Đỏ', size: 'S', quantity: 1, unitPrice: 798000 },
+            { productId: 'the-daybreak-set', color: 'Đỏ', size: 'S', quantity: 1, unitPrice: 698000 },
             { productId: 'the-hearth-set', color: 'Sọc Nâu', size: 'S', quantity: 1, unitPrice: 989000 },
           ],
           payment: { method: 'BANK_TRANSFER', methodLabel: 'Chuyển khoản VietQR' },
           deliveryOption: 'SPLIT_SHIPPING',
           voucherCode,
-          subtotal: 1787000,
+          subtotal: 1687000,
           shippingFee: 30000,
-          discount: 384530,
-          total: 1432470,
+          discount: 365530,
+          total: 1351470,
         }),
       })
       const submitData = await submitRes.json()

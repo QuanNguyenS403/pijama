@@ -11,23 +11,23 @@ test('PricingValidator: Tính đúng giá đơn hàng COD trên 500k (Freeship t
       {
         productId: 'the-classic-set',
         productName: 'Feliz',
-        unitPrice: 798000,
+        unitPrice: 698000,
         quantity: 1,
-        totalPrice: 798000,
+        totalPrice: 698000,
       },
     ],
-    subtotal: 798000,
+    subtotal: 698000,
     shippingFee: 0,
     discount: 0,
-    total: 798000,
+    total: 698000,
   }
 
   const result = validateOrderPricing(order)
   assert.equal(result.isValid, true)
-  assert.equal(result.summary.subtotal, 798000)
+  assert.equal(result.summary.subtotal, 698000)
   assert.equal(result.summary.shippingFee, 0)
   assert.equal(result.summary.discount, 0)
-  assert.equal(result.summary.total, 798000)
+  assert.equal(result.summary.total, 698000)
 })
 
 test('PricingValidator: Tính đúng đơn hàng Bank Transfer trên 500k (Freeship + Giảm 10%)', () => {
@@ -92,15 +92,15 @@ test('PricingValidator: Từ chối đơn hàng khi client cố tình sửa tổ
       {
         productId: 'the-classic-set',
         productName: 'Feliz',
-        unitPrice: 798000,
+        unitPrice: 698000,
         quantity: 1,
-        totalPrice: 798000,
+        totalPrice: 698000,
       },
     ],
-    subtotal: 798000,
+    subtotal: 698000,
     shippingFee: 0,
     discount: 0,
-    total: 50000, // Giá đúng là 798.000đ nhưng client gửi 50.000đ
+    total: 50000, // Giá đúng là 698.000đ nhưng client gửi 50.000đ
   }
 
   const result = validateOrderPricing(tamperedOrder)

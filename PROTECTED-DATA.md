@@ -19,7 +19,7 @@
 ### 1. Catalog Sản Phẩm, Giá Bán & Tồn Kho Gốc
 - **File:** `src/data/products.js`
 - **Lý do khóa:** Đã chốt chính xác 3 sản phẩm chủ đạo trong BST Thu Đông 2026:
-  1. **FELIZ SET** (`the-classic-set` · `slug: feliz-set` · Đỏ · Hành Hỏa) — Giá niêm yết: 798.000đ (Size S, M: 50 sản phẩm/size)
+  1. **FELIZ SET** (`the-classic-set` · `slug: feliz-set` · Đỏ · Hành Hỏa) — Giá niêm yết: 698.000đ (Size S, M: 50 sản phẩm/size)
   2. **GALAXIA SET** (`the-cafe-look` · `slug: galaxia-set` · Caro Navy · Hành Thủy) — Giá niêm yết: 498.000đ (Size S, M: 50 sản phẩm/size)
   3. **THE HEARTH SET** (`the-evening-edit` · `slug: the-hearth-set` · Sọc Nâu · Hành Thổ) — Giá niêm yết: 989.000đ (Size S, M: 50 sản phẩm/size)
   Kèm theo thông số bảng size chuẩn hóa (S/M), mã màu swatch, cấu trúc thư viện ảnh `.jpg` và dữ liệu tồn kho khởi tạo.

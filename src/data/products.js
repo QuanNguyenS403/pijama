@@ -25,7 +25,7 @@ Gam màu Đỏ biểu trưng cho năng lượng Hỏa — biểu tượng của 
     tagline: `Khởi đầu ngày mới tràn đầy sinh khí với sắc đỏ ấm áp và phom dáng châu Âu kinh điển.`,
     sectionLabel: "BST Giáng Sinh - Christmas Collection",
 
-    price: 798000,
+    price: 698000,
     originalPrice: null,
     discount: 0,
     rating: 4.8,

@@ -14,7 +14,7 @@ export default function Section3FeaturedProducts() {
       slug: 'feliz-set',
       name: 'FELIZ SET',
       image: '/images/classic-set-red-main.jpg',
-      price: 798000,
+      price: 698000,
       originalPrice: null,
     },
     {
