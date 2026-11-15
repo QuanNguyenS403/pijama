@@ -375,11 +375,12 @@ export function expireOrderIfDue(order, options = {}) {
 }
 
 export function sweepExpiredOrders(options = {}) {
+  const opts = typeof options === 'number' ? { nowMs: options } : (options || {})
   const rawHours =
-    options.maxAgeHours !== undefined
-      ? Number(options.maxAgeHours)
+    opts.maxAgeHours !== undefined
+      ? Number(opts.maxAgeHours)
       : Number.parseFloat(String(process.env.UNPAID_QR_AUTOCANCEL_HOURS || '0'))
-  const nowMs = options.nowMs || Date.now()
+  const nowMs = opts.nowMs || Date.now()
 
   if (!Number.isFinite(rawHours) || rawHours <= 0) {
     const backlog = getAbandonedQrBacklogMetrics(nowMs)
@@ -388,7 +389,10 @@ export function sweepExpiredOrders(options = {}) {
         `⚠️ [QR STOCK BACKLOG] Có ${backlog.unpaidWithoutProofOver24h} đơn VietQR bỏ dở > 24h chưa có ảnh chứng từ đang giữ tồn kho. Đặt UNPAID_QR_AUTOCANCEL_HOURS=24 để tự động nhả kho.`
       )
     }
-    return { expiredCount: 0, autoCancelEnabled: false, backlog }
+    if (opts.includeBacklog) {
+      return { expiredCount: 0, autoCancelEnabled: false, backlog }
+    }
+    return { expiredCount: 0 }
   }
 
   let expiredCount = 0

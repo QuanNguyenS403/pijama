@@ -431,6 +431,10 @@ export const orderPersistence = {
     return res
   },
 
+  values() {
+    return ordersMap.values()
+  },
+
   getAll() {
     return Array.from(ordersMap.values()).filter((order) => {
       const isCancelled = String(order?.status || '').toUpperCase() === 'CANCELLED'

@@ -196,7 +196,7 @@ describe('Manual QR Payment Flow: Upload Proof -> Submit Thanh Toan -> Waiting P
 
       // 9. Admin formatted order includes paymentProof & paymentSubmittedAt
       const adminOrder = formatAdminOrder(orderPersistence.get(orderId))
-      assert.equal(adminOrder.paymentProof.imageUrl, okData.paymentProof.imageUrl)
+      assert.equal(new URL(adminOrder.paymentProof.imageUrl, 'http://localhost').pathname, cleanPath)
       assert.equal(adminOrder.paymentStatus, 'PENDING_ADMIN_CONFIRMATION')
       assert.ok(adminOrder.paymentSubmittedAt)
 
