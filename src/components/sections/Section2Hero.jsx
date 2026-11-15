@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { smoothScrollTo } from '../../lib/smoothScroll'
 import heroSlide01 from '../../assets/images/hero-slide-01.jpg'
 import heroSlide02 from '../../assets/images/hero-slide-02.jpg'
 import heroSlide03 from '../../assets/images/hero-slide-03.jpg'
@@ -71,8 +72,7 @@ export default function Section2Hero() {
   }, [next, paused])
 
   const scrollTo = (id) => {
-    const elem = document.querySelector(id)
-    if (elem) elem.scrollIntoView({ behavior: 'smooth' })
+    smoothScrollTo(id, { offset: -70, duration: 1.3 })
   }
 
   const currentSlide = slides[current]

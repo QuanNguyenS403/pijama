@@ -6,6 +6,7 @@ import { useCart } from '../../hooks/useCart'
 import WishlistDrawer from '../ui/WishlistDrawer'
 import OrdersHistoryDrawer from '../ui/OrdersHistoryDrawer'
 import { getSavedOrders } from '../../lib/orderSync'
+import { smoothScrollTo } from '../../lib/smoothScroll'
 
 export default function Header({ onCartOpen, onOpenCart, onAddToCart, onOpenOrdersDrawer }) {
   const [scrolled, setScrolled] = useState(false)
@@ -172,10 +173,10 @@ export default function Header({ onCartOpen, onOpenCart, onAddToCart, onOpenOrde
     setMobileMenuOpen(false)
     if (location.pathname === '/') {
       e.preventDefault()
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      smoothScrollTo(0, { duration: 1.2 })
     } else {
       navigate('/')
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      smoothScrollTo(0, { duration: 1.2 })
     }
   }
 
@@ -186,7 +187,7 @@ export default function Header({ onCartOpen, onOpenCart, onAddToCart, onOpenOrde
       if (location.pathname !== '/') {
         navigate('/')
       }
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      smoothScrollTo(0, { duration: 1.2 })
       return
     }
     if (link.scroll) {
@@ -194,12 +195,10 @@ export default function Header({ onCartOpen, onOpenCart, onAddToCart, onOpenOrde
       if (location.pathname !== '/') {
         navigate('/')
         setTimeout(() => {
-          const el = document.querySelector(link.href)
-          if (el) el.scrollIntoView({ behavior: 'smooth' })
+          smoothScrollTo(link.href, { offset: -70, duration: 1.3 })
         }, 300)
       } else {
-        const el = document.querySelector(link.href)
-        if (el) el.scrollIntoView({ behavior: 'smooth' })
+        smoothScrollTo(link.href, { offset: -70, duration: 1.3 })
       }
     }
   }

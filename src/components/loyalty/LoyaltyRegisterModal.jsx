@@ -297,26 +297,6 @@ export default function LoyaltyRegisterModal({
                   </div>
                 </div>
 
-                <div>
-                  <div className="p-2.5 bg-[#F0F8FF] border border-[#229ED9]/30 rounded-[2px] text-[11px] text-[#229ED9] flex items-center gap-2 mb-2 font-medium">
-                    <span className="w-2 h-2 rounded-full bg-[#229ED9] animate-pulse" />
-                    <span>Mã xác minh bảo mật sẽ được gửi qua <strong>Telegram</strong></span>
-                  </div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#4A3F38] mb-1">
-                    Email liên hệ (Tùy chọn)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="email"
-                      inputMode="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="name@gmail.com"
-                      className="w-full px-3 py-2 bg-[#FAF8F5] border border-[#E8DFD5] text-xs sm:text-sm rounded-[2px] focus:bg-white focus:border-[#631521] outline-hidden"
-                    />
-                  </div>
-                </div>
-
                 <button
                   type="submit"
                   disabled={loading}

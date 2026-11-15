@@ -43,6 +43,16 @@
     font-family: 'Inter', sans-serif !important;
   }
 
+  /* ─── Lenis Luxury Smooth Scroll Optimization ─── */
+  html.lenis {
+    scroll-behavior: auto !important;
+  }
+
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+
   body {
     @apply font-sans overflow-x-hidden;
     font-family: 'Inter', sans-serif !important;

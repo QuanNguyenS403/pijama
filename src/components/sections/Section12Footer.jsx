@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from '@/lib/router-compat'
 import { Mail, Phone, MapPin } from 'lucide-react'
 import PolicyModal from '../ui/PolicyModal'
+import { smoothScrollTo } from '../../lib/smoothScroll'
 
 function InstagramIcon({ className = 'w-4 h-4' }) {
   return (
@@ -57,8 +58,7 @@ export default function Section12Footer() {
 
   const handleNavClick = (e, href) => {
     e.preventDefault()
-    const elem = document.querySelector(href)
-    if (elem) elem.scrollIntoView({ behavior: 'smooth' })
+    smoothScrollTo(href, { offset: -70, duration: 1.3 })
   }
 
   return (
