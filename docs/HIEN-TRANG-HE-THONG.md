@@ -19,9 +19,9 @@
 | Chính sách COD & VietQR | Ship COD trong bán kính `<= 30km` từ kho `Hai Bà Trưng, Hà Nội`; `> 30km` bắt buộc chuyển khoản VietQR (giảm `10%` trên giá sản phẩm) | `server/apiHandler.js`, `server/lib/aiGeoDistanceService.js` |
 
 ### Danh mục sản phẩm hiện hành (`src/data/products.js` 🔒)
-1. **`FELIZ SET`** (`id: the-classic-set`, `slug: feliz-set`): `698.000đ` — Sắc Đỏ (Hành Hỏa), Size `S, M`, hàng có sẵn.
-2. **`GALAXIA SET`** (`id: the-cafe-look`, `slug: galaxia-set`): `598.000đ` — Caro Navy (Hành Thủy), Size `S, M`, hàng có sẵn.
-3. **`THE HEARTH SET`** (`id: the-evening-edit`, `slug: the-hearth-set`): `750.000đ` — Sọc Nâu (Hành Thổ), Size `S, M`, Pre-order 7–10 ngày.
+1. **`FELIZ SET`** (`id: the-classic-set`, `slug: feliz-set`): `798.000đ` — Sắc Đỏ (Hành Hỏa), Size `S, M` (50 sp/size), hàng có sẵn.
+2. **`GALAXIA SET`** (`id: the-cafe-look`, `slug: galaxia-set`): `498.000đ` — Caro Navy (Hành Thủy), Size `S, M` (50 sp/size), hàng có sẵn.
+3. **`THE HEARTH SET`** (`id: the-evening-edit`, `slug: the-hearth-set`): `989.000đ` — Sọc Nâu (Hành Thổ), Size `S, M` (50 sp/size), Pre-order 7–10 ngày.
 
 ---
 

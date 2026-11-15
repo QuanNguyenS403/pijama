@@ -11,23 +11,23 @@ test('PricingValidator: Tính đúng giá đơn hàng COD trên 500k (Freeship t
       {
         productId: 'the-classic-set',
         productName: 'Feliz',
-        unitPrice: 698000,
+        unitPrice: 798000,
         quantity: 1,
-        totalPrice: 698000,
+        totalPrice: 798000,
       },
     ],
-    subtotal: 698000,
+    subtotal: 798000,
     shippingFee: 0,
     discount: 0,
-    total: 698000,
+    total: 798000,
   }
 
   const result = validateOrderPricing(order)
   assert.equal(result.isValid, true)
-  assert.equal(result.summary.subtotal, 698000)
+  assert.equal(result.summary.subtotal, 798000)
   assert.equal(result.summary.shippingFee, 0)
   assert.equal(result.summary.discount, 0)
-  assert.equal(result.summary.total, 698000)
+  assert.equal(result.summary.total, 798000)
 })
 
 test('PricingValidator: Tính đúng đơn hàng Bank Transfer trên 500k (Freeship + Giảm 10%)', () => {
@@ -37,25 +37,25 @@ test('PricingValidator: Tính đúng đơn hàng Bank Transfer trên 500k (Frees
     payment: { method: 'BANK_TRANSFER' },
     items: [
       {
-        productId: 'the-cafe-look',
-        productName: 'Galaxia',
-        unitPrice: 598000,
+        productId: 'the-evening-edit',
+        productName: 'THE HEARTH SET',
+        unitPrice: 989000,
         quantity: 1,
-        totalPrice: 598000,
+        totalPrice: 989000,
       },
     ],
-    subtotal: 598000,
+    subtotal: 989000,
     shippingFee: 0,
-    discount: 59800, // 10% của 598.000đ
-    total: 538200,   // 598.000 - 59.800
+    discount: 98900, // 10% của 989.000đ
+    total: 890100,   // 989.000 - 98.900
   }
 
   const result = validateOrderPricing(order)
   assert.equal(result.isValid, true)
-  assert.equal(result.summary.subtotal, 598000)
+  assert.equal(result.summary.subtotal, 989000)
   assert.equal(result.summary.shippingFee, 0)
-  assert.equal(result.summary.discount, 59800)
-  assert.equal(result.summary.total, 538200)
+  assert.equal(result.summary.discount, 98900)
+  assert.equal(result.summary.total, 890100)
 })
 
 test('PricingValidator: Từ chối đơn hàng khi client cố tình sửa giảm đơn giá (P0-1 Security)', () => {
@@ -65,7 +65,7 @@ test('PricingValidator: Từ chối đơn hàng khi client cố tình sửa gi�
     payment: { method: 'COD' },
     items: [
       {
-        productId: 'the-evening-edit', // Giá thật là 750.000đ
+        productId: 'the-evening-edit', // Giá thật là 989.000đ
         productName: 'THE HEARTH SET',
         unitPrice: 1000, // Hack giá thành 1.000đ
         quantity: 1,
@@ -92,15 +92,15 @@ test('PricingValidator: Từ chối đơn hàng khi client cố tình sửa tổ
       {
         productId: 'the-classic-set',
         productName: 'Feliz',
-        unitPrice: 698000,
+        unitPrice: 798000,
         quantity: 1,
-        totalPrice: 698000,
+        totalPrice: 798000,
       },
     ],
-    subtotal: 698000,
+    subtotal: 798000,
     shippingFee: 0,
     discount: 0,
-    total: 50000, // Giá đúng là 698.000đ nhưng client gửi 50.000đ
+    total: 50000, // Giá đúng là 798.000đ nhưng client gửi 50.000đ
   }
 
   const result = validateOrderPricing(tamperedOrder)

@@ -331,17 +331,17 @@ test('Order Integration: Client tự khai accountId giả mạo không thể chi
       {
         productId: 'the-classic-set',
         quantity: 1,
-        unitPrice: 698000,
-        totalPrice: 698000,
+        unitPrice: 798000,
+        totalPrice: 798000,
         selectedColor: 'Red',
         selectedSize: 'M',
       },
     ],
-    subtotal: 698000,
+    subtotal: 798000,
     shippingFee: 0,
-    discount: 69800,
+    discount: 79800,
     voucherCode: legitVoucher.code,
-    total: 628200,
+    total: 718200,
     payment: { method: 'COD' },
   }
 

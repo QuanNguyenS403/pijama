@@ -14,7 +14,7 @@ export default function Section3FeaturedProducts() {
       slug: 'feliz-set',
       name: 'FELIZ SET',
       image: '/images/classic-set-red-main.jpg',
-      price: 698000,
+      price: 798000,
       originalPrice: null,
     },
     {
@@ -22,7 +22,7 @@ export default function Section3FeaturedProducts() {
       slug: 'galaxia-set',
       name: 'GALAXIA SET',
       image: '/images/classic-set-navy-lookbook-main.jpg',
-      price: 598000,
+      price: 498000,
       originalPrice: null,
     },
     {
@@ -30,7 +30,7 @@ export default function Section3FeaturedProducts() {
       slug: 'the-hearth-set',
       name: 'THE HEARTH SET',
       image: '/images/classic-set-brown-main.jpg',
-      price: 750000,
+      price: 989000,
       originalPrice: null,
     },
   ]

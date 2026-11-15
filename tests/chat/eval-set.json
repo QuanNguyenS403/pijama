@@ -150,7 +150,7 @@
     "id": 22,
     "category": "khách quà tặng / couple",
     "prompt": "Tôi muốn mua tặng sinh nhật sếp nữ bộ pijama cao cấp nhất shop",
-    "expectedKeywords": ["The Hearth Set", "Tencel", "750.000đ", "sang trọng"],
+    "expectedKeywords": ["The Hearth Set", "Tencel", "989", "sang trọng"],
     "forbiddenKeywords": ["chữa bệnh"]
   },
   {

@@ -150,9 +150,10 @@ describe('Manual QR Payment Flow: Upload Proof -> Submit Thanh Toan -> Waiting P
       const okData = await okRes.json()
       assert.equal(okData.success, true)
       assert.ok(okData.paymentProof.imageUrl.startsWith('/uploads/payment-proofs/proof_'))
-      assert.ok(okData.paymentProof.imageUrl.endsWith('.png'))
+      const cleanPath = new URL(okData.paymentProof.imageUrl, 'http://localhost').pathname
+      assert.ok(cleanPath.endsWith('.png'))
 
-      const firstFilePath = path.join(resolveProofUploadsDir(), path.basename(okData.paymentProof.imageUrl))
+      const firstFilePath = path.join(resolveProofUploadsDir(), path.basename(cleanPath))
       assert.equal(fs.existsSync(firstFilePath), true)
 
       // 5. Submit "Thanh toán" -> moves order to WAITING_CONFIRMATION / PENDING_ADMIN_CONFIRMATION
@@ -182,7 +183,7 @@ describe('Manual QR Payment Flow: Upload Proof -> Submit Thanh Toan -> Waiting P
       const tokGet = await fetch(`${baseUrl}/api/orders/payment-proof?orderId=${encodeURIComponent(orderId)}&token=${encodeURIComponent(trackingToken)}`)
       assert.equal(tokGet.status, 200)
       const tokGetData = await tokGet.json()
-      assert.equal(tokGetData.paymentProof.imageUrl, okData.paymentProof.imageUrl)
+      assert.equal(new URL(tokGetData.paymentProof.imageUrl, 'http://localhost').pathname, cleanPath)
 
       // 8. QR does NOT expire even 48 hours later
       const twoDaysLater = now + 48 * 3600 * 1000

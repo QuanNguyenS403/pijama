@@ -94,10 +94,10 @@ function adviseSize(weight, height) {
     return {
       recommendedSize: 'Size M (Form thoải mái) / Tư vấn theo số đo',
       reason: `dạ hiện tại cả 3 mẫu trên website (**FELIZ SET**, **GALAXIA SET**, **THE HEARTH SET**) đều có 2 size là **Size S** và **Size M** ạ. Với cân nặng ${weight}kg${height ? ` và chiều cao ${height}cm` : ''}, anh/chị tham khảo **Size M** có thông số form rộng rãi như sau ạ:\n` +
-        `• **GALAXIA SET** (Caro Navy - 598.000đ): **Size M** dài áo 70,5 cm · ngực áo 135,0 cm · max eo ≈116,0 cm · đùi 72,8 cm · dài quần 100,3 cm.\n` +
-        `• **FELIZ SET** (Đỏ - 698.000đ): **Size M** dài áo 66,0 cm · ngực áo 118,0 cm · max eo 103,7 cm · đùi 73,0 cm · dài quần 94,8 cm.\n` +
+        `• **GALAXIA SET** (Caro Navy - 498.000đ): **Size M** dài áo 70,5 cm · ngực áo 135,0 cm · max eo ≈116,0 cm · đùi 72,8 cm · dài quần 100,3 cm.\n` +
+        `• **FELIZ SET** (Đỏ - 798.000đ): **Size M** dài áo 66,0 cm · ngực áo 118,0 cm · max eo 103,7 cm · đùi 73,0 cm · dài quần 94,8 cm.\n` +
         `(Lưu ý: Mẫu **THE HEARTH SET** Size M khuyến nghị cho 51–58 kg, Ngực 87–93 cm, Eo 71–77 cm).`,
-      models: 'Hai mẫu **GALAXIA SET (Caro Navy - 598.000đ)** và **FELIZ SET (Đỏ - 698.000đ)** có form **Size M** rộng rãi rất dễ mặc ạ.',
+      models: 'Hai mẫu **GALAXIA SET (Caro Navy - 498.000đ)** và **FELIZ SET (Đỏ - 798.000đ)** có form **Size M** rộng rãi rất dễ mặc ạ.',
     }
   }
 
@@ -148,9 +148,9 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     return {
       reply:
         'Dạ QuanNguyenS hiện có 3 bộ sleepwear thiết kế cao cấp trong Bộ Sưu Tập Thu Đông 2026 chuẩn phong cách Style To Be Lived In ạ:\n\n' +
-        '1. 🌸 **FELIZ SET (698.000đ)**: Màu Đỏ ấm áp và quyến rũ (Hành Hỏa), viền tương phản sắc nét, cổ notch cổ điển, 100% sợi tự nhiên Cotton-Modal thoáng khí 4 mùa (Size S, M).\n\n' +
-        '2. 🌊 **GALAXIA SET (598.000đ)**: Họa tiết Caro Navy lịch lãm (Hành Thủy), thiết kế cổ V thanh thoát tôn dáng, chất liệu 95% Modal & 5% Spandex mướt mát chống nhăn tự nhiên (Size S, M).\n\n' +
-        '3. 🍂 **THE HEARTH SET (750.000đ)**: Họa tiết sọc nâu mocha quý phái (Hành Thổ), quần dáng wide-leg ống rộng buông rủ kiêu sa, chế tác từ 100% Tencel Lyocell thượng hạng (Size S, M).\n\n' +
+        '1. 🌸 **FELIZ SET (798.000đ)**: Màu Đỏ ấm áp và quyến rũ (Hành Hỏa), viền tương phản sắc nét, cổ notch cổ điển, 100% sợi tự nhiên Cotton-Modal thoáng khí 4 mùa (Size S, M).\n\n' +
+        '2. 🌊 **GALAXIA SET (498.000đ)**: Họa tiết Caro Navy lịch lãm (Hành Thủy), thiết kế cổ V thanh thoát tôn dáng, chất liệu 95% Modal & 5% Spandex mướt mát chống nhăn tự nhiên (Size S, M).\n\n' +
+        '3. 🍂 **THE HEARTH SET (989.000đ)**: Họa tiết sọc nâu mocha quý phái (Hành Thổ), quần dáng wide-leg ống rộng buông rủ kiêu sa, chế tác từ 100% Tencel Lyocell thượng hạng (Size S, M).\n\n' +
         'Anh/chị đang tìm đồ mặc nhà thoáng mát hay đang muốn chọn một món quà tinh tế cho người thân ạ?',
       quickReplies: ['Mẫu FELIZ SET (Đỏ)', 'Mẫu GALAXIA SET (Navy)', 'Mẫu Hearth (Nâu)', 'Tư vấn chọn size'],
     }
@@ -190,12 +190,12 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     norm.includes('bo do') ||
     norm.includes('soc hong') ||
     norm.includes('mau hong') ||
-    ((norm.includes('490') || norm.includes('698')) && !norm.includes('hearth') && !norm.includes('stillwater'))
+    ((norm.includes('490') || norm.includes('698') || norm.includes('798')) && !norm.includes('hearth') && !norm.includes('stillwater'))
   ) {
     return {
       reply:
         'Dạ bộ **FELIZ SET** là mẫu sleepwear cổ bẻ kinh điển phong cách châu Âu bán rất chạy tại QuanNguyenS ạ:\n\n' +
-        '• **Giá bán**: 698.000đ.\n' +
+        '• **Giá bán**: 798.000đ.\n' +
         '• **Màu sắc**: Màu Đỏ mang năng lượng Hỏa ấm áp, quyến rũ và may mắn.\n' +
         '• **Chất liệu**: 100% sợi tự nhiên Cotton-Modal dệt thoi thoáng khí 4 mùa, an toàn cho da nhạy cảm theo tiêu chuẩn OEKO-TEX 100.\n' +
         `• **Kích cỡ trên website (Size S, M)**:\n${formatInlineSizes('feliz-set')}\n` +
@@ -205,7 +205,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
       product: {
         name: 'FELIZ SET',
         subtitle: 'Sleepwear Phong Cách Châu Âu · Sắc Đỏ',
-        price: 698000,
+        price: 798000,
         slug: 'feliz-set',
         preOrder: false,
         image: '/images/classic-set-red-main.jpg',
@@ -222,12 +222,13 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     norm.includes('navy') ||
     norm.includes('co v') ||
     norm.includes('550') ||
+    norm.includes('498') ||
     norm.includes('598') || norm.includes('658')
   ) {
     return {
       reply:
         'Dạ bộ **GALAXIA SET** là thiết kế sleepwear cổ V hiện đại được rất nhiều khách hàng yêu thích:\n\n' +
-        '• **Giá bán**: 598.000đ.\n' +
+        '• **Giá bán**: 498.000đ.\n' +
         '• **Màu sắc**: Họa tiết Caro Navy lịch lãm, chiều sâu tĩnh tại của hành Thủy mang lại cảm giác an yên, thư thái.\n' +
         '• **Chất liệu**: 95% sợi gỗ tự nhiên Modal & 5% Spandex cao cấp định lượng 180 GSM, sờ vào mềm mướt mát lạnh và chống nhăn tự nhiên.\n' +
         `• **Kích cỡ trên website (Size S, M)**:\n${formatInlineSizes('galaxia-set')}\n` +
@@ -237,7 +238,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
       product: {
         name: 'GALAXIA SET',
         subtitle: 'Sleepwear Cổ V Lịch Lãm · Caro Navy',
-        price: 598000,
+        price: 498000,
         slug: 'galaxia-set',
         preOrder: false,
         image: '/images/hero-slide-02.jpg',
@@ -252,12 +253,13 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     norm.includes('mau nau') ||
     norm.includes('wide leg') ||
     norm.includes('ong rong') ||
+    norm.includes('989') ||
     norm.includes('750')
   ) {
     return {
       reply:
         'Dạ tuyệt phẩm **THE HEARTH SET** là dòng homewear cao cấp nhất tại QuanNguyenS:\n\n' +
-        '• **Giá bán**: 750.000đ (Phiên bản giới hạn).\n' +
+        '• **Giá bán**: 989.000đ (Phiên bản giới hạn).\n' +
         '• **Thiết kế**: Quần dáng wide-leg (ống rộng) thượng lưu buông rủ thướt tha, phối áo phom thoải mái chuẩn châu Âu.\n' +
         '• **Chất liệu**: 100% Tencel Lyocell thượng hạng định lượng 190 GSM, dệt bóng mờ sang trọng, thấm hút gấp 1.5 lần cotton và rủ mềm tự nhiên.\n' +
         '• **Màu sắc**: Sọc Nâu mocha ấm áp thuộc hành Thổ, mang lại cảm giác bình yên như trở về tổ ấm.\n' +
@@ -268,7 +270,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
       product: {
         name: 'THE HEARTH SET',
         subtitle: 'Sleepwear Wide-Leg Thượng Hạng · Sọc Nâu',
-        price: 750000,
+        price: 989000,
         slug: 'the-hearth-set',
         preOrder: true,
         image: '/images/hero-slide-03.jpg',
@@ -312,9 +314,9 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     return {
       reply:
         'Dạ QuanNguyenS niêm yết mức giá minh bạch cho 3 bộ sleepwear thiết kế như sau ạ:\n\n' +
-        '• **Feliz (Sắc Đỏ)**: 698.000đ · Cotton-Modal cao cấp.\n' +
-        '• **Galaxia (Caro Navy)**: 598.000đ · Modal cao cấp.\n' +
-        '• **THE HEARTH SET**: 750.000đ · Sọc Nâu Wide-Leg Tencel thượng hạng.\n\n' +
+        '• **Feliz (Sắc Đỏ)**: 798.000đ · Cotton-Modal cao cấp.\n' +
+        '• **Galaxia (Caro Navy)**: 498.000đ · Modal cao cấp.\n' +
+        '• **THE HEARTH SET**: 989.000đ · Sọc Nâu Wide-Leg Tencel thượng hạng.\n\n' +
         '🎁 **Ưu đãi áp dụng**:\n' +
         '• Giảm ngay **10% TRỰC TIẾP** trên tổng đơn khi thanh toán Chuyển khoản VietQR (Napas 24/7).\n' +
         '• **MIỄN PHÍ VẬN CHUYỂN** toàn quốc cho đơn từ 500.000đ ạ!',
@@ -336,9 +338,9 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     return {
       reply:
         'Dạ anh/chị chọn sleepwear cao cấp làm quà tặng là một lựa chọn cực kỳ chu đáo và tinh tế!\n\n' +
-        '• Nếu người nhận thích phong cách ngọt ngào, quyến rũ: mẫu **FELIZ SET** (Màu Đỏ, 698.000đ) mang năng lượng ấm áp, rạng rỡ và may mắn.\n' +
-        '• Nếu người nhận thích phong cách thanh lịch, trầm tĩnh: mẫu **GALAXIA SET** (Caro Navy, 598.000đ) cổ V rất tôn dáng và hiện đại.\n' +
-        '• Nếu muốn món quà đẳng cấp nhất dành tặng người đặc biệt: mẫu **THE HEARTH SET** (Sọc Nâu Tencel, 750k) phom wide-leg quý phái là lựa chọn hoàn hảo nhất.\n\n' +
+        '• Nếu người nhận thích phong cách ngọt ngào, quyến rũ: mẫu **FELIZ SET** (Màu Đỏ, 798.000đ) mang năng lượng ấm áp, rạng rỡ và may mắn.\n' +
+        '• Nếu người nhận thích phong cách thanh lịch, trầm tĩnh: mẫu **GALAXIA SET** (Caro Navy, 498.000đ) cổ V rất tôn dáng và hiện đại.\n' +
+        '• Nếu muốn món quà đẳng cấp nhất dành tặng người đặc biệt: mẫu **THE HEARTH SET** (Sọc Nâu Tencel, 989k) phom wide-leg quý phái là lựa chọn hoàn hảo nhất.\n\n' +
         'Mỗi đơn hàng QuanNguyenS đều được đóng gói hộp quà trang nhã và hỗ trợ đồng kiểm khi nhận hàng ạ. Anh/chị cho em xin số đo hoặc chiều cao/cân nặng của người nhận để em gợi ý size chuẩn nhé!',
       quickReplies: ['Tư vấn size quà tặng', 'Chính sách đổi trả', 'Gặp chủ shop'],
     }
@@ -386,7 +388,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
       product: {
         name: 'GALAXIA SET',
         subtitle: 'Sleepwear Cổ V Lịch Lãm · Caro Navy',
-        price: 598000,
+        price: 498000,
         slug: 'galaxia-set',
         preOrder: false,
         image: '/images/hero-slide-02.jpg',

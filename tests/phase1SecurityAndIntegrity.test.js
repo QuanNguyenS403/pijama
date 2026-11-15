@@ -124,13 +124,13 @@ test('P0 / G-09: PAY-001 Bank Transfer Initial Status is AWAITING_PAYMENT', asyn
         color: { name: 'Classic Red' },
         size: 'S',
         quantity: 1,
-        unitPrice: 698000,
+        unitPrice: 798000,
       },
     ],
-    subtotal: 698000,
+    subtotal: 798000,
     shippingFee: 0,
-    discount: 69800,
-    total: 628200,
+    discount: 79800,
+    total: 718200,
     payment: {
       method: 'BANK_TRANSFER',
     },
@@ -296,7 +296,7 @@ test('P0 / G-16: INV-001 Stock Validation Anti-Bypass, Aggregation & Variant Che
   assert.equal(bypassResult.isValid, false)
   assert.match(bypassResult.error, /chỉ còn .* sản phẩm trong kho/i)
 
-  // 2. Duplicate SKU lines aggregation: 2 lines of 6 each (total 12) exceeding stock 10
+  // 2. Duplicate SKU lines aggregation: 2 lines of 30 each (total 60) exceeding stock 50
   const duplicateLinesOrder = {
     orderId: 'QNS-TEST-DUP-LINES-02',
     items: [
@@ -304,19 +304,19 @@ test('P0 / G-16: INV-001 Stock Validation Anti-Bypass, Aggregation & Variant Che
         productId: 'the-classic-set',
         color: { name: 'Classic Red' },
         size: 'S',
-        quantity: 6,
+        quantity: 30,
       },
       {
         productId: 'the-classic-set',
         color: { name: 'Classic Red' },
         size: 'S',
-        quantity: 6,
+        quantity: 30,
       },
     ],
   }
   const dupResult = validateOrderStock(duplicateLinesOrder)
   assert.equal(dupResult.isValid, false)
-  assert.equal(dupResult.requestedQuantity, 12)
+  assert.equal(dupResult.requestedQuantity, 60)
 
   // 3. Invalid color variant rejection
   const invalidColorOrder = {

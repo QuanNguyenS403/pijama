@@ -33,7 +33,7 @@ const FORBIDDEN_PHRASES = [
 
 // Tập hợp các mức giá hợp lệ trong hệ thống
 const VALID_PRICES = new Set([
-  390000, 490000, 550000, 598000, 658000, 698000, 750000, 500000, 30000, 351000, 495000, 538200, 592200, 628200, 675000
+  390000, 490000, 498000, 550000, 598000, 658000, 698000, 750000, 798000, 989000, 500000, 30000, 351000, 448200, 495000, 538200, 592200, 628200, 675000, 718200, 890100
 ])
 
 /**
@@ -130,8 +130,13 @@ export function guardOutput(rawReply, { activeVoucherCodes = ['QNS10'] } = {}) {
       // Cho phép một số phép tính giảm 10% phổ biến nếu khách hỏi
       const isCalculatedValid = [
         351000, // 390k - 10%
+        448200, // 498k - 10%
         495000, // 550k - 10%
+        538200, // 598k - 10%
+        628200, // 698k - 10%
         675000, // 750k - 10%
+        718200, // 798k - 10%
+        890100, // 989k - 10%
       ].includes(p)
 
       if (!isCalculatedValid) {

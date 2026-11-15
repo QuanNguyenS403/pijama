@@ -36,7 +36,7 @@ test('StockValidator: Từ chối đơn hàng vượt quá tồn kho khả dụn
         productId: 'the-classic-set',
         productName: 'THE DAYBREAK SET',
         color: { name: 'Classic Red' },
-        size: 'S', // Tồn kho S là 10
+        size: 'S', // Tồn kho S là 50
         quantity: 999, // Yêu cầu 999 chiếc
       },
     ],

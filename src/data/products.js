@@ -25,7 +25,7 @@ Gam màu Đỏ biểu trưng cho năng lượng Hỏa — biểu tượng của 
     tagline: `Khởi đầu ngày mới tràn đầy sinh khí với sắc đỏ ấm áp và phom dáng châu Âu kinh điển.`,
     sectionLabel: "BST Giáng Sinh - Christmas Collection",
 
-    price: 698000,
+    price: 798000,
     originalPrice: null,
     discount: 0,
     rating: 4.8,
@@ -49,7 +49,7 @@ Gam màu Đỏ biểu trưng cho năng lượng Hỏa — biểu tượng của 
         hex: "#80262F",          // representative swatch color (Đỏ Ruby / Đỏ Rượu)
         patternPreview: true,    // swatch preview
         patternType: "red",
-        stock: { S: 10, M: 8 },
+        stock: { S: 50, M: 50 },
       },
     ],
 
@@ -137,7 +137,7 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
     tagline: `Tĩnh tại và an yên — phong cách cổ V thanh lịch cùng sắc xanh Navy trầm lắng.`,
     sectionLabel: "BST Giáng Sinh - Christmas Collection",
 
-    price: 598000,
+    price: 498000,
     originalPrice: null,
     discount: 0,
     rating: 4.7,
@@ -241,7 +241,7 @@ Họa tiết Sọc Nâu mocha (Brown Stripe) đại diện cho năng lượng h�
     tagline: `Vững chãi và ấm áp — cảm giác trở về nhà trong phom dáng wide-leg thượng lưu và sắc nâu an lành.`,
     sectionLabel: "BST Giáng Sinh - Christmas Collection",
 
-    price: 750000,
+    price: 989000,
     originalPrice: null,
     discount: 0,
     rating: 5.0,
@@ -278,7 +278,7 @@ Họa tiết Sọc Nâu mocha (Brown Stripe) đại diện cho năng lượng h�
         hex: "#5C3A21",
         patternPreview: true,
         patternType: "brown-stripe",
-        stock: { S: 6, M: 8 },
+        stock: { S: 50, M: 50 },
       },
     ],
 

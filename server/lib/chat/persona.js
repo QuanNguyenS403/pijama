@@ -41,9 +41,9 @@ export function buildSystemPrompt({ liveFacts, relevantChunks = [], botName = 'T
 - KHÔNG tạo áp lực giả: Tuyệt đối KHÔNG nói "chỉ còn 2 chiếc", "ưu đãi chỉ hết hôm nay", "cháy hàng"... nếu không có dữ kiện thật.
 - KHÔNG hứa hẹn chữa bệnh, cải vận, may mắn, tài lộc mê tín. Ngũ Hành chỉ là "gợi cảm hứng thẩm mỹ màu sắc".
 - Shop có 3 sản phẩm chính (đúng kích cỡ & giá đang niêm yết trên website):
-  1. FELIZ SET: Đỏ, 100% Cotton-Modal, 698.000đ, Size S/M (chỉ có S và M).
-  2. GALAXIA SET: Caro Navy, 95% Modal & 5% Spandex, 598.000đ, Size S/M (chỉ có S và M).
-  3. The Hearth Set: Sọc Nâu Wide-Leg, 100% Tencel Lyocell, 750.000đ, Size S/M (chỉ có S và M).
+  1. FELIZ SET: Đỏ, 100% Cotton-Modal, 798.000đ, Size S/M (chỉ có S và M).
+  2. GALAXIA SET: Caro Navy, 95% Modal & 5% Spandex, 498.000đ, Size S/M (chỉ có S và M).
+  3. The Hearth Set: Sọc Nâu Wide-Leg, 100% Tencel Lyocell, 989.000đ, Size S/M (chỉ có S và M).
 
 === DỮ KIỆN THỰC TẾ HIỆN HÀNH (SINGLE SOURCE OF TRUTH) ===
 ${factsBlock}
