@@ -8,6 +8,12 @@ import {
   startTelegramPolling,
   stopTelegramPolling,
   syncTelegramWebhook,
+  validateTelegramBotToken,
+  validateTelegramOwnerChatId,
+  validateTelegramWebhookSecret,
+  sendTelegramOwnerNotification,
+  getTelegramConfigDiagnostics,
+  escapeTelegramHtml,
 } from './telegramProvider.js'
 
 export {
@@ -18,6 +24,12 @@ export {
   startTelegramPolling,
   stopTelegramPolling,
   syncTelegramWebhook,
+  validateTelegramBotToken,
+  validateTelegramOwnerChatId,
+  validateTelegramWebhookSecret,
+  sendTelegramOwnerNotification,
+  getTelegramConfigDiagnostics,
+  escapeTelegramHtml,
 }
 import { maskPhone, createAlert } from '../loyaltyDb.js'
 import { normalizeVietnamesePhone } from '../../smsService.js'

@@ -9,6 +9,7 @@ import crypto from 'crypto'
 import { getDb } from '../accountDb.js'
 import { getTransporter } from '../emailConfig.js'
 import { escapeHtml } from '../emailAccount.js'
+import { sendTelegramOwnerNotification } from '../loyalty/otpProviders/telegramProvider.js'
 import { scrubPII } from './scrubPII.js'
 
 // Khởi tạo bảng chat_handoffs an toàn (Idempotent Migration)
@@ -126,32 +127,20 @@ async function notifyOwnerByEmail({ id, customerName, phone, topic, preferredTim
  * Gửi thông báo tức thì lên điện thoại chủ shop qua Telegram Bot (Tùy chọn miễn phí)
  */
 async function notifyOwnerByTelegram({ customerName, phone, topic, preferredTime, summary }) {
-  const token = process.env.TELEGRAM_BOT_TOKEN
-  const chatId = process.env.TELEGRAM_OWNER_CHAT_ID
-
-  if (!token || !chatId) return false
-
   try {
     const text =
-      `🔔 *YÊU CẦU GỌI LẠI TỪ KHÁCH HÀNG (CHATBOT)*\n\n` +
-      `👤 *Khách hàng:* ${customerName || 'Chưa cung cấp'}\n` +
-      `📞 *Số điện thoại:* \`${phone}\`\n` +
-      `💬 *Chủ đề:* ${topic || 'Tư vấn sản phẩm'}\n` +
-      `⏰ *Giờ tiện gọi:* ${preferredTime || 'Càng sớm càng tốt'}\n\n` +
-      `📝 *Tóm tắt:* ${summary || 'Khách bấm yêu cầu tư vấn'}`
+      `🔔 <b>YÊU CẦU GỌI LẠI TỪ KHÁCH HÀNG (CHATBOT)</b>\n\n` +
+      `👤 <b>Khách hàng:</b> ${escapeHtml(customerName || 'Chưa cung cấp')}\n` +
+      `📞 <b>Số điện thoại:</b> <code>${escapeHtml(phone)}</code>\n` +
+      `💬 <b>Chủ đề:</b> ${escapeHtml(topic || 'Tư vấn sản phẩm')}\n` +
+      `⏰ <b>Giờ tiện gọi:</b> ${escapeHtml(preferredTime || 'Càng sớm càng tốt')}\n\n` +
+      `📝 <b>Tóm tắt:</b> ${escapeHtml(summary || 'Khách bấm yêu cầu tư vấn')}`
 
-    const url = `https://api.telegram.org/bot${token}/sendMessage`
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: 'Markdown',
-      }),
+    const res = await sendTelegramOwnerNotification({
+      text,
+      parseMode: 'HTML',
     })
-
-    return res.ok
+    return Boolean(res.ok)
   } catch (err) {
     console.warn('⚠️ [HANDOFF TELEGRAM WARNING]:', err.message)
     return false

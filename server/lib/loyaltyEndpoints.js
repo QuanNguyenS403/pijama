@@ -1,4 +1,5 @@
 // server/lib/loyaltyEndpoints.js
+import crypto from 'crypto'
 import { requireAdminAuth } from './adminAuth.js'
 import { logSecurityAudit } from './auditLogger.js'
 import { parseCookies, setCustomerSessionCookie, clearCustomerSessionCookie, verifyCsrfOrigin } from './customerSessionMiddleware.js'
@@ -36,7 +37,13 @@ import { getMemberBenefitsOverview, previewCheckoutBenefits } from './loyalty/be
 import { claimOrderPointsWithOtp } from './loyalty/orderHook.js'
 import { runAllDailyLoyaltyJobs } from './loyalty/jobs.js'
 import { normalizeVietnamesePhone, isValidVietnamesePhone } from './smsService.js'
-import { handleTelegramWebhookUpdate, startTelegramPolling, syncTelegramWebhook } from './loyalty/otpProviders/index.js'
+import {
+  handleTelegramWebhookUpdate,
+  startTelegramPolling,
+  syncTelegramWebhook,
+  getTelegramConfigDiagnostics,
+  validateTelegramWebhookSecret,
+} from './loyalty/otpProviders/index.js'
 
 /**
  * Middleware phân giải phiên Hội viên từ Cookie hoặc Bearer Token
@@ -834,11 +841,74 @@ export function registerLoyaltyEndpoints(app) {
     }
   })
 
-  // ── J. TELEGRAM WEBHOOK ĐÓN NHẬN TƯƠNG TÁC XÁC THỰC ─────────────
+  // ── J. TELEGRAM WEBHOOK & CHẨN ĐOÁN TRẠNG THÁI BOT ──────────────
+  app.get('/api/admin/telegram/status', requireAdminAuth, async (req, res) => {
+    try {
+      const diagnostics = getTelegramConfigDiagnostics(process.env)
+      let liveTelegram = { checked: false, ok: false, bot: null, webhook: null, error: null }
+
+      if (diagnostics.botToken.valid) {
+        const token = String(process.env.TELEGRAM_BOT_TOKEN || '').trim()
+        liveTelegram.checked = true
+        try {
+          const [meRes, whRes] = await Promise.all([
+            fetch(`https://api.telegram.org/bot${token}/getMe`, { signal: AbortSignal.timeout(6000) }),
+            fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`, { signal: AbortSignal.timeout(6000) }),
+          ])
+          const [meData, whData] = await Promise.all([meRes.json(), whRes.json()])
+          liveTelegram.ok = Boolean(meData?.ok && whData?.ok)
+          if (meData?.ok && meData.result) {
+            liveTelegram.bot = {
+              id: meData.result.id,
+              username: meData.result.username,
+              firstName: meData.result.first_name,
+            }
+          }
+          if (whData?.ok && whData.result) {
+            liveTelegram.webhook = {
+              url: whData.result.url || '',
+              pendingUpdateCount: whData.result.pending_update_count || 0,
+              lastErrorDate: whData.result.last_error_date || null,
+              lastErrorMessage: whData.result.last_error_message || null,
+              allowedUpdates: whData.result.allowed_updates || [],
+            }
+          }
+          if (!liveTelegram.ok) {
+            liveTelegram.error = meData?.description || whData?.description || 'Telegram API trả về lỗi'
+          }
+        } catch (tgErr) {
+          liveTelegram.error = tgErr?.message || 'Không thể kết nối Telegram API'
+        }
+      }
+
+      return res.status(200).json({
+        success: true,
+        diagnostics,
+        liveTelegram,
+      })
+    } catch (err) {
+      return res.status(500).json({ success: false, error: 'Không thể kiểm tra trạng thái Telegram lúc này' })
+    }
+  })
+
   app.post('/api/telegram/webhook', async (req, res) => {
     const webhookSecret = (process.env.TELEGRAM_WEBHOOK_SECRET || '').trim()
-    if (webhookSecret && req.headers['x-telegram-bot-api-secret-token'] !== webhookSecret) {
-      return res.status(401).json({ ok: false, error: 'Unauthorized' })
+    if (webhookSecret) {
+      const secretCheck = validateTelegramWebhookSecret(webhookSecret)
+      if (!secretCheck.valid) {
+        console.warn('⚠️ [TELEGRAM WEBHOOK SECRET CONFIG WARNING]:', secretCheck.message)
+      }
+      const rawHeader = req.headers['x-telegram-bot-api-secret-token']
+      const providedSecret = String(Array.isArray(rawHeader) ? rawHeader[0] : (rawHeader || ''))
+      const bufProvided = Buffer.from(providedSecret, 'utf8')
+      const bufExpected = Buffer.from(webhookSecret, 'utf8')
+      const isAuthorized =
+        bufProvided.length === bufExpected.length &&
+        crypto.timingSafeEqual(bufProvided, bufExpected)
+
+      if (!isAuthorized) {
+        return res.status(401).json({ ok: false, error: 'Unauthorized' })
+      }
     }
 
     try {

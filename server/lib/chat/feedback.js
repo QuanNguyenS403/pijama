@@ -9,6 +9,7 @@ import crypto from 'crypto'
 import { getDb } from '../accountDb.js'
 import { getTransporter } from '../emailConfig.js'
 import { escapeHtml } from '../emailAccount.js'
+import { sendTelegramOwnerNotification } from '../loyalty/otpProviders/telegramProvider.js'
 import { scrubPII } from './scrubPII.js'
 import { isValidVnPhone } from './handoff.js'
 
@@ -138,33 +139,21 @@ async function notifyOwnerByEmail({ id, feedbackType, customerName, phone, email
  * Gửi thông báo tới Telegram Bot chủ shop (nếu có cấu hình)
  */
 async function notifyOwnerByTelegram({ feedbackType, customerName, phone, orderId, content }) {
-  const token = process.env.TELEGRAM_BOT_TOKEN
-  const chatId = process.env.TELEGRAM_OWNER_CHAT_ID
-
-  if (!token || !chatId) return false
-
   try {
     const typeLabel = FEEDBACK_TYPE_LABELS[feedbackType] || FEEDBACK_TYPE_LABELS.other
     const text =
-      `📬 *THÔNG BÁO Ý KIẾN KHÁCH HÀNG (QNS CHAT)*\n\n` +
-      `📌 *Phân loại:* ${typeLabel}\n` +
-      `👤 *Khách hàng:* ${customerName || 'Chưa cung cấp'}\n` +
-      `📞 *Số điện thoại:* \`${phone}\`\n` +
-      (orderId ? `📦 *Đơn hàng:* \`${orderId}\`\n` : '') +
-      `\n💬 *Nội dung:*\n${content.slice(0, 500)}`
+      `📬 <b>THÔNG BÁO Ý KIẾN KHÁCH HÀNG (QNS CHAT)</b>\n\n` +
+      `📌 <b>Phân loại:</b> ${escapeHtml(typeLabel)}\n` +
+      `👤 <b>Khách hàng:</b> ${escapeHtml(customerName || 'Chưa cung cấp')}\n` +
+      `📞 <b>Số điện thoại:</b> <code>${escapeHtml(phone)}</code>\n` +
+      (orderId ? `📦 <b>Đơn hàng:</b> <code>${escapeHtml(orderId)}</code>\n` : '') +
+      `\n💬 <b>Nội dung:</b>\n${escapeHtml(String(content || '').slice(0, 500))}`
 
-    const url = `https://api.telegram.org/bot${token}/sendMessage`
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: 'Markdown',
-      }),
+    const res = await sendTelegramOwnerNotification({
+      text,
+      parseMode: 'HTML',
     })
-
-    return res.ok
+    return Boolean(res.ok)
   } catch (err) {
     console.warn('⚠️ [FEEDBACK TELEGRAM WARNING]:', err.message)
     return false

@@ -40,6 +40,10 @@ jobs:
             echo "ERROR: Non-empty secret value detected in *.env.example!"
             exit 1
           fi
+          if grep -rnE '[0-9]{8,}:AA[A-Za-z0-9_-]{30,}' *.env.example render.yaml tests/ 2>/dev/null; then
+            echo "ERROR: Real Telegram bot token detected in tracked config or tests!"
+            exit 1
+          fi
 
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4

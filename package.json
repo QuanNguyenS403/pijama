@@ -12,6 +12,7 @@
     "server": "node server/index.js",
     "start": "cross-env NODE_ENV=production node server/index.js",
     "check-env": "node scripts/check-env.js",
+    "check-telegram": "node scripts/check-telegram.js",
     "backup-data": "node scripts/backup-data.js",
     "rebuild-orders": "node scripts/rebuild-order-cache.js",
     "sync-sheets": "node scripts/sync-sheets.js",

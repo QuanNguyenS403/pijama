@@ -89,3 +89,17 @@ services:
         sync: false
       - key: VIETTELPOST_WEBHOOK_SECRET
         sync: false
+      - key: LOYALTY_ENABLED
+        value: "true"
+      - key: LOYALTY_OTP_PROVIDER
+        value: telegram
+      - key: TELEGRAM_BOT_USERNAME
+        value: QuanNguyenSbot
+      - key: TELEGRAM_WEBHOOK_URL
+        value: "https://www.quannguyens.com/api/telegram/webhook"
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_OWNER_CHAT_ID
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        sync: false

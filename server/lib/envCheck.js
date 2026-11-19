@@ -10,6 +10,11 @@ import {
   isRenderEnvironment,
   isSmtpAllowedOnCurrentPlatform,
 } from './shopConfig.js'
+import {
+  validateTelegramBotToken,
+  validateTelegramOwnerChatId,
+  validateTelegramWebhookSecret,
+} from './loyalty/otpProviders/telegramConfig.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -350,6 +355,94 @@ export function validateEnvironment(env = process.env) {
   for (const spec of featureSpecs) {
     const res = checkVar(spec.name, spec.isSecret)
     results.featureGated.push(res)
+  }
+
+  // Kiểm tra cấu hình Telegram Bot & Webhook (cảnh báo non-fatal nếu thiếu hoặc sai định dạng)
+  const telegramSpecs = [
+    {
+      name: 'TELEGRAM_BOT_TOKEN',
+      isSecret: true,
+      detailedCheck: () => validateTelegramBotToken(effectiveEnv.TELEGRAM_BOT_TOKEN),
+      validator: (v) => {
+        const chk = validateTelegramBotToken(v)
+        return chk.valid ? true : chk.message
+      },
+    },
+    {
+      name: 'TELEGRAM_BOT_USERNAME',
+      isSecret: false,
+      validator: (v) => {
+        const trimmed = String(v || '').trim()
+        if (trimmed.startsWith('@')) {
+          return 'Không cần tiền tố @ trong TELEGRAM_BOT_USERNAME (chỉ điền QuanNguyenSbot)'
+        }
+        if (/\s/.test(trimmed)) {
+          return 'TELEGRAM_BOT_USERNAME không được chứa khoảng trắng'
+        }
+        return true
+      },
+    },
+    {
+      name: 'TELEGRAM_OWNER_CHAT_ID',
+      isSecret: false,
+      detailedCheck: () => validateTelegramOwnerChatId(effectiveEnv.TELEGRAM_OWNER_CHAT_ID, effectiveEnv.TELEGRAM_BOT_TOKEN),
+      validator: (v) => {
+        const chk = validateTelegramOwnerChatId(v, effectiveEnv.TELEGRAM_BOT_TOKEN)
+        return chk.valid ? true : chk.message
+      },
+    },
+    {
+      name: 'TELEGRAM_WEBHOOK_URL',
+      isSecret: false,
+      validator: (v) => {
+        const trimmed = String(v || '').trim()
+        if (!trimmed.startsWith('https://')) {
+          return 'TELEGRAM_WEBHOOK_URL phải bắt đầu bằng https://'
+        }
+        if (/^https?:\/\/quannguyens\.com(?=\/|$)/i.test(trimmed)) {
+          return 'Phải dùng canonical domain https://www.quannguyens.com/api/telegram/webhook (domain non-www bị Cloudflare 307 redirect làm Telegram từ chối)'
+        }
+        return true
+      },
+    },
+    {
+      name: 'TELEGRAM_WEBHOOK_SECRET',
+      isSecret: true,
+      detailedCheck: () => validateTelegramWebhookSecret(effectiveEnv.TELEGRAM_WEBHOOK_SECRET),
+      validator: (v) => {
+        const chk = validateTelegramWebhookSecret(v)
+        return chk.valid ? true : chk.message
+      },
+    },
+  ]
+
+  let telegramTokenOk = false
+  let telegramOwnerStatus = 'THIẾU'
+  for (const spec of telegramSpecs) {
+    const res = checkVar(spec.name, spec.isSecret, spec.validator)
+    if (res.status === 'SAI' && typeof spec.detailedCheck === 'function') {
+      const detail = spec.detailedCheck()
+      if (!detail.valid && detail.message) {
+        res.message = detail.message
+      }
+    }
+    results.featureGated.push(res)
+
+    if (spec.name === 'TELEGRAM_BOT_TOKEN') {
+      telegramTokenOk = res.status === 'OK'
+    }
+    if (spec.name === 'TELEGRAM_OWNER_CHAT_ID') {
+      telegramOwnerStatus = res.status
+    }
+    if (res.status === 'SAI') {
+      results.warnings.push(`[TELEGRAM CONFIG] ${res.name}: ${res.message}`)
+    }
+  }
+
+  if (telegramTokenOk && telegramOwnerStatus === 'THIẾU') {
+    results.warnings.push(
+      '[TELEGRAM CONFIG] TELEGRAM_OWNER_CHAT_ID chưa cấu hình — thông báo chủ shop qua Telegram sẽ tạm tắt'
+    )
   }
 
   // Kiểm tra đồng bộ Google Client ID (Frontend & Backend phải khớp nhau)
