@@ -277,6 +277,12 @@ export function getTelegramUserByPhone(phone) {
   return db.prepare('SELECT * FROM loyalty_telegram_users WHERE phone = ? LIMIT 1').get(cleanPhone)
 }
 
+export function getTelegramUserByTelegramId(telegramId) {
+  if (!telegramId) return null
+  const db = getLoyaltyDb()
+  return db.prepare('SELECT * FROM loyalty_telegram_users WHERE telegram_id = ? LIMIT 1').get(String(telegramId))
+}
+
 export function attachTelegramChatIdToVerification(id, chatId) {
   if (!id || !chatId) return false
   const db = getLoyaltyDb()

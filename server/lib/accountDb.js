@@ -80,6 +80,22 @@ export function closeDb() {
   }
 }
 
+export function ensureSystemAccount(database = getDb()) {
+  try {
+    const sysAccount = database.prepare('SELECT id FROM accounts WHERE id = ?').get('system')
+    if (!sysAccount) {
+      database.prepare(`
+        INSERT OR IGNORE INTO accounts (id, method, full_name, verified, created_at)
+        VALUES ('system', 'system', 'System Promotion', 1, ?)
+      `).run(new Date().toISOString())
+    }
+    return true
+  } catch (err) {
+    console.warn('⚠️ [ACCOUNT DB] Không thể đảm bảo tài khoản system:', err?.message || err)
+    return false
+  }
+}
+
 function initSchema(database) {
   // 1. Bảng tài khoản khách hàng
   database.exec(`
@@ -140,16 +156,12 @@ function initSchema(database) {
     CREATE INDEX IF NOT EXISTS idx_vouchers_used ON vouchers(used);
   `)
 
+  // Đảm bảo tài khoản system luôn tồn tại vô điều kiện (idempotent)
+  ensureSystemAccount(database)
+
   // Seed system campaign voucher QNS10 if not present for persistent tracking
   const qns10 = database.prepare('SELECT id FROM vouchers WHERE UPPER(code) = ?').get('QNS10')
   if (!qns10) {
-    const sysAccount = database.prepare('SELECT id FROM accounts WHERE id = ?').get('system')
-    if (!sysAccount) {
-      database.prepare(`
-        INSERT INTO accounts (id, method, full_name, verified, created_at)
-        VALUES ('system', 'system', 'System Promotion', 1, ?)
-      `).run(new Date().toISOString())
-    }
     database.prepare(`
       INSERT INTO vouchers (id, account_id, code, discount_percent, free_shipping, used, created_at)
       VALUES ('vouch_qns10_campaign', 'system', 'QNS10', 10, 0, 0, ?)
@@ -1749,29 +1761,84 @@ export async function syncVouchersFromSupabase(database = getDb()) {
         status = CASE WHEN MAX(vouchers.used, excluded.used) = 1 THEN 'used' ELSE vouchers.status END
     `)
 
+    ensureSystemAccount(database)
+    const checkAccountStmt = database.prepare('SELECT id FROM accounts WHERE id = ?')
+    const checkVoucherByCodeStmt = database.prepare('SELECT id FROM vouchers WHERE UPPER(code) = ?')
+    const updateUsedOnlyStmt = database.prepare(`
+      UPDATE vouchers
+      SET used = MAX(used, ?),
+          used_at = COALESCE(?, used_at),
+          order_id = COALESCE(?, order_id),
+          status = CASE WHEN MAX(used, ?) = 1 THEN 'used' ELSE status END
+      WHERE UPPER(code) = ?
+    `)
+
+    let syncedCount = 0
+    let skippedOrphans = 0
     const insertMany = database.transaction((rows) => {
       for (const r of rows) {
         if (!r.code) continue
         const cleanCode = String(r.code).trim().toUpperCase()
         const isUsed = r.used ? 1 : 0
         const status = isUsed ? 'used' : 'active'
-        stmt.run(
-          `vouch_sb_${cleanCode.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
-          r.account_id || 'system',
-          cleanCode,
-          Number(r.discount_percent ?? 10),
-          r.freeship !== undefined ? (r.freeship ? 1 : 0) : 1,
-          isUsed,
-          r.used_at || null,
-          r.order_id || null,
-          status,
-          r.created_at || new Date().toISOString()
-        )
+
+        const rawAccountId = r.account_id ? String(r.account_id).trim() : ''
+        let targetAccountId = null
+
+        if (!rawAccountId || rawAccountId === 'system') {
+          targetAccountId = 'system'
+        } else if (checkAccountStmt.get(rawAccountId)) {
+          targetAccountId = rawAccountId
+        } else {
+          // Voucher cá nhân nhưng account_id chưa tồn tại trong bảng accounts:
+          // KHÔNG được phép hạ/nâng quyền về 'system' để tránh rò rỉ thành mã công khai.
+          const existingLocal = checkVoucherByCodeStmt.get(cleanCode)
+          if (existingLocal) {
+            try {
+              updateUsedOnlyStmt.run(
+                isUsed,
+                r.used_at || null,
+                r.order_id || null,
+                isUsed,
+                cleanCode
+              )
+              syncedCount++
+            } catch (itemErr) {
+              console.warn(`⚠️ [SUPABASE SYNC] Bỏ qua cập nhật voucher ${cleanCode}:`, itemErr.message)
+            }
+          } else {
+            skippedOrphans++
+          }
+          continue
+        }
+
+        try {
+          stmt.run(
+            `vouch_sb_${cleanCode.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+            targetAccountId,
+            cleanCode,
+            Number(r.discount_percent ?? 10),
+            r.freeship !== undefined ? (r.freeship ? 1 : 0) : 1,
+            isUsed,
+            r.used_at || null,
+            r.order_id || null,
+            status,
+            r.created_at || new Date().toISOString()
+          )
+          syncedCount++
+        } catch (itemErr) {
+          console.warn(`⚠️ [SUPABASE SYNC] Bỏ qua voucher ${cleanCode}:`, itemErr.message)
+        }
       }
     })
 
     insertMany(data)
-    return data.length
+    if (skippedOrphans > 0) {
+      console.warn(
+        `⚠️ [SUPABASE SYNC] Đã bỏ qua ${skippedOrphans} voucher cá nhân có account_id chưa tồn tại trong accounts.`
+      )
+    }
+    return syncedCount
   } catch (err) {
     console.warn('⚠️ [SUPABASE SYNC] Ngoại lệ khi đồng bộ vouchers từ Supabase:', err.message)
     return 0

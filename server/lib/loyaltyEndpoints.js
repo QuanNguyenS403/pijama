@@ -36,7 +36,7 @@ import { getMemberBenefitsOverview, previewCheckoutBenefits } from './loyalty/be
 import { claimOrderPointsWithOtp } from './loyalty/orderHook.js'
 import { runAllDailyLoyaltyJobs } from './loyalty/jobs.js'
 import { normalizeVietnamesePhone, isValidVietnamesePhone } from './smsService.js'
-import { handleTelegramWebhookUpdate, startTelegramPolling } from './loyalty/otpProviders/index.js'
+import { handleTelegramWebhookUpdate, startTelegramPolling, syncTelegramWebhook } from './loyalty/otpProviders/index.js'
 
 /**
  * Middleware phân giải phiên Hội viên từ Cookie hoặc Bearer Token
@@ -836,13 +836,20 @@ export function registerLoyaltyEndpoints(app) {
 
   // ── J. TELEGRAM WEBHOOK ĐÓN NHẬN TƯƠNG TÁC XÁC THỰC ─────────────
   app.post('/api/telegram/webhook', async (req, res) => {
+    const webhookSecret = (process.env.TELEGRAM_WEBHOOK_SECRET || '').trim()
+    if (webhookSecret && req.headers['x-telegram-bot-api-secret-token'] !== webhookSecret) {
+      return res.status(401).json({ ok: false, error: 'Unauthorized' })
+    }
+
     try {
       const update = req.body
       const result = await handleTelegramWebhookUpdate(update)
       return res.status(200).json({ ok: true, result })
     } catch (err) {
       console.warn('⚠️ [TELEGRAM WEBHOOK ERROR]:', err?.message || err)
-      return res.status(200).json({ ok: true, error: err?.message })
+      return res.status(200).json(
+        process.env.NODE_ENV === 'production' ? { ok: true } : { ok: true, error: err?.message }
+      )
     }
   })
 
@@ -887,10 +894,11 @@ export function registerLoyaltyEndpoints(app) {
     }
   })
 
-  // Tự động khởi động Telegram Bot Polling nếu không chạy test runner và chưa có webhook
+  // Đồng bộ cấu hình Webhook và tiến trình nhận tin nhắn Telegram
   try {
+    syncTelegramWebhook().catch(() => {})
     startTelegramPolling()
   } catch (pollErr) {
-    console.warn('⚠️ [TELEGRAM BOT POLLING START WARNING]:', pollErr?.message || pollErr)
+    console.warn('⚠️ [TELEGRAM BOT START WARNING]:', pollErr?.message || pollErr)
   }
 }

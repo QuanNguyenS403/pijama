@@ -39,7 +39,7 @@ export default function AdminBroadcastPage() {
 Chúng tôi rất hân hạnh được giới thiệu đến bạn Bộ sưu tập Lụa Sleepwear Thu Đông 2026 với 3 thiết kế chủ đạo:
 1. FELIZ SET — Sắc Đỏ thanh lịch, quyến rũ
 2. GALAXIA SET — Caro Navy trầm tĩnh, quý phái
-3. THE HEARTH SET — Sọc Nâu ấm áp, sang trọng
+3. BLANCA SET — Sắc Trắng tinh khôi, quý phái
 
 Tất cả sản phẩm đều được dệt may từ chất liệu lụa satin tự nhiên cao cấp, mang lại cảm giác mềm mại, thoáng mát tuyệt đối trên làn da.
 

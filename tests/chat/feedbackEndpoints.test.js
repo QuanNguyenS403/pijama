@@ -50,7 +50,7 @@ test('Feedback: Tiếp nhận yêu cầu đặc biệt (đặt size / may đo ri
     feedbackType: 'request',
     name: 'Chị Hoàng Yến',
     phone: '0901234567',
-    content: 'Mình muốn đặt may The Hearth Set theo số đo riêng và kèm hộp quà tặng cao cấp.',
+    content: 'Mình muốn đặt may Blanca Set theo số đo riêng và kèm hộp quà tặng cao cấp.',
   })
 
   assert.equal(result.success, true)

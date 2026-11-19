@@ -404,10 +404,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Khánh Ngọc",
     "date": "2026-10-08T09:30:00.000Z",
     "rating": 5,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "S",
-    "photo": "/images/reviews/review-brown-1.jpg",
-    "text": "Bình thường mình chúa ghét đợi hàng pre-order mà nhìn thấy bản phối sọc nâu quần ống rộng này trên web là phải bấm bụng đặt liền! Đợi đúng 8 ngày nhận được hàng, mở ra mặc thử cái là thấy bõ công chờ đợi thực sự. Dáng quần wide-leg suông rộng bước đi nhìn thướt tha, sang chảnh chuẩn quý cô châu Âu luôn."
+    "photo": "/images/reviews/review-blanca-1.jpg",
+    "text": "Bình thường mình chúa ghét đợi hàng pre-order mà nhìn thấy bản phối sắc trắng tinh khôi quý phái này trên web là phải bấm bụng đặt liền! Đợi đúng 8 ngày nhận được hàng, mở ra mặc thử cái là thấy bõ công chờ đợi thực sự. Dáng suông buông rủ bước đi nhìn thướt tha, sang chảnh chuẩn quý cô châu Âu luôn."
   },
   {
     "id": "rv-38",
@@ -415,10 +415,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Thanh Thảo",
     "date": "2026-10-11T14:15:00.000Z",
     "rating": 4,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "M",
-    "photo": "/images/reviews/review-brown-2.jpg",
-    "text": "Màu sọc nâu trầm ấm cực kỳ hợp với tiết trời thu đông luôn á mọi người. Mình để 4 sao vì xét ở mức giá 750k thì phần đường may bên trong mới dừng ở mức trung bình khá thôi, chưa tới độ sắc sảo hoàn hảo từng đường kim mũi chỉ. Nhưng phải công nhận là cái phom quần ống rộng với màu sắc lên người quá xuất sắc, nhìn tổng thể vẫn sang nên mình hoàn toàn hài lòng!"
+    "photo": "/images/reviews/review-blanca-2.jpg",
+    "text": "Màu trắng tinh khôi cực kỳ sang và sáng da luôn á mọi người. Mình để 4 sao vì xét ở mức giá cao cấp thì phần đường may bên trong mới dừng ở mức trung bình khá thôi, chưa tới độ sắc sảo hoàn hảo từng đường kim mũi chỉ. Nhưng phải công nhận là cái phom buông rủ với màu sắc lên người quá xuất sắc, nhìn tổng thể vẫn sang nên mình hoàn toàn hài lòng!"
   },
   {
     "id": "rv-39",
@@ -426,10 +426,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Minh Thư",
     "date": "2026-10-13T10:45:00.000Z",
     "rating": 5,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "S",
-    "photo": "/images/reviews/review-brown-3.jpg",
-    "text": "Mặc bộ này đi lại trong nhà mà cảm giác như đang đi nghỉ dưỡng ở resort 5 sao vậy đó haha! Cái quần ống rộng thiết kế phóng khoáng cực kỳ, ngồi xếp bằng trên sofa hay nằm dài đều thoải mái tuyệt đối, không bị bó sát vào chân. Quá ưng cho một phiên bản giới hạn!"
+    "photo": "/images/reviews/review-blanca-3.jpg",
+    "text": "Mặc bộ này đi lại trong nhà mà cảm giác như đang đi nghỉ dưỡng ở resort 5 sao vậy đó haha! Thiết kế phóng khoáng cực kỳ, ngồi xếp bằng trên sofa hay nằm dài đều thoải mái tuyệt đối, không bị gò bó. Quá ưng cho một phiên bản giới hạn!"
   },
   {
     "id": "rv-40",
@@ -437,10 +437,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Bích Phương",
     "date": "2026-10-15T15:20:00.000Z",
     "rating": 4,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "M",
-    "photo": "/images/reviews/review-brown-4.jpg",
-    "text": "Lúc mới khui hàng ra thấy ở phần lai quần ống rộng có vương mấy sợi chỉ thừa chưa cắt kỹ nên hơi hẫng nhẹ, nhưng sau khi tự tay bấm gọn chỉ rồi ướm lên người thì mê chữ ê kéo dài nha! Lên dáng chuẩn chỉnh, tôn chiều cao cực kỳ, chắc chắn sẽ còn quay lại mua thêm mẫu khác của shop."
+    "photo": "/images/reviews/review-blanca-4.jpg",
+    "text": "Lúc mới khui hàng ra thấy ở phần lai áo có vương sợi chỉ thừa chưa cắt kỹ nên hơi hẫng nhẹ, nhưng sau khi tự tay bấm gọn chỉ rồi ướm lên người thì mê chữ ê kéo dài nha! Lên dáng chuẩn chỉnh, màu trắng thanh khiết tôn da cực kỳ, chắc chắn sẽ còn quay lại mua thêm mẫu khác của shop."
   },
   {
     "id": "rv-41",
@@ -448,10 +448,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Uyên Nhi",
     "date": "2026-10-16T18:10:00.000Z",
     "rating": 5,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "S",
     "photo": null,
-    "text": "Lúc đầu hơi rén sợ màu nâu mặc lên bị dừ trước tuổi, ai dè nhận về mặc thử thì nó là cái tông nâu tây sang điên đảo mấy bà ơi! Nhất là buổi tối bật đèn vàng trong phòng ngủ lên, chụp tấm ảnh qua gương mà nhìn cái vibe ấm cúng, nghệ thuật hết nước chấm."
+    "text": "Lúc đầu hơi rén sợ màu trắng dễ lộ, ai dè nhận về mặc thử thì chất vải Tencel dệt bóng mờ dày dặn vừa vặn, sang điên đảo mấy bà ơi! Nhất là buổi tối bật đèn vàng trong phòng ngủ lên, chụp tấm ảnh qua gương mà nhìn cái vibe sang chảnh, nghệ thuật hết nước chấm."
   },
   {
     "id": "rv-42",
@@ -459,10 +459,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Thùy Dương",
     "date": "2026-10-18T11:35:00.000Z",
     "rating": 5,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "M",
     "photo": null,
-    "text": "Chính thức sưu tập đủ cả 3 mẫu trong BST Thu Đông của QuanNguyenS rồi nha! Nếu bộ hồng trẻ trung, bộ caro xanh thanh lịch thì bộ sọc nâu này mang lại cảm giác đằm thắm, phóng khoáng nhất nhờ chiếc quần wide-leg. Đường may vừa vặn đủ dùng, quan trọng là mặc lên người thấy tự tin và dễ chịu lắm."
+    "text": "Chính thức sưu tập đủ cả 3 mẫu trong BST Thu Đông của QuanNguyenS rồi nha! Nếu bộ đỏ trẻ trung, bộ caro xanh thanh lịch thì bộ trắng Blanca này mang lại cảm giác kiêu sa, thuần khiết nhất. Đường may vừa vặn đủ dùng, quan trọng là mặc lên người thấy tự tin và dễ chịu lắm."
   },
   {
     "id": "rv-43",
@@ -470,10 +470,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Ngọc Hân",
     "date": "2026-10-19T16:00:00.000Z",
     "rating": 4,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "S",
     "photo": null,
-    "text": "Hàng pre-order nên đợi mất gần 9 ngày mới tới tay, tính mình lại hay nôn nóng. Xem kỹ chi tiết thì đường vắt sổ bên trong ở mức cơ bản bình thường thôi, không quá cầu kỳ, nhưng bù lại lúc khoác lên người thì diện mạo bên ngoài quá slay, che đi hết mấy điểm trừ nhỏ nhặt. Rất đáng để trải nghiệm nha!"
+    "text": "Hàng pre-order nên đợi mất gần 9 ngày mới tới tay, tính mình lại hay nôn nóng. Xem kỹ chi tiết thì đường vắt sổ bên trong ở mức cơ bản bình thường thôi, nhưng bù lại lúc khoác lên người thì diện mạo bên ngoài quá slay, che đi hết mấy điểm trừ nhỏ nhặt. Sắc trắng cực kỳ tôn dáng, rất đáng để trải nghiệm nha!"
   },
   {
     "id": "rv-44",
@@ -481,10 +481,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Diễm My",
     "date": "2026-10-21T08:50:00.000Z",
     "rating": 5,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "S",
     "photo": null,
-    "text": "Thiết kế bản giới hạn có khác, nhìn cái sọc nâu phối cổ áo V chỉn chu cực kỳ. Mặc vào tối ngủ thấy giữ ấm dịu nhẹ vừa đủ chứ không bị nóng bức đổ mồ hôi. Sáng dậy bước ra ban công tưới cây pha trà mà thấy đời thơ hẳn ra, mãi yêu shop!"
+    "text": "Thiết kế bản giới hạn có khác, nhìn sắc trắng phối cổ bẻ chỉn chu cực kỳ. Mặc vào tối ngủ thấy mềm mát dễ chịu chứ không bị nóng bức đổ mồ hôi. Sáng dậy bước ra ban công tưới cây pha trà mà thấy đời thơ hẳn ra, mãi yêu shop!"
   },
   {
     "id": "rv-45",
@@ -492,10 +492,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Hà Phương",
     "date": "2026-10-22T13:40:00.000Z",
     "rating": 5,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "M",
     "photo": null,
-    "text": "Chuyện thật như đùa: tối qua mình mặc bộ này đi từ phòng ngủ ra phòng khách mà ông chồng mình ngước lên hỏi \"Ủa tối rồi vợ còn mặc đồ đẹp định đi cafe với ai hả?\" haha. Phải giải thích đây là đồ pijama mặc nhà ổng mới tin vì cái dáng quần ống rộng nhìn lịch sự như đồ dạo phố thật sự!"
+    "text": "Chuyện thật như đùa: tối qua mình mặc bộ này đi từ phòng ngủ ra phòng khách mà ông chồng mình ngước lên hỏi \"Ủa tối rồi vợ còn mặc đồ đẹp định đi cafe với ai hả?\" haha. Phải giải thích đây là đồ pijama mặc nhà ổng mới tin vì cái dáng và màu trắng nhìn lịch sự như đồ dạo phố thật sự!"
   },
   {
     "id": "rv-46",
@@ -503,10 +503,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Trúc Linh",
     "date": "2026-10-23T17:25:00.000Z",
     "rating": 4,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "S",
     "photo": null,
-    "text": "Nhìn chung mình rất ưng thiết kế và màu sắc của bộ The Hearth Set này. Có một điểm nhỏ là chiếc cúc áo ở giữa khâu hơi lỏng nhẹ và đường chỉ gấu áo ở mức tầm trung thôi, mình chịu khó gia cố lại xíu là mặc vô tư. Với một đứa mê form quần ống rộng như mình thì bộ này vẫn xứng đáng có mặt trong tủ đồ!"
+    "text": "Nhìn chung mình rất ưng thiết kế và sắc trắng của bộ Blanca Set này. Có một điểm nhỏ là chiếc cúc áo ở giữa khâu hơi lỏng nhẹ và đường chỉ gấu áo ở mức tầm trung thôi, mình chịu khó gia cố lại xíu là mặc vô tư. Với một đứa mê form đồ suông buông rủ như mình thì bộ này vẫn xứng đáng có mặt trong tủ đồ!"
   },
   {
     "id": "rv-47",
@@ -514,10 +514,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Yến Trang",
     "date": "2026-10-24T10:15:00.000Z",
     "rating": 5,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "M",
     "photo": null,
-    "text": "Chân ái cho những cô nàng đùi to hoặc chân hơi cong giống mình đây rồi! Chiếc quần wide-leg suông thẳng từ trên xuống dưới che sạch sành sanh mọi khuyết điểm đôi chân, nhìn tổng thể người vừa cao vừa thanh thoát. Mặc ở nhà mà cứ đi qua gương là phải đứng ngắm một lúc."
+    "text": "Chân ái cho những cô nàng mê phong cách tối giản thanh lịch đây rồi! Form dáng suông thẳng từ trên xuống dưới che sạch sành sanh mọi khuyết điểm, nhìn tổng thể người vừa cao vừa thanh thoát trong sắc trắng tinh khôi. Mặc ở nhà mà cứ đi qua gương là phải đứng ngắm một lúc."
   },
   {
     "id": "rv-48",
@@ -525,10 +525,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Quỳnh Anh",
     "date": "2026-10-25T14:50:00.000Z",
     "rating": 5,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "S",
     "photo": null,
-    "text": "Điểm cộng lớn cho dịch vụ chăm sóc khách hàng của shop: dù là hàng đặt trước 7–10 ngày nhưng các bạn chủ động nhắn báo tình trạng đơn hàng rất chu đáo nên mình yên tâm hẳn. Nhận đồ về mở hộp thơm phức, mặc lên nhẹ nhàng êm ái, đợt tới shop ra mẫu mới nhất định sẽ ủng hộ tiếp!"
+    "text": "Điểm cộng lớn cho dịch vụ chăm sóc khách hàng của shop: dù là hàng đặt trước 7–10 ngày nhưng các bạn chủ động nhắn báo tình trạng đơn hàng rất chu đáo nên mình yên tâm hẳn. Nhận đồ về mở hộp thơm phức, sắc trắng tinh khôi mặc lên nhẹ nhàng êm ái, đợt tới shop ra mẫu mới nhất định sẽ ủng hộ tiếp!"
   },
   {
     "id": "rv-49",
@@ -536,10 +536,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Lam Phương",
     "date": "2026-10-26T19:30:00.000Z",
     "rating": 4,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "M",
     "photo": null,
-    "text": "Giá 750k nên mình cũng soi hơi kỹ một chút: phần giấu mối chỉ ở lai quần và cổ tay còn hơi thủ công ở mức trung bình, nếu shop trau chuốt thêm khâu cắt chỉ thừa trước khi đóng hộp nữa là 10 điểm tròn trĩnh luôn. Còn về form dáng wide-leg với màu sọc nâu thì đẹp miễn chê, mặc rất thoải mái."
+    "text": "Giá cao cấp nên mình cũng soi kỹ một chút: phần giấu mối chỉ ở lai quần và cổ tay còn hơi thủ công ở mức trung bình, nếu shop trau chuốt thêm khâu cắt chỉ thừa trước khi đóng hộp nữa là 10 điểm tròn trĩnh luôn. Còn về form dáng buông rủ với màu trắng tinh khôi thì đẹp miễn chê, mặc rất thoải mái."
   },
   {
     "id": "rv-50",
@@ -547,10 +547,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Bảo Hân",
     "date": "2026-10-27T09:05:00.000Z",
     "rating": 5,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "S",
     "photo": null,
-    "text": "Vibe \"old money\" tại gia là có thật nha mấy bà ơi! Tối thứ 6 tắm nước ấm xong, diện bộ sọc nâu này vào, đốt thêm hũ nến thơm gỗ đàn hương rồi bật nhạc jazz lên là quên hết deadline công ty. Cảm giác mặc trên da rất dịu, không hề bị cứng hay thô."
+    "text": "Vibe \"old money\" tại gia là có thật nha mấy bà ơi! Tối thứ 6 tắm nước ấm xong, diện bộ Blanca màu trắng tinh khôi này vào, đốt thêm hũ nến thơm hoa nhài rồi bật nhạc jazz lên là quên hết deadline công ty. Cảm giác mặc trên da rất dịu, không hề bị cứng hay thô."
   },
   {
     "id": "rv-51",
@@ -558,10 +558,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Mai Hương",
     "date": "2026-10-28T15:40:00.000Z",
     "rating": 5,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "M",
     "photo": null,
-    "text": "Tông nâu của bộ này nhìn ngoài đời có chiều sâu và ấm áp lắm, cực kỳ hợp với mấy ngày thời tiết bắt đầu chuyển mùa se lạnh. Mặc lên người nhẹ nhàng, không gây cảm giác nặng nề dù quần may ống rộng. Đã giới thiệu cho chị đồng nghiệp đặt chung luôn rồi!"
+    "text": "Tông trắng tinh khôi của bộ này nhìn ngoài đời có chiều sâu và thanh lịch lắm, mặc lên người nhẹ nhàng, tôn dáng cực kỳ. Đã giới thiệu cho chị đồng nghiệp đặt chung luôn rồi!"
   },
   {
     "id": "rv-52",
@@ -569,10 +569,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Thảo Nguyên",
     "date": "2026-10-29T11:20:00.000Z",
     "rating": 4,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "S",
     "photo": null,
-    "text": "Mình cao 1m58 nặng 47kg mặc size S vừa vặn, chiều dài quần phủ xuống mắt cá chân nhìn rất thời trang. Đường kim mũi chỉ của sản phẩm ở mức trung bình vừa đủ để mặc bền hàng ngày chứ không quá xuất sắc, nhưng thiết kế ống rộng quá tôn dáng nên mình vẫn rất mê và sẽ quay lại mua thêm bộ đỏ."
+    "text": "Mình cao 1m58 nặng 47kg mặc size S vừa vặn, chiều dài quần phủ xuống mắt cá chân nhìn rất thời trang. Đường kim mũi chỉ của sản phẩm ở mức trung bình vừa đủ để mặc bền hàng ngày chứ không quá xuất sắc, nhưng thiết kế sắc trắng quá tôn dáng nên mình vẫn rất mê và sẽ quay lại mua thêm bộ đỏ."
   },
   {
     "id": "rv-53",
@@ -580,10 +580,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Linh Đan",
     "date": "2026-10-29T18:50:00.000Z",
     "rating": 5,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "M",
     "photo": null,
-    "text": "Đợi tròn 1 tuần lễ để rước em nó về dinh và kết quả là ưng ngoài mong đợi! Phom áo và quần phối với nhau nhìn cực kỳ cân đối, mặc đi lại thướt tha mà lúc nằm ngủ cũng không bị vướng víu. Sẽ tiếp tục theo dõi các bộ sưu tập tiếp theo của QuanNguyenS."
+    "text": "Đợi tròn 1 tuần lễ để rước em nó về dinh và kết quả là ưng ngoài mong đợi! Phom áo và quần phối với nhau nhìn cực kỳ cân đối, sắc trắng sang trọng mặc đi lại thướt tha mà lúc nằm ngủ cũng không bị vướng víu. Sẽ tiếp tục theo dõi các bộ sưu tập tiếp theo của QuanNguyenS."
   },
   {
     "id": "rv-54",
@@ -591,10 +591,10 @@ export const SAMPLE_REVIEWS = [
     "author": "Kim Ngân",
     "date": "2026-10-30T08:10:00.000Z",
     "rating": 5,
-    "color": "Sọc Nâu",
+    "color": "Trắng",
     "size": "S",
     "photo": null,
-    "text": "Một pha chốt đơn pre-order không hề hối hận chút nào! Màu sọc nâu sang xịn, có một hai sợi chỉ thừa nhỏ xíu ở túi áo mình rút nhẹ cái là hết. Mặc thoải mái từ tối tới sáng, nhìn chỉnh chu đến mức khách đột xuất ghé nhà chơi cũng chẳng cần vội vàng chạy đi thay đồ!"
+    "text": "Một pha chốt đơn pre-order không hề hối hận chút nào! Sắc trắng tinh khôi sang xịn, có một hai sợi chỉ thừa nhỏ xíu ở túi áo mình rút nhẹ cái là hết. Mặc thoải mái từ tối tới sáng, nhìn chỉnh chu đến mức khách đột xuất ghé nhà chơi cũng chẳng cần vội vàng chạy đi thay đồ!"
   }
 ];
 
@@ -605,6 +605,8 @@ const SLUG_TO_ID = {
   'galaxia-set': 'the-cafe-look',
   'the-galaxia-set': 'the-cafe-look',
   'the-stillwater-set': 'the-cafe-look',
+  'blanca-set': 'the-evening-edit',
+  'the-blanca-set': 'the-evening-edit',
   'the-hearth-set': 'the-evening-edit',
 };
 

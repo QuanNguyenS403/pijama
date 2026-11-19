@@ -7,9 +7,10 @@ import {
   getPendingOtpByPhone,
   saveTelegramUser,
   getTelegramUserByPhone,
+  getTelegramUserByTelegramId,
   attachTelegramChatIdToVerification,
 } from '../loyaltyDb.js'
-import { normalizeVietnamesePhone } from '../../smsService.js'
+import { normalizeVietnamesePhone, isValidVietnamesePhone } from '../../smsService.js'
 import { isNodeTestRunner } from '../../emailRecipientGuard.js'
 
 /**
@@ -60,6 +61,7 @@ export async function sendTelegramDirectMessage({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(8000),
     })
 
     const data = await res.json()
@@ -153,6 +155,7 @@ async function notifyOwnerNewLoyaltyVerification({ phone, purpose }) {
         text,
         parse_mode: 'HTML',
       }),
+      signal: AbortSignal.timeout(8000),
     })
   } catch (err) {
     // Không chặn luồng chính nếu lỗi thông báo chủ shop
@@ -249,6 +252,19 @@ export async function sendTelegramOtp({
   }
 }
 
+const CONTACT_REQUEST_KEYBOARD = {
+  keyboard: [
+    [
+      {
+        text: '📱 Xác nhận số điện thoại của tôi',
+        request_contact: true,
+      },
+    ],
+  ],
+  resize_keyboard: true,
+  one_time_keyboard: true,
+}
+
 /**
  * Xử lý cập nhật (Update) từ Telegram Webhook hoặc Long-polling
  */
@@ -258,56 +274,118 @@ export async function handleTelegramWebhookUpdate(update) {
   const msg = update.message
   const chatId = msg.chat?.id
   const fromUser = msg.from || {}
-  const text = (msg.text || '').trim()
+  const rawText = (msg.text || '').trim()
   const contact = msg.contact
 
   if (!chatId) return { ok: true, ignored: true }
 
-  const botUsername = getTelegramBotUsername()
+  // ── 1. Khách hàng gửi lệnh /start (hỗ trợ cả /start@BotUsername, tham số otp_ hoặc deep-link) ──
+  const startMatch = rawText.match(/^\/start(?:@\w+)?(?:\s+(.*))?$/i)
 
-  // ── 1. Khách hàng bấm /start otp_<verificationId> (Deep-link từ web) ──
-  if (text.startsWith('/start otp_')) {
-    const verificationId = text.replace('/start otp_', '').trim()
-    const record = getPendingOtpByVerificationId(verificationId)
+  if (startMatch) {
+    const rawParam = (startMatch[1] || '').trim()
+    const otpParamMatch =
+      rawParam.match(/^(?:otp_)?(vcode_[a-zA-Z0-9_-]+)$/i) ||
+      rawParam.match(/^otp_([a-zA-Z0-9_-]+)$/i)
+    const verificationId = otpParamMatch ? otpParamMatch[1].trim() : ''
 
-    if (!record || !record.raw_code_temp) {
+    // 1a. Nếu có mã phiên xác thực verificationId từ deep-link
+    if (verificationId) {
+      const record = getPendingOtpByVerificationId(verificationId)
+
+      if (!record || !record.raw_code_temp) {
+        await sendTelegramDirectMessage({
+          chatId,
+          text: `⚠️ <b>Yêu cầu xác thực không tồn tại hoặc đã hết hạn</b>\n\n` +
+            `Mã xác minh chỉ có hiệu lực trong 5 phút để bảo mật. Quý khách vui lòng quay lại website https://www.quannguyens.com/hoi-vien để yêu cầu mã mới.`,
+        })
+        return { ok: true, handled: 'expired_or_not_found' }
+      }
+
+      if (record.telegram_chat_id && String(record.telegram_chat_id) !== String(chatId)) {
+        await sendTelegramDirectMessage({
+          chatId,
+          text: '⚠️ Mã xác thực này đã được gửi riêng tới tài khoản Telegram đã liên kết trước đó với số điện thoại này.',
+        })
+        return { ok: true, handled: 'deeplink_chat_mismatch' }
+      }
+
+      attachTelegramChatIdToVerification(record.id, chatId)
+      saveTelegramUser({
+        telegramId: String(chatId),
+        phone: record.phone,
+        username: fromUser.username || null,
+        firstName: fromUser.first_name || '',
+        lastName: fromUser.last_name || '',
+      })
+
+      const replyText =
+        `✨ <b>QuanNguyenS — XÁC MINH SỐ ĐIỆN THOẠI HỘI VIÊN</b> ✨\n\n` +
+        `Kính chào Quý khách! Mã xác thực đăng ký ưu đãi hội viên cho số <b>${maskPhone(record.phone)}</b> là:\n\n` +
+        `👉 <code>${record.raw_code_temp}</code> 👈\n\n` +
+        `<i>(Chạm vào dãy số trên để sao chép nhanh)</i>\n\n` +
+        `⏳ Mã có hiệu lực trong <b>5 phút</b>.\n` +
+        `Quý khách vui lòng quay lại website điền mã xác minh để chứng minh số điện thoại chính chủ và kích hoạt đặc quyền hội viên nhé!`
+
       await sendTelegramDirectMessage({
         chatId,
-        text: `⚠️ <b>Yêu cầu xác thực không tồn tại hoặc đã hết hạn</b>\n\n` +
-          `Mã xác minh chỉ có hiệu lực trong 5 phút để bảo mật. Quý khách vui lòng quay lại website https://quannguyens.com để yêu cầu mã mới.`,
+        text: replyText,
       })
-      return { ok: true, handled: 'expired_or_not_found' }
+
+      return { ok: true, handled: 'otp_sent_via_deeplink', phone: record.phone }
     }
 
-    // Ghi nhận chatId vào bản ghi xác minh và lưu user Telegram
-    attachTelegramChatIdToVerification(record.id, chatId)
-    saveTelegramUser({
-      telegramId: String(chatId),
-      phone: record.phone,
-      username: fromUser.username || null,
-      firstName: fromUser.first_name || '',
-      lastName: fromUser.last_name || '',
-    })
+    // 1b. Khách bấm /start không có tham số (hoặc tham số không phải mã OTP): Tra cứu SĐT đã liên kết
+    const existingTgUser = getTelegramUserByTelegramId(chatId)
+    if (existingTgUser?.phone) {
+      const pendingOtp = getPendingOtpByPhone(existingTgUser.phone)
+      if (pendingOtp && pendingOtp.raw_code_temp) {
+        attachTelegramChatIdToVerification(pendingOtp.id, chatId)
 
-    // Gửi ngay tin nhắn chứa mã OTP kèm hướng dẫn
-    const replyText =
-      `✨ <b>QuanNguyenS — XÁC MINH SỐ ĐIỆN THOẠI HỘI VIÊN</b> ✨\n\n` +
-      `Kính chào Quý khách! Mã xác thực đăng ký ưu đãi hội viên cho số <b>${maskPhone(record.phone)}</b> là:\n\n` +
-      `👉 <code>${record.raw_code_temp}</code> 👈\n\n` +
-      `<i>(Chạm vào dãy số trên để sao chép nhanh)</i>\n\n` +
-      `⏳ Mã có hiệu lực trong <b>5 phút</b>.\n` +
-      `Quý khách vui lòng quay lại website điền mã xác minh để chứng minh số điện thoại chính chủ và kích hoạt đặc quyền hội viên nhé!`
+        const replyText =
+          `✨ <b>QuanNguyenS — MÃ XÁC MINH SỐ ĐIỆN THOẠI HỘI VIÊN</b> ✨\n\n` +
+          `Mã xác thực đăng ký ưu đãi hội viên cho số <b>${maskPhone(existingTgUser.phone)}</b> là:\n\n` +
+          `👉 <code>${pendingOtp.raw_code_temp}</code> 👈\n\n` +
+          `⏳ Mã có hiệu lực trong <b>5 phút</b>. Vui lòng nhập mã này vào trang web để kích hoạt đặc quyền!`
+
+        await sendTelegramDirectMessage({
+          chatId,
+          text: replyText,
+        })
+
+        return { ok: true, handled: 'otp_sent_to_known_user', phone: existingTgUser.phone }
+      }
+    }
+
+    // 1c. Lời chào và nút bấm chia sẻ số điện thoại
+    const welcomeText =
+      `👋 <b>Kính chào Quý khách đến với QuanNguyenS Privileged!</b>\n\n` +
+      `Bot chính thức hỗ trợ gửi mã xác minh số điện thoại chính chủ để kích hoạt <b>Đặc Quyền Hội Viên & Tích Điểm</b> tại thương hiệu thời trang lụa QuanNguyenS.\n\n` +
+      `📌 <b>Cách lấy mã xác minh:</b>\n` +
+      `1. Điền số điện thoại tại website: https://www.quannguyens.com/hoi-vien\n` +
+      `2. Nhận tin nhắn mã xác thực tại đây và điền vào website để kích hoạt.\n\n` +
+      `Quý khách vui lòng nhấn nút bên dưới để xác nhận số điện thoại chính chủ của tài khoản Telegram này nhé!`
 
     await sendTelegramDirectMessage({
       chatId,
-      text: replyText,
+      text: welcomeText,
+      replyMarkup: CONTACT_REQUEST_KEYBOARD,
     })
 
-    return { ok: true, handled: 'otp_sent_via_deeplink', phone: record.phone }
+    return { ok: true, handled: 'start_greeting' }
   }
 
   // ── 2. Khách hàng gửi Danh bạ (Chia sẻ số điện thoại qua nút Share Contact) ──
   if (contact && contact.phone_number) {
+    if (!contact.user_id || !fromUser.id || String(contact.user_id) !== String(fromUser.id)) {
+      await sendTelegramDirectMessage({
+        chatId,
+        text: '⚠️ Vì lý do bảo mật, Quý khách vui lòng chỉ chia sẻ số điện thoại chính chủ của chính tài khoản Telegram này bằng nút bên dưới.',
+        replyMarkup: CONTACT_REQUEST_KEYBOARD,
+      })
+      return { ok: true, handled: 'contact_not_owned' }
+    }
+
     const cleanPhone = normalizeVietnamesePhone(contact.phone_number)
 
     saveTelegramUser({
@@ -318,7 +396,6 @@ export async function handleTelegramWebhookUpdate(update) {
       lastName: contact.last_name || fromUser.last_name || '',
     })
 
-    // Kiểm tra xem có yêu cầu OTP nào đang chờ xác thực cho SĐT này không
     const pendingOtp = getPendingOtpByPhone(cleanPhone)
     if (pendingOtp && pendingOtp.raw_code_temp) {
       attachTelegramChatIdToVerification(pendingOtp.id, chatId)
@@ -337,7 +414,6 @@ export async function handleTelegramWebhookUpdate(update) {
       return { ok: true, handled: 'contact_verified_and_otp_sent', phone: cleanPhone }
     }
 
-    // Nếu chưa có yêu cầu OTP trên web
     await sendTelegramDirectMessage({
       chatId,
       text:
@@ -348,37 +424,104 @@ export async function handleTelegramWebhookUpdate(update) {
     return { ok: true, handled: 'contact_saved', phone: cleanPhone }
   }
 
-  // ── 3. Khách nhắn lệnh /start thông thường hoặc tin nhắn chào hỏi ──
-  if (text.startsWith('/start') || /^(chào|hi|hello|hoi vien|ưu đãi|otp)/i.test(text)) {
-    const welcomeText =
-      `👋 <b>Kính chào Quý khách đến với QuanNguyenS Privileged!</b>\n\n` +
-      `Bot chính thức hỗ trợ gửi mã xác minh số điện thoại chính chủ để kích hoạt <b>Đặc Quyền Hội Viên & Tích Điểm</b> tại thương hiệu thời trang lụa QuanNguyenS.\n\n` +
-      `📌 <b>Cách lấy mã xác minh:</b>\n` +
-      `1. Quý khách điền số điện thoại tại website: https://quannguyens.com/hoi-vien\n` +
-      `2. Nhận tin nhắn mã xác thực tại đây và điền vào website để kích hoạt.\n\n` +
-      `Quý khách cũng có thể nhấn nút bên dưới để xác nhận số điện thoại chính chủ của tài khoản Telegram này.`
-
+  // ── 3. Khách hàng gõ trực tiếp số điện thoại dạng text (Chặn giả mạo SĐT người khác) ──
+  const potentialPhone = normalizeVietnamesePhone(rawText.replace(/[^\d+]/g, ''))
+  if (potentialPhone && isValidVietnamesePhone(potentialPhone)) {
     await sendTelegramDirectMessage({
       chatId,
-      text: welcomeText,
-      replyMarkup: {
-        keyboard: [
-          [
-            {
-              text: '📱 Xác nhận số điện thoại của tôi',
-              request_contact: true,
-            },
-          ],
-        ],
-        resize_keyboard: true,
-        one_time_keyboard: true,
-      },
+      text:
+        `🔒 Để bảo vệ tài khoản hội viên, hệ thống không gửi mã xác thực qua số điện thoại nhập tay. Quý khách vui lòng bấm nút <b>"📱 Xác nhận số điện thoại của tôi"</b> bên dưới hoặc mở lại nút <b>"Mở Telegram Nhận Mã"</b> trên website https://www.quannguyens.com/hoi-vien nhé!`,
+      replyMarkup: CONTACT_REQUEST_KEYBOARD,
     })
 
+    return { ok: true, handled: 'typed_phone_require_contact' }
+  }
+
+  // ── 4. Khách nhắn tin chào hỏi khác ──
+  if (/^(chào|hi|hello|hoi vien|ưu đãi|otp)/i.test(rawText)) {
+    await sendTelegramDirectMessage({
+      chatId,
+      text:
+        `👋 Kính chào Quý khách! Để nhận mã xác minh hội viên, Quý khách vui lòng nhấn nút <b>"📱 Xác nhận số điện thoại của tôi"</b> bên dưới hoặc mở lại liên kết từ website https://www.quannguyens.com/hoi-vien nhé!`,
+      replyMarkup: CONTACT_REQUEST_KEYBOARD,
+    })
     return { ok: true, handled: 'start_greeting' }
   }
 
   return { ok: true, handled: 'other' }
+}
+
+let webhookSyncPromise = null
+
+/**
+ * Đảm bảo Webhook của Telegram luôn được đồng bộ chính xác với Canonical Domain
+ * Tuyệt đối tránh URL non-www vì Cloudflare sẽ trả về 307 Temporary Redirect khiến Telegram từ chối gửi tin!
+ */
+export function syncTelegramWebhook() {
+  if (webhookSyncPromise) return webhookSyncPromise
+
+  webhookSyncPromise = (async () => {
+    const token = (process.env.TELEGRAM_BOT_TOKEN || '').trim()
+    if (!token) return
+
+    if (process.env.NODE_ENV === 'test' || Boolean(process.env.NODE_TEST_CONTEXT) || isNodeTestRunner()) return
+
+    let targetWebhookUrl = (process.env.TELEGRAM_WEBHOOK_URL || '').trim()
+    if (!targetWebhookUrl) {
+      if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
+        targetWebhookUrl = 'https://www.quannguyens.com/api/telegram/webhook'
+      }
+    }
+
+    targetWebhookUrl = targetWebhookUrl.replace(
+      /^https?:\/\/quannguyens\.com(?=\/|$)/i,
+      'https://www.quannguyens.com'
+    )
+
+    if (!targetWebhookUrl) return
+
+    try {
+      const infoRes = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`, {
+        signal: AbortSignal.timeout(8000),
+      })
+      const infoData = await infoRes.json()
+
+      if (infoData.ok && infoData.result?.url === targetWebhookUrl && !infoData.result?.last_error_message) {
+        console.log(`✅ [TELEGRAM] Webhook đang hoạt động chuẩn xác: ${targetWebhookUrl}`)
+        return
+      }
+
+      console.log(`📡 [TELEGRAM] Đang cấu hình lại Webhook chính xác: ${targetWebhookUrl}...`)
+      const setWebhookBody = {
+        url: targetWebhookUrl,
+        allowed_updates: ['message', 'callback_query'],
+        drop_pending_updates: false,
+      }
+      const webhookSecret = (process.env.TELEGRAM_WEBHOOK_SECRET || '').trim()
+      if (webhookSecret) {
+        setWebhookBody.secret_token = webhookSecret
+      }
+
+      const setRes = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(setWebhookBody),
+        signal: AbortSignal.timeout(8000),
+      })
+      const setData = await setRes.json()
+      if (setData.ok) {
+        console.log(`✅ [TELEGRAM] Webhook đã được thiết lập thành công tới: ${targetWebhookUrl}`)
+      } else {
+        console.warn('⚠️ [TELEGRAM SET WEBHOOK FAILED]:', setData.description)
+      }
+    } catch (err) {
+      console.warn('⚠️ [TELEGRAM WEBHOOK SYNC EXCEPTION]:', err?.message || err)
+    }
+  })().finally(() => {
+    webhookSyncPromise = null
+  })
+
+  return webhookSyncPromise
 }
 
 /**
@@ -394,9 +537,13 @@ export function startTelegramPolling() {
   if (process.env.NODE_ENV === 'test' || Boolean(process.env.NODE_TEST_CONTEXT) || isNodeTestRunner()) return
   if (pollingActive) return
 
-  // Nếu đã cấu hình Webhook URL trên production thì không chạy polling để tránh xung đột
-  if (process.env.TELEGRAM_WEBHOOK_URL) {
-    console.log('🌐 [TELEGRAM] Sử dụng Webhook URL:', process.env.TELEGRAM_WEBHOOK_URL)
+  // Nếu là môi trường Production hoặc có Webhook URL: dừng polling để không xung đột 409
+  if (process.env.NODE_ENV === 'production' || process.env.RENDER || process.env.TELEGRAM_WEBHOOK_URL) {
+    return
+  }
+
+  // Ở môi trường local dev: chỉ kích hoạt long polling nếu được bật tường minh
+  if (process.env.TELEGRAM_DEV_POLLING !== 'true') {
     return
   }
 
@@ -428,7 +575,6 @@ export function startTelegramPolling() {
         }
       } catch (err) {
         if (err.name === 'AbortError' || !pollingActive) break
-        // Chờ 5s rồi thử lại
         await new Promise((r) => setTimeout(r, 5000))
       }
     }

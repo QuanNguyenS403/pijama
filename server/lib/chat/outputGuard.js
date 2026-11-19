@@ -13,7 +13,7 @@ import { LIVE_CONSTANTS } from './liveFacts.js'
 const ALLOWED_UPPERCASE_TOKENS = new Set([
   'VIETQR', 'COD', 'VCB', 'ZALO', 'QNS', 'SIZE', 'HOTLINE', 'PREORDER',
   'OEKO', 'TEX', 'GSM', 'VNĐ', 'VND', 'SPX', 'GHTK', 'GHN', 'HTTP', 'HTTPS',
-  'THE', 'FELIZ', 'GALAXIA', 'DAYBREAK', 'STILLWATER', 'HEARTH', 'SET', 'S', 'M', 'L', 'XL'
+  'THE', 'FELIZ', 'GALAXIA', 'DAYBREAK', 'STILLWATER', 'BLANCA', 'HEARTH', 'SET', 'S', 'M', 'L', 'XL'
 ])
 
 // Danh sách các cụm từ cấm tuyệt đối

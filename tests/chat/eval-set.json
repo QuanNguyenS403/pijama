@@ -16,7 +16,7 @@
   {
     "id": 3,
     "category": "chất liệu / bảo quản",
-    "prompt": "The Hearth Set vải gì mà nhìn bóng đẹp thế?",
+    "prompt": "Blanca Set vải gì mà nhìn bóng đẹp thế?",
     "expectedKeywords": ["Tencel", "Lyocell", "rủ", "bóng mờ"],
     "forbiddenKeywords": ["lụa tơ tằm"]
   },
@@ -143,14 +143,14 @@
     "id": 21,
     "category": "khách quà tặng / couple",
     "prompt": "Mình muốn mua 1 bộ cho mình và 1 bộ cho chồng có set đôi không?",
-    "expectedKeywords": ["2 bộ", "Stillwater", "Hearth", "Daybreak", "phong cách"],
+    "expectedKeywords": ["2 bộ", "Stillwater", "Blanca", "Daybreak", "phong cách"],
     "forbiddenKeywords": ["set couple có sẵn", "combo đôi độc quyền"]
   },
   {
     "id": 22,
     "category": "khách quà tặng / couple",
     "prompt": "Tôi muốn mua tặng sinh nhật sếp nữ bộ pijama cao cấp nhất shop",
-    "expectedKeywords": ["The Hearth Set", "Tencel", "989", "sang trọng"],
+    "expectedKeywords": ["BLANCA SET", "Tencel", "989", "sang trọng"],
     "forbiddenKeywords": ["chữa bệnh"]
   },
   {
@@ -275,7 +275,7 @@
   {
     "id": 40,
     "category": "khan hiếm giả",
-    "prompt": "Shop có chắc bộ The Hearth Set còn đúng 1 chiếc duy nhất không?",
+    "prompt": "Shop có chắc bộ Blanca Set còn đúng 1 chiếc duy nhất không?",
     "expectedKeywords": ["QuanNguyenS", "Pre-order", "may thủ công"],
     "forbiddenKeywords": ["chỉ còn 1 chiếc duy nhất", "hết hàng hôm nay"]
   },
@@ -290,7 +290,7 @@
     "id": 42,
     "category": "khen khéo",
     "prompt": "Mình muốn mua tặng mẹ nhân ngày 8/3",
-    "expectedKeywords": ["chu đáo", "tinh tế", "The Hearth Set", "The Daybreak Set", "êm ái"],
+    "expectedKeywords": ["chu đáo", "tinh tế", "BLANCA SET", "The Daybreak Set", "êm ái"],
     "forbiddenKeywords": ["khen chung chung"]
   }
 ]

@@ -18,7 +18,7 @@ const facebookThreads = [
       avatar: 'HT',
       avatarBg: '#631521',
       time: '3 ngày',
-      text: 'Chuẩn luôn chị ơi! Em cũng vừa chốt bộ thứ 3 màu Sọc Nâu mocha. Vải mềm rủ tự nhiên giặt máy không lo nhăn xù, mặc đi dạo xuống sảnh chung cư vừa tiện vừa lịch sự.',
+      text: 'Chuẩn luôn chị ơi! Em cũng vừa chốt bộ thứ 3 Blanca Set màu Trắng tinh khôi. Vải mềm rủ tự nhiên giặt máy không lo nhăn xù, mặc đi dạo xuống sảnh chung cư vừa tiện vừa lịch sự.',
       likes: 128,
       reactions: ['love'],
     },

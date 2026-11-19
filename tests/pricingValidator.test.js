@@ -38,7 +38,7 @@ test('PricingValidator: Tính đúng đơn hàng Bank Transfer trên 500k (Frees
     items: [
       {
         productId: 'the-evening-edit',
-        productName: 'THE HEARTH SET',
+        productName: 'BLANCA SET',
         unitPrice: 989000,
         quantity: 1,
         totalPrice: 989000,
@@ -66,7 +66,7 @@ test('PricingValidator: Từ chối đơn hàng khi client cố tình sửa gi�
     items: [
       {
         productId: 'the-evening-edit', // Giá thật là 989.000đ
-        productName: 'THE HEARTH SET',
+        productName: 'BLANCA SET',
         unitPrice: 1000, // Hack giá thành 1.000đ
         quantity: 1,
         totalPrice: 1000,

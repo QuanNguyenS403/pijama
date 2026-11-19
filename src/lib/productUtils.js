@@ -8,12 +8,17 @@ export const LEGACY_PRODUCT_SLUG_REDIRECTS = {
   'the-cafe-look': 'galaxia-set',
   'the-stillwater-set': 'galaxia-set',
   'the-galaxia-set': 'galaxia-set',
-  'the-evening-edit': 'the-hearth-set',
+  'the-evening-edit': 'blanca-set',
+  'the-hearth-set': 'blanca-set',
+  'hearth-set': 'blanca-set',
+  'the-blanca-set': 'blanca-set',
 }
 
 export const PREORDER_IDENTIFIERS = new Set([
   'the-evening-edit',
   'the-hearth-set',
+  'blanca-set',
+  'the-blanca-set',
 ])
 
 /**

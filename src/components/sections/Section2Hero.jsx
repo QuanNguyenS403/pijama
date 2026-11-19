@@ -11,12 +11,13 @@ const slides = [
   {
     id: 1,
     src: heroSlide01,
-    alt: 'THE HEARTH SET — Set sleepwear sọc nâu ấm áp phong cách Style To Be Lived In',
+    alt: 'BLANCA SET — Set sleepwear sắc trắng tinh khôi quý phái phong cách Style To Be Lived In',
     eyebrow: '',
-    headline: 'THE HEARTH SET',
+    headline: 'BLANCA SET',
     sub: '',
     align: 'left',
-    link: '/san-pham/the-hearth-set',
+    objectPosition: 'object-[center_20%]',
+    link: '/san-pham/blanca-set',
   },
   {
     id: 2,
@@ -26,6 +27,7 @@ const slides = [
     headline: 'GALAXIA SET',
     sub: '',
     align: 'right',
+    objectPosition: 'object-center',
     link: '/san-pham/galaxia-set',
   },
   {
@@ -36,6 +38,7 @@ const slides = [
     headline: 'FELIZ SET',
     sub: '',
     align: 'left',
+    objectPosition: 'object-center',
     link: '/san-pham/feliz-set',
   },
   {
@@ -46,6 +49,7 @@ const slides = [
     headline: "Every girl deserves\nQuanNguyenS Sleepwear",
     sub: '',
     align: 'left',
+    objectPosition: 'object-center',
     link: '#section-products',
   },
 ]
@@ -86,8 +90,8 @@ export default function Section2Hero() {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* Hero Frame: exact 16:9 aspect ratio matching the 16:9 images without cropping */}
-      <div className="relative w-full aspect-[16/9] min-h-[460px] sm:min-h-[520px] md:min-h-0 overflow-hidden bg-[#151210]">
+      {/* Hero Frame: subtly shorter 16:8 aspect ratio for a cinematic banner feel */}
+      <div className="relative w-full aspect-[16/8] min-h-[420px] sm:min-h-[460px] md:min-h-0 overflow-hidden bg-[#151210]">
         
         {/* Slide Images */}
         <AnimatePresence mode="wait">
@@ -102,7 +106,7 @@ export default function Section2Hero() {
             <img
               src={currentSlide.src}
               alt={currentSlide.alt}
-              className="w-full h-full object-cover sm:object-cover object-center"
+              className={`w-full h-full object-cover ${currentSlide.objectPosition || 'object-center'}`}
               loading="eager"
             />
 
@@ -110,8 +114,8 @@ export default function Section2Hero() {
             <div
               className={`absolute inset-y-0 transition-opacity duration-700 pointer-events-none ${
                 isRightAligned
-                  ? 'right-0 w-full sm:w-[60%] lg:w-[48%] xl:w-[44%] bg-gradient-to-l from-[#0F0A08]/90 via-[#0F0A08]/40 to-transparent'
-                  : 'left-0 w-full sm:w-[60%] lg:w-[48%] xl:w-[44%] bg-gradient-to-r from-[#0F0A08]/90 via-[#0F0A08]/40 to-transparent'
+                  ? 'right-0 w-full sm:w-[60%] lg:w-[48%] xl:w-[44%] bg-gradient-to-l from-[#0F0A08]/75 via-[#0F0A08]/25 to-transparent'
+                  : 'left-0 w-full sm:w-[60%] lg:w-[48%] xl:w-[44%] bg-gradient-to-r from-[#0F0A08]/75 via-[#0F0A08]/25 to-transparent'
               }`}
             />
           </motion.div>

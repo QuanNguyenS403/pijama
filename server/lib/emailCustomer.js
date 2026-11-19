@@ -5,13 +5,13 @@ import { isPreOrderItem } from '../../src/lib/productUtils.js'
 
 function getPreOrderEmailInfo(order) {
   const preOrderItems = (order?.items || []).filter(
-    (i) => isPreOrderItem(i) || Boolean(i.productName?.includes('HEARTH'))
+    (i) => isPreOrderItem(i) || Boolean(i.productName?.toUpperCase().includes('BLANCA'))
   )
   const hasPreOrder = !!(order?.hasPreOrder || preOrderItems.length > 0)
   const preOrderNames = preOrderItems
     .map((i) => i.productName || i.name)
     .filter((v, idx, arr) => v && arr.indexOf(v) === idx)
-  const preOrderDisplay = preOrderNames.length > 0 ? preOrderNames.join(' & ') : 'THE HEARTH SET'
+  const preOrderDisplay = preOrderNames.length > 0 ? preOrderNames.join(' & ') : 'BLANCA SET'
   const isSplitShipping = order?.deliveryOption === 'SPLIT_SHIPPING'
   return { hasPreOrder, preOrderDisplay, isSplitShipping }
 }

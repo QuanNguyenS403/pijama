@@ -251,7 +251,7 @@ export function retrieveKnowledge(query, topK = 3) {
         score += 35
       } else if ((titleLower.includes('stillwater') || titleLower.includes('galaxia') || ((chunk.slug === 'galaxia-set' || chunk.slug === 'the-galaxia-set') || chunk.slug === 'the-stillwater-set')) && (cleanQuery.includes('stillwater') || cleanQuery.includes('galaxia') || cleanQuery.includes('navy') || cleanQuery.includes('caro') || cleanQuery.includes('size l') || cleanQuery.includes('65kg') || cleanQuery.includes('1m72') || cleanQuery.includes('nam'))) {
         score += 35
-      } else if (titleLower.includes('hearth') && (cleanQuery.includes('hearth') || cleanQuery.includes('nau') || cleanQuery.includes('brown'))) {
+      } else if ((titleLower.includes('blanca') || titleLower.includes('hearth')) && (cleanQuery.includes('blanca') || cleanQuery.includes('trang') || cleanQuery.includes('white') || cleanQuery.includes('hearth') || cleanQuery.includes('nau') || cleanQuery.includes('brown'))) {
         score += 35
       }
     }

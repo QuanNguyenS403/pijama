@@ -1506,9 +1506,26 @@ function startExpressServer() {
       (async () => {
         try {
           if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_SHEET_ID) {
-            await withStartupTimeout(initializeSheet(), 10000, 'Google Sheets init')
-            sheetStatus = { ready: true, error: null }
-            console.log('✅ Google Sheets kết nối thành công.')
+            const sheetInitPromise = initializeSheet()
+            try {
+              await withStartupTimeout(sheetInitPromise, 5000, 'Google Sheets init')
+              sheetStatus = { ready: true, error: null }
+              console.log('✅ Google Sheets kết nối thành công.')
+            } catch (sheetErr) {
+              sheetStatus = { ready: false, error: safeErrorMessage(sheetErr, 'Lỗi kết nối Google Sheets') }
+              console.warn('⚠️ [DEGRADED MODE] Google Sheets init warning:', sheetErr.message)
+              if (String(sheetErr?.message || '').includes('timeout')) {
+                sheetInitPromise
+                  .then(() => {
+                    sheetStatus = { ready: true, error: null }
+                    console.log('✅ Google Sheets kết nối thành công (hoàn tất nền).')
+                  })
+                  .catch((bgErr) => {
+                    sheetStatus = { ready: false, error: safeErrorMessage(bgErr, 'Lỗi kết nối Google Sheets') }
+                    console.warn('⚠️ [DEGRADED MODE] Google Sheets init nền thất bại:', bgErr?.message || bgErr)
+                  })
+              }
+            }
           } else {
             sheetStatus = { ready: false, error: 'Chưa cấu hình Google Service Account trong .env (đơn hàng lưu tại local disk storage)' }
             console.warn('⚠️ [DEGRADED MODE] Google Service Account chưa được cấu hình. Đơn hàng lưu tại local persistence storage.')
@@ -1549,13 +1566,31 @@ function startExpressServer() {
         try {
           const { isSupabaseConfigured } = await import('./lib/supabaseClient.js')
           if (isSupabaseConfigured()) {
-            const { syncUsersFromSupabase, syncVouchersFromSupabase } = await import('./lib/accountDb.js')
+            const { syncUsersFromSupabase, syncVouchersFromSupabase, ensureSystemAccount } = await import('./lib/accountDb.js')
             const { syncOrdersFromSupabase } = await import('./lib/orderPersistence.js')
 
-            const [syncedUsers, syncedVouchers, syncedOrders] = await Promise.all([
-              withStartupTimeout(syncUsersFromSupabase(), 10000, 'Supabase user sync').catch(() => 0),
-              withStartupTimeout(syncVouchersFromSupabase(), 10000, 'Supabase voucher sync').catch(() => 0),
-              withStartupTimeout(syncOrdersFromSupabase(), 10000, 'Supabase order sync').catch(() => 0),
+            // Đảm bảo tài khoản system luôn tồn tại trước để thỏa mãn ràng buộc khóa ngoại
+            ensureSystemAccount()
+
+            // Chạy đồng bộ Orders song song ngay từ đầu, đồng thời giữ Users tuần tự trước Vouchers
+            const ordersPromise = withStartupTimeout(syncOrdersFromSupabase(), 8000, 'Supabase order sync').catch((err) => {
+              console.warn('⚠️ [SUPABASE SYNC] Cảnh báo đồng bộ đơn hàng:', err?.message || err)
+              return 0
+            })
+            const usersThenVouchersPromise = (async () => {
+              const syncedUsers = await withStartupTimeout(syncUsersFromSupabase(), 8000, 'Supabase user sync').catch((err) => {
+                console.warn('⚠️ [SUPABASE SYNC] Cảnh báo đồng bộ tài khoản:', err?.message || err)
+                return 0
+              })
+              const syncedVouchers = await withStartupTimeout(syncVouchersFromSupabase(), 8000, 'Supabase voucher sync').catch((err) => {
+                console.warn('⚠️ [SUPABASE SYNC] Cảnh báo đồng bộ mã ưu đãi:', err?.message || err)
+                return 0
+              })
+              return { syncedUsers, syncedVouchers }
+            })()
+            const [{ syncedUsers, syncedVouchers }, syncedOrders] = await Promise.all([
+              usersThenVouchersPromise,
+              ordersPromise,
             ])
             console.log(
               `☁️ [SUPABASE SYNC] Khôi phục thành công từ Supabase Cloud: ${syncedUsers} tài khoản, ${syncedVouchers} mã ưu đãi, ${syncedOrders} đơn hàng.`

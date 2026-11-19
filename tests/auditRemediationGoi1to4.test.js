@@ -72,11 +72,11 @@ describe('Gói 1: Canonical Slugs, 301 Redirect & Color Normalization', () => {
   it('Catalog keeps existing sizes unchanged while normalizing slugs and Daybreak color "Đỏ"', () => {
     const daybreak = products.find((p) => p.id === 'the-classic-set')
     const stillwater = products.find((p) => p.id === 'the-cafe-look')
-    const hearth = products.find((p) => p.id === 'the-evening-edit')
+    const blanca = products.find((p) => p.id === 'the-evening-edit')
 
     assert.equal(daybreak.slug, 'feliz-set')
     assert.equal(stillwater.slug, 'galaxia-set')
-    assert.equal(hearth.slug, 'the-hearth-set')
+    assert.equal(blanca.slug, 'blanca-set')
     assert.equal(daybreak.colors[0].name, 'Đỏ')
     assert.ok(daybreak.colors[0].aliases.includes('Classic Red'))
 
@@ -84,7 +84,7 @@ describe('Gói 1: Canonical Slugs, 301 Redirect & Color Normalization', () => {
     assert.deepEqual(daybreak.sizes, ['S', 'M'])
     assert.equal(daybreak.sizeGuide.S.maxWaist, '103,7 cm')
     assert.deepEqual(stillwater.sizes, ['S', 'M'])
-    assert.deepEqual(hearth.sizes, ['S', 'M'])
+    assert.deepEqual(blanca.sizes, ['S', 'M'])
   })
 
   it('StockValidator accepts both canonical "Đỏ" and legacy "Classic Red" alias', () => {
@@ -110,7 +110,8 @@ describe('Gói 1: Canonical Slugs, 301 Redirect & Color Normalization', () => {
         ['/san-pham/the-cafe-look', '/san-pham/galaxia-set'],
         ['/san-pham/the-stillwater-set', '/san-pham/galaxia-set'],
         ['/san-pham/the-galaxia-set', '/san-pham/galaxia-set'],
-        ['/san-pham/the-evening-edit', '/san-pham/the-hearth-set'],
+        ['/san-pham/the-evening-edit', '/san-pham/blanca-set'],
+        ['/san-pham/the-hearth-set', '/san-pham/blanca-set'],
       ]
       for (const [legacyPath, expectedLocation] of pairs) {
         const res = await fetch(`${baseUrl}${legacyPath}`, { redirect: 'manual' })
@@ -131,14 +132,14 @@ describe('Gói 2: QNS Chat Syncs Strictly with Website Sizes', () => {
     assert.match(res.reply, /103,7 cm/)
     assert.match(res.reply, /(THE STILLWATER SET|Galaxia).*Size S, M/i)
     assert.match(res.reply, /127,0 cm/)
-    assert.match(res.reply, /THE HEARTH SET.*Size S, M/i)
+    assert.match(res.reply, /BLANCA SET.*Size S, M/i)
     assert.match(res.reply, /42–50 kg/)
     assert.match(res.reply, /51–58 kg/)
   })
 
-  it('localAdvisor differentiates Daybreak/Stillwater (S, L) from Hearth (S, M) accurately', () => {
+  it('localAdvisor differentiates Daybreak/Stillwater (S, L) from Blanca (S, M) accurately', () => {
     const adv54 = generateLocalAdvisorResponse('tư vấn size cho người 54kg cao 1m62')
-    assert.match(adv54.reply, /THE HEARTH SET.*Size M/is)
+    assert.match(adv54.reply, /BLANCA SET.*Size M/is)
     assert.match(adv54.reply, /(FELIZ SET|Feliz).*Size M/is)
 
     const adv63 = generateLocalAdvisorResponse('nặng 63kg cao 1m68 mặc vừa mẫu nào')
@@ -164,7 +165,7 @@ describe('Gói 3: Compounding Pricing, 30km COD, Mixed Pre-Order & Cart Sync', (
     assert.equal(t1.shippingFee, 30000) // <500k and QNS10 free_shipping=0
     assert.equal(t1.total, 426900)
 
-    // 750k Hearth + Gold Tier (10%) + Points Amount Voucher (50k) + VietQR 10%
+    // 750k Blanca + Gold Tier (10%) + Points Amount Voucher (50k) + VietQR 10%
     const t2 = calculateOrderTotals({
       subtotal: 750000,
       tierDiscountPercent: 10,
@@ -197,7 +198,7 @@ describe('Gói 3: Compounding Pricing, 30km COD, Mixed Pre-Order & Cart Sync', (
       {
         items: [
           { productId: 'the-daybreak-set', quantity: 1, unitPrice: 698000 },
-          { productId: 'the-hearth-set', quantity: 1, unitPrice: 989000 },
+          { productId: 'the-evening-edit', quantity: 1, unitPrice: 989000 },
         ],
         payment: { method: 'BANK_TRANSFER' },
         deliveryOption: 'SPLIT_SHIPPING',
@@ -491,7 +492,7 @@ describe('Gói 4: Registration BirthDate/Phone/ConfirmPassword & Loyalty Sync', 
           },
           items: [
             { productId: 'the-daybreak-set', color: 'Đỏ', size: 'S', quantity: 1, unitPrice: 698000 },
-            { productId: 'the-hearth-set', color: 'Sọc Nâu', size: 'S', quantity: 1, unitPrice: 989000 },
+            { productId: 'the-evening-edit', color: 'Trắng', size: 'S', quantity: 1, unitPrice: 989000 },
           ],
           payment: { method: 'BANK_TRANSFER', methodLabel: 'Chuyển khoản VietQR' },
           deliveryOption: 'SPLIT_SHIPPING',

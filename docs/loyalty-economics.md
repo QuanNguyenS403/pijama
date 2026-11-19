@@ -13,7 +13,7 @@
 |---|---|---|---|
 | **THE DAYBREAK SET** (Đỏ) | `the-classic-set` | **490.000đ** | 30.000đ (miễn phí nếu ≥ 500k) |
 | **THE STILLWATER SET** (Caro Navy) | `the-cafe-look` | **550.000đ** | Miễn phí (đơn ≥ 500k) |
-| **THE HEARTH SET** (Sọc Nâu) | `the-evening-edit` | **750.000đ** | Miễn phí (đơn ≥ 500k) |
+| **BLANCA SET** (Màu Trắng) | `the-evening-edit` | **750.000đ** | Miễn phí (đơn ≥ 500k) |
 
 *Ghi chú về Giá vốn hàng bán (COGS):* Trong repository hiện tại không chứa dữ liệu giá vốn sản xuất/nhập hàng của từng bộ. Báo cáo này tính toán trên **Doanh thu thực thu (Net Revenue)** và **Tỷ lệ chiết khấu gộp (%)**. Khi Quan cung cấp giá vốn cụ thể, biên lợi nhuận ròng sẽ được tính chuẩn xác từng đồng.
 
@@ -54,7 +54,7 @@
 | | Bạc | 5% | 10% (VietQR) | 15% | 467.500đ (Freeship) | 85% |
 | | Vàng | 10% | 10% (VietQR) | 20% | 440.000đ (Freeship) | 80% |
 | | Kim Cương | 15% | 10% (VietQR) | 25% | 412.500đ (Freeship) | 75% |
-| **HEARTH (750k)** | Thân Thiết | 0% | 0% (COD) | 0% | 750.000đ (Freeship) | 100% |
+| **BLANCA (750k)** | Thân Thiết | 0% | 0% (COD) | 0% | 750.000đ (Freeship) | 100% |
 | | Thân Thiết | 0% | 10% (VietQR) | 10% | 675.000đ (Freeship) | 90% |
 | | Bạc | 5% | 10% (VietQR) | 15% | 637.500đ (Freeship) | 85% |
 | | Vàng | 10% | 10% (VietQR) | 20% | 600.000đ (Freeship) | 80% |
@@ -74,7 +74,7 @@
 | **STILLWATER (550k)** | Hạng 2 Bạc (5% + 10%) | -82.500đ (15%) | -50.000đ | **417.500đ** (Freeship) | **24.1%** |
 | | Hạng 3 Vàng (10% + 10%) | -110.000đ (20%) | -50.000đ | **390.000đ** (Freeship) | **29.1%** |
 | | Hạng 4 Kim Cương (15% + 10%) | -137.500đ (25%) | -50.000đ | **362.500đ** (Freeship) | **34.1%** |
-| **HEARTH (750k)** | Hạng 2 Bạc (5% + 10%) | -112.500đ (15%) | -50.000đ | **587.500đ** (Freeship) | **21.7%** |
+| **BLANCA (750k)** | Hạng 2 Bạc (5% + 10%) | -112.500đ (15%) | -50.000đ | **587.500đ** (Freeship) | **21.7%** |
 | | Hạng 3 Vàng (10% + 10%) | -150.000đ (20%) | -50.000đ | **550.000đ** (Freeship) | **26.7%** |
 | | Hạng 4 Kim Cương (15% + 10%) | -187.500đ (25%) | -50.000đ | **512.500đ** (Freeship) | **31.7%** |
 
@@ -82,7 +82,7 @@
 
 ### Kịch bản 3: KỊCH BẢN XẤU NHẤT (WORST-CASE STACKING SCENARIO)
 
-**Tình huống:** Khách hàng **Hạng 4 (Kim Cương)** đặt mua 1 bộ **THE HEARTH SET (750.000đ)** vào tháng sinh nhật hoặc ngay sau khi vừa thăng hạng:
+**Tình huống:** Khách hàng **Hạng 4 (Kim Cương)** đặt mua 1 bộ **BLANCA SET (750.000đ)** vào tháng sinh nhật hoặc ngay sau khi vừa thăng hạng:
 1. Giảm hạng Kim Cương 15%: **-112.500đ**
 2. Thanh toán Chuyển khoản VietQR 10%: **-75.000đ**
 3. Áp dụng Voucher Sinh nhật hoặc Thăng hạng Hạng 4: **-500.000đ**

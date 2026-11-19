@@ -432,7 +432,7 @@ export default function OrderSuccessPage() {
                   {order.items && order.items.length > 0 && (
                     <div className="space-y-3">
                       {order.items.map((item, idx) => {
-                        const isItemPreOrder = isPreOrderItem(item) || Boolean(item.productName?.includes('HEARTH'))
+                        const isItemPreOrder = isPreOrderItem(item) || Boolean(item.productName?.toUpperCase().includes('BLANCA'))
                         return (
                           <div key={idx} className="flex justify-between items-start text-xs sm:text-sm">
                             <div className="pr-4">
@@ -534,14 +534,14 @@ export default function OrderSuccessPage() {
                   const hasPreOrder = !!(
                     order.hasPreOrder ||
                     order.items?.some(
-                      (i) => isPreOrderItem(i) || Boolean(i.productName?.includes('HEARTH'))
+                      (i) => isPreOrderItem(i) || Boolean(i.productName?.toUpperCase().includes('BLANCA'))
                     )
                   )
                   const preOrderNames = (order.items || [])
-                    .filter((i) => isPreOrderItem(i) || Boolean(i.productName?.includes('HEARTH')))
+                    .filter((i) => isPreOrderItem(i) || Boolean(i.productName?.toUpperCase().includes('BLANCA')))
                     .map((i) => i.productName || i.name)
                     .filter((v, idx, arr) => v && arr.indexOf(v) === idx)
-                  const preOrderDisplay = preOrderNames.length > 0 ? preOrderNames.join(' & ') : 'THE HEARTH SET'
+                  const preOrderDisplay = preOrderNames.length > 0 ? preOrderNames.join(' & ') : 'BLANCA SET'
                   const isSplitShipping = order.deliveryOption === 'SPLIT_SHIPPING'
                   return (
                     <div

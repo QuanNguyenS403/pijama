@@ -154,13 +154,13 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
 
     images: {
       "Navy Plaid": [
-        "/images/classic-set-navy-lookbook-main.jpg",
+        "/images/classic-set-navy-main.jpg",
         "/images/classic-set-navy-thumb-1.jpg",
         "/images/classic-set-navy-thumb-2.jpg",
         "/images/classic-set-navy-thumb-3.jpg",
       ],
       "Caro Navy": [
-        "/images/classic-set-navy-lookbook-main.jpg",
+        "/images/classic-set-navy-main.jpg",
         "/images/classic-set-navy-thumb-1.jpg",
         "/images/classic-set-navy-thumb-2.jpg",
         "/images/classic-set-navy-thumb-3.jpg",
@@ -217,9 +217,9 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
   },
   {
     id: 'the-evening-edit',
-    slug: 'the-hearth-set',
-    name: 'THE HEARTH SET',
-    subtitle: 'Pijama Wide-Leg Cao Cấp · Sọc Nâu Vững Chãi',
+    slug: 'blanca-set',
+    name: 'BLANCA SET',
+    subtitle: 'Pijama Thiết Kế Quý Phái · Sắc Trắng Tinh Khôi',
     collection: 'Thu Đông 2026',
     badge: 'PHIÊN BẢN GIỚI HẠN',
     preOrder: {
@@ -228,17 +228,17 @@ Họa tiết Caro Navy mang đậm năng lượng hành Thủy — biểu trưng
       message: 'Hàng đặt trước — Giao hàng dự kiến trong 7-10 ngày làm việc',
     },
 
-    description: 'Dáng wide-leg sang trọng kết hợp họa tiết Sọc Nâu mocha ấm áp — mang năng lượng Thổ vững chãi, nuôi dưỡng và vỗ về cảm xúc. Phiên bản giới hạn dành cho những khoảnh khắc thư giãn đỉnh cao và bữa tối ấm cúng cuối ngày.',
+    description: 'Thiết kế tinh xảo quý phái với sắc Trắng tinh khôi — mang năng lượng hành Kim thanh khiết, tươi mới và sang trọng vượt bậc. Từng đường kim mũi chỉ chuẩn mực mang đến sự thư thái tuyệt đối và vẻ đẹp rạng rỡ bất tận.',
 
-    longDescription: 'THE HEARTH SET là định nghĩa cao cấp nhất về đồ mặc nhà sang trọng. Mang gam màu Sọc Nâu (Brown Stripe) thuộc hành Thổ — biểu tượng của sự vững chãi, bình yên và cảm giác "về nhà" nuôi dưỡng năng lượng. Thiết kế quần wide-leg suông rộng quý phái cùng chất liệu dệt tự nhiên rũ nhẹ tạo nên từng bước chuyển động thướt tha, đẳng cấp. Đặc biệt phù hợp với những ai yêu thích sự ổn định và cảm giác an yên mà hành Thổ mang lại.',
+    longDescription: 'BLANCA SET là định nghĩa hoàn hảo về vẻ đẹp thanh lịch thuần khiết và sang trọng của phong cách sleepwear châu Âu. Mang gam màu Trắng (Pure White) thuộc hành Kim — biểu tượng của sự tinh khôi, sáng trong, thanh lọc tâm trí và đón chào nguồn sinh khí thịnh vượng. Thiết kế phom dáng thoải mái tôn dáng cùng chất liệu dệt thượng hạng mềm mướt tạo nên từng chuyển động thanh thoát, kiêu sa. Đặc biệt tương sinh và hòa hợp lý tưởng cho người mệnh Kim và Thủy.',
 
-    detailedDescription: `THE HEARTH SET là tuyệt phẩm giới hạn được chế tác từ chất liệu tự nhiên thượng hạng với độ bóng mờ quý phái.
+    detailedDescription: `BLANCA SET là tuyệt phẩm sleepwear cao cấp mang sắc trắng tinh khôi quý phái, kiến tạo vẻ đẹp thanh lịch vượt thời gian.
 
-Thiết kế quần dáng wide-leg (ống rộng) buông rủ hoàn hảo kết hợp áo phom thoải mái chuẩn châu Âu, mang đến khí chất sang trọng vượt bậc.
+Thiết kế cổ bẻ notch thanh nhã kết hợp phom suông buông rủ tự nhiên chuẩn phong cách châu Âu, tôn lên nét duyên dáng, tinh tế trong từng khoảnh khắc nghỉ ngơi.
 
-Họa tiết Sọc Nâu mocha (Brown Stripe) đại diện cho năng lượng hành Thổ — như đất mẹ hiền hòa, bao dung và vững chãi. Là lựa chọn tuyệt vời để tái tạo năng lượng sau một ngày bận rộn, mang lại sự che chở và gắn kết, đặc biệt tương sinh hòa hợp cho người mệnh Thổ và Kim.`,
+Gam màu Trắng đại diện cho năng lượng hành Kim — biểu trưng cho sự thuần khiết, hoàn mỹ, tinh anh và khởi đầu trọn vẹn. Là lựa chọn tuyệt vời để thanh lọc tâm trí sau ngày dài, mang lại cảm giác bình an và tái tạo nguồn năng lượng tích cực, đặc biệt tương sinh hòa hợp cho người mệnh Kim và Thủy.`,
 
-    tagline: `Vững chãi và ấm áp — cảm giác trở về nhà trong phom dáng wide-leg thượng lưu và sắc nâu an lành.`,
+    tagline: `Thanh khiết và quý phái — khởi nguồn bình an trong sắc trắng tinh khôi và phom dáng châu Âu chuẩn mực.`,
     sectionLabel: "BST Giáng Sinh - Christmas Collection",
 
     price: 989000,
@@ -249,35 +249,36 @@ Họa tiết Sọc Nâu mocha (Brown Stripe) đại diện cho năng lượng h�
 
     // ─── FENG SHUI INSPIRATION (NGŨ HÀNH) ───────────────────────────────────
     fengShui: {
-      element: "Thổ",
-      elementEn: "Earth",
-      color: "Sọc Nâu",
-      goodFor: ["Thổ", "Kim"],
-      energyNote: "Vững chãi, ấm áp, bền bỉ, cảm giác 'về nhà' như đất mẹ nuôi dưỡng tâm hồn.",
+      element: "Kim",
+      elementEn: "Metal",
+      color: "Trắng",
+      goodFor: ["Kim", "Thủy"],
+      energyNote: "Thanh khiết, sáng trong, tinh tế, mang lại sự thanh lọc tâm trí và nguồn sinh khí may mắn.",
     },
 
     images: {
-      "Brown Stripe": [
-        "/images/classic-set-brown-main.jpg",
-        "/images/classic-set-brown-thumb-1.jpg",
-        "/images/classic-set-brown-thumb-2.jpg",
-        "/images/classic-set-brown-thumb-3.jpg",
+      "Trắng": [
+        "/images/blanca-set-white-main.jpg",
+        "/images/blanca-set-white-thumb-1.jpg",
+        "/images/blanca-set-white-thumb-2.jpg",
+        "/images/blanca-set-white-thumb-3.jpg",
       ],
-      "Sọc Nâu": [
-        "/images/classic-set-brown-main.jpg",
-        "/images/classic-set-brown-thumb-1.jpg",
-        "/images/classic-set-brown-thumb-2.jpg",
-        "/images/classic-set-brown-thumb-3.jpg",
+      "White": [
+        "/images/blanca-set-white-main.jpg",
+        "/images/blanca-set-white-thumb-1.jpg",
+        "/images/blanca-set-white-thumb-2.jpg",
+        "/images/blanca-set-white-thumb-3.jpg",
       ],
     },
 
     colors: [
       {
-        name: "Brown Stripe",
-        label: "Sọc Nâu",
-        hex: "#5C3A21",
+        name: "Trắng",
+        label: "Trắng",
+        aliases: ["White", "Pure White"],
+        hex: "#F8F9FA",
         patternPreview: true,
-        patternType: "brown-stripe",
+        patternType: "white",
         stock: { S: 50, M: 50 },
       },
     ],
@@ -299,11 +300,11 @@ Họa tiết Sọc Nâu mocha (Brown Stripe) đại diện cho năng lượng h�
     ],
     returnPolicy: 'Hỗ trợ đổi trả trong 30 ngày — Áp dụng theo chính sách đổi trả & cam kết chất lượng QuanNguyenS — Liên hệ hotline 0973 486 218',
     highlights: [
-      'Họa tiết Sọc Nâu năng lượng Thổ — vững chãi, ấm áp, mang lại cảm giác bình yên như trở về nhà',
-      'Chất vải Tencel thượng hạng — độ rủ thướt tha, mềm mướt và thoáng khí vượt trội',
-      'Dáng wide-leg sang trọng — khí chất đẳng cấp, hoàn hảo cho cả những bữa tiệc tối riêng tư',
+      'Sắc Trắng tinh khôi mang năng lượng hành Kim — thanh khiết, tươi mới, xua tan muộn phiền và đón nhận may mắn',
+      'Chất vải Tencel tự nhiên thượng hạng — độ rủ thướt tha, mềm mướt và thoáng khí vượt trội',
+      'Phom dáng thanh lịch sang trọng chuẩn châu Âu — khí chất đẳng cấp, hoàn hảo cho cả những khoảnh khắc thư giãn riêng tư',
     ],
-    tags: ['Giới Hạn', 'Sọc Nâu', 'Wide-Leg', 'Chất Liệu Cao Cấp', 'Hành Thổ'],
+    tags: ['Giới Hạn', 'Màu Trắng', 'Thanh Lịch', 'Chất Liệu Cao Cấp', 'Hành Kim'],
     relatedProducts: ['the-classic-set', 'the-cafe-look'],
   },
 ]
@@ -505,18 +506,18 @@ export const sampleReviews = [
     text: 'Màu caro navy ngoài đời trầm hơn xíu so với lúc xem trên màn hình điện thoại của mình, nhưng mặc lên lại cực kỳ tôn da và thanh lịch. Vải mềm mướt mát lạnh, mặc mùa thu đông ở miền Bắc đắp chăn mỏng là ngủ ngon lành.',
   },
 
-  // ── THE HEARTH SET (Sọc Nâu Tencel) ──
+  // ── BLANCA SET (Màu Trắng Tencel) ──
   {
     id: 'rv-17',
     productId: 'the-evening-edit',
     author: 'Vũ Thanh H.',
     date: '12/10/2026',
     rating: 5,
-    color: 'Sọc Nâu',
+    color: 'Trắng',
     size: 'M',
     verified: true,
-    photo: '/images/reviews/review-brown-1.jpg',
-    text: 'Chất vải 100% Tencel Lyocell rủ đẹp không thể tả được! Bước đi ống quần bay bổng thướt tha, bóng mờ nhẹ tự nhiên quý phái y như lụa tơ tằm đắt đỏ tiền triệu mà lại dễ giặt giũ bảo quản hơn nhiều. Mặc vào người nhẹ bẫng như không.',
+    photo: '/images/reviews/review-blanca-1.jpg',
+    text: 'Chất vải Tencel Lyocell rủ đẹp không thể tả được! Sắc trắng tinh khôi quý phái, bước đi tà áo và ống quần bay bổng thướt tha, bóng mờ nhẹ tự nhiên y như lụa cao cấp đắt đỏ mà lại rất dễ giặt giũ bảo quản. Mặc vào người nhẹ bẫng như không.',
   },
   {
     id: 'rv-18',
@@ -524,11 +525,11 @@ export const sampleReviews = [
     author: 'Trương Cẩm N.',
     date: '06/10/2026',
     rating: 5,
-    color: 'Sọc Nâu',
+    color: 'Trắng',
     size: 'M',
     verified: true,
-    photo: '/images/reviews/review-brown-2.jpg',
-    text: 'Tone nâu mocha sọc này sang tây dã man, bạn nào da trắng hay ngăm mặc lên đều hợp. Vải sờ vào êm ái mát rượi, thấm hút mồ hôi siêu tốt. Buổi tối bật đèn vàng đọc sách nhâm nhi tách trà thấy bình yên thư thái vô cùng.',
+    photo: '/images/reviews/review-blanca-2.jpg',
+    text: 'Tone màu trắng tinh khôi này sang tây dã man, bạn nào da trắng hay ngăm mặc lên đều tôn da sáng bừng. Vải sờ vào êm ái mát rượi, thấm hút mồ hôi siêu tốt. Buổi tối bật đèn ngủ đọc sách nhâm nhi tách trà thấy bình yên thư thái vô cùng.',
   },
   {
     id: 'rv-19',
@@ -536,11 +537,11 @@ export const sampleReviews = [
     author: 'Hà My K.',
     date: '27/09/2026',
     rating: 5,
-    color: 'Sọc Nâu',
+    color: 'Trắng',
     size: 'S',
     verified: true,
-    photo: '/images/reviews/review-brown-3.jpg',
-    text: 'Dáng quần wide-leg hack chân dài đỉnh chóp luôn, mình 1m62 mặc vào nhìn như 1m70 vậy á. Mang đi resort nghỉ dưỡng chụp hình mà ai cũng tưởng set đồ thiết kế đi tiệc. Đường may giấu chỉ sắc sảo, không cọ xát da.',
+    photo: '/images/reviews/review-blanca-3.jpg',
+    text: 'Form dáng tôn chiều cao đỉnh chóp luôn, mình 1m62 mặc vào nhìn như 1m70 vậy á. Sắc trắng thuần khiết mang đi resort nghỉ dưỡng chụp hình mà ai cũng tưởng set đồ thiết kế đi tiệc. Đường may giấu chỉ sắc sảo, không hề cọ xát da.',
   },
   {
     id: 'rv-20',
@@ -548,11 +549,11 @@ export const sampleReviews = [
     author: 'Phan Minh A.',
     date: '19/09/2026',
     rating: 5,
-    color: 'Sọc Nâu',
+    color: 'Trắng',
     size: 'M',
     verified: true,
-    photo: '/images/reviews/review-brown-4.jpg',
-    text: 'Đặt may thủ công đợi gần tuần lễ nhưng nhận hàng thì thấy hoàn toàn bõ công chờ đợi. Đóng hộp cứng cáp, từng nếp gấp phẳng phiu tinh tế. Chất vải tencel rủ tự nhiên, mặc lên người toát ra vẻ thanh lịch sang trọng ngầm.',
+    photo: '/images/reviews/review-blanca-4.jpg',
+    text: 'Đặt may thủ công đợi gần tuần lễ nhưng nhận hàng thì thấy hoàn toàn bõ công chờ đợi. Đóng hộp cứng cáp, từng nếp gấp phẳng phiu tinh tế. Chất vải tencel trắng rủ tự nhiên, mặc lên người toát ra vẻ thanh lịch sang trọng ngầm.',
   },
   {
     id: 'rv-21',
@@ -560,11 +561,11 @@ export const sampleReviews = [
     author: 'Diệu Anh N.',
     date: '10/09/2026',
     rating: 5,
-    color: 'Sọc Nâu',
+    color: 'Trắng',
     size: 'S',
     verified: true,
     photo: null,
-    text: 'Thiết kế mang năng lượng Thổ an lành ấm áp. Vải tự nhiên mềm mại, không bị tích điện hay dính dính vào chân vào những ngày mùa đông hanh khô. Mặc ngủ một giấc dậy thấy tinh thần khoan khoái hẳn.',
+    text: 'Thiết kế mang năng lượng Kim thuần khiết thanh tao. Vải tự nhiên mềm mại, không bị tích điện hay dính vào người vào những ngày hanh khô. Mặc ngủ một giấc dậy thấy tinh thần khoan khoái hẳn.',
   },
   {
     id: 'rv-22',
@@ -572,11 +573,11 @@ export const sampleReviews = [
     author: 'Kim Oanh L.',
     date: '02/09/2026',
     rating: 5,
-    color: 'Sọc Nâu',
+    color: 'Trắng',
     size: 'M',
     verified: true,
     photo: null,
-    text: 'Mua set này tặng quà cưới cho cô bạn thân, nó khen nức nở bảo là món quà ưng ý nhất trong các quà được tặng. Chất vải sờ là biết đồ cao cấp xịn sò, không phải hàng may công nghiệp đại trà.',
+    text: 'Mua set Blanca này tặng quà cưới cho cô bạn thân, nó khen nức nở bảo là món quà ưng ý nhất trong các quà được tặng. Màu trắng cô dâu cực kỳ hợp dịp, chất vải sờ là biết đồ cao cấp xịn sò, không phải hàng may công nghiệp đại trà.',
   },
   {
     id: 'rv-24',
@@ -584,11 +585,11 @@ export const sampleReviews = [
     author: 'Thục Quyên T.',
     date: '16/08/2026',
     rating: 5,
-    color: 'Sọc Nâu',
+    color: 'Trắng',
     size: 'M',
     verified: true,
     photo: null,
-    text: 'Bộ sleepwear sang và êm nhất tủ đồ của mình tính đến giờ. Dáng áo thanh mảnh, cổ bẻ vừa vặn không bị xộc xệch. Mặc ở nhà tiếp khách hay ăn tối thân mật gia đình đều rất nhã nhặn, tôn trọng người đối diện.',
+    text: 'Bộ sleepwear trắng sang và êm nhất tủ đồ của mình tính đến giờ. Dáng áo thanh mảnh, cổ bẻ vừa vặn không bị xộc xệch. Mặc ở nhà tiếp khách hay ăn tối thân mật gia đình đều rất nhã nhặn, tôn trọng người đối diện.',
   },
   {
     id: 'rv-23',
@@ -596,11 +597,11 @@ export const sampleReviews = [
     author: 'Thảo Nguyên D.',
     date: '24/08/2026',
     rating: 4,
-    color: 'Sọc Nâu',
+    color: 'Trắng',
     size: 'S',
     verified: true,
     photo: null,
-    text: 'Chất vải Tencel mềm rủ như mơ, mặc thích mê tơi. Do vải tự nhiên cao cấp nên khi giặt xong cần giũ mạnh và phơi trên móc trong bóng mát để giữ form phẳng phiu nhất. Phom dáng suông rộng rãi thoải mái, cho shop 4 sao rưỡi!',
+    text: 'Chất vải Tencel trắng mềm rủ như mơ, mặc thích mê tơi. Do vải tự nhiên cao cấp nên khi giặt xong cần giũ mạnh và phơi trên móc trong bóng mát để giữ form phẳng phiu nhất. Phom dáng suông rộng rãi thoải mái, cho shop 4 sao rưỡi!',
   },
 ]
 

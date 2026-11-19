@@ -7,6 +7,7 @@ import {
   handleTelegramWebhookUpdate,
   startTelegramPolling,
   stopTelegramPolling,
+  syncTelegramWebhook,
 } from './telegramProvider.js'
 
 export {
@@ -16,6 +17,7 @@ export {
   handleTelegramWebhookUpdate,
   startTelegramPolling,
   stopTelegramPolling,
+  syncTelegramWebhook,
 }
 import { maskPhone, createAlert } from '../loyaltyDb.js'
 import { normalizeVietnamesePhone } from '../../smsService.js'

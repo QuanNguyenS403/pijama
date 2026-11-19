@@ -66,13 +66,13 @@ function adviseSize(weight, height) {
 
   const daybreakSizes = getProductBySlugOrId('feliz-set')?.sizes?.join(', ') || 'S, M'
   const stillwaterSizes = getProductBySlugOrId('galaxia-set')?.sizes?.join(', ') || 'S, M'
-  const hearthSizes = getProductBySlugOrId('the-hearth-set')?.sizes?.join(', ') || 'S, M'
+  const blancaSizes = getProductBySlugOrId('blanca-set')?.sizes?.join(', ') || getProductBySlugOrId('the-hearth-set')?.sizes?.join(', ') || 'S, M'
 
   if (weight && weight <= 50) {
     return {
       recommendedSize: 'Size S',
       reason: `với cân nặng ${weight}kg${height ? ` và chiều cao ${height}cm` : ''}, anh/chị phù hợp với **Size S** ạ:\n` +
-        `• **THE HEARTH SET**: Size S chuẩn 42–50 kg · 152–162 cm (Ngực 82–86 cm · Eo 64–70 cm).\n` +
+        `• **BLANCA SET**: Size S chuẩn 42–50 kg · 152–162 cm (Ngực 82–86 cm · Eo 64–70 cm).\n` +
         `• **FELIZ SET**: Size S dài áo 62,0 cm · ngực 110,0 cm · max eo 103,7 cm · dài quần 90,8 cm.\n` +
         `• **GALAXIA SET**: Size S dài áo 66,5 cm · ngực 127,0 cm · max eo ≈108,0 cm · dài quần 96,3 cm.`,
       models: 'Cả 3 mẫu hiện đều có **Size S** ạ.',
@@ -83,20 +83,20 @@ function adviseSize(weight, height) {
     return {
       recommendedSize: 'Size M',
       reason: `với cân nặng ${weight}kg${height ? ` và chiều cao ${height}cm` : ''}, từng mẫu trên website có size tương ứng như sau ạ:\n` +
-        `• **THE HEARTH SET** (chỉ có Size ${hearthSizes}): chuẩn nhất là **Size M** (51–58 kg · 160–167 cm · Ngực 87–93 cm · Eo 71–77 cm).\n` +
+        `• **BLANCA SET** (chỉ có Size ${blancaSizes}): chuẩn nhất là **Size M** (51–58 kg · 160–167 cm · Ngực 87–93 cm · Eo 71–77 cm).\n` +
         `• **FELIZ SET**: **Size M** (ngực áo 118,0 cm · max eo 103,7 cm · dài áo 66,0 cm · dài quần 94,8 cm).
         • **GALAXIA SET**: **Size M** (ngực áo 135,0 cm · max eo ≈116,0 cm · dài áo 70,5 cm · dài quần 100,3 cm).`,
-      models: 'Cả 3 mẫu **FELIZ SET**, **GALAXIA SET** và **THE HEARTH SET** đều có sẵn **Size M** chuẩn đẹp ạ.',
+      models: 'Cả 3 mẫu **FELIZ SET**, **GALAXIA SET** và **BLANCA SET** đều có sẵn **Size M** chuẩn đẹp ạ.',
     }
   }
 
   if (weight && weight >= 59 && weight <= 66) {
     return {
       recommendedSize: 'Size M (Form thoải mái) / Tư vấn theo số đo',
-      reason: `dạ hiện tại cả 3 mẫu trên website (**FELIZ SET**, **GALAXIA SET**, **THE HEARTH SET**) đều có 2 size là **Size S** và **Size M** ạ. Với cân nặng ${weight}kg${height ? ` và chiều cao ${height}cm` : ''}, anh/chị tham khảo **Size M** có thông số form rộng rãi như sau ạ:\n` +
+      reason: `dạ hiện tại cả 3 mẫu trên website (**FELIZ SET**, **GALAXIA SET**, **BLANCA SET**) đều có 2 size là **Size S** và **Size M** ạ. Với cân nặng ${weight}kg${height ? ` và chiều cao ${height}cm` : ''}, anh/chị tham khảo **Size M** có thông số form rộng rãi như sau ạ:\n` +
         `• **GALAXIA SET** (Caro Navy - 498.000đ): **Size M** dài áo 70,5 cm · ngực áo 135,0 cm · max eo ≈116,0 cm · đùi 72,8 cm · dài quần 100,3 cm.\n` +
         `• **FELIZ SET** (Đỏ - 698.000đ): **Size M** dài áo 66,0 cm · ngực áo 118,0 cm · max eo 103,7 cm · đùi 73,0 cm · dài quần 94,8 cm.\n` +
-        `(Lưu ý: Mẫu **THE HEARTH SET** Size M khuyến nghị cho 51–58 kg, Ngực 87–93 cm, Eo 71–77 cm).`,
+        `(Lưu ý: Mẫu **BLANCA SET** Size M khuyến nghị cho 51–58 kg, Ngực 87–93 cm, Eo 71–77 cm).`,
       models: 'Hai mẫu **GALAXIA SET (Caro Navy - 498.000đ)** và **FELIZ SET (Đỏ - 698.000đ)** có form **Size M** rộng rãi rất dễ mặc ạ.',
     }
   }
@@ -104,7 +104,7 @@ function adviseSize(weight, height) {
   if (weight && weight > 66) {
     return {
       recommendedSize: 'Tư vấn theo số đo chi tiết / hỗ trợ trực tiếp',
-      reason: `dạ hiện trên website cả 3 mẫu may sẵn chỉ có **Size S** và **Size M** với thông số tối đa ở **Size M** như sau ạ: **GALAXIA SET** Size M (ngực áo 135,0 cm · max eo ≈116,0 cm · đùi 72,8 cm), **FELIZ SET** Size M (ngực áo 118,0 cm · max eo 103,7 cm · đùi 73,0 cm), và **THE HEARTH SET** Size M (51–58 kg). Với cân nặng ${weight}kg, nếu vòng ngực/vòng eo thực tế vẫn nằm trong khoảng thông số trên thì **Size M** của **GALAXIA SET** hoặc **FELIZ SET** vẫn vừa, hoặc em có thể kết nối chủ shop để tư vấn kích thước phù hợp nhất cho mình nhé ạ!`,
+      reason: `dạ hiện trên website cả 3 mẫu may sẵn chỉ có **Size S** và **Size M** với thông số tối đa ở **Size M** như sau ạ: **GALAXIA SET** Size M (ngực áo 135,0 cm · max eo ≈116,0 cm · đùi 72,8 cm), **FELIZ SET** Size M (ngực áo 118,0 cm · max eo 103,7 cm · đùi 73,0 cm), và **BLANCA SET** Size M (51–58 kg). Với cân nặng ${weight}kg, nếu vòng ngực/vòng eo thực tế vẫn nằm trong khoảng thông số trên thì **Size M** của **GALAXIA SET** hoặc **FELIZ SET** vẫn vừa, hoặc em có thể kết nối chủ shop để tư vấn kích thước phù hợp nhất cho mình nhé ạ!`,
       models: null,
       needsHandoff: true,
     }
@@ -113,7 +113,7 @@ function adviseSize(weight, height) {
   if (!weight && height) {
     return {
       recommendedSize: 'Cần thêm cân nặng / số đo ngực-eo',
-      reason: `với chiều cao ${height}cm, trên website hiện có chiều cao tham chiếu cho **THE HEARTH SET** (Size S: 152–162 cm, Size M: 160–167 cm) và thông số dài áo/quần chi tiết cho **FELIZ SET** (Size S, M) và **GALAXIA SET** (Size S, M).`,
+      reason: `với chiều cao ${height}cm, trên website hiện có chiều cao tham chiếu cho **BLANCA SET** (Size S: 152–162 cm, Size M: 160–167 cm) và thông số dài áo/quần chi tiết cho **FELIZ SET** (Size S, M) và **GALAXIA SET** (Size S, M).`,
       models: 'Anh/chị cho em xin thêm cân nặng hoặc vòng ngực/vòng eo để em đối chiếu chuẩn size nhất trên bảng thông số website ạ.',
     }
   }
@@ -150,9 +150,9 @@ export function generateLocalAdvisorResponse(message, context = {}) {
         'Dạ QuanNguyenS hiện có 3 bộ sleepwear thiết kế cao cấp trong Bộ Sưu Tập Thu Đông 2026 chuẩn phong cách Style To Be Lived In ạ:\n\n' +
         '1. 🌸 **FELIZ SET (698.000đ)**: Màu Đỏ ấm áp và quyến rũ (Hành Hỏa), viền tương phản sắc nét, cổ notch cổ điển, 100% sợi tự nhiên Cotton-Modal thoáng khí 4 mùa (Size S, M).\n\n' +
         '2. 🌊 **GALAXIA SET (498.000đ)**: Họa tiết Caro Navy lịch lãm (Hành Thủy), thiết kế cổ V thanh thoát tôn dáng, chất liệu 95% Modal & 5% Spandex mướt mát chống nhăn tự nhiên (Size S, M).\n\n' +
-        '3. 🍂 **THE HEARTH SET (989.000đ)**: Họa tiết sọc nâu mocha quý phái (Hành Thổ), quần dáng wide-leg ống rộng buông rủ kiêu sa, chế tác từ 100% Tencel Lyocell thượng hạng (Size S, M).\n\n' +
+        '3. ✨ **BLANCA SET (989.000đ)**: Sắc Trắng tinh khôi quý phái (Hành Kim), phom dáng thanh lịch buông rủ kiêu sa, chế tác từ 100% Tencel Lyocell thượng hạng (Size S, M).\n\n' +
         'Anh/chị đang tìm đồ mặc nhà thoáng mát hay đang muốn chọn một món quà tinh tế cho người thân ạ?',
-      quickReplies: ['Mẫu FELIZ SET (Đỏ)', 'Mẫu GALAXIA SET (Navy)', 'Mẫu Hearth (Nâu)', 'Tư vấn chọn size'],
+      quickReplies: ['Mẫu FELIZ SET (Đỏ)', 'Mẫu GALAXIA SET (Navy)', 'Mẫu BLANCA SET (Trắng)', 'Tư vấn chọn size'],
     }
   }
 
@@ -176,7 +176,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
 
       return {
         reply: `Dạ ${sizeAdvice.reason}\n\n${sizeAdvice.models}\n\nAnh/chị thích mẫu sleepwear tone màu nào nhất để em gửi chi tiết ạ?`,
-        quickReplies: ['Xem FELIZ SET (Đỏ)', 'Xem GALAXIA SET (Navy)', 'Xem Hearth (Nâu)', 'Phí ship & Ưu đãi'],
+        quickReplies: ['Xem FELIZ SET (Đỏ)', 'Xem GALAXIA SET (Navy)', 'Xem BLANCA SET (Trắng)', 'Phí ship & Ưu đãi'],
       }
     }
   }
@@ -190,7 +190,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     norm.includes('bo do') ||
     norm.includes('soc hong') ||
     norm.includes('mau hong') ||
-    ((norm.includes('490') || norm.includes('698') || norm.includes('798')) && !norm.includes('hearth') && !norm.includes('stillwater'))
+    ((norm.includes('490') || norm.includes('698') || norm.includes('798')) && !norm.includes('blanca') && !norm.includes('hearth') && !norm.includes('stillwater'))
   ) {
     return {
       reply:
@@ -246,9 +246,15 @@ export function generateLocalAdvisorResponse(message, context = {}) {
     }
   }
 
-  // 5. Hỏi chi tiết mẫu The Hearth Set (Sọc Nâu)
+  // 5. Hỏi chi tiết mẫu BLANCA SET (Sắc Trắng)
   if (
+    norm.includes('blanca') ||
     norm.includes('hearth') ||
+    norm.includes('mau trang') ||
+    norm.includes('set trang') ||
+    norm.includes('bo trang') ||
+    norm.includes('pure white') ||
+    norm.includes('white') ||
     norm.includes('soc nau') ||
     norm.includes('mau nau') ||
     norm.includes('wide leg') ||
@@ -258,22 +264,22 @@ export function generateLocalAdvisorResponse(message, context = {}) {
   ) {
     return {
       reply:
-        'Dạ tuyệt phẩm **THE HEARTH SET** là dòng homewear cao cấp nhất tại QuanNguyenS:\n\n' +
+        'Dạ tuyệt phẩm **BLANCA SET** là dòng sleepwear cao cấp nhất tại QuanNguyenS:\n\n' +
         '• **Giá bán**: 989.000đ (Phiên bản giới hạn).\n' +
-        '• **Thiết kế**: Quần dáng wide-leg (ống rộng) thượng lưu buông rủ thướt tha, phối áo phom thoải mái chuẩn châu Âu.\n' +
+        '• **Thiết kế**: Phom dáng thanh lịch quý phái chuẩn phong cách châu Âu, tà áo và ống quần buông rủ thướt tha tôn vinh khí chất kiêu sa.\n' +
         '• **Chất liệu**: 100% Tencel Lyocell thượng hạng định lượng 190 GSM, dệt bóng mờ sang trọng, thấm hút gấp 1.5 lần cotton và rủ mềm tự nhiên.\n' +
-        '• **Màu sắc**: Sọc Nâu mocha ấm áp thuộc hành Thổ, mang lại cảm giác bình yên như trở về tổ ấm.\n' +
-        `• **Kích cỡ trên website (Size S, M)**:\n${formatInlineSizes('the-hearth-set')}\n` +
+        '• **Màu sắc**: Sắc Trắng tinh khôi thuần khiết thuộc hành Kim, thanh lọc tâm trí và đón chào nguồn năng lượng tươi mới thịnh vượng.\n' +
+        `• **Kích cỡ trên website (Size S, M)**:\n${formatInlineSizes('blanca-set') || formatInlineSizes('the-evening-edit')}\n` +
         '• **Tình trạng**: Hàng đặt may thủ công giao trong 7–10 ngày làm việc.\n\n' +
         'Bộ này diện tiếp khách tại nhà hay làm quà tặng sinh nhật thì cực kỳ đẳng cấp ạ!',
       quickReplies: ['Tư vấn chọn size', 'Chính sách đổi trả', 'Gặp chủ shop'],
       product: {
-        name: 'THE HEARTH SET',
-        subtitle: 'Sleepwear Wide-Leg Thượng Hạng · Sọc Nâu',
+        name: 'BLANCA SET',
+        subtitle: 'Sleepwear Thiết Kế Quý Phái · Sắc Trắng',
         price: 989000,
-        slug: 'the-hearth-set',
+        slug: 'blanca-set',
         preOrder: true,
-        image: '/images/hero-slide-03.jpg',
+        image: '/images/blanca-set-white-main.jpg',
       },
     }
   }
@@ -297,9 +303,9 @@ export function generateLocalAdvisorResponse(message, context = {}) {
         'Dạ toàn bộ sản phẩm của QuanNguyenS đều sử dụng chất liệu sợi dệt tự nhiên thượng hạng thân thiện với làn da:\n\n' +
         '• **Cotton-Modal (FELIZ SET)**: Dệt thoi vân chéo thoáng khí 4 mùa, đạt chuẩn an toàn OEKO-TEX 100 không gây kích ứng da.\n' +
         '• **Modal & Spandex (GALAXIA SET)**: Chiết xuất từ sợi gỗ sồi tự nhiên, sờ vào mướt mát, có độ đàn hồi nhẹ và chống nhăn tự nhiên.\n' +
-        '• **100% Tencel Lyocell (The Hearth Set)**: Vải sinh học cao cấp có độ bóng mờ sang trọng, mềm rủ quý phái và thấm hút vượt trội.\n\n' +
+        '• **100% Tencel Lyocell (BLANCA SET)**: Vải sinh học cao cấp có độ bóng mờ sang trọng, mềm rủ quý phái và thấm hút vượt trội.\n\n' +
         '💡 **Hướng dẫn giặt**: Anh/chị nên giặt tay hoặc giặt máy chế độ nhẹ (delicate) dưới 30°C, phơi trong bóng mát và không sấy máy để trang phục giữ form bền đẹp nhiều năm nhé ạ!',
-      quickReplies: ['Xem mẫu FELIZ SET', 'Xem mẫu GALAXIA SET', 'Xem mẫu The Hearth'],
+      quickReplies: ['Xem mẫu FELIZ SET', 'Xem mẫu GALAXIA SET', 'Xem mẫu BLANCA SET'],
     }
   }
 
@@ -316,7 +322,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
         'Dạ QuanNguyenS niêm yết mức giá minh bạch cho 3 bộ sleepwear thiết kế như sau ạ:\n\n' +
         '• **Feliz (Sắc Đỏ)**: 698.000đ · Cotton-Modal cao cấp.\n' +
         '• **Galaxia (Caro Navy)**: 498.000đ · Modal cao cấp.\n' +
-        '• **THE HEARTH SET**: 989.000đ · Sọc Nâu Wide-Leg Tencel thượng hạng.\n\n' +
+        '• **BLANCA SET**: 989.000đ · Sắc Trắng Tencel thượng hạng.\n\n' +
         '🎁 **Ưu đãi áp dụng**:\n' +
         '• Giảm ngay **10% TRỰC TIẾP** trên tổng đơn khi thanh toán Chuyển khoản VietQR (Napas 24/7).\n' +
         '• **MIỄN PHÍ VẬN CHUYỂN** toàn quốc cho đơn từ 500.000đ ạ!',
@@ -340,7 +346,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
         'Dạ anh/chị chọn sleepwear cao cấp làm quà tặng là một lựa chọn cực kỳ chu đáo và tinh tế!\n\n' +
         '• Nếu người nhận thích phong cách ngọt ngào, quyến rũ: mẫu **FELIZ SET** (Màu Đỏ, 698.000đ) mang năng lượng ấm áp, rạng rỡ và may mắn.\n' +
         '• Nếu người nhận thích phong cách thanh lịch, trầm tĩnh: mẫu **GALAXIA SET** (Caro Navy, 498.000đ) cổ V rất tôn dáng và hiện đại.\n' +
-        '• Nếu muốn món quà đẳng cấp nhất dành tặng người đặc biệt: mẫu **THE HEARTH SET** (Sọc Nâu Tencel, 989k) phom wide-leg quý phái là lựa chọn hoàn hảo nhất.\n\n' +
+        '• Nếu muốn món quà đẳng cấp nhất dành tặng người đặc biệt: mẫu **BLANCA SET** (Màu Trắng Tencel, 989k) phom dáng quý phái là lựa chọn hoàn hảo nhất.\n\n' +
         'Mỗi đơn hàng QuanNguyenS đều được đóng gói hộp quà trang nhã và hỗ trợ đồng kiểm khi nhận hàng ạ. Anh/chị cho em xin số đo hoặc chiều cao/cân nặng của người nhận để em gợi ý size chuẩn nhé!',
       quickReplies: ['Tư vấn size quà tặng', 'Chính sách đổi trả', 'Gặp chủ shop'],
     }
@@ -362,9 +368,9 @@ export function generateLocalAdvisorResponse(message, context = {}) {
         'Dạ các thiết kế của QuanNguyenS lấy cảm hứng thẩm mỹ màu sắc từ Ngũ Hành tự nhiên để mang lại cảm xúc an yên trọn vẹn:\n\n' +
         '• **Hỏa Sắc (FELIZ SET - Đỏ)**: Ấm áp, yêu đời, tiếp thêm sinh khí tích cực — rất tương sinh hòa hợp cho người mệnh Hỏa và Thổ.\n' +
         '• **Thủy Sắc (GALAXIA SET - Caro Navy)**: Tĩnh tại, sâu lắng, mang lại sự thư thái như mặt hồ phẳng lặng — tương hợp nuôi dưỡng cho người mệnh Thủy và Mộc.\n' +
-        '• **Thổ Sắc (The Hearth Set - Sọc Nâu)**: Vững chãi, an lành, mang cảm giác bình yên của tổ ấm — hòa hợp cho người mệnh Thổ và Kim.\n\n' +
+        '• **Kim Sắc (BLANCA SET - Màu Trắng)**: Tinh khôi, thuần khiết, mang năng lượng thanh lọc và thịnh vượng — hòa hợp cho người mệnh Kim và Thủy.\n\n' +
         'Lưu ý là Ngũ Hành ở đây là gợi cảm hứng thẩm mỹ tinh tế cho không gian nghỉ ngơi của anh/chị ạ! Anh/chị đang có cảm tình với tone màu nào nhất ạ?',
-      quickReplies: ['Tone Đỏ (Hỏa)', 'Tone Navy (Thủy)', 'Tone Nâu (Thổ)', 'Tư vấn size'],
+      quickReplies: ['Tone Đỏ (Hỏa)', 'Tone Navy (Thủy)', 'Tone Trắng (Kim)', 'Tư vấn size'],
     }
   }
 
@@ -409,7 +415,7 @@ export function generateLocalAdvisorResponse(message, context = {}) {
   // Fallback thân thiện, luôn hỗ trợ khách nhiệt tình
   return {
     reply:
-      'Dạ em là Trợ lý tư vấn của QuanNguyenS. Em rất vui được hỗ trợ anh/chị chọn size vừa vặn theo chiều cao/cân nặng, tư vấn chất liệu 3 bộ sleepwear (FELIZ SET Sắc Đỏ, GALAXIA SET Caro Navy, The Hearth Set Sọc Nâu) hoặc các ưu đãi tốt nhất hôm nay ạ.\n\nAnh/chị đang quan tâm đến bộ sleepwear cho dịp nào để em tư vấn nhé ạ?',
+      'Dạ em là Trợ lý tư vấn của QuanNguyenS. Em rất vui được hỗ trợ anh/chị chọn size vừa vặn theo chiều cao/cân nặng, tư vấn chất liệu 3 bộ sleepwear (FELIZ SET Sắc Đỏ, GALAXIA SET Caro Navy, BLANCA SET Sắc Trắng) hoặc các ưu đãi tốt nhất hôm nay ạ.\n\nAnh/chị đang quan tâm đến bộ sleepwear cho dịp nào để em tư vấn nhé ạ?',
     quickReplies: ['Xem 3 mẫu Sleepwear', 'Tư vấn chọn size', 'Ưu đãi & Freeship', 'Gặp chủ shop'],
   }
 }

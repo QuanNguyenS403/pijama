@@ -21,7 +21,7 @@
 ### Danh mục sản phẩm hiện hành (`src/data/products.js` 🔒)
 1. **`FELIZ SET`** (`id: the-classic-set`, `slug: feliz-set`): `698.000đ` — Sắc Đỏ (Hành Hỏa), Size `S, M` (50 sp/size), hàng có sẵn.
 2. **`GALAXIA SET`** (`id: the-cafe-look`, `slug: galaxia-set`): `498.000đ` — Caro Navy (Hành Thủy), Size `S, M` (50 sp/size), hàng có sẵn.
-3. **`THE HEARTH SET`** (`id: the-evening-edit`, `slug: the-hearth-set`): `989.000đ` — Sọc Nâu (Hành Thổ), Size `S, M` (50 sp/size), Pre-order 7–10 ngày.
+3. **`BLANCA SET`** (`id: the-evening-edit`, `slug: blanca-set`): `989.000đ` — Màu Trắng (Hành Kim), Size `S, M` (50 sp/size), Pre-order 7–10 ngày.
 
 ---
 
