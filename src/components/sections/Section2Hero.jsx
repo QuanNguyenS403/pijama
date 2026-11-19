@@ -16,7 +16,7 @@ const slides = [
     headline: 'BLANCA SET',
     sub: '',
     align: 'left',
-    objectPosition: 'object-[center_20%]',
+    objectPosition: 'object-top',
     link: '/san-pham/blanca-set',
   },
   {
@@ -38,7 +38,7 @@ const slides = [
     headline: 'FELIZ SET',
     sub: '',
     align: 'left',
-    objectPosition: 'object-center',
+    objectPosition: 'object-top',
     link: '/san-pham/feliz-set',
   },
   {

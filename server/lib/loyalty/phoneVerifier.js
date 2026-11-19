@@ -130,16 +130,7 @@ export async function sendLoyaltyOtp({
   const expiresAt = now + ttlMs
   const id = `vcode_${now}_${Math.random().toString(36).substring(2, 8)}`
 
-  // 5. Lưu hash vào database (kèm mã tạm thời phục vụ Telegram Bot gửi cho khách)
-  db.prepare(`
-    INSERT INTO loyalty_phone_verifications (
-      id, phone, code_hash, salt, purpose, expires_at,
-      attempts, max_attempts, verified, ip_hash, created_at,
-      raw_code_temp, delivery_channel
-    ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?, ?, ?)
-  `).run(id, cleanPhone, codeHash, salt, purpose, expiresAt, LOYALTY_RULES.OTP_MAX_ATTEMPTS, ipHash, now, code, 'telegram')
-
-  // 6. Gửi mã qua provider thống nhất (Telegram Bot / Telegram Gateway / Zalo / Email)
+  // 5. Chuẩn bị thông tin hội viên & lưu vào database
   let resolvedEmail = String(email || '').trim().toLowerCase()
   let resolvedFullName = String(fullName || '').trim()
   if (!resolvedEmail) {
@@ -160,6 +151,16 @@ export async function sendLoyaltyOtp({
       } catch {}
     }
   }
+
+  db.prepare(`
+    INSERT INTO loyalty_phone_verifications (
+      id, phone, code_hash, salt, purpose, expires_at,
+      attempts, max_attempts, verified, ip_hash, created_at,
+      raw_code_temp, delivery_channel, full_name
+    ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?, ?, ?, ?)
+  `).run(id, cleanPhone, codeHash, salt, purpose, expiresAt, LOYALTY_RULES.OTP_MAX_ATTEMPTS, ipHash, now, code, 'telegram', resolvedFullName || null)
+
+  // 6. Gửi mã qua provider thống nhất (Telegram Bot / Telegram Gateway / Zalo / Email)
 
   const providerResult = await sendOtpViaProvider({
     phone: cleanPhone,

@@ -125,6 +125,7 @@ export async function sendOtpViaProvider({
   if (provider === 'telegram' || provider === 'telegram_bot' || provider === 'telegram_gateway') {
     const result = await sendTelegramOtp({
       phone: cleanPhone,
+      fullName: fullName || '',
       code,
       purpose,
       ttlMinutes,

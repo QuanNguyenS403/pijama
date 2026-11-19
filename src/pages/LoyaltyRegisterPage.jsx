@@ -37,7 +37,7 @@ export default function LoyaltyRegisterPage() {
     } catch {}
   }, [])
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e?.preventDefault()
     setError(null)
 
@@ -58,52 +58,24 @@ export default function LoyaltyRegisterPage() {
       return
     }
 
-    setLoading(true)
-
-    try {
-      // Gửi yêu cầu phát mã OTP xác minh qua Telegram
-      const res = await fetch('/api/loyalty/phone/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: cleanPhone,
-          fullName: cleanName,
-          purpose: 'enrollment',
-        }),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok || !data.success) {
-        setError(data.error || 'Không thể tạo yêu cầu xác minh lúc này. Vui lòng thử lại sau.')
-        setLoading(false)
-        return
-      }
-
-      // Lưu trạng thái vào sessionStorage để dự phòng F5
-      const payload = {
-        phone: cleanPhone,
-        fullName: cleanName,
-        verificationId: data.verificationId || '',
-        telegramUrl: data.telegramUrl || '',
-      }
-      sessionStorage.setItem('qns_pending_loyalty_verification', JSON.stringify(payload))
-
-      // Di chuyển đến trang điền mã xác minh Telegram
-      const searchParams = new URLSearchParams({
-        phone: cleanPhone,
-        name: cleanName,
-      })
-      if (data.verificationId) searchParams.set('v', data.verificationId)
-      if (data.telegramUrl) searchParams.set('tg', data.telegramUrl)
-
-      navigate(`/xac-minh-hoi-vien?${searchParams.toString()}`, {
-        state: payload,
-      })
-    } catch (err) {
-      setError('Lỗi kết nối máy chủ. Quý khách vui lòng kiểm tra lại kết nối mạng.')
-      setLoading(false)
+    // Lưu trạng thái vào sessionStorage để dự phòng F5
+    const payload = {
+      phone: cleanPhone,
+      fullName: cleanName,
+      autoSend: true,
     }
+    sessionStorage.setItem('qns_pending_loyalty_verification', JSON.stringify(payload))
+
+    // Di chuyển ngay sang trang xác minh Telegram lập tức
+    const searchParams = new URLSearchParams({
+      phone: cleanPhone,
+      name: cleanName,
+      send: '1',
+    })
+
+    navigate(`/xac-minh-hoi-vien?${searchParams.toString()}`, {
+      state: payload,
+    })
   }
 
   return (

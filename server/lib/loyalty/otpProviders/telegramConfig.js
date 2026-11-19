@@ -91,7 +91,7 @@ export function validateTelegramBotToken(rawToken = '') {
  * (chỉ cho phép [A-Za-z0-9_-], độ dài 1..256, tuyệt đối không bọc < >)
  */
 export function validateTelegramWebhookSecret(rawSecret = '') {
-  const secret = String(rawSecret || '').trim()
+  let secret = String(rawSecret || '').trim()
   if (!secret) {
     return {
       valid: true,
@@ -100,6 +100,10 @@ export function validateTelegramWebhookSecret(rawSecret = '') {
       code: 'NOT_SET',
       message: '',
     }
+  }
+  // Tự động chuẩn hóa dấu `:` sang `_` nếu lỡ dùng định dạng bot token
+  if (secret.includes(':')) {
+    secret = secret.replace(/:/g, '_')
   }
   if (isTelegramPlaceholder(secret) || /[<>]/.test(secret) || !/^[A-Za-z0-9_-]{1,256}$/.test(secret)) {
     return {

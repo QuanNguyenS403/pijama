@@ -40,6 +40,9 @@ export default function VerifyLoyaltyPhonePage() {
 
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sendingInitialOtp, setSendingInitialOtp] = useState(
+    Boolean(statePhone && (!stateVerificationId || searchParams.get('send') === '1' || location.state?.autoSend))
+  )
   const [error, setError] = useState(null)
   const [successMember, setSuccessMember] = useState(null)
   const [resendCooldown, setResendCooldown] = useState(60)
@@ -50,6 +53,7 @@ export default function VerifyLoyaltyPhonePage() {
   const [hasCartItems, setHasCartItems] = useState(false)
 
   const inputRef = useRef(null)
+  const autoSentRef = useRef(false)
 
   // Kiểm tra giỏ hàng
   useEffect(() => {
@@ -76,6 +80,64 @@ export default function VerifyLoyaltyPhonePage() {
       } catch {}
     }
   }, [phone])
+
+  // Tự động phát mã OTP qua Telegram ngay khi chuyển tới trang
+  useEffect(() => {
+    const shouldSend =
+      phone &&
+      !autoSentRef.current &&
+      (!verificationId || searchParams.get('send') === '1' || location.state?.autoSend)
+
+    if (!shouldSend) return
+    autoSentRef.current = true
+
+    let isMounted = true
+    setSendingInitialOtp(true)
+    setError(null)
+
+    fetch('/api/loyalty/phone/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone: phone.trim(),
+        fullName: fullName.trim() || undefined,
+        purpose: 'enrollment',
+      }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!isMounted) return
+        setSendingInitialOtp(false)
+        if (!data.success) {
+          setError(data.error || 'Không thể tạo yêu cầu xác minh. Vui lòng bấm gửi lại mã.')
+          return
+        }
+
+        if (data.verificationId) setVerificationId(data.verificationId)
+        if (data.telegramUrl) setTelegramUrl(data.telegramUrl)
+        if (data.deliveredDirectly) {
+          setTelegramDelivered(true)
+          setResendMessage('Mã xác thực 6 chữ số đã được gửi qua Telegram tới bạn!')
+        }
+
+        const payload = {
+          phone: phone.trim(),
+          fullName: fullName.trim(),
+          verificationId: data.verificationId || '',
+          telegramUrl: data.telegramUrl || '',
+        }
+        sessionStorage.setItem('qns_pending_loyalty_verification', JSON.stringify(payload))
+      })
+      .catch(() => {
+        if (!isMounted) return
+        setSendingInitialOtp(false)
+        setError('Lỗi kết nối máy chủ khi gửi mã xác thực. Vui lòng nhấn gửi lại.')
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [phone, fullName, verificationId, searchParams, location.state])
 
   // Tự động focus vào ô nhập mã
   useEffect(() => {
@@ -326,38 +388,72 @@ export default function VerifyLoyaltyPhonePage() {
                   </div>
 
                   {/* NÚT BẤM CTA: MỞ TELEGRAM LẤY MÃ NGAY */}
-                  <div className="p-4 bg-gradient-to-r from-[#F0F8FF] to-[#FAF5F0] border border-[#229ED9]/30 rounded-[4px] space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#229ED9] text-white flex items-center justify-center shrink-0 shadow-sm">
-                        <Send className="w-4 h-4 translate-x-[1px]" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h2 className="text-xs sm:text-sm font-bold text-[#2C201A] flex items-center gap-1.5">
-                          Nhận mã trực tiếp trên Telegram
-                          {telegramDelivered && (
-                            <span className="text-[10px] text-[#0E7A3D] bg-[#DEF7EC] px-1.5 py-0.5 rounded font-mono font-normal">
-                              Đã gửi tới Bot
-                            </span>
-                          )}
-                        </h2>
-                        <p className="text-[11px] text-[#6C5F54] leading-relaxed mt-0.5">
-                          Nhấn nút bên dưới để mở Telegram Bot <strong>@QuanNguyenSbot</strong>, sau
-                          đó nhấn <strong>START (Bắt đầu)</strong> để xem mã 6 chữ số.
+                  {sendingInitialOtp ? (
+                    <div className="p-4 bg-[#FAF5F0] border border-[#D4AF37]/50 rounded-[4px] flex items-center gap-3">
+                      <Loader2 className="w-5 h-5 text-[#631521] animate-spin shrink-0" />
+                      <div className="text-xs text-[#2C201A]">
+                        <span className="font-bold">Đang kết nối gửi mã xác minh qua Telegram...</span>
+                        <p className="text-[11px] text-[#8C7E74] mt-0.5">
+                          Hệ thống đang phát mã xác thực bảo mật 6 chữ số tới tài khoản Telegram của Quý khách.
                         </p>
                       </div>
                     </div>
+                  ) : telegramDelivered ? (
+                    <div className="p-4 bg-gradient-to-r from-[#EDF8F1] to-[#FAF5F0] border border-[#27AE60]/40 rounded-[4px] space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#27AE60] text-white flex items-center justify-center shrink-0 shadow-sm">
+                          <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h2 className="text-xs sm:text-sm font-bold text-[#1B5E20] flex items-center gap-1.5">
+                            Mã xác thực đã được gửi về Telegram!
+                          </h2>
+                          <p className="text-[11px] text-[#4A3F38] leading-relaxed mt-0.5">
+                            Quý khách vui lòng kiểm tra thông báo Telegram từ <strong>@QuanNguyenSbot</strong> và nhập mã 6 số vào ô bên dưới.
+                          </p>
+                        </div>
+                      </div>
 
-                    <a
-                      href={resolvedTelegramLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-2.5 px-4 bg-[#229ED9] hover:bg-[#1B81B3] text-white rounded-[2px] text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-md hover:shadow-lg cursor-pointer"
-                    >
-                      <Send className="w-4 h-4" />
-                      <span>Mở Telegram Lấy Mã Ngay</span>
-                      <ExternalLink className="w-3.5 h-3.5 opacity-80" />
-                    </a>
-                  </div>
+                      <a
+                        href={resolvedTelegramLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-2.5 px-4 bg-[#229ED9] hover:bg-[#1B81B3] text-white rounded-[2px] text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-md hover:shadow-lg cursor-pointer"
+                      >
+                        <Send className="w-4 h-4" />
+                        <span>Mở Xem Tin Nhắn Trên Telegram</span>
+                        <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-gradient-to-r from-[#F0F8FF] to-[#FAF5F0] border border-[#229ED9]/30 rounded-[4px] space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#229ED9] text-white flex items-center justify-center shrink-0 shadow-sm">
+                          <Send className="w-4 h-4 translate-x-[1px]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h2 className="text-xs sm:text-sm font-bold text-[#2C201A] flex items-center gap-1.5">
+                            Nhận mã trực tiếp trên Telegram
+                          </h2>
+                          <p className="text-[11px] text-[#6C5F54] leading-relaxed mt-0.5">
+                            Nhấn nút bên dưới để mở Telegram Bot <strong>@QuanNguyenSbot</strong>, sau
+                            đó nhấn <strong>START (Bắt đầu)</strong> để xem mã 6 chữ số.
+                          </p>
+                        </div>
+                      </div>
+
+                      <a
+                        href={resolvedTelegramLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-2.5 px-4 bg-[#229ED9] hover:bg-[#1B81B3] text-white rounded-[2px] text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-md hover:shadow-lg cursor-pointer"
+                      >
+                        <Send className="w-4 h-4" />
+                        <span>Mở Telegram Lấy Mã Ngay</span>
+                        <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                      </a>
+                    </div>
+                  )}
 
                   {/* THÔNG BÁO LỖI HOẶC GỬI LẠI THÀNH CÔNG */}
                   {error && (
@@ -452,27 +548,6 @@ export default function VerifyLoyaltyPhonePage() {
                     >
                       Đổi số điện thoại khác
                     </Link>
-                  </div>
-
-                  {/* HƯỚNG DẪN 3 BƯỚC NHANH */}
-                  <div className="bg-[#FAF8F5] p-4 rounded-[4px] border border-[#E8DFD5] space-y-2 text-[11px] text-[#6C5F54]">
-                    <div className="font-bold text-[#2C201A] uppercase tracking-wider text-[10px]">
-                      💡 Chưa nhận được tin nhắn Telegram?
-                    </div>
-                    <ul className="space-y-1.5 list-disc pl-4 leading-relaxed">
-                      <li>
-                        Nhấn nút <strong>"Mở Telegram Lấy Mã Ngay"</strong> ở trên, Telegram sẽ tự
-                        động mở cuộc trò chuyện với bot.
-                      </li>
-                      <li>
-                        Bấm nút <strong>Start</strong> (Bắt đầu) ở góc dưới màn hình Telegram để bot
-                        trả mã xác thực 6 số ngay lập tức.
-                      </li>
-                      <li>
-                        Nếu chưa có Telegram, Quý khách có thể cài đặt app Telegram miễn phí trên App
-                        Store / Google Play trong 1 phút.
-                      </li>
-                    </ul>
                   </div>
                 </div>
               </motion.div>

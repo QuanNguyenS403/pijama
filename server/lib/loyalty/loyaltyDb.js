@@ -211,6 +211,9 @@ export function initLoyaltySchema(db) {
     if (!verifCols.includes('raw_code_temp')) {
       db.exec('ALTER TABLE loyalty_phone_verifications ADD COLUMN raw_code_temp TEXT')
     }
+    if (!verifCols.includes('full_name')) {
+      db.exec('ALTER TABLE loyalty_phone_verifications ADD COLUMN full_name TEXT')
+    }
   } catch (err) {
     console.warn('⚠️ [LOYALTY MIGRATION] Bỏ qua kiểm tra alter loyalty_phone_verifications:', err.message)
   }

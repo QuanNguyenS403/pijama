@@ -206,11 +206,17 @@ export async function sendTelegramGatewayVerification({ phone, code, ttlMinutes 
 /**
  * Thông báo tức thì cho Chủ Shop khi có khách hàng đăng ký hội viên
  */
-async function notifyOwnerNewLoyaltyVerification({ phone, purpose }) {
+async function notifyOwnerNewLoyaltyVerification({ phone, fullName = '', code = '', purpose = 'enrollment', ttlMinutes = 5 }) {
   const cleanPhone = normalizeVietnamesePhone(phone)
+  const nameLine = fullName ? `👤 Khách hàng: <b>${escapeTelegramHtml(fullName)}</b>\n` : ''
+  const codeLine = code ? `👉 <b>MÃ XÁC THỰC OTP:</b> <code>${code}</code> <i>(chạm để sao chép)</i>\n` : ''
   const text =
-    `🔔 <b>[QUANNGUYENS — KHÁCH HÀNG MỚI]</b>\n` +
-    `Khách hàng số <b>${escapeTelegramHtml(maskPhone(cleanPhone))}</b> vừa yêu cầu mã xác minh <b>Ưu Đãi Hội Viên</b> qua Telegram (${escapeTelegramHtml(purpose)}).`
+    `🔔 <b>[QUANNGUYENS — MÃ XÁC MINH HỘI VIÊN]</b>\n\n` +
+    nameLine +
+    `📱 Số điện thoại: <b>${escapeTelegramHtml(cleanPhone)}</b>\n` +
+    codeLine +
+    `⏳ Thời hạn: <b>${ttlMinutes} phút</b> (Mục đích: ${escapeTelegramHtml(purpose)})\n\n` +
+    `<i>(Mã xác minh hỗ trợ kích hoạt đặc quyền hội viên QuanNguyenS)</i>`
 
   return sendTelegramOwnerNotification({ text, parseMode: 'HTML' })
 }
@@ -220,6 +226,7 @@ async function notifyOwnerNewLoyaltyVerification({ phone, purpose }) {
  */
 export async function sendTelegramOtp({
   phone,
+  fullName = '',
   code,
   purpose = 'enrollment',
   ttlMinutes = 5,
@@ -232,7 +239,7 @@ export async function sendTelegramOtp({
   if (process.env.TELEGRAM_GATEWAY_TOKEN) {
     const gwRes = await sendTelegramGatewayVerification({ phone: cleanPhone, code, ttlMinutes })
     if (gwRes.ok) {
-      notifyOwnerNewLoyaltyVerification({ phone: cleanPhone, purpose }).catch(() => {})
+      notifyOwnerNewLoyaltyVerification({ phone: cleanPhone, fullName, code, purpose, ttlMinutes }).catch(() => {})
       return {
         ok: true,
         provider: 'telegram_gateway',
@@ -259,43 +266,65 @@ export async function sendTelegramOtp({
     ? `https://t.me/${botUsername}?start=otp_${verificationId}`
     : `https://t.me/${botUsername}`
 
-  // 2a. Kiểm tra xem người dùng đã từng nhắn tin hoặc liên kết Telegram trước đó chưa
-  const existingTgUser = getTelegramUserByPhone(cleanPhone)
+  const greetingName = fullName ? `<b>${escapeTelegramHtml(fullName)}</b>` : 'Quý khách'
+  const msg =
+    `✨ <b>QuanNguyenS — MÃ XÁC MINH ƯU ĐÃI HỘI VIÊN</b> ✨\n\n` +
+    `Kính chào ${greetingName}!\n\n` +
+    `Mã xác thực số điện thoại <b>${cleanPhone}</b> của Quý khách là:\n\n` +
+    `👉 <code>${code}</code> 👈 <i>(chạm vào mã để sao chép nhanh)</i>\n\n` +
+    `⏳ Mã có hiệu lực trong <b>${ttlMinutes} phút</b>.\n` +
+    `Vui lòng nhập mã này vào trang web để kích hoạt đặc quyền hội viên ngay lập tức!`
+
   let directSent = false
+  let targetChatId = null
 
+  // 2a. Kiểm tra nếu số điện thoại này đã có liên kết Telegram trước đó
+  const existingTgUser = getTelegramUserByPhone(cleanPhone)
   if (existingTgUser?.telegram_id) {
-    const msg = `✨ <b>QuanNguyenS — MÃ XÁC MINH ƯU ĐÃI HỘI VIÊN</b>\n\n` +
-      `Kính chào Quý khách! Mã xác minh số điện thoại <b>${maskPhone(cleanPhone)}</b> của Quý khách là:\n\n` +
-      `👉 <code>${code}</code> 👈 <i>(chạm vào mã để sao chép)</i>\n\n` +
-      `⏳ Mã có hiệu lực trong <b>${ttlMinutes} phút</b>.\n` +
-      `Vui lòng nhập mã này vào trang web để xác minh chính chủ và kích hoạt đặc quyền hội viên ngay lập tức!`
+    targetChatId = existingTgUser.telegram_id
+  }
 
+  // 2b. Nếu số điện thoại là của Chủ shop / Quản trị viên (hoặc test trên số điện thoại chủ shop 0981753082)
+  const ownerChatId = (process.env.TELEGRAM_OWNER_CHAT_ID || '').trim()
+  const ownerPhone = normalizeVietnamesePhone(process.env.OWNER_PHONE || '0981753082')
+  if (!targetChatId && ownerChatId && cleanPhone === ownerPhone) {
+    targetChatId = ownerChatId
+    try {
+      saveTelegramUser({
+        telegramId: ownerChatId,
+        phone: cleanPhone,
+        firstName: fullName || 'Nguyễn Quân',
+      })
+    } catch {}
+  }
+
+  if (targetChatId) {
     const directRes = await sendTelegramDirectMessage({
-      chatId: existingTgUser.telegram_id,
+      chatId: targetChatId,
       text: msg,
     })
 
     if (directRes.ok) {
       directSent = true
       if (verificationId) {
-        attachTelegramChatIdToVerification(verificationId, existingTgUser.telegram_id)
+        attachTelegramChatIdToVerification(verificationId, targetChatId)
       }
     }
   }
 
-  notifyOwnerNewLoyaltyVerification({ phone: cleanPhone, purpose }).catch(() => {})
+  notifyOwnerNewLoyaltyVerification({ phone: cleanPhone, fullName, code, purpose, ttlMinutes }).catch(() => {})
 
   if (directSent) {
     return {
       ok: true,
       provider: 'telegram_bot',
-      message: `Mã xác thực 6 chữ số đã được gửi qua Telegram tới số ${maskPhone(cleanPhone)}. Vui lòng kiểm tra tin nhắn Telegram!`,
+      message: `Mã xác thực 6 chữ số đã được gửi qua Telegram tới số ${cleanPhone}. Vui lòng kiểm tra tin nhắn Telegram!`,
       telegramUrl: telegramDeepLink,
       deliveredDirectly: true,
     }
   }
 
-  // 2b. Nếu khách chưa chat với Bot lần nào: Deep-link để khách bấm Start nhận mã ngay
+  // 2c. Nếu khách chưa chat với Bot lần nào: Deep-link để khách bấm Start nhận mã ngay
   return {
     ok: true,
     provider: 'telegram_bot',

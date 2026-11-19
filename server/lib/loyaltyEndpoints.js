@@ -909,8 +909,9 @@ export function registerLoyaltyEndpoints(app, options = {}) {
       }
       const rawHeader = req.headers['x-telegram-bot-api-secret-token']
       const providedSecret = String(Array.isArray(rawHeader) ? rawHeader[0] : (rawHeader || ''))
+      const expectedSecret = secretCheck.valid ? secretCheck.secret : webhookSecret
       const bufProvided = Buffer.from(providedSecret, 'utf8')
-      const bufExpected = Buffer.from(webhookSecret, 'utf8')
+      const bufExpected = Buffer.from(expectedSecret, 'utf8')
       const isAuthorized =
         bufProvided.length === bufExpected.length &&
         crypto.timingSafeEqual(bufProvided, bufExpected)
