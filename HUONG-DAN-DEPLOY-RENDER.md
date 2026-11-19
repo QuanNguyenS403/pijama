@@ -117,3 +117,19 @@ Vì Render gói **Free (`plan: free`)** sử dụng ổ đĩa tạm (ephemeral d
    - Lấy `Project URL` và `service_role secret` (trong **Project Settings -> API**) điền vào `SUPABASE_URL` và `SUPABASE_SERVICE_ROLE_KEY` trên Render.
 3. **Nhận Ảnh chứng từ chuyển khoản trực tiếp qua Email Chủ Shop (`OWNER_EMAIL`):**
    - Ngay khi khách tải ảnh chứng từ chuyển khoản lên web, hệ thống lập tức gửi email thông báo kèm link xem ảnh chứng từ có chữ ký bảo mật về `quannguyens403@gmail.com`.
+
+---
+
+## 📌 PHẦN 5: CHECKLIST CẤU HÌNH RENDER DASHBOARD & XỬ LÝ LỖI `PORT SCAN TIMEOUT`
+
+1. **Settings -> Build & Deploy:**
+   - **Build Command:** `npm install --include=dev && npm run build`
+   - **Start Command:** `node server/start.js` *(Khởi chạy trực tiếp qua 1 tiến trình Node duy nhất, không qua `npm` hay `cross-env`)*
+   - **Health Check Path:** `/livez` *(Phản hồi `200 OK` tức thì ngay khi mở cổng, không bị chặn bởi Google Sheets/Supabase/Telegram sync)*
+2. **Environment Variables (Bắt buộc & Lưu ý Port):**
+   - **KHÔNG** tự điền cứng biến `PORT` (Render tự cấp `PORT` động, mặc định `10000`).
+   - Đảm bảo đã có đủ 5 biến bảo mật lõi ở Production: `ADMIN_PASSWORD` (≥ 8 ký tự), `ADMIN_SESSION_SECRET`, `ORDER_TOKEN_SECRET`, `CUSTOMER_AUTH_SECRET`, `JWT_SECRET` (đều ≥ 32 ký tự và không dùng chuỗi mẫu).
+   - Giữ `NODE_ENV=production` và `NODE_VERSION=22.14.0`.
+3. **Khắc phục khi Render Free (Singapore) bị treo `Deploying...` / `Port scan timeout reached`:**
+   - Nếu log dừng lâu giữa `==> Setting WEB_CONCURRENCY=1...` và `==> Running '...'` gần sát mốc 15 phút (lỗi khởi tạo container / cold-boot của hạ tầng Free tại Singapore), hãy chọn **Manual Deploy -> Clear build cache & deploy** trên Render Dashboard (và kiểm tra [status.render.com](https://status.render.com) nếu tình trạng lặp lại).
+   - Khi khởi động lỗi hoặc thiếu biến bắt buộc, kiểm tra dòng `⏳ [START] Booting...`, `🛑 [CRITICAL ERROR]` hoặc `❌ [START FATAL]` ngay phía trên thông báo timeout trong Render Logs.

@@ -10,7 +10,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "server": "node server/index.js",
-    "start": "cross-env NODE_ENV=production node server/index.js",
+    "start": "node server/start.js",
     "check-env": "node scripts/check-env.js",
     "check-telegram": "node scripts/check-telegram.js",
     "backup-data": "node scripts/backup-data.js",

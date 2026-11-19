@@ -25,10 +25,13 @@ const circuitState = {
   openrouter: { failures: 0, lastFailure: 0, openUntil: 0 },
 }
 
-// Khởi tạo bảng lưu trữ quota ngày vào SQLite nếu chưa có
+let initializedDbRef = null
+
+// Khởi tạo bảng lưu trữ quota ngày vào SQLite nếu chưa có (lazy theo kết nối DB)
 function initQuotaTable() {
   try {
     const database = getDb()
+    if (initializedDbRef === database) return
     database.exec(`
       CREATE TABLE IF NOT EXISTS chat_daily_quota (
         date_key TEXT PRIMARY KEY,
@@ -36,12 +39,11 @@ function initQuotaTable() {
         token_count INTEGER NOT NULL DEFAULT 0
       );
     `)
+    initializedDbRef = database
   } catch (err) {
     console.warn('⚠️ [CHAT QUOTA TABLE WARNING]:', err.message)
   }
 }
-
-initQuotaTable()
 
 /**
  * Lấy số lượng request đã sử dụng trong ngày hôm nay (Theo giờ Việt Nam UTC+7)
@@ -49,6 +51,7 @@ initQuotaTable()
 export function getTodayRequestCount() {
   const vnDate = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })
   try {
+    initQuotaTable()
     const database = getDb()
     const row = database.prepare('SELECT request_count FROM chat_daily_quota WHERE date_key = ?').get(vnDate)
     return row ? row.request_count : 0
@@ -63,6 +66,7 @@ export function getTodayRequestCount() {
 export function incrementTodayRequestCount(tokens = 0) {
   const vnDate = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })
   try {
+    initQuotaTable()
     const database = getDb()
     database.prepare(`
       INSERT INTO chat_daily_quota (date_key, request_count, token_count)

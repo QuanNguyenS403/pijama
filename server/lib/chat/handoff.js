@@ -12,10 +12,13 @@ import { escapeHtml } from '../emailAccount.js'
 import { sendTelegramOwnerNotification } from '../loyalty/otpProviders/telegramProvider.js'
 import { scrubPII } from './scrubPII.js'
 
-// Khởi tạo bảng chat_handoffs an toàn (Idempotent Migration)
+let initializedDbRef = null
+
+// Khởi tạo bảng chat_handoffs an toàn (Idempotent Migration, lazy theo kết nối DB)
 export function initHandoffSchema() {
   try {
     const database = getDb()
+    if (initializedDbRef === database) return
     database.exec(`
       CREATE TABLE IF NOT EXISTS chat_handoffs (
         id TEXT PRIMARY KEY,
@@ -32,13 +35,11 @@ export function initHandoffSchema() {
       CREATE INDEX IF NOT EXISTS idx_chat_handoffs_created ON chat_handoffs(created_at);
       CREATE INDEX IF NOT EXISTS idx_chat_handoffs_phone ON chat_handoffs(phone);
     `)
+    initializedDbRef = database
   } catch (err) {
     console.warn('⚠️ [HANDOFF SCHEMA INIT WARNING]:', err.message)
   }
 }
-
-// Chạy khởi tạo schema khi import
-initHandoffSchema()
 
 /**
  * Validate số điện thoại Việt Nam
@@ -173,6 +174,7 @@ export async function createHandoffRequest({ name, phone, topic, preferredTime, 
   const id = `ho_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`
   const now = new Date().toISOString()
 
+  initHandoffSchema()
   const database = getDb()
 
   // Lưu vào SQLite

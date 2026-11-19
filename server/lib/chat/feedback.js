@@ -13,10 +13,13 @@ import { sendTelegramOwnerNotification } from '../loyalty/otpProviders/telegramP
 import { scrubPII } from './scrubPII.js'
 import { isValidVnPhone } from './handoff.js'
 
-// Khởi tạo bảng customer_feedbacks (Idempotent Migration)
+let initializedDbRef = null
+
+// Khởi tạo bảng customer_feedbacks (Idempotent Migration, lazy theo kết nối DB)
 export function initFeedbackSchema() {
   try {
     const database = getDb()
+    if (initializedDbRef === database) return
     database.exec(`
       CREATE TABLE IF NOT EXISTS customer_feedbacks (
         id TEXT PRIMARY KEY,
@@ -34,13 +37,11 @@ export function initFeedbackSchema() {
       CREATE INDEX IF NOT EXISTS idx_customer_feedbacks_created ON customer_feedbacks(created_at);
       CREATE INDEX IF NOT EXISTS idx_customer_feedbacks_phone ON customer_feedbacks(phone);
     `)
+    initializedDbRef = database
   } catch (err) {
     console.warn('⚠️ [FEEDBACK SCHEMA INIT WARNING]:', err.message)
   }
 }
-
-// Chạy khởi tạo schema khi nạp module
-initFeedbackSchema()
 
 const FEEDBACK_TYPE_LABELS = {
   suggestion: '💡 Đóng góp ý kiến cải tiến',
@@ -205,6 +206,7 @@ export async function createFeedbackSubmission({
   const id = `fb_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`
   const now = new Date().toISOString()
 
+  initFeedbackSchema()
   const database = getDb()
 
   // Lưu vào SQLite

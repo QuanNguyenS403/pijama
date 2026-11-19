@@ -17,7 +17,7 @@ import { verifyAdminLogin, adminLoginLimiter, requireAdminAuth, revokeAdminToken
 import { logSecurityAudit } from './lib/auditLogger.js'
 import { registerAuthEndpoints } from './lib/authEndpoints.js'
 import { registerReviewEndpoints } from './lib/reviewEndpoints.js'
-import { registerLoyaltyEndpoints, resolveLoyaltyMember } from './lib/loyaltyEndpoints.js'
+import { registerLoyaltyEndpoints, resolveLoyaltyMember, startLoyaltyBackgroundServices } from './lib/loyaltyEndpoints.js'
 import {
   uploadPaymentProofMiddleware,
   handleUploadPaymentProof,
@@ -45,6 +45,7 @@ import {
 import { LEGACY_PRODUCT_SLUG_REDIRECTS } from '../src/lib/productUtils.js'
 
 // Đảm bảo nạp môi trường nếu module được import trong ngữ cảnh đặc biệt
+const serverBootStartMs = Date.now()
 const isNodeTestRunner =
   Boolean(process.env.NODE_TEST_CONTEXT) ||
   process.execArgv.some((arg) => arg === '--test' || arg.startsWith('--test-'))
@@ -1249,7 +1250,7 @@ registerAuthEndpoints(app)
 registerReviewEndpoints(app)
 
 // ── 10.2 Hệ Thống Ưu Đãi Hội Viên & Điểm Thưởng (Loyalty Program) ──
-registerLoyaltyEndpoints(app)
+registerLoyaltyEndpoints(app, { deferBackgroundSync: true })
 
 // ── G4: Kiểm soát truy cập chặt chẽ đối với ảnh chứng từ chuyển khoản (/uploads/payment-proofs/*) ──
 // Không cho phép express.static phục vụ công khai chứng từ ngân hàng của khách hàng.
@@ -1333,14 +1334,47 @@ app.use('/uploads/payment-proofs', (_req, res) => {
 // Phục vụ các tài nguyên uploads công khai khác (ngoài payment-proofs)
 app.use('/uploads', express.static(publicUploadsPath))
 
-// ── 11. Hệ Thống Chatbot Trợ Lý Ảo QuanNguyenS (Chi phí 0đ) ────────
-try {
-  const { default: chatRouter } = await import('./lib/chat/chatRouter.js')
-  app.use('/api/chat', chatRouter)
-  console.log('🤖 [CHATBOT] Đã đăng ký các tuyến /api/chat và /api/chat/handoff.')
-} catch (chatInitErr) {
-  console.warn('⚠️ [CHATBOT WARNING] Không thể nạp chatRouter:', chatInitErr.message)
+// ── 11. Hệ Thống Chatbot Trợ Lý Ảo QuanNguyenS (Nạp bất đồng bộ, không chặn mở cổng HTTP) ────────
+let cachedChatRouter = null
+let chatRouterLoadPromise = null
+let chatRouterLoadFailed = false
+
+function getChatRouter() {
+  if (cachedChatRouter) return Promise.resolve(cachedChatRouter)
+  if (!chatRouterLoadPromise) {
+    chatRouterLoadPromise = import('./lib/chat/chatRouter.js')
+      .then((mod) => {
+        cachedChatRouter = mod.default
+        chatRouterLoadFailed = false
+        console.log('🤖 [CHATBOT] Đã đăng ký các tuyến /api/chat và /api/chat/handoff.')
+        return cachedChatRouter
+      })
+      .catch((chatInitErr) => {
+        chatRouterLoadFailed = true
+        chatRouterLoadPromise = null
+        console.warn('⚠️ [CHATBOT WARNING] Không thể nạp chatRouter:', chatInitErr?.message || chatInitErr)
+        return null
+      })
+  }
+  return chatRouterLoadPromise
 }
+
+app.use('/api/chat', async (req, res, next) => {
+  try {
+    const router = await getChatRouter()
+    if (!router) {
+      return res.status(503).json({
+        success: false,
+        error: chatRouterLoadFailed
+          ? 'Trợ lý trực tuyến tạm thời gián đoạn. Quý khách vui lòng liên hệ hotline 0973 486 218 ạ!'
+          : 'Hệ thống trợ lý đang khởi tạo, vui lòng thử lại sau giây lát.',
+      })
+    }
+    return router(req, res, next)
+  } catch (err) {
+    return next(err)
+  }
+})
 
 // ── P1-2: Chuyển hướng 301 vĩnh viễn cho URL Slug sản phẩm cũ -> mới ─────
 app.get('/san-pham/:productSlug', (req, res, next) => {
@@ -1358,8 +1392,10 @@ app.get('/san-pham/:productSlug', (req, res, next) => {
 const distPath = path.resolve(__dirname, '../dist')
 if (process.env.NODE_ENV === 'production') {
   if (!fs.existsSync(distPath) || !fs.existsSync(path.join(distPath, 'index.html'))) {
-    console.error('❌ [CRITICAL ERROR] Không tìm thấy thư mục dist/ hoặc dist/index.html!')
-    console.error('Vui lòng chạy `npm run build` trước khi chạy `npm start` trong môi trường production.')
+    process.stderr.write(
+      '❌ [CRITICAL ERROR] Không tìm thấy thư mục dist/ hoặc dist/index.html!\n' +
+        'Vui lòng chạy `npm run build` trước khi chạy `npm start` trong môi trường production.\n'
+    )
     process.exit(1)
   }
   app.use(express.static(distPath))
@@ -1409,8 +1445,10 @@ if (String(process.env.NODE_ENV || '').trim().toLowerCase() !== 'test' && !isNod
   const envResults = validateEnvironment(process.env)
   printEnvReport(envResults)
   if (envResults.hasFatalErrors) {
-    console.error('🛑 [CRITICAL ERROR] Thiếu/sai biến môi trường bắt buộc ở chế độ Production. Dừng khởi động!')
-    console.error('🛑 [CRITICAL DETAILS]:', envResults.errors.join(' | '))
+    process.stderr.write(
+      '🛑 [CRITICAL ERROR] Thiếu/sai biến môi trường bắt buộc ở chế độ Production. Dừng khởi động!\n' +
+        `🛑 [CRITICAL DETAILS]: ${envResults.errors.join(' | ')}\n`
+    )
     process.exit(1)
   }
 }
@@ -1496,172 +1534,212 @@ function startExpressServer() {
     forceFreePort(PORT)
   }
 
-  server = app.listen(PORT, '0.0.0.0', async () => {
+  server = app.listen(PORT, '0.0.0.0', () => {
+    const bootMs = Date.now() - serverBootStartMs
     console.log(`\n======================================================`)
-    console.log(`🚀 QuanNguyenS Order Server đang lắng nghe tại: http://0.0.0.0:${PORT} (NODE_ENV=${process.env.NODE_ENV || 'development'})`)
+    console.log(`🚀 QuanNguyenS Order Server đang lắng nghe tại: http://0.0.0.0:${PORT} (NODE_ENV=${process.env.NODE_ENV || 'development'}, readyIn=${bootMs}ms)`)
     console.log(`======================================================`)
 
-    const initTasks = [
-      // 1. Kiểm tra Google Sheets (chế độ degraded an toàn nếu thiếu credentials hoặc quá thời gian)
-      (async () => {
-        try {
-          if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_SHEET_ID) {
-            const sheetInitPromise = initializeSheet()
-            try {
-              await withStartupTimeout(sheetInitPromise, 5000, 'Google Sheets init')
-              sheetStatus = { ready: true, error: null }
-              console.log('✅ Google Sheets kết nối thành công.')
-            } catch (sheetErr) {
-              sheetStatus = { ready: false, error: safeErrorMessage(sheetErr, 'Lỗi kết nối Google Sheets') }
-              console.warn('⚠️ [DEGRADED MODE] Google Sheets init warning:', sheetErr.message)
-              if (String(sheetErr?.message || '').includes('timeout')) {
-                sheetInitPromise
-                  .then(() => {
-                    sheetStatus = { ready: true, error: null }
-                    console.log('✅ Google Sheets kết nối thành công (hoàn tất nền).')
-                  })
-                  .catch((bgErr) => {
-                    sheetStatus = { ready: false, error: safeErrorMessage(bgErr, 'Lỗi kết nối Google Sheets') }
-                    console.warn('⚠️ [DEGRADED MODE] Google Sheets init nền thất bại:', bgErr?.message || bgErr)
-                  })
+    const runDeferredStartupTasks = async () => {
+      if (server?.isShuttingDown) return
+
+      // Nạp trước chatbot router & đồng bộ Telegram Webhook trong nền (không chặn /livez khi vừa mở cổng)
+      getChatRouter().catch(() => {})
+      startLoyaltyBackgroundServices()
+
+      const initTasks = [
+        // 1. Kiểm tra Google Sheets (chế độ degraded an toàn nếu thiếu credentials hoặc quá thời gian)
+        (async () => {
+          try {
+            if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_SHEET_ID) {
+              const sheetInitPromise = initializeSheet()
+              try {
+                await withStartupTimeout(sheetInitPromise, 5000, 'Google Sheets init')
+                sheetStatus = { ready: true, error: null }
+                console.log('✅ Google Sheets kết nối thành công.')
+              } catch (sheetErr) {
+                sheetStatus = { ready: false, error: safeErrorMessage(sheetErr, 'Lỗi kết nối Google Sheets') }
+                console.warn('⚠️ [DEGRADED MODE] Google Sheets init warning:', sheetErr.message)
+                if (String(sheetErr?.message || '').includes('timeout')) {
+                  sheetInitPromise
+                    .then(() => {
+                      sheetStatus = { ready: true, error: null }
+                      console.log('✅ Google Sheets kết nối thành công (hoàn tất nền).')
+                    })
+                    .catch((bgErr) => {
+                      sheetStatus = { ready: false, error: safeErrorMessage(bgErr, 'Lỗi kết nối Google Sheets') }
+                      console.warn('⚠️ [DEGRADED MODE] Google Sheets init nền thất bại:', bgErr?.message || bgErr)
+                    })
+                }
+              }
+            } else {
+              sheetStatus = { ready: false, error: 'Chưa cấu hình Google Service Account trong .env (đơn hàng lưu tại local disk storage)' }
+              console.warn('⚠️ [DEGRADED MODE] Google Service Account chưa được cấu hình. Đơn hàng lưu tại local persistence storage.')
+            }
+          } catch (sheetErr) {
+            sheetStatus = { ready: false, error: safeErrorMessage(sheetErr, 'Lỗi kết nối Google Sheets') }
+            console.warn('⚠️ [DEGRADED MODE] Google Sheets init warning:', sheetErr.message)
+          }
+        })(),
+
+        // 2. Kiểm tra Email Transporter & Header Sender (WP-1.4 / WP-4.1)
+        (async () => {
+          try {
+            const emailRes = await verifyTransporter()
+            if (emailRes?.success) {
+              emailStatus = { ready: true, error: null }
+              console.log('✅ HTTPS/SMTP Email kết nối thành công.')
+            } else {
+              emailStatus = { ready: false, error: emailRes?.error || 'Chưa cấu hình dịch vụ gửi email' }
+              if (process.env.NODE_ENV === 'production') {
+                console.error('❌ [PRODUCTION EMAIL ERROR] Production không có đường gửi email HTTPS hợp lệ:', emailRes?.error)
+              } else {
+                console.warn('⚠️ Email chưa sẵn sàng:', emailRes?.error)
               }
             }
-          } else {
-            sheetStatus = { ready: false, error: 'Chưa cấu hình Google Service Account trong .env (đơn hàng lưu tại local disk storage)' }
-            console.warn('⚠️ [DEGRADED MODE] Google Service Account chưa được cấu hình. Đơn hàng lưu tại local persistence storage.')
-          }
-        } catch (sheetErr) {
-          sheetStatus = { ready: false, error: safeErrorMessage(sheetErr, 'Lỗi kết nối Google Sheets') }
-          console.warn('⚠️ [DEGRADED MODE] Google Sheets init warning:', sheetErr.message)
-        }
-      })(),
-
-      // 2. Kiểm tra Email Transporter & Header Sender (WP-1.4 / WP-4.1)
-      (async () => {
-        try {
-          const emailRes = await verifyTransporter()
-          if (emailRes?.success) {
-            emailStatus = { ready: true, error: null }
-            console.log('✅ HTTPS/SMTP Email kết nối thành công.')
-          } else {
-            emailStatus = { ready: false, error: emailRes?.error || 'Chưa cấu hình dịch vụ gửi email' }
             if (process.env.NODE_ENV === 'production') {
-              console.error('❌ [PRODUCTION EMAIL ERROR] Production không có đường gửi email HTTPS hợp lệ:', emailRes?.error)
-            } else {
-              console.warn('⚠️ Email chưa sẵn sàng:', emailRes?.error)
+              const { validateEmailSenderHeaders } = await import('./lib/httpsEmailService.js')
+              await withStartupTimeout(validateEmailSenderHeaders(), 5000, 'Email sender header MX check').catch(() => {})
             }
+          } catch (emailErr) {
+            emailStatus = { ready: false, error: safeErrorMessage(emailErr, 'Lỗi kiểm tra dịch vụ email') }
+            console.warn('⚠️ Email warning:', emailErr.message)
           }
-          if (process.env.NODE_ENV === 'production') {
-            const { validateEmailSenderHeaders } = await import('./lib/httpsEmailService.js')
-            await withStartupTimeout(validateEmailSenderHeaders(), 5000, 'Email sender header MX check').catch(() => {})
-          }
-        } catch (emailErr) {
-          emailStatus = { ready: false, error: safeErrorMessage(emailErr, 'Lỗi kiểm tra dịch vụ email') }
-          console.warn('⚠️ Email warning:', emailErr.message)
-        }
-      })(),
+        })(),
 
-      // 3. Đồng bộ người dùng, mã ưu đãi & đơn hàng từ Supabase Cloud vào SQLite khi khởi động (RENDER FREE CLOUD PERSISTENCE)
-      (async () => {
+        // 3. Đồng bộ người dùng, mã ưu đãi & đơn hàng từ Supabase Cloud vào SQLite khi khởi động (RENDER FREE CLOUD PERSISTENCE)
+        (async () => {
+          try {
+            const { isSupabaseConfigured } = await import('./lib/supabaseClient.js')
+            if (isSupabaseConfigured()) {
+              const { syncUsersFromSupabase, syncVouchersFromSupabase, ensureSystemAccount } = await import('./lib/accountDb.js')
+              const { syncOrdersFromSupabase } = await import('./lib/orderPersistence.js')
+
+              // Đảm bảo tài khoản system luôn tồn tại trước để thỏa mãn ràng buộc khóa ngoại
+              ensureSystemAccount()
+
+              // Chạy đồng bộ Orders song song ngay từ đầu, đồng thời giữ Users tuần tự trước Vouchers
+              const ordersPromise = withStartupTimeout(syncOrdersFromSupabase(), 8000, 'Supabase order sync').catch((err) => {
+                console.warn('⚠️ [SUPABASE SYNC] Cảnh báo đồng bộ đơn hàng:', err?.message || err)
+                return 0
+              })
+              const usersThenVouchersPromise = (async () => {
+                const syncedUsers = await withStartupTimeout(syncUsersFromSupabase(), 8000, 'Supabase user sync').catch((err) => {
+                  console.warn('⚠️ [SUPABASE SYNC] Cảnh báo đồng bộ tài khoản:', err?.message || err)
+                  return 0
+                })
+                const syncedVouchers = await withStartupTimeout(syncVouchersFromSupabase(), 8000, 'Supabase voucher sync').catch((err) => {
+                  console.warn('⚠️ [SUPABASE SYNC] Cảnh báo đồng bộ mã ưu đãi:', err?.message || err)
+                  return 0
+                })
+                return { syncedUsers, syncedVouchers }
+              })()
+              const [{ syncedUsers, syncedVouchers }, syncedOrders] = await Promise.all([
+                usersThenVouchersPromise,
+                ordersPromise,
+              ])
+              console.log(
+                `☁️ [SUPABASE SYNC] Khôi phục thành công từ Supabase Cloud: ${syncedUsers} tài khoản, ${syncedVouchers} mã ưu đãi, ${syncedOrders} đơn hàng.`
+              )
+            }
+          } catch (syncErr) {
+            console.warn('⚠️ [SUPABASE SYNC] Không thể đồng bộ dữ liệu từ Supabase:', syncErr.message)
+          }
+        })(),
+      ]
+
+      await Promise.allSettled(initTasks)
+      if (server?.isShuttingDown) return
+      isServerReady = true
+
+      // ── Khởi động tiến trình tự động đồng bộ hành trình Viettel Post định kỳ (mỗi 2 phút) ──
+      const VIETTEL_SYNC_INTERVAL_MS = 2 * 60 * 1000
+      const viettelSyncTimer = setInterval(async () => {
         try {
-          const { isSupabaseConfigured } = await import('./lib/supabaseClient.js')
-          if (isSupabaseConfigured()) {
-            const { syncUsersFromSupabase, syncVouchersFromSupabase, ensureSystemAccount } = await import('./lib/accountDb.js')
-            const { syncOrdersFromSupabase } = await import('./lib/orderPersistence.js')
-
-            // Đảm bảo tài khoản system luôn tồn tại trước để thỏa mãn ràng buộc khóa ngoại
-            ensureSystemAccount()
-
-            // Chạy đồng bộ Orders song song ngay từ đầu, đồng thời giữ Users tuần tự trước Vouchers
-            const ordersPromise = withStartupTimeout(syncOrdersFromSupabase(), 8000, 'Supabase order sync').catch((err) => {
-              console.warn('⚠️ [SUPABASE SYNC] Cảnh báo đồng bộ đơn hàng:', err?.message || err)
-              return 0
-            })
-            const usersThenVouchersPromise = (async () => {
-              const syncedUsers = await withStartupTimeout(syncUsersFromSupabase(), 8000, 'Supabase user sync').catch((err) => {
-                console.warn('⚠️ [SUPABASE SYNC] Cảnh báo đồng bộ tài khoản:', err?.message || err)
-                return 0
-              })
-              const syncedVouchers = await withStartupTimeout(syncVouchersFromSupabase(), 8000, 'Supabase voucher sync').catch((err) => {
-                console.warn('⚠️ [SUPABASE SYNC] Cảnh báo đồng bộ mã ưu đãi:', err?.message || err)
-                return 0
-              })
-              return { syncedUsers, syncedVouchers }
-            })()
-            const [{ syncedUsers, syncedVouchers }, syncedOrders] = await Promise.all([
-              usersThenVouchersPromise,
-              ordersPromise,
-            ])
-            console.log(
-              `☁️ [SUPABASE SYNC] Khôi phục thành công từ Supabase Cloud: ${syncedUsers} tài khoản, ${syncedVouchers} mã ưu đãi, ${syncedOrders} đơn hàng.`
-            )
+          const { syncAllShippedOrdersWithViettelPost } = await import('./lib/viettelPostService.js')
+          const syncRes = await syncAllShippedOrdersWithViettelPost()
+          if (syncRes.deliveredCount > 0) {
+            console.log(`🚚 [VIETTEL POST AUTO-SYNC] Đã tự động cập nhật ${syncRes.deliveredCount} đơn hàng sang "Đã giao" (DELIVERED).`)
           }
-        } catch (syncErr) {
-          console.warn('⚠️ [SUPABASE SYNC] Không thể đồng bộ dữ liệu từ Supabase:', syncErr.message)
+        } catch (err) {
+          console.warn('⚠️ Lỗi chu kỳ đồng bộ Viettel Post:', err.message)
         }
-      })(),
-    ]
+      }, VIETTEL_SYNC_INTERVAL_MS)
+      if (viettelSyncTimer.unref) viettelSyncTimer.unref()
+      server.viettelSyncTimer = viettelSyncTimer
 
-    await Promise.allSettled(initTasks)
-    isServerReady = true
+      // Rải đều thời điểm chạy lần đầu để tránh CPU/RAM spike ngay sau khi Render kiểm tra cổng
+      const initVtTimer = setTimeout(async () => {
+        if (server?.isShuttingDown) return
+        try {
+          const { syncAllShippedOrdersWithViettelPost } = await import('./lib/viettelPostService.js')
+          await syncAllShippedOrdersWithViettelPost()
+        } catch (e) {}
+      }, 5000)
+      if (initVtTimer.unref) initVtTimer.unref()
+      server.initVtTimer = initVtTimer
 
-    // ── Khởi động tiến trình tự động đồng bộ hành trình Viettel Post định kỳ (mỗi 2 phút) ──
-    const VIETTEL_SYNC_INTERVAL_MS = 2 * 60 * 1000
-    const viettelSyncTimer = setInterval(async () => {
-      try {
-        const { syncAllShippedOrdersWithViettelPost } = await import('./lib/viettelPostService.js')
-        const syncRes = await syncAllShippedOrdersWithViettelPost()
-        if (syncRes.deliveredCount > 0) {
-          console.log(`🚚 [VIETTEL POST AUTO-SYNC] Đã tự động cập nhật ${syncRes.deliveredCount} đơn hàng sang "Đã giao" (DELIVERED).`)
-        }
-      } catch (err) {
-        console.warn('⚠️ Lỗi chu kỳ đồng bộ Viettel Post:', err.message)
-      }
-    }, VIETTEL_SYNC_INTERVAL_MS)
-    if (viettelSyncTimer.unref) viettelSyncTimer.unref()
+      // Dọn dẹp định kỳ dữ liệu tạm/phiên hết hạn (D3) mỗi 6 giờ
+      const initCleanupTimer = setTimeout(() => {
+        if (server?.isShuttingDown) return
+        import('./lib/cleanupService.js').then(({ cleanupExpiredData }) => {
+          if (server?.isShuttingDown) return
+          try { cleanupExpiredData() } catch {}
+          const cleanupTimer = setInterval(() => {
+            try { cleanupExpiredData() } catch (e) { console.warn('Cleanup error:', e.message) }
+          }, 6 * 60 * 60 * 1000)
+          if (cleanupTimer.unref) cleanupTimer.unref()
+          server.cleanupTimer = cleanupTimer
+        }).catch(() => {})
+      }, 10000)
+      if (initCleanupTimer.unref) initCleanupTimer.unref()
+      server.initCleanupTimer = initCleanupTimer
 
-    // Chạy đồng bộ lần đầu tiên sau 5 giây khởi động server
-    const initVtTimer = setTimeout(async () => {
-      try {
-        const { syncAllShippedOrdersWithViettelPost } = await import('./lib/viettelPostService.js')
-        await syncAllShippedOrdersWithViettelPost()
-      } catch (e) {}
-    }, 5000)
-    if (initVtTimer.unref) initVtTimer.unref()
+      // Quét định kỳ đơn VietQR bỏ dở (G6: chỉ hủy khi UNPAID_QR_AUTOCANCEL_HOURS > 0 và đơn chưa có ảnh chứng từ)
+      const initQrSweepTimer = setTimeout(() => {
+        if (server?.isShuttingDown) return
+        import('./lib/paymentState.js').then(({ sweepExpiredOrders }) => {
+          if (server?.isShuttingDown) return
+          try { sweepExpiredOrders() } catch {}
+          const qrSweepTimer = setInterval(() => {
+            try { sweepExpiredOrders() } catch (e) { console.warn('QR sweep error:', e.message) }
+          }, 15 * 60 * 1000)
+          if (qrSweepTimer.unref) qrSweepTimer.unref()
+          server.qrSweepTimer = qrSweepTimer
+        }).catch(() => {})
+      }, 15000)
+      if (initQrSweepTimer.unref) initQrSweepTimer.unref()
+      server.initQrSweepTimer = initQrSweepTimer
 
-    // Lưu reference để cleanup khi shutdown
-    server.viettelSyncTimer = viettelSyncTimer
+      // Khởi động sao lưu dự phòng định kỳ (DATA-01)
+      const initBackupTimer = setTimeout(() => {
+        if (server?.isShuttingDown) return
+        import('./lib/backupService.js').then(({ performDatabaseBackup }) => {
+          if (server?.isShuttingDown) return
+          performDatabaseBackup().catch((e) => console.warn('Backup error on start:', e.message))
+          const dailyBackupTimer = setInterval(() => {
+            performDatabaseBackup().catch((e) => console.warn('Daily backup error:', e.message))
+          }, 24 * 60 * 60 * 1000)
+          if (dailyBackupTimer.unref) dailyBackupTimer.unref()
+          server.dailyBackupTimer = dailyBackupTimer
+        }).catch(() => {})
+      }, 20000)
+      if (initBackupTimer.unref) initBackupTimer.unref()
+      server.initBackupTimer = initBackupTimer
+    }
 
-    // Khởi động sao lưu dự phòng định kỳ (DATA-01)
-    import('./lib/backupService.js').then(({ performDatabaseBackup }) => {
-      performDatabaseBackup().catch((e) => console.warn('Backup error on start:', e.message))
-      const dailyBackupTimer = setInterval(() => {
-        performDatabaseBackup().catch((e) => console.warn('Daily backup error:', e.message))
-      }, 24 * 60 * 60 * 1000)
-      if (dailyBackupTimer.unref) dailyBackupTimer.unref()
-      server.dailyBackupTimer = dailyBackupTimer
-    }).catch(() => {})
-
-    // Dọn dẹp định kỳ dữ liệu tạm/phiên hết hạn (D3) mỗi 6 giờ
-    import('./lib/cleanupService.js').then(({ cleanupExpiredData }) => {
-      try { cleanupExpiredData() } catch {}
-      const cleanupTimer = setInterval(() => {
-        try { cleanupExpiredData() } catch (e) { console.warn('Cleanup error:', e.message) }
-      }, 6 * 60 * 60 * 1000)
-      if (cleanupTimer.unref) cleanupTimer.unref()
-      server.cleanupTimer = cleanupTimer
-    }).catch(() => {})
-
-    // Quét định kỳ đơn VietQR bỏ dở (G6: chỉ hủy khi UNPAID_QR_AUTOCANCEL_HOURS > 0 và đơn chưa có ảnh chứng từ)
-    import('./lib/paymentState.js').then(({ sweepExpiredOrders }) => {
-      try { sweepExpiredOrders() } catch {}
-      const qrSweepTimer = setInterval(() => {
-        try { sweepExpiredOrders() } catch (e) { console.warn('QR sweep error:', e.message) }
-      }, 15 * 60 * 1000)
-      if (qrSweepTimer.unref) qrSweepTimer.unref()
-      server.qrSweepTimer = qrSweepTimer
-    }).catch(() => {})
+    const bgInitTimer = setTimeout(() => {
+      runDeferredStartupTasks().catch((bgErr) => {
+        console.warn('⚠️ [DEFERRED BOOT WARNING]:', bgErr?.message || bgErr)
+      })
+    }, 150)
+    if (bgInitTimer.unref) bgInitTimer.unref()
+    server.bgInitTimer = bgInitTimer
   })
+
+  // Render Proxy Timeout Alignment (120s keepAliveTimeout & 125s headersTimeout tránh 502 khi proxy giữ kết nối)
+  server.keepAliveTimeout = 120 * 1000
+  server.headersTimeout = 125 * 1000
 
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE' && listenRetries < 2 && canAutoFreeDevPort()) {
@@ -1676,7 +1754,7 @@ function startExpressServer() {
       return
     }
 
-    console.error('❌ [SERVER LISTEN ERROR]: Không thể mở cổng HTTP', PORT, err)
+    process.stderr.write(`❌ [SERVER LISTEN ERROR]: Không thể mở cổng HTTP ${PORT}: ${err?.stack || err?.message || err}\n`)
     process.exit(1)
   })
 }
@@ -1689,17 +1767,27 @@ if (process.env.NO_AUTO_LISTEN !== 'true') {
 const shutdown = async (signal) => {
   console.log(`\n🛑 Nhận tín hiệu ${signal}. Đang đóng server an toàn...`)
   isServerReady = false
-  if (server?.viettelSyncTimer) {
-    clearInterval(server.viettelSyncTimer)
-  }
-  if (server?.dailyBackupTimer) {
-    clearInterval(server.dailyBackupTimer)
-  }
-  if (server?.cleanupTimer) {
-    clearInterval(server.cleanupTimer)
-  }
-  if (server?.qrSweepTimer) {
-    clearInterval(server.qrSweepTimer)
+  if (server) {
+    server.isShuttingDown = true
+    const timersToClear = [
+      server.bgInitTimer,
+      server.initVtTimer,
+      server.initBackupTimer,
+      server.initCleanupTimer,
+      server.initQrSweepTimer,
+    ]
+    for (const timer of timersToClear) {
+      if (timer) clearTimeout(timer)
+    }
+    const intervalsToClear = [
+      server.viettelSyncTimer,
+      server.dailyBackupTimer,
+      server.cleanupTimer,
+      server.qrSweepTimer,
+    ]
+    for (const interval of intervalsToClear) {
+      if (interval) clearInterval(interval)
+    }
   }
   const closeSqliteSafely = async () => {
     try {
@@ -1708,11 +1796,21 @@ const shutdown = async (signal) => {
     } catch (_) {}
   }
   if (server) {
+    const forceExitTimer = setTimeout(async () => {
+      await closeSqliteSafely()
+      process.exit(0)
+    }, 10000)
+    if (forceExitTimer.unref) forceExitTimer.unref()
+
     server.close(async () => {
+      clearTimeout(forceExitTimer)
       await closeSqliteSafely()
       console.log('🔒 Server đã dừng nhận kết nối và đóng SQLite an toàn. Tiến trình kết thúc.')
       process.exit(0)
     })
+    if (typeof server.closeIdleConnections === 'function') {
+      server.closeIdleConnections()
+    }
   } else {
     await closeSqliteSafely()
     process.exit(0)

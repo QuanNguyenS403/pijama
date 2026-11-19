@@ -5,7 +5,7 @@ services:
     plan: free
     region: singapore
     buildCommand: npm install --include=dev && npm run build
-    startCommand: npm start
+    startCommand: node server/start.js
     healthCheckPath: /livez
     autoDeploy: true
     # LƯU Ý QUAN TRỌNG (G3): Render gói Free không hỗ trợ Persistent Disk (ổ tạm sẽ mất dữ liệu khi redeploy/spin-down).

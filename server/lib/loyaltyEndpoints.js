@@ -134,7 +134,16 @@ const loyaltyVerifyIpLimiter = createRateLimiter({
   message: 'Bạn thao tác quá nhanh. Vui lòng thử lại sau giây lát.',
 })
 
-export function registerLoyaltyEndpoints(app) {
+export function startLoyaltyBackgroundServices() {
+  try {
+    syncTelegramWebhook().catch(() => {})
+    startTelegramPolling()
+  } catch (pollErr) {
+    console.warn('⚠️ [TELEGRAM BOT START WARNING]:', pollErr?.message || pollErr)
+  }
+}
+
+export function registerLoyaltyEndpoints(app, options = {}) {
   // ── 1. GỬI MÃ OTP XÁC THỰC SĐT (PUBLIC) ─────────────────────
   app.post('/api/loyalty/phone/send-otp', loyaltyOtpIpLimiter, async (req, res) => {
     try {
@@ -964,11 +973,8 @@ export function registerLoyaltyEndpoints(app) {
     }
   })
 
-  // Đồng bộ cấu hình Webhook và tiến trình nhận tin nhắn Telegram
-  try {
-    syncTelegramWebhook().catch(() => {})
-    startTelegramPolling()
-  } catch (pollErr) {
-    console.warn('⚠️ [TELEGRAM BOT START WARNING]:', pollErr?.message || pollErr)
+  // Đồng bộ cấu hình Webhook và tiến trình nhận tin nhắn Telegram (có thể trì hoãn sau app.listen)
+  if (!options?.deferBackgroundSync) {
+    startLoyaltyBackgroundServices()
   }
 }

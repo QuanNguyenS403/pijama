@@ -1,12 +1,31 @@
 import { orderPersistence } from './orderPersistence.js'
 
-let cachedGoogle = null
-async function getGoogle() {
-  if (!cachedGoogle) {
-    const mod = await import('googleapis')
-    cachedGoogle = mod.google
+let cachedSheetsDeps = null
+async function getSheetsFactory() {
+  if (!cachedSheetsDeps) {
+    try {
+      const [sheetsMod, authMod] = await Promise.all([
+        import('googleapis/build/src/apis/sheets/index.js'),
+        import('google-auth-library'),
+      ])
+      const sheets = sheetsMod.sheets || sheetsMod.default?.sheets
+      const GoogleAuth = authMod.GoogleAuth || authMod.default?.GoogleAuth
+      if (typeof sheets === 'function' && typeof GoogleAuth === 'function') {
+        cachedSheetsDeps = { sheets, GoogleAuth }
+      }
+    } catch {
+      // Fallback sang gói đầy đủ nếu cấu trúc subpath thay đổi ở phiên bản googleapis mới
+    }
+
+    if (!cachedSheetsDeps) {
+      const mod = await import('googleapis')
+      cachedSheetsDeps = {
+        sheets: mod.google.sheets.bind(mod.google),
+        GoogleAuth: mod.google.auth.GoogleAuth,
+      }
+    }
   }
-  return cachedGoogle
+  return cachedSheetsDeps
 }
 
 // ── Auth với Google Service Account ─────────────────────
@@ -15,15 +34,15 @@ const getSheetsClient = async () => {
     throw new Error('Thiếu cấu hình GOOGLE_SERVICE_ACCOUNT_EMAIL hoặc GOOGLE_PRIVATE_KEY trong .env')
   }
 
-  const google = await getGoogle()
-  const auth = new google.auth.GoogleAuth({
+  const { sheets, GoogleAuth } = await getSheetsFactory()
+  const auth = new GoogleAuth({
     credentials: {
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
     },
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   })
-  return google.sheets({ version: 'v4', auth })
+  return sheets({ version: 'v4', auth })
 }
 
 // ── Tên các sheet tabs trong file Google Sheets ─────────────────
