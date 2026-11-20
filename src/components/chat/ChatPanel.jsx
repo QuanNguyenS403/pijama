@@ -253,7 +253,8 @@ export default function ChatPanel({ isOpen, onClose }) {
       role="dialog"
       aria-modal="true"
       aria-label="Khung trò chuyện QNS Chat"
-      className="w-full sm:w-[355px] h-[100dvh] sm:h-[520px] bg-[#FAF8F5] sm:border sm:border-[#E8DFD5] sm:rounded-[6px] shadow-2xl flex flex-col overflow-hidden text-[#2C201A]"
+      data-lenis-prevent="true"
+      className="w-full sm:w-[355px] h-[100dvh] sm:h-[520px] bg-[#FAF8F5] sm:border sm:border-[#E8DFD5] sm:rounded-[6px] shadow-2xl flex flex-col overflow-hidden text-[#2C201A] overscroll-contain"
     >
       {/* ── HEADER ────────────────────────────────────────── */}
       <div

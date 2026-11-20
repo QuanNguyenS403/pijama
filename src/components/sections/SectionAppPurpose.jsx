@@ -70,7 +70,7 @@ export default function SectionAppPurpose() {
                 Mục Đích Đăng Nhập Bằng Google
               </h3>
               <p className="font-sans text-xs sm:text-sm text-[#4A3F38] leading-relaxed mb-4">
-                Tính năng "Đăng nhập nhanh với Google" là <strong>tiện ích tùy chọn</strong> nhằm hỗ trợ khách hàng đăng nhập 1-chạm không cần mật khẩu, tự động lưu lịch sử đơn hàng, tra cứu bưu tá Viettel Post và nhận Voucher chào mừng giảm 10% đặc quyền thành viên VIP.
+                Tính năng "Đăng nhập nhanh với Google" là <strong>tiện ích tùy chọn</strong> nhằm hỗ trợ khách hàng đăng nhập 1-chạm không cần mật khẩu, tự động lưu lịch sử đơn hàng, tra cứu bưu tá Viettel Post và nhận Voucher chào mừng giảm 10% đặc quyền hội viên VIP.
               </p>
             </div>
             <div className="pt-3 border-t border-[#F5F0EB] text-[11px] text-[#631521] font-semibold flex items-center gap-1.5">

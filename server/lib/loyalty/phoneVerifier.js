@@ -65,7 +65,7 @@ export async function sendLoyaltyOtp({
   const dailyLimit = Number(process.env.LOYALTY_OTP_DAILY_LIMIT_PER_PHONE) || 5
 
   // 1. Chống user enumeration đối với purpose = 'login'
-  // Nếu SĐT chưa là thành viên hoạt động: trả phản hồi trung tính 200, KHÔNG sinh mã, KHÔNG gọi provider
+  // Nếu SĐT chưa là hội viên hoạt động: trả phản hồi trung tính 200, KHÔNG sinh mã, KHÔNG gọi provider
   if (purpose === 'login') {
     const member = getMemberByPhone(cleanPhone)
     if (!member || member.status !== 'active') {

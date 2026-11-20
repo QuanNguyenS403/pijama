@@ -307,7 +307,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             {activeTab === 'verify_otp'
               ? 'Xác Thực Mã Email'
               : activeTab === 'login'
-              ? 'Đăng Nhập Thành Viên'
+              ? 'Đăng Nhập Hội Viên'
               : 'Gia Nhập Đặc Quyền'}
           </h3>
           <p className="text-[11px] text-white/75 mt-0.5 font-light">

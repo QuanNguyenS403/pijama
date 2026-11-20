@@ -4,10 +4,51 @@ import HandoffCard from './HandoffCard'
 import ProductCard from './ProductCard'
 
 export default function MessageList({ messages, isTyping, onProductSelect, recentConversationText }) {
+  const containerRef = useRef(null)
   const bottomRef = useRef(null)
+  const lastBotMsgRef = useRef(null)
 
+  // Cô lập hoàn toàn sự kiện lăn chuột (wheel) bên trong khung chat để con lăn hoạt động trơn tru
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const el = containerRef.current
+    if (!el) return
+
+    const handleWheel = (e) => {
+      e.stopPropagation()
+    }
+
+    el.addEventListener('wheel', handleWheel, { passive: true })
+    return () => el.removeEventListener('wheel', handleWheel)
+  }, [])
+
+  // Cuộn thông minh: Khi bot trả lời văn bản dài, đưa đầu câu trả lời vào tầm nhìn để khách đọc tự nhiên
+  useEffect(() => {
+    const rafId = requestAnimationFrame(() => {
+      const lastMsg = messages[messages.length - 1]
+      const containerEl = containerRef.current
+      const botEl = lastBotMsgRef.current
+
+      if (isTyping) {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+        return
+      }
+
+      if (lastMsg?.role === 'assistant' && botEl && containerEl) {
+        const botHeight = botEl.offsetHeight
+        const containerHeight = containerEl.clientHeight
+
+        // Nếu câu trả lời của bot dài (vượt quá 50% khung chat), cuộn mượt tới đầu câu trả lời để khách đọc từ đầu
+        if (botHeight > containerHeight * 0.5) {
+          const targetScrollTop = Math.max(0, botEl.offsetTop - 12)
+          containerEl.scrollTo({ top: targetScrollTop, behavior: 'smooth' })
+          return
+        }
+      }
+
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    })
+
+    return () => cancelAnimationFrame(rafId)
   }, [messages, isTyping])
 
   const formatMessageText = (text) => {
@@ -28,7 +69,10 @@ export default function MessageList({ messages, isTyping, onProductSelect, recen
 
   return (
     <div
-      className="flex-1 overflow-y-auto p-4 space-y-3.5 focus:outline-none"
+      ref={containerRef}
+      data-lenis-prevent="true"
+      onWheel={(e) => e.stopPropagation()}
+      className="flex-1 overflow-y-auto p-4 space-y-3.5 focus:outline-none overscroll-contain qns-chat-scrollbar chat-scroll-container touch-pan-y"
       aria-live="polite"
       tabIndex={0}
       role="region"
@@ -36,10 +80,12 @@ export default function MessageList({ messages, isTyping, onProductSelect, recen
     >
       {messages.map((msg, index) => {
         const isUser = msg.role === 'user'
+        const isLastAssistant = !isUser && index === messages.length - 1
 
         return (
           <div
             key={msg.id || index}
+            ref={isLastAssistant ? lastBotMsgRef : null}
             className={`flex items-start gap-2.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
           >
             {/* Avatar */}

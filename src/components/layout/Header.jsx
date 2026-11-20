@@ -302,9 +302,9 @@ export default function Header({ onCartOpen, onOpenCart, onAddToCart, onOpenOrde
               {/* Customer Account Button (Enterprise Auth UX) */}
               <Link
                 to="/tai-khoan"
-                aria-label="Tài khoản & Đặc quyền thành viên"
+                aria-label="Tài khoản & Đặc quyền hội viên"
                 className="relative hidden sm:flex text-white/90 hover:text-[#D4AF37] transition-all p-1 cursor-pointer items-center gap-1.5 group"
-                title={currentUser ? `Tài khoản: ${currentUser.fullName || currentUser.email}` : 'Tài khoản & Ưu đãi thành viên'}
+                title={currentUser ? `Tài khoản: ${currentUser.fullName || currentUser.email}` : 'Tài khoản & Ưu đãi hội viên'}
               >
                 {currentUser ? (
                   <div className="flex items-center gap-2 bg-white/10 hover:bg-white/15 px-2.5 py-1 rounded-full border border-[#D4AF37]/40 transition-colors shadow-xs">
@@ -330,7 +330,7 @@ export default function Header({ onCartOpen, onOpenCart, onAddToCart, onOpenOrde
                       </span>
                     </div>
                     <span className="text-[11px] font-medium text-white max-w-[110px] truncate tracking-wide">
-                      {currentUser.fullName ? currentUser.fullName.split(' ').slice(-1)[0] : 'Thành viên'}
+                      {currentUser.fullName ? currentUser.fullName.split(' ').slice(-1)[0] : 'Hội viên'}
                     </span>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
                   </div>
@@ -483,7 +483,7 @@ export default function Header({ onCartOpen, onOpenCart, onAddToCart, onOpenOrde
                     ) : (
                       <User className="w-4 h-4 text-[#D4AF37]" />
                     )}
-                    <span>{currentUser ? `Tài khoản (${currentUser.fullName || 'Đã đăng nhập'})` : 'Tài khoản & Ưu đãi CLB'}</span>
+                    <span>{currentUser ? `Tài khoản (${currentUser.fullName || 'Đã đăng nhập'})` : 'Tài khoản & Ưu đãi hội viên'}</span>
                   </span>
                   {currentUser ? (
                     <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">

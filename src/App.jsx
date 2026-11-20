@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion'
 import ScrollToTop from './components/ui/ScrollToTop'
 import PageTransition from './components/ui/PageTransition'
 import BackToTopButton from './components/ui/BackToTopButton'
+import PageLoader from './components/ui/PageLoader'
 import { initSmoothScroll } from './lib/smoothScroll'
 import LandingPage from './pages/LandingPage'
 import AuthModal from './components/auth/AuthModal'
@@ -26,14 +27,6 @@ const LoyaltyPage = lazy(() => import('./pages/LoyaltyPage'))
 const LoyaltyRegisterPage = lazy(() => import('./pages/LoyaltyRegisterPage'))
 const VerifyLoyaltyPhonePage = lazy(() => import('./pages/VerifyLoyaltyPhonePage'))
 const PolicyPage = lazy(() => import('./pages/PolicyPage'))
-
-function PageFallback() {
-  return (
-    <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-[#631521]/20 border-t-[#631521] rounded-full animate-spin" />
-    </div>
-  )
-}
 
 export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
@@ -66,7 +59,7 @@ export default function App() {
           window.location.href = '/tai-khoan'
         }}
       />
-      <Suspense fallback={<PageFallback />}>
+      <Suspense fallback={<PageLoader />}>
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
             <Route path="/" element={<PageTransition><LandingPage /></PageTransition>} />

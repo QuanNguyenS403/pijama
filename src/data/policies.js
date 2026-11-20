@@ -135,7 +135,7 @@ export const policiesData = {
           '• Sản phẩm là hàng nguyên giá hoặc có mức chiết khấu dưới 30%.',
           '• Sản phẩm không phải là phụ kiện hoặc quà tặng trong chương trình khuyến mãi.',
           '• Sản phẩm mới được chọn để đổi mới phải có giá trị bằng giá trị sản phẩm đổi. Trường hợp sản phẩm được chọn để đổi mới có giá trị thấp hơn sản phẩm cần đổi, khách hàng sẽ không được hoàn lại tiền.',
-          '• Khi đổi sản phẩm, giá trị voucher, điểm thưởng, chiết khấu hạng thành viên,.. đã sử dụng trong đơn hàng sẽ không được tính vào giá trị sản phẩm được đổi và không được áp dụng lại lần 02 vào đơn hàng đổi mới.',
+          '• Khi đổi sản phẩm, giá trị voucher, điểm thưởng, chiết khấu hạng hội viên,.. đã sử dụng trong đơn hàng sẽ không được tính vào giá trị sản phẩm được đổi và không được áp dụng lại lần 02 vào đơn hàng đổi mới.',
           '• Trường hợp sản phẩm cần đổi được đặt trong thời gian diễn ra chương trình khuyến mãi, quý khách vui lòng đổi sản phẩm trong thời gian diễn ra chương trình để được áp dụng mức giá ưu đãi.',
           '• Các sản phẩm ưu đãi từ 30% trở lên, sản phẩm đồng giá trong chương trình khuyến mãi không áp dụng chính sách đổi hàng theo nhu cầu của khách hàng trừ trường hợp sản phẩm bị lỗi do nhà sản xuất. Do đó, khi nhận hàng quý khách vui lòng kiểm tra thật kỹ sản phẩm trước khi thanh toán.',
           '• Quà tặng kèm đơn hàng có thể bị thu hồi theo chính sách của chương trình quà tặng tại thời điểm diễn ra.',

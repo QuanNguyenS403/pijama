@@ -110,7 +110,11 @@ export default function FeedbackView({ onClose, onFeedbackSubmitted }) {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-[#FAF8F5] overflow-y-auto no-scrollbar">
+    <div
+      data-lenis-prevent="true"
+      onWheel={(e) => e.stopPropagation()}
+      className="flex-1 flex flex-col bg-[#FAF8F5] overflow-y-auto qns-chat-scrollbar overscroll-contain chat-scroll-container touch-pan-y"
+    >
       {/* Top Navigation */}
       <div className="bg-[#FAF5F0] border-b border-[#E8DFD5] px-3.5 py-2.5 flex items-center justify-between shrink-0">
         <button

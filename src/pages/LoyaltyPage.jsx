@@ -175,7 +175,7 @@ export default function LoyaltyPage() {
     },
     {
       q: 'Ưu đãi hạng có cộng dồn với chuyển khoản VietQR 10% không?',
-      a: 'Có! Giảm giá theo hạng thành viên (5%, 10%, 15%) được áp dụng trực tiếp trên tiền hàng và vẫn được áp dụng đồng thời chiết khấu thêm 10% khi quý khách chọn thanh toán Chuyển khoản VietQR tự động.',
+      a: 'Có! Giảm giá theo hạng hội viên (5%, 10%, 15%) được áp dụng trực tiếp trên tiền hàng và vẫn được áp dụng đồng thời chiết khấu thêm 10% khi quý khách chọn thanh toán Chuyển khoản VietQR tự động.',
     },
   ]
 
@@ -301,7 +301,7 @@ export default function LoyaltyPage() {
             {/* Thanh cuộn ngang hỗ trợ mobile */}
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px] lg:min-w-full border-collapse text-left">
-                {/* Header Bảng: 4 Hạng Thành Viên */}
+                {/* Header Bảng: 4 Hạng Hội Viên */}
                 <thead>
                   <tr className="border-b border-[#E8DFD5] bg-[#FAF8F5]">
                     <th className="px-6 sm:px-8 pt-10 pb-6 w-[28%] text-xs sm:text-sm font-bold uppercase tracking-wider text-[#8C7E74] align-top">

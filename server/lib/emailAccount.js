@@ -73,7 +73,7 @@ export async function sendVerificationCodeEmail({ to, code, name = 'Quý khách'
 
   const text = `Kính gửi ${name},
 
-Cảm ơn bạn đã quan tâm và khởi tạo tài khoản thành viên tại ${SHOP_NAME}.
+Cảm ơn bạn đã quan tâm và khởi tạo tài khoản hội viên tại ${SHOP_NAME}.
 Mã xác minh của bạn: ${cleanCode}
 (Hiệu lực trong 10 phút, tối đa 5 lần thử)
 
@@ -117,7 +117,7 @@ Hotline: ${SHOP_PHONE} · Email: ${user}
                     Kính gửi <strong>${safeName}</strong>,
                   </p>
                   <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #4A3F38;">
-                    Cảm ơn bạn đã quan tâm và khởi tạo tài khoản thành viên tại <strong>${escapeHtml(SHOP_NAME)}</strong>. Để bảo mật tài khoản và nhận ngay <strong>Voucher giảm 10% + Miễn phí vận chuyển cho đơn hàng đầu tiên</strong>, vui lòng nhập mã xác minh dưới đây:
+                    Cảm ơn bạn đã quan tâm và khởi tạo tài khoản hội viên tại <strong>${escapeHtml(SHOP_NAME)}</strong>. Để bảo mật tài khoản và nhận ngay <strong>Voucher giảm 10% + Miễn phí vận chuyển cho đơn hàng đầu tiên</strong>, vui lòng nhập mã xác minh dưới đây:
                   </p>
 
                   <!-- 6-digit Code Box -->
@@ -215,7 +215,7 @@ export async function sendWelcomeVoucherEmail({ to, code, name = 'Quý khách' }
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Voucher Chào Mừng Thành Viên — QuanNguyenS</title>
+      <title>Voucher Chào Mừng Hội Viên — QuanNguyenS</title>
     </head>
     <body style="margin: 0; padding: 0; background-color: #F5F0EB; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1A1614;">
       <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed;">
@@ -230,7 +230,7 @@ export async function sendWelcomeVoucherEmail({ to, code, name = 'Quý khách' }
                     QuanNguyenS
                   </span>
                   <span style="display: block; font-size: 11px; color: #D4AF37; letter-spacing: 0.25em; text-transform: uppercase; margin-top: 4px;">
-                    Đặc Quyền Thành Viên Mới
+                    Đặc Quyền Hội Viên Mới
                   </span>
                 </td>
               </tr>
@@ -474,7 +474,7 @@ export async function sendGoogleRegisterSuccessEmail({
                     Kính gửi <strong>${name}</strong>,
                   </p>
                   <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #4A3F38;">
-                    Cảm ơn bạn đã lựa chọn đăng ký tài khoản thành viên tại <strong>QuanNguyenS</strong> thông qua tài khoản Google (<strong style="color: #631521;">${to}</strong>). Từ nay, bạn có thể dễ dàng quản lý đơn hàng, theo dõi hành trình giao nhận và tận hưởng các đặc quyền dành riêng cho thành viên.
+                    Cảm ơn bạn đã lựa chọn đăng ký tài khoản hội viên tại <strong>QuanNguyenS</strong> thông qua tài khoản Google (<strong style="color: #631521;">${to}</strong>). Từ nay, bạn có thể dễ dàng quản lý đơn hàng, theo dõi hành trình giao nhận và tận hưởng các đặc quyền dành riêng cho hội viên.
                   </p>
 
                   <!-- Luxury Voucher Card -->
@@ -662,7 +662,7 @@ export async function sendOwnerGoogleAuthNotification({
   const device = formatDeviceName(userAgent)
 
   const isRegister = action === 'REGISTER'
-  const badgeTitle = isRegister ? 'THÀNH VIÊN GOOGLE MỚI' : 'ĐĂNG NHẬP GOOGLE'
+  const badgeTitle = isRegister ? 'HỘI VIÊN GOOGLE MỚI' : 'ĐĂNG NHẬP GOOGLE'
   const subject = `[${badgeTitle}] ${customerName} (${email || 'Không có email'})`
 
   const html = `
@@ -703,7 +703,7 @@ export async function sendOwnerGoogleAuthNotification({
               <td class="kv-label">Loại hoạt động:</td>
               <td class="kv-value">
                 <span class="badge ${isRegister ? 'badge-register' : 'badge-login'}">
-                  ${isRegister ? 'Đăng ký thành viên mới' : 'Đăng nhập lại'}
+                  ${isRegister ? 'Đăng ký hội viên mới' : 'Đăng nhập lại'}
                 </span>
               </td>
             </tr>

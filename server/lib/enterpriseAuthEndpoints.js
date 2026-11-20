@@ -609,7 +609,7 @@ export function registerEnterpriseAuthEndpoints(app) {
         `).run(`ident_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`, userId, userId, email.toLowerCase(), now)
       } catch (_) {}
 
-      // 5. Cấp voucher chào mừng WELCOME10 & gửi email chúc mừng thành viên
+      // 5. Cấp voucher chào mừng WELCOME10 & gửi email chúc mừng hội viên
       let voucherCode = 'WELCOME10'
       try {
         const welcomeVoucher = createWelcomeVoucher(userId)

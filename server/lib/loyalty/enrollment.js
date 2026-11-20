@@ -238,7 +238,7 @@ export async function enrollLoyaltyMember({
         chatId: tgUser.telegram_id,
         text: `🎉 <b>CHÚC MỪNG QUÝ KHÁCH ĐÃ TRỞ THÀNH HỘI VIÊN THÂN THIẾT!</b>\n\n` +
           `✨ Đặc quyền của Quý khách đã có hiệu lực ngay lập tức trên website QuanNguyenS:\n` +
-          `• Chiết khấu đặc quyền theo hạng thành viên\n` +
+          `• Chiết khấu đặc quyền theo hạng hội viên\n` +
           `• Tích lũy 1 điểm cho mỗi 100.000đ chi tiêu\n` +
           `• Tặng Voucher sinh nhật 50.000đ độc quyền\n\n` +
           `Quý khách có thể mua sắm ngay tại https://www.quannguyens.com để tận hưởng ưu đãi!`,

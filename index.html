@@ -88,7 +88,144 @@
     </script>
   </head>
   <body class="bg-[#2C201A] text-white antialiased selection:bg-[#D4AF37] selection:text-[#2C201A]">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Branded Initial Pre-Loader (Hiển thị ngay tức thì khi tải trang trước khi React mount) -->
+      <style>
+        .qns-initial-loader {
+          position: fixed;
+          inset: 0;
+          background-color: #FAF8F5;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          z-index: 99999;
+          user-select: none;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        .qns-loader-rings {
+          position: relative;
+          width: 112px;
+          height: 112px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .qns-loader-spin {
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          border: 2.5px solid rgba(232, 223, 213, 0.6);
+          border-top-color: #D4AF37;
+          border-right-color: #631521;
+          animation: qnsSpin 1.4s linear infinite;
+        }
+        .qns-loader-dash {
+          position: absolute;
+          inset: -8px;
+          border-radius: 50%;
+          border: 1px dashed rgba(212, 175, 55, 0.4);
+          animation: qnsSpinRev 6s linear infinite;
+        }
+        .qns-loader-orbit {
+          position: absolute;
+          inset: -8px;
+          border-radius: 50%;
+          animation: qnsSpin 2.8s linear infinite;
+        }
+        .qns-loader-dot {
+          position: absolute;
+          top: 0;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background-color: #D4AF37;
+          box-shadow: 0 0 8px #D4AF37;
+        }
+        .qns-loader-logo {
+          position: relative;
+          width: 68px;
+          height: 68px;
+          border-radius: 50%;
+          padding: 3px;
+          background: #FFFFFF;
+          border: 1px solid #D4AF37;
+          box-shadow: 0 8px 24px rgba(99, 21, 33, 0.14);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10;
+        }
+        .qns-loader-logo img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 50%;
+          display: block;
+        }
+        .qns-loader-title {
+          margin-top: 24px;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 0.3em;
+          color: #631521;
+          text-transform: uppercase;
+        }
+        .qns-loader-sub {
+          margin-top: 6px;
+          font-size: 10.5px;
+          color: #8C7E74;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          font-weight: 500;
+        }
+        .qns-loader-bar {
+          margin-top: 14px;
+          width: 100px;
+          height: 2px;
+          background-color: #E8DFD5;
+          border-radius: 2px;
+          overflow: hidden;
+          position: relative;
+        }
+        .qns-loader-shimmer {
+          position: absolute;
+          inset-block: 0;
+          width: 48px;
+          background: linear-gradient(90deg, transparent, #D4AF37, transparent);
+          animation: qnsShimmer 1.8s ease-in-out infinite;
+        }
+        @keyframes qnsSpin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes qnsSpinRev {
+          to { transform: rotate(-360deg); }
+        }
+        @keyframes qnsShimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(250%); }
+        }
+      </style>
+      <div class="qns-initial-loader">
+        <div class="qns-loader-rings">
+          <div class="qns-loader-spin"></div>
+          <div class="qns-loader-dash"></div>
+          <div class="qns-loader-orbit">
+            <div class="qns-loader-dot"></div>
+          </div>
+          <div class="qns-loader-logo">
+            <img src="/images/logo.jpg" alt="QuanNguyenS Logo" />
+          </div>
+        </div>
+        <div class="qns-loader-title">QuanNguyenS</div>
+        <div class="qns-loader-sub">Style To Be Lived In</div>
+        <div class="qns-loader-bar">
+          <div class="qns-loader-shimmer"></div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

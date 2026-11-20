@@ -37,9 +37,10 @@ export default function ChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.96 }}
             transition={{ duration: 0.2 }}
+            data-lenis-prevent="true"
             className="fixed inset-0 sm:inset-auto sm:bottom-20 sm:right-5 z-[140] pointer-events-none"
           >
-            <div className="pointer-events-auto w-full h-full">
+            <div className="pointer-events-auto w-full h-full" data-lenis-prevent="true">
               <ChatPanel isOpen={isOpen} onClose={() => setIsOpen(false)} />
             </div>
           </motion.div>

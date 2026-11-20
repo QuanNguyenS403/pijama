@@ -135,6 +135,28 @@
   .pdp-scrollbar::-webkit-scrollbar-track { background: #E8DFD5; }
   .pdp-scrollbar::-webkit-scrollbar-thumb { background: #631521; }
 
+  /* QNS Chat scrollbar - tinh tế công thái học, cuộn êm mượt không tràn ra ngoài */
+  .qns-chat-scrollbar {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-color: #C4A77D #FAF8F5;
+  }
+  .qns-chat-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .qns-chat-scrollbar::-webkit-scrollbar-track {
+    background: #FAF8F5;
+    border-radius: 4px;
+  }
+  .qns-chat-scrollbar::-webkit-scrollbar-thumb {
+    background: #C4A77D;
+    border-radius: 4px;
+  }
+  .qns-chat-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #631521;
+  }
+
   /* Hide scrollbar utility */
   .no-scrollbar::-webkit-scrollbar {
     display: none;

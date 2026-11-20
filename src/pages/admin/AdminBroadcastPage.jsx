@@ -430,7 +430,7 @@ Nếu bạn có bất kỳ câu hỏi nào về bảng size hoặc chất liệu
                     <p className="font-semibold text-[#631521]">QuanNguyenS — Style to be lived in</p>
                     <p>Hotline: 0973 486 218 · Hai Bà Trưng, Hà Nội</p>
                     <p className="text-[10.5px] text-[#A89F91] mt-2">
-                      Bạn nhận được thông báo này vì đã đăng ký thành viên tại website QuanNguyenS.
+                      Bạn nhận được thông báo này vì đã đăng ký hội viên tại website QuanNguyenS.
                     </p>
                   </div>
                 </div>

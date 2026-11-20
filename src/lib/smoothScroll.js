@@ -28,6 +28,14 @@ export function initSmoothScroll() {
       touchMultiplier: 1.2,
       infinite: false,
       autoToggle: true, // Tự động tạm dừng khi body overflow là hidden (mở modal/drawer)
+      allowNestedScroll: true, // Cho phép các vùng cuộn con lồng nhau (khung chat, modal) tự do cuộn
+      prevent: (node) => {
+        if (!node || typeof node.hasAttribute !== 'function') return false
+        return (
+          node.hasAttribute('data-lenis-prevent') ||
+          Boolean(node.closest?.('[data-lenis-prevent], [role="dialog"], .chat-scroll-container, .qns-chat-scrollbar'))
+        )
+      },
     })
 
     window.__lenis = lenisInstance
