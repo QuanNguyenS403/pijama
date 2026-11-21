@@ -66,6 +66,21 @@ if (typeof window !== 'undefined') {
 }
 
 /**
+ * Đặt lại trạng thái tự động chọn tài khoản Google
+ * Bắt buộc gọi khi đăng xuất hoặc trước khi hiển thị nút chọn tài khoản
+ * để khách hàng có nhiều tài khoản luôn được hiển thị bảng chọn tài khoản (Account Chooser).
+ */
+export function disableGoogleAutoSelect() {
+  try {
+    if (typeof window !== 'undefined' && window.google?.accounts?.id?.disableAutoSelect) {
+      window.google.accounts.id.disableAutoSelect()
+    }
+  } catch (err) {
+    console.warn('Lỗi disableGoogleAutoSelect:', err)
+  }
+}
+
+/**
  * Đợi SDK Google Identity Services tải xong
  */
 export function waitForGoogleSdk(timeoutMs = 3000) {
@@ -205,16 +220,19 @@ export async function setupGoogleSignInButton(
   if (!containerElement) return { success: false, error: 'Thiếu containerElement' }
 
   const clientId = getGoogleClientIdSync()
-  const isSdkReady = await waitForGoogleSdk(3000)
+  const isSdkReady = await waitForGoogleSdk(3500)
 
   if (!isSdkReady) {
     return {
       success: false,
-      error: 'Google SDK chưa được tải (vui lòng kiểm tra chặn quảng cáo/kết nối mạng)',
+      error: 'Google Identity Services SDK chưa sẵn sàng (vui lòng kiểm tra chặn quảng cáo hoặc kết nối mạng)',
     }
   }
 
   try {
+    // Đảm bảo xóa trạng thái auto_select để luôn hiển thị danh sách chọn tài khoản nếu khách có nhiều tài khoản
+    disableGoogleAutoSelect()
+
     window.google.accounts.id.initialize({
       client_id: clientId,
       callback: async (response) => {
@@ -240,10 +258,12 @@ export async function setupGoogleSignInButton(
       },
       auto_select: false,
       cancel_on_tap_outside: true,
+      ux_mode: 'popup',
     })
 
     containerElement.innerHTML = ''
-    const containerWidth = width || Math.min(Math.max(containerElement.offsetWidth || 300, 240), 400)
+    const measuredWidth = containerElement.offsetWidth || containerElement.parentElement?.offsetWidth || 360
+    const containerWidth = width || Math.min(Math.max(measuredWidth, 240), 400)
 
     window.google.accounts.id.renderButton(containerElement, {
       type: 'standard',
