@@ -198,14 +198,11 @@ export default function AccountPage() {
     setAuthSubmitting(true)
     try {
       if (authMode === 'verify_register_otp') {
-        const cleanPhone = authPhone.replace(/[\s.-]/g, '').replace(/^\+?84/, '0').trim()
         const res = await apiPost('/api/auth/register/request-otp', {
           email: authEmail.trim(),
           password: authPassword,
           confirmPassword,
           fullName: authFullName.trim(),
-          phone: cleanPhone || undefined,
-          birthDate: authBirthDate || undefined,
           marketingOptIn: true,
           turnstileToken: turnstileToken || undefined,
         })
@@ -274,13 +271,6 @@ export default function AccountPage() {
         fetchUserOrders()
         setToast({ productName: `Chào mừng ${loggedUser?.fullName || 'bạn'} trở lại!`, id: Date.now() })
       } else if (authMode === 'register') {
-        const cleanPhone = authPhone.replace(/[\s.-]/g, '').replace(/^\+?84/, '0').trim()
-        if (!/^0[35789]\d{8}$/.test(cleanPhone)) {
-          throw new Error('Vui lòng nhập số điện thoại Việt Nam hợp lệ (10 chữ số, VD: 0912345678)')
-        }
-        if (!authBirthDate) {
-          throw new Error('Vui lòng chọn ngày sinh của bạn')
-        }
         if (authPassword !== confirmPassword) {
           throw new Error('Mật khẩu nhập lại không khớp với mật khẩu đã nhập')
         }
@@ -290,8 +280,6 @@ export default function AccountPage() {
           password: authPassword,
           confirmPassword,
           fullName: authFullName.trim(),
-          phone: cleanPhone,
-          birthDate: authBirthDate,
           marketingOptIn: true,
         })
         const data = await res.json()
@@ -637,6 +625,8 @@ export default function AccountPage() {
                         setAuthMode('register')
                         setAuthError(null)
                         setAuthSuccessMsg('')
+                        setAuthPassword('')
+                        setConfirmPassword('')
                       }}
                       className="text-[#1890ff] hover:underline cursor-pointer"
                     >
@@ -726,7 +716,7 @@ export default function AccountPage() {
               )}
 
               {authMode === 'register' && (
-                <form onSubmit={handleDirectAuth}>
+                <form onSubmit={handleDirectAuth} autoComplete="off">
                   <h1 className="text-xl sm:text-2xl font-bold text-[#1A1614] text-center tracking-normal uppercase mb-2">
                     ĐĂNG KÝ TÀI KHOẢN
                   </h1>
@@ -738,6 +728,8 @@ export default function AccountPage() {
                         setAuthMode('login')
                         setAuthError(null)
                         setAuthSuccessMsg('')
+                        setAuthPassword('')
+                        setConfirmPassword('')
                       }}
                       className="text-[#1890ff] hover:underline cursor-pointer"
                     >
@@ -780,36 +772,6 @@ export default function AccountPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-4">
-                    <div>
-                      <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
-                        Số điện thoại <span className="text-[#e53935]">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        inputMode="tel"
-                        value={authPhone}
-                        onChange={(e) => setAuthPhone(e.target.value)}
-                        placeholder="09xxxxxxxx"
-                        required
-                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
-                        Ngày sinh <span className="text-[#e53935]">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        value={authBirthDate}
-                        max={new Date().toISOString().split('T')[0]}
-                        onChange={(e) => setAuthBirthDate(e.target.value)}
-                        required
-                        className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
-                      />
-                    </div>
-                  </div>
-
                   <div className="mb-4">
                     <label className="block text-xs sm:text-sm text-[#1A1614] mb-1.5 font-medium">
                       Mật khẩu <span className="text-[#e53935]">*</span>
@@ -819,7 +781,8 @@ export default function AccountPage() {
                         type={showPassword ? 'text' : 'password'}
                         value={authPassword}
                         onChange={(e) => setAuthPassword(e.target.value)}
-                        placeholder="Mật khẩu (tối thiểu 8 ký tự, chữ & số)"
+                        placeholder="Nhập mật khẩu"
+                        autoComplete="new-password"
                         required
                         className="w-full px-3.5 pr-10 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
                       />
@@ -845,6 +808,7 @@ export default function AccountPage() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Nhập lại mật khẩu"
+                        autoComplete="new-password"
                         required
                         className="w-full px-3.5 pr-10 py-2.5 text-xs sm:text-sm border border-[#d9d9d9] rounded-[2px] focus:outline-none focus:border-[#1A1614] transition-colors placeholder:text-[#999999]"
                       />
@@ -952,6 +916,8 @@ export default function AccountPage() {
                         setAuthMode('login')
                         setAuthError(null)
                         setAuthSuccessMsg('')
+                        setAuthPassword('')
+                        setConfirmPassword('')
                       }}
                       className="text-[#1890ff] hover:underline cursor-pointer"
                     >
@@ -1151,6 +1117,7 @@ export default function AccountPage() {
                     onSuccess={handleGoogleCredential}
                     onError={(err) => setAuthError(typeof err === 'string' ? err : 'Đăng nhập Google thất bại.')}
                     disabled={authSubmitting}
+                    buttonText="Tiếp tục với Google"
                   />
                 </>
               )}

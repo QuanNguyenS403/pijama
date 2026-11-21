@@ -208,13 +208,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         }, 800)
       } else {
         // Đăng ký
-        const cleanPhone = phone.replace(/[\s.-]/g, '').replace(/^\+?84/, '0').trim()
-        if (!/^0[35789]\d{8}$/.test(cleanPhone)) {
-          throw new Error('Vui lòng nhập số điện thoại Việt Nam hợp lệ (10 chữ số, VD: 0912345678)')
-        }
-        if (!birthDate) {
-          throw new Error('Vui lòng chọn ngày sinh của bạn')
-        }
         if (password !== confirmPassword) {
           throw new Error('Mật khẩu nhập lại không khớp với mật khẩu đã nhập')
         }
@@ -224,8 +217,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
           password,
           confirmPassword,
           fullName: fullName.trim(),
-          phone: cleanPhone,
-          birthDate,
           marketingOptIn,
           turnstileToken: turnstileToken || undefined,
         })
@@ -321,6 +312,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                   onClick={() => {
                     setActiveTab('login')
                     setErrorMsg('')
+                    setPassword('')
+                    setConfirmPassword('')
                   }}
                   className={`flex-1 py-2 text-[11px] tracking-wider uppercase font-semibold transition-colors border-b-2 cursor-pointer ${
                     activeTab === 'login'
@@ -335,6 +328,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                   onClick={() => {
                     setActiveTab('register')
                     setErrorMsg('')
+                    setPassword('')
+                    setConfirmPassword('')
                   }}
                   className={`flex-1 py-2 text-[11px] tracking-wider uppercase font-semibold transition-colors border-b-2 cursor-pointer ${
                     activeTab === 'register'
@@ -365,7 +360,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} autoComplete="off" className="space-y-3">
             {activeTab === 'verify_otp' ? (
               <div className="space-y-3 pt-1">
                 <div className="text-center">
@@ -446,36 +441,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                         />
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-[10.5px] font-semibold text-neutral-600 uppercase tracking-wider mb-1">
-                          Số điện thoại <span className="text-[#631521]">*</span>
-                        </label>
-                        <input
-                          type="tel"
-                          inputMode="tel"
-                          required
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          placeholder="09xxxxxxxx"
-                          className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:border-[#631521] focus:ring-1 focus:ring-[#631521]"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10.5px] font-semibold text-neutral-600 uppercase tracking-wider mb-1">
-                          Ngày sinh <span className="text-[#631521]">*</span>
-                        </label>
-                        <input
-                          type="date"
-                          required
-                          value={birthDate}
-                          max={new Date().toISOString().split('T')[0]}
-                          onChange={(e) => setBirthDate(e.target.value)}
-                          className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:border-[#631521] focus:ring-1 focus:ring-[#631521]"
-                        />
-                      </div>
-                    </div>
                   </>
                 )}
 
@@ -499,7 +464,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <label className="block text-[10.5px] font-semibold text-neutral-600 uppercase tracking-wider">
-                      Mật khẩu
+                      Mật khẩu {activeTab === 'register' && <span className="text-[#631521]">*</span>}
                     </label>
                     {activeTab === 'login' && (
                       <a
@@ -522,7 +487,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder={activeTab === 'register' ? 'Tối thiểu 8 ký tự (chữ & số)' : '••••••••'}
+                      placeholder={activeTab === 'register' ? 'Nhập mật khẩu' : '••••••••'}
+                      autoComplete={activeTab === 'register' ? 'new-password' : 'current-password'}
                       className="w-full pl-9 pr-9 py-2 text-xs sm:text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:border-[#631521] focus:ring-1 focus:ring-[#631521]"
                     />
                     <button
@@ -560,7 +526,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                         required
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Nhập lại mật khẩu phía trên"
+                        placeholder="Nhập lại mật khẩu"
+                        autoComplete="new-password"
                         className="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-white border border-neutral-300 rounded-lg focus:outline-none focus:border-[#631521] focus:ring-1 focus:ring-[#631521]"
                       />
                     </div>
@@ -621,6 +588,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               onSuccess={handleGoogleCredential}
               onError={(err) => setErrorMsg(typeof err === 'string' ? err : 'Đăng nhập Google thất bại.')}
               disabled={isLoading}
+              buttonText="Tiếp tục với Google"
             />
           </div>
         </div>
